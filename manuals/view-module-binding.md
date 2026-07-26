@@ -265,14 +265,14 @@ View-Module Binding is independent of the application architecture.
 
 The runtime connects views with their associated modules.
 
-<img src="./binding_view_module.svg"/>
+<img src="./view-module-binding_view_module.svg"/>
 
 The architectural role of the module depends entirely on its implementation.
 
 ### MVC
 In MVC, the module typically implements the Controller.
 
-<img src="./binding_mvc.svg"/>
+<img src="./view-module-binding_mvc.svg"/>
 
 The Controller processes user interactions, coordinates domain models, and
 invokes services.
@@ -280,7 +280,7 @@ invokes services.
 ### MVVM
 In MVVM, the module typically implements the ViewModel.
 
-<img src="./binding_mvvm.svg"/>
+<img src="./view-module-binding_mvvm.svg"/>
 
 The ViewModel contains presentation logic, UI state, computed values, and
 commands.
@@ -291,7 +291,7 @@ Domain data remains part of the Domain Model.
 In MVCS, the module typically implements the Controller and delegates
 application logic to services.
 
-<img src="./binding_mvcs.svg"/>
+<img src="./view-module-binding_mvcs.svg"/>
 
 ### Other Architectures
 The runtime is independent of any specific architectural pattern.

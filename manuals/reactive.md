@@ -1,6 +1,6 @@
 &#9665; [Composite](composite.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#reactivity-rendering)
-&nbsp;&nbsp;&nbsp;&nbsp; [View-Module Binding](binding.md) &#9655;
+&nbsp;&nbsp;&nbsp;&nbsp; [View-Module Binding](view-module-binding.md) &#9655;
 - - -
 
 # Reactivity Rendering
@@ -179,4 +179,4 @@ attribute `iterate`, which is already taken into account automatically.
 - - -
 &#9665; [Composite](composite.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#reactivity-rendering)
-&nbsp;&nbsp;&nbsp;&nbsp; [View-Module Binding](binding.md) &#9655;
+&nbsp;&nbsp;&nbsp;&nbsp; [View-Module Binding](view-module-binding.md) &#9655;

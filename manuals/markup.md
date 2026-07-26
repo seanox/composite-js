@@ -56,13 +56,13 @@ As a component, composites are composed of various [resources](
 module directory based on the Composite ID and are loaded at runtime when used.
 
 Composites are also the basis for [View-Module Binding](
-    binding.md#view-module-binding). It connects HTML elements in the markup
-(view) with corresponding JavaScript objects. The view as presentation and user
-interface for interactions remains decoupled from the application module.
-Application modules provide the data, state and behavior that are exposed to the
-view through View-Module Binding. Binding links views and modules
-bidirectionally based on the Composite IDs, so manual declaration of events,
-interaction or synchronization is not required.
+    view-module-binding.md#view-module-binding). It connects HTML elements in
+the markup (view) with corresponding JavaScript objects. The view as
+presentation and user interface for interactions remains decoupled from the
+application module. Application modules provide the data, state and behavior
+that are exposed to the view through View-Module Binding. Binding links views
+and modules bidirectionally based on the Composite IDs, so manual declaration of
+events, interaction or synchronization is not required.
 
 [Routing](routing.md#routing) uses composites as [views](routing.md#view). They
 can be path targets in the [view flow](routing.md#view-flow), which controls the
@@ -78,7 +78,7 @@ paths and the permission concept.
 
 Details on the use of composites / modular components are described in chapter
 [Composites](composite.md) and [View-Module Binding](
-    binding.md#view-module-binding).
+    view-module-binding.md#view-module-binding).
 
 ### condition
 As a condition, the attribute specifies whether an element remains contained in
@@ -163,7 +163,7 @@ the JavaScript object only if the event _Input_ or _Change_ occurs.
 
 ### id
 The ID (identifier) has a central role in Seanox aspect-js. It is the basis for
-[View-Module Binding](binding.md#view-module-binding) and is used by
+[View-Module Binding](view-module-binding.md#view-module-binding) and is used by
 [Routing](routing.md#routing) for [views](routing.md#view) in the [view flow](
     routing.md#view-flow) and as a destination for paths.
 

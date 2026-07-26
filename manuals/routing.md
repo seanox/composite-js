@@ -1,4 +1,4 @@
-&#9665; [View-Module Binding](binding.md)
+&#9665; [View-Module Binding](view-module-binding.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#routing)
 &nbsp;&nbsp;&nbsp;&nbsp; [DataSource](datasource.md) &#9655;
 - - -
@@ -328,6 +328,6 @@ Absolute Paths start with the root, represented by a leading hash sign (`#`).
 
 
 - - -
-&#9665; [View-Module Binding](binding.md)
+&#9665; [View-Module Binding](view-module-binding.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#routing)
 &nbsp;&nbsp;&nbsp;&nbsp; [DataSource](datasource.md) &#9655;

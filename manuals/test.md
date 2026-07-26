@@ -4,13 +4,12 @@
 - - -
 
 # Test
-The Test API supports the implementation and execution of integration tests and
-can be used for suites, scenarios and single test cases.
+The Test API supports implementation and execution of integration tests. It can
+be used for suites, scenarios and single test cases.
 
 As a modular part of Seanox aspect-js, the Test API is included in all releases
-except the core versions. Because the test API causes some special features in
-terms of error handling and console output, the test API has to be activated
-consciously at runtime.
+except the core versions. Because it changes error handling and console output,
+it must be activated explicitly at runtime.
 
 ```javascript
 Test.activate();
@@ -57,9 +56,9 @@ Test.start();
 - [Extension](#extension)
 
 ## Task
-The smallest component in an integration test, used here as _task_, because
-_case_ is a keyword in JavaScript. It can be implemented alone, but is always
-used in a scenario.
+The smallest component in an integration test is called _task_ because _case_ is
+a JavaScript keyword. A task can be implemented alone, but is always used in a
+scenario.
 
 ```javascript
 Test.activate();
@@ -84,19 +83,19 @@ Optional name of the test task.
 An implemented method to be executed as a test.
 
 ### timeout
-Optional the maximum runtime of the test item in milliseconds. Exceeding this
-limit will cause the test to fail. A value greater than 0 is expected, otherwise
-the timeout is ignored.
+Optional maximum runtime of the test item in milliseconds. Exceeding this limit
+causes the test to fail. A value greater than 0 is expected; otherwise the
+timeout is ignored.
 
 ### expected
-Optional to test the occurrence of defined errors. The error must occur if the
-test is successful. An error object or a RegExp is expected as value.
+Optional definition for expected errors. The error must occur for the test to be
+successful. The value must be an error object or a RegExp.
 
 ### ignore
-Optional true, if the test is to be ignored.
+Optional `true` if the test is to be ignored.
 
 ## Scenario
-A scenario is a sequence of a lot of test cases (tasks).
+A scenario is a sequence of test cases (tasks).
 
 ```javascript
 Test.activate();
@@ -107,10 +106,10 @@ Test.create({test() {
 Test.create({name:"example", timeout:1000, test() {
     Assert.assertTrue(true);
 }});
-Test.create({error:Error test() {
+Test.create({expected: Error, test() {
     throw new Error();
 }});
-Test.create({error:/^My Error/i, test() {
+Test.create({expected: /^My Error/i, test() {
     throw new Error("My Error");
 }});
 Test.create({ignore:true, test() {
@@ -121,16 +120,15 @@ Test.start();
 ```
 
 ## Suite
-A suite is a complex bundle of different test cases, scenarios and other suites.
-Usually a suite consists of different files, which then represent a complex
-test. An example of a good suite is a cascade of different files und the test
-can be started in any file and place. This makes it possible to perform the
-integration test on different levels and with different complexity.
+A suite is a bundle of test cases, scenarios and other suites. A suite often
+consists of different files that represent a complex test. A cascade of files
+allows the test to start in any file and place. This supports integration tests
+on different levels and with different complexity.
 
 ## Assert
-The test cases are implemented with assertions. The Test API provides elementary
-assertions, you can implement more. The function is simple. If an assertion was
-not `true`, an error is thrown, optionally with an individual error message.
+Test cases are implemented with assertions. The Test API provides elementary
+assertions, and additional assertions can be implemented. If an assertion is not
+`true`, an error is thrown, optionally with an individual error message.
 
 __The methods use different signatures, which are described in the examples
 below.__
@@ -139,32 +137,16 @@ below.__
 Asserts that a value is `true`.
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertTrue(true);
-}});
-Test.create({test() {
-    Assert.assertTrue("message", true);
-}});
-
-Test.start();
+Assert.assertTrue(true);
+Assert.assertTrue("message", true);
 ```
 
 ### assertFalse
 Asserts that a value is `false`, as negation of `Assert.assertTrue(...)`.
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertFalse(false);
-}});
-Test.create({test() {
-    Assert.assertFalse("message", false);
-}});
-
-Test.start();
+Assert.assertFalse(false);
+Assert.assertFalse("message", false);
 ```
 
 ### assertEquals
@@ -173,16 +155,8 @@ Asserts that two values are equals.
 Difference between equals and same: `=== / ==` or `!== / !=`
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertEquals(expected, value);
-}});
-Test.create({test() {
-    Assert.assertEquals("message", expected, value);
-}});
-
-Test.start();
+Assert.assertEquals(expected, value);
+Assert.assertEquals("message", expected, value);
 ```
 
 ### assertNotEquals
@@ -191,16 +165,8 @@ Asserts that two values are not equals, as negation of `Assert.assertEquals(...)
 Difference between equals and same: `=== / ==` or `!== / !=`
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertNotEquals(unexpected, value);
-}});
-Test.create({test() {
-    Assert.assertNotEquals("message", unexpected, value);
-}});
-
-Test.start();
+Assert.assertNotEquals(unexpected, value);
+Assert.assertNotEquals("message", unexpected, value);
 ```
 
 ### assertSame
@@ -209,16 +175,8 @@ Asserts that two values are the same.
 Difference between equals and same: `=== / ==` or `!== / !=`
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertSame(expected, value);
-}});
-Test.create({test() {
-    Assert.assertSame("message", expected, value);
-}});
-
-Test.start();
+Assert.assertSame(expected, value);
+Assert.assertSame("message", expected, value);
 ```
 
 ### assertNotSame
@@ -227,96 +185,48 @@ Asserts two values are not the same, as negation of `Assert.assertSame(...)`.
 Difference between equals and same: === / == or !== / !=
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertNotSame(unexpected, value);
-}});
-Test.create({test() {
-    Assert.assertNotSame("message", unexpected, value);
-}});
-
-Test.start();
+Assert.assertNotSame(unexpected, value);
+Assert.assertNotSame("message", unexpected, value);
 ```
 
 ### assertNull
 Asserts that a value is `null`.
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertNull(null);
-}});
-Test.create({test() {
-    Assert.assertNull("message", null);
-}});
-
-Test.start();
+Assert.assertNull(null);
+Assert.assertNull("message", null);
 ```
 
 ### assertNotNull
 Asserts that a value is not `null`, as negation of `Assert.assertNull(...)`.
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertNotNull(null);
-}});
-Test.create({test() {
-    Assert.assertNotNull("message", null);
-}});
-
-Test.start();
+Assert.assertNotNull("value");
+Assert.assertNotNull("message", "value");
 ```
 
 ### assertUndefined
 Asserts that a value is `undefined`.
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertUndefined(undefined);
-}});
-Test.create({test() {
-    Assert.assertUndefined("message", undefined);
-}});
-
-Test.start();
+Assert.assertUndefined(undefined);
+Assert.assertUndefined("message", undefined);
 ```
 
 ### assertNotUndefined
 Asserts that a value is not `undefined`, as negation of `Assert.assertUndefined(...)`.
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertNotUndefined(undefined);
-}});
-Test.create({test() {
-    Assert.assertNotUndefined("message", undefined);
-}});
-
-Test.start();
+Assert.assertNotUndefined("value");
+Assert.assertNotUndefined("message", "value");
 ```
 
 ### fail
 Fails a test with an optional message.
 
 ```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.fail();
-}});
-Test.create({test() {
-    Assert.fail("message");
-}});
-
-Test.start();
+Assert.fail();
+Assert.fail("message");
 ```
 
 ## Configuration
@@ -325,7 +235,7 @@ expected as parameter. The configuration contained in it is partially adopted
 and the unknown is ignored.
 
 ```javascript
-Test.start({auto: boolean, ouput: {...}, monitor: {...}});
+Test.start({auto: boolean, output: {...}, monitor: {...}});
 ```
 
 ### auto
@@ -477,7 +387,7 @@ Callback methods can be established as listeners for console output.
 
 ```javascript
 console.listen(function(level, ...parameters) {
-    message = parameters[0];
+    const message = parameters[0];
     ...
 });
 ```
@@ -618,7 +528,7 @@ The following events are triggered during simulation:
     focus, keydown, keyup, change
 
 ```html
-<form action="/api/example" methode="POST">
+<form action="/api/example" method="POST">
   <input type="text" id="inputText"/>
   <input type="submit"/> 
 </form>
@@ -641,7 +551,7 @@ Method that creates a simple string for an element object. The string is based
 on `Element.prototype.outerHTML`.
 
 ```html
-<form action="/api/example" methode="POST">
+<form action="/api/example" method="POST">
   <input type="text" id="inputText"/>
   <input type="submit"/> 
 </form>
@@ -654,35 +564,20 @@ console.log(document.querySelector("form").toPlainString());
 Output:
 
 ```
-<form xmlns="http://www.w3.org/1999/xhtml" action="/api/example" methode="POST">
+<form xmlns="http://www.w3.org/1999/xhtml" action="/api/example" method="POST">
   <input type="text" id="inputText"/>
   <input type="submit"/> 
 </form>
 ```
 
 #### Element.prototype.trigger
-Method to trigger an event for an element.
+Method to trigger an event for an element with the optional parameters `bubbles`
+(default: `false`) and `cancelable` (default: `true`).
 
 ```javascript
-document.queryElement("#button").trigger("click");
-```
-
-Method call with option bubbles. Decides whether the event should run through
-the event chain or not.
-
-Default: false
-
-```javascript
-document.queryElement("#button").trigger("click", true);
-```
-
-Method call with options bubbles and cancel. This determines whether the event
-can be canceled.
-
-Default: true
-
-```javascript
-document.queryElement("#button").trigger("click", true, false);
+document.querySelector("#button").trigger("click");
+document.querySelector("#button").trigger("click", true);
+document.querySelector("#button").trigger("click", true, false);
 ```
 
 ### Node

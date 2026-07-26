@@ -8,7 +8,7 @@ Seanox aspect-js uses Composite JavaScript, a JavaScript dialect for browsers
 extended with a small set of [macros](#macros).
 
 Composite JavaScript is executed directly in an isolated runtime scope rather
-than as a script-element. Variables, constants and functions declared in a
+than as a script element. Variables, constants and functions declared in a
 module are local to that module and are not automatically available in the
 global scope or in other modules. The [macros](#macros) provide language
 extensions for tasks such as importing modules, exporting declarations and
@@ -26,14 +26,13 @@ creating namespaces.
 - [Debugging](#debugging)
 
 ## Embedded Composite JavaScript
-Embedded scripting brings some peculiarity with it. The standard scripting is
-executed automatically by the browser and independently of the rendering.
-Therefore, markup for rendering has been extended by the additional script type
-`composite/javascript`, which uses the normal JavaScript but is not recognized
-by the browser in comparison to `text/javascript` and therefore not executed
-directly. But the renderer recognizes the JavaScript code and executes it in
-every relevant render cycle. In this way, the SCRIPT element can be combined
-with other composite attributes to control execution.
+Embedded scripting has specific runtime behavior. Standard scripts are executed
+automatically by the browser and independently of rendering. Markup for rendering
+therefore supports the additional script type `composite/javascript`. It uses
+normal JavaScript, but the browser does not recognize it as `text/javascript`
+and does not execute it directly. The renderer recognizes the JavaScript code
+and executes it in every relevant render cycle. This allows SCRIPT elements to
+be combined with other composite attributes to control execution.
 
 ```html
 <script type="composite/javascript">
@@ -42,16 +41,14 @@ with other composite attributes to control execution.
 ```
 
 ## Modules
-Modules are an integral part of the composite concept. This concept assumes that
-the resources for a composite (JS, CSS, HTML) are outsourced to the module
-directory and loaded at runtime. Which, among other things, should shorten the
-startup time and avoid linking or binding the modules to one application file,
-which is based on the idea for micro-frontend, so that platform and modules can
-be deployed independently.
+Modules are part of the composite concept. Composite resources (JS, CSS, HTML)
+can be outsourced to the module directory and loaded at runtime. This allows
+modules to be outsourced to the module directory and loaded at runtime,
+supporting modular deployment of platform and modules in micro-frontends.
 
-Modules can also be used in JavaScript without composites. For this purpose, the
-logic is also stored in individual files in the module directory and, if
-necessary, in further subdirectories.
+Modules can also be used in JavaScript without composites. The logic is stored
+in individual files in the module directory and, if necessary, in further
+subdirectories.
 
 ```
 + modules
@@ -76,13 +73,12 @@ __When calling modules, the file extension is omitted.__
 ```
 
 ## Macros
-Macros are a simple meta-syntax that fits into the existing JavaScript syntax.
-At their core, they are abbreviated notations or paraphrases for common
-JavaScript statements.
+Macros are a meta-syntax that fits into the existing JavaScript syntax. They are
+abbreviated notations for common JavaScript statements.
 
 ### #export
 Composite JavaScript is executed directly in an isolated runtime scope rather
-than as a script-element. Variables, constants and functions declared in a
+than as a script element. Variables, constants and functions declared in a
 module are local to that module and are not automatically available in the
 global scope or in other modules.
 
@@ -102,8 +98,8 @@ const utilities = {
 #export connector utilities;
 ```
 
-The names of the elements can be extended by namespaces for export, so that they
-are explicitly added there.
+Export names can include namespaces so that the elements are added there
+explicitly.
 
 ```javascript
 const connector = {
@@ -166,7 +162,7 @@ const value = "Hallo Welt!";
 ```
 
 ### #use
-The marko expects one or more space-separated namespaces to be created at the
+The macro expects one or more space-separated namespaces to be created at the
 object level if they do not already exist.
 
 ```javascript
@@ -176,28 +172,27 @@ object level if they do not already exist.
 ```
 
 ### (?...) tolerate
-A very special macro is the tolerating syntax `(?...)`. Thus, in case of an
-error, the logic enclosed in the brackets will not cause an error and there will
-be no output in the browser console. Instead, the brackets will represent the
-value `false`. Syntax errors are excluded from this tolerating behavior.
+The tolerating syntax `(?...)` is a special macro. If the logic inside the
+brackets causes an error, no error is raised and no output is written to the
+browser console. Instead, the brackets represent the value `false`. Syntax
+errors are excluded from this tolerating behavior.
 
 ```javascript
 const value = (?object.that.does.not.exist());
 ```
 
 ## Debugging
-Since resources and modules, which includes JavaScript, are loaded only at
-runtime, the browser does not know the sources and so the modules are not shown
-in the developer tools of the browsers, which is important for the use of break
-points, among other things. Therefore, the entry point into the JavaScript must
-be used here via the browser console, which, in addition to the text output,
-also contains a link to the source of the output. And via this link the source
-code of the modules can also be opened in the debugger and used as usual with
-break points.
+Resources and modules, including JavaScript, are loaded only at runtime. The
+browser therefore does not know the sources and does not show the modules in the
+developer tools. This is relevant for breakpoints. The entry point into the
+JavaScript must be accessed through the browser console. The console output also
+contains a link to the output source. This link opens the module source code in
+the debugger, where breakpoints can be used. Since modules are loaded
+dynamically at runtime, they are not initially available  in the developer tools
+of the browser.
 
-Therefore, modules should generate appropriate console output for debugging.
-This can be done manually via the `console` object or alternatively with the
-macro [#module](#module).
+Modules should generate console output for debugging. This can be done manually
+via the `console` object or with the macro [#module](#module).
 
 ```javascript
 #module example;

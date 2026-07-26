@@ -13,79 +13,76 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
- * 
- * 
+ *
+ *
  *     DESCRIPTION
  *     ----
- * Test is a simple API and module to implement and execute integration tests.
- * The tests can be implemented as suites, scenarios and test cases.
- * 
- * 
- *     Case
+ * Test is an API and module for implementing and executing integration tests.
+ * Tests can be organized as tasks, scenarios and suites.
+ *
+ *
+ *     Task
  *     ----
- * The smallest and simplest element in an integration test, used here as task,
- * because case is a keyword. It can be implemented alone, but is always used in
- * a scenario.
- * 
+ * The smallest component in an integration test is called task because `case`
+ * is a JavaScript keyword. A task can be implemented alone, but is always used
+ * in a scenario.
+ *
  *     Test.create({test() {
  *         Assert.assertTrue(true);
  *     }});
- * 
+ *
  *     Test.start();
- * 
- * 
+ *
+ *
  *     Scenario
  *     ----
- * A scenario is a sequence of a lot of test cases usually in one file.
- * 
+ * A scenario is a sequence of test tasks.
+ *
  *     Test.create({test() {
  *         Assert.assertTrue(true);
  *     }});
- * 
+ *
  *     Test.create({name:"example", timeout:1000, test() {
  *         Assert.assertTrue(true);
  *     }});
- * 
- *     Test.create({error:Error test() {
+ *
+ *     Test.create({expected: Error, test() {
  *         throw new Error();
  *     }});
- * 
- *     Test.create({error:/^My Error/i, test() {
+ *
+ *     Test.create({expected: /^My Error/i, test() {
  *         throw new Error("My Error");
  *     }});
- * 
+ *
  *     Test.create({ignore:true, test() {
  *         Assert.assertTrue(true);
  *     }});
- * 
+ *
  *     Test.start();
- * 
- * 
+ *
+ *
  *     Suite
  *     ----
- * A suite is a complex bundle of different test cases, scenarios and other
- * suites. Usually a suite consists of different files, which then represent a
- * complex test. In an ideal case, a suite is a cascade of different files where
- * the test can be started in any file and at any place. This makes it possible
- * to perform the integration test on different levels and with different
- * complexity.
- * 
- *     
+ * A suite is a bundle of test tasks, scenarios and other suites. A suite often
+ * consists of different files that represent a complex test. A cascade of files
+ * allows the test to start in any file and place. This supports integration
+ * tests on different levels and with different complexity.
+ *
+ *
  *     Assert
  *     ----
- * The test cases are implemented with assertions. The test module provides
- * elementary assertions, you can implement more. The function is simple. If an
- * assertion was not true, an error is thrown -- see as an example the
- * implementation here. 
+ * Test tasks are implemented with assertions. The Test API provides elementary
+ * assertions, and additional assertions can be implemented. If an assertion is
+ * not true, an error is thrown.
  *
- * The Test API is part of aspect-js but has to be activated deliberately,
- * otherwise it is not available.
+ *
+ * The Test API is part of aspect-js but must be activated explicitly.
  *
  *     Test.activate();
  *
- * This is necessary so that some enhancements to the JavaScript API that
- * are helpful for implementing test are not used productively. For example,
- * the redirection and caching of console output.
+ * Activation is required because the Test API changes error handling and
+ * console output and extends parts of the JavaScript API for testing. For
+ * example, console output is forwarded and buffered.
  */
 (() => {
 
@@ -221,11 +218,11 @@
              *         Assert.assertTrue(true);
              *     }});
              * 
-             *     Test.create({error:Error test() {
+             *     Test.create({expected:Error test() {
              *         throw new Error();
              *     }});
              * 
-             *     Test.create({error:/^My Error/i, test() {
+             *     Test.create({expected:/^My Error/i, test() {
              *         throw new Error("My Error");
              *     }});
              * 

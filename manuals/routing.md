@@ -1,16 +1,14 @@
-&#9665; [Model-View-Controller](mvc.md)
+&#9665; [View-Module Binding](binding.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#routing)
 &nbsp;&nbsp;&nbsp;&nbsp; [DataSource](datasource.md) &#9655;
 - - -
 
 # Routing
-The presentation of the page can be organized in Seanox aspect-js in views,
-which are addressed via paths (routes). For this purpose, the routing supports a
-hierarchical directory structure based on the IDs of the nested composites in
-the markup. The routing then controls the visibility and permission for
-accessing the views via paths - the so-called view flow. For the view flow and
-the permission, the routing actively uses the DOM to insert and remove the views
-depending on the situation.
+Seanox aspect-js can organize page presentation in views addressed by paths
+(routes). Routing supports a hierarchical directory structure based on the IDs
+of nested composites in the markup. It controls visibility and access permission
+for views through paths, the so-called view flow. Routing uses the DOM to insert
+and remove views depending on the situation.
 
 ```
 +-----------------------------------------------+
@@ -43,15 +41,15 @@ depending on the situation.
 ## Terms
 
 ### Page
-In a single page application, the page is the elementary framework and runtime
+In a single page application, the page is the basic framework and runtime
 environment of the entire application.
 
 ### View
-A view is the primary projection of models/components/content. This projection
-can contain additional substructures in the form of views and sub-views. Views
-can be static, always shown, or with attribute `route` path-controlled. Paths
-address the complete chain of nested views and shows the parent views in
-addition to the target view.
+A view is the primary projection of modules, components or content. This
+projection can contain additional views and sub-views. Views can be static,
+always shown, or path-controlled with the attribute `route`. Paths address the
+complete chain of nested views and show the parent views in addition to the
+target view.
 
 ```html
 <body route>
@@ -82,10 +80,10 @@ provides interfaces, events, permission concepts and interceptors with which the
 view flow can be controlled and influenced.
 
 ## Navigation
-Navigation is based on paths that use the hash in the URL. It is effected by
-changing the URL hash in the browser (direct input), by using hash links and in
-JavaScript with `window.location.hash`, `window.location.href`,
-`Routing.route(path)` and `Routing.forward(path)`.
+Navigation is based on paths that use the URL hash. It is triggered by changing
+the URL hash in the browser, by using hash links and in JavaScript with
+`window.location.hash`, `window.location.href`, `Routing.route(path)` and
+`Routing.forward(path)`.
 
 ```html
 <a href="#a#b#c">Goto root + a + b + c</a>
@@ -105,8 +103,8 @@ Routing.forward("##");
 Routing.forward("##x");
 ```
 
-In difference to the navigate method, the forwarding is executed directly
-instead of triggering an asynchronous forwarding by changing the location hash.
+Unlike the navigate method, forwarding is executed directly and does not trigger
+asynchronous forwarding by changing the location hash.
 
 Relative paths without hash at the beginning are possible, but only work with
 `Routing.route(path)` and `Routing.forward(path)`.
@@ -120,17 +118,15 @@ Routing.forward("x#y#z");
 > __Links with these paths are interpreted by the browser as a reference to
 > another page.__
 
-__Explanation of how paths work: Routing will accept all paths (routes). There
-are no invalid ones if the paths only use 7-bit ASCII characters. The routing
-will cover the destinations that the path covers from the root. Subsequent
-components of the path are regarded as path parameters and can be used in the
-business logic of the views. If special characters are required for the
-parameters, these are URL-encoded.__
+__Routing accepts all paths (routes) that only use 7-bit ASCII characters. It
+covers the destinations from the root. Subsequent path components are treated as
+path parameters and can be used in the business logic of the views. Special
+characters in parameters are URL-encoded.__
 
 ## Permission Concept
-The permission concept is based on permit methods in the models, which are
-called each (re-)rendering if the model has implemented the permit method. Then
-the following return values are possible:
+The permission concept is based on permit methods in modules. The runtime calls
+the permit method during each (re-)rendering if the module implements it. These
+return values are possible:
 
 ### undefined / no return value
 The view is shown if the current path covers the path of the view.
@@ -175,12 +171,11 @@ the new hash as parameters.
 Routing.customize("#a#b#c", (previousHash, newHash) => {
     console.log("Navigation from", previousHash, "to", newHash);
 });
-````
+```
 
-Interceptors are processed before routing checks the path validity, resolves the
-target view and updates the view flow. They are therefore suitable for tasks
-such as authentication checks, redirects, route migration or custom navigation
-handling.
+Interceptors are processed before routing checks path validity, resolves the
+target view and updates the view flow. They are suitable for tasks such as
+authentication checks, redirects, route migration or custom navigation handling.
 
 ### Execution order
 Interceptors are executed in the order in which they were registered.
@@ -223,7 +218,7 @@ but not:
 #c#b#a
 ```
 
-Regular expressions can be used for more flexible matching:
+Regular expressions can be used for pattern-based matching:
 
 ```javascript
 Routing.customize(/^#a#\d+$/, actor);
@@ -246,20 +241,19 @@ Routing.customize("#old-path", (oldHash, newHash) => {
 Because interceptors are executed sequentially, subsequent interceptors operate
 on the updated navigation target.
 
-__Interceptors are executed before the normal routing process. Therefore,
-changes made by interceptors directly affect the following path resolution and
-view rendering.__
+__Interceptors are executed before the normal routing process. Changes made by
+interceptors directly affect the following path resolution and view rendering.__
 
 ## Paths
-Paths are used for navigation, routing and controlling the view flow. The target
-can be a view or a function if using interceptors. For SPAs (single-page
+Paths are used for navigation, routing and view-flow control. The target can be
+a view or, when using interceptors, a function. For SPAs (single-page
 applications), the anchor part of the URL is used for navigation and routes.
 
 ```
 https://example.local/example/#path
 ```
 
-Similar to a file system, absolute and relative paths are also supported here.
+Similar to a file system, absolute and relative paths are supported.
 Paths consist of case-sensitive words that only use 7-bit ASCII characters above
 the space character. Characters outside this range are URL encoded. The words
 are separated by the hash character (`#`). 
@@ -294,7 +288,7 @@ Routing.forward("x#y#z");
 > __Links with these paths are interpreted by the browser as a reference to
 > another page.__
 
-There are different types of paths, which are explained below.
+The following path types are supported.
 
 ### Root Path
 These paths are empty or contain only one hash character.
@@ -334,6 +328,6 @@ Absolute Paths start with the root, represented by a leading hash sign (`#`).
 
 
 - - -
-&#9665; [Model-View-Controller](mvc.md)
+&#9665; [View-Module Binding](binding.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#routing)
 &nbsp;&nbsp;&nbsp;&nbsp; [DataSource](datasource.md) &#9655;

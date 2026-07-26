@@ -4,11 +4,10 @@
 - - -
 
 # Markup
-With Seanox aspect-js the declarative approach of HTML is taken up and extended.
-In addition to the expression language, the HTML elements are provided with
-additional attributes for functions and View Model Binding. The corresponding
-renderer is included in the composite implementation and actively monitors the
-DOM starting from the BODY element via the MutationObserver and works and reacts
+Seanox aspect-js extends the declarative approach of HTML. In addition to the
+expression language, HTML elements get attributes for runtime functions and
+View-Module Binding. The renderer is part of the composite implementation. It
+monitors the DOM from the BODY element with MutationObserver and reacts
 recursively to changes.
 
 ## Contents Overview
@@ -36,12 +35,11 @@ recursively to changes.
 - [Protection](#protection)
 
 ## Attributes
-In Seanox aspect-js, the declarative approach is implemented with attributes
-that can be used and combined in all HTML elements starting from the HTML
-element `BODY`, which is included. The values of the attributes can be static or
-dynamic with the use of the expression language. If an attribute contains an
-expression, the value is updated by the renderer with each refresh (render
-cycle) based on the initial expression.
+In Seanox aspect-js, the declarative approach is implemented with attributes.
+They can be used and combined in all HTML elements starting with the HTML
+element `BODY`. Attribute values can be static or dynamic through the expression
+language. If an attribute contains an expression, the renderer updates the value
+with each render cycle based on the initial expression.
 
 ### composite
 Marks an element in the markup as a [Composite](composite.md). Composites are
@@ -53,29 +51,24 @@ essential components that require an identifier (ID / Composite ID).
 </article>
 ```
 
-As a component, composites are composed of various [Ressourcen](
-    composite.md#ressourcen) (markup, CSS, JS) that can be outsourced to the
-module directory based on the (composite) ID and are only loaded at runtime when
-used.
+As a component, composites are composed of various [resources](
+    composite.md#resources) (markup, CSS, JS). They can be outsourced to the
+module directory based on the Composite ID and are loaded at runtime when used.
 
-Composites are also the basis for [view model binding](
-    mvc.md#view-model-binding), which involves connecting HTML elements in the
-markup (view) with corresponding JavaScript objects (models). Models are static
-JavaScript objects that provide data, states, and functions for the view,
-similar to managed beans and DTOs (Data Transfer Objects). The view as
-presentation and user interface for interactions and the model are primarily
-decoupled. For the MVVM (Model-View-ViewModel) approach, as an extension to the
-MVC ([Model View Controller](mvc.md#model-view-controller)), the controller
-links views and models bidirectionally based on the composite IDsand so no
-manual implementation and declaration of events, interaction or synchronization
-is required.
+Composites are also the basis for [View-Module Binding](
+    binding.md#view-module-binding). It connects HTML elements in the markup
+(view) with corresponding JavaScript objects. The view as presentation and user
+interface for interactions remains decoupled from the application module.
+Application modules provide the data, state and behavior that are exposed to the
+view through View-Module Binding. Binding links views and modules
+bidirectionally based on the Composite IDs, so manual declaration of events,
+interaction or synchronization is not required.
 
-The [Routing](routing.md#routing) uses composites as [views](routing.md#view)
-for the primary projection of JavaScript objects (models), which means that they
-can be used as targets for paths in the [view flow](routing.md#view-flow), which
-has a direct influence on the visibility of the composites. When routing is
-active, composites can be marked with attribute [route](#route) so that their
-visibility is controlled by routing through paths and the permission concept.
+[Routing](routing.md#routing) uses composites as [views](routing.md#view). They
+can be path targets in the [view flow](routing.md#view-flow), which controls the
+visibility of composites. When routing is active, composites can be marked with
+attribute [route](#route) so that routing controls their visibility through
+paths and the permission concept.
 
 ```html
 <article id="example" composite route>
@@ -84,7 +77,8 @@ visibility is controlled by routing through paths and the permission concept.
 ```
 
 Details on the use of composites / modular components are described in chapter
-[Composites](composite.md) and [Model View Controller](mvc.md).
+[Composites](composite.md) and [View-Module Binding](
+    binding.md#view-module-binding).
 
 ### condition
 As a condition, the attribute specifies whether an element remains contained in
@@ -126,16 +120,14 @@ Details about using embedded JavaScript are described in chapter [Scripting](
 
 ### events
 Binds one or more [events](https://www.w3.org/TR/DOM-Level-3-Events) to an HTML
-element. This allows event-driven synchronization of HTML elements with
-corresponding JavaScript objects (models), as well as validation of the data to
-be synchronized (see [validate](#validate) for more information) and
-event-driven control and refreshing of other HTML elements (see [render](
-    #render) for more information).
+element. This allows for event-driven synchronization of HTML elements with
+corresponding JavaScript objects, validation of synchronized data (see
+[validate](#validate)) and event-driven control and refreshing of other HTML
+elements (see [render](#render)).
 
-As with all attributes, the expression language is applicable here, with the
-difference that changes at runtime have no effect, since the attribute or the
-value for the view model binding is only processed initially as long as the HTML
-element exists in the DOM.
+As with all attributes, the expression language can be used here. Runtime
+changes have no effect because the attribute value for View-Module Binding is
+processed only initially while the HTML element exists in the DOM.
 
 ```html
 <span id="output1">{{#text1.value}}</span>
@@ -143,9 +135,9 @@ element exists in the DOM.
     events="input change" render="#output1"/>
 ```
 
-Example of synchronous refreshing of the HTML element _output1_ with the events
-_Input_ or _Change_ at the HTML element _text1_. In the example, the input value
-of _text1_ is output synchronously with _output1_.
+The example synchronously refreshes the HTML element _output1_ with the events
+_Input_ or _Change_ at the HTML element _text1_. The input value of _text1_ is
+output synchronously with _output1_.
 
 ```javascript
 const model = {
@@ -165,21 +157,19 @@ const model = {
 </form>
 ```
 
-Example of the combined use of the attributes `events` and `validate`. In the
-example, the input value from the composite field _text1_ is transferred to the
-field of the same name in the JavaScript object only if at least one of the
-events: _Input_ or _Change_ occurs.
+The example combines the attributes `events` and `validate`. The input value
+from the composite field _text1_ is transferred to the field of the same name in
+the JavaScript object only if the event _Input_ or _Change_ occurs.
 
 ### id
-The ID (identifier) has an elementary meaning in Seanox aspect-js. It is the
-basis for [view model binding](mvc.md#view-model-binding) and is used by
+The ID (identifier) has a central role in Seanox aspect-js. It is the basis for
+[View-Module Binding](binding.md#view-module-binding) and is used by
 [Routing](routing.md#routing) for [views](routing.md#view) in the [view flow](
-    routing.md#view-flow) and thus as a destination for paths.
+    routing.md#view-flow) and as a destination for paths.
 
-As with all attributes, the expression language can be used, with the difference
-that the attribute is only read at the beginning. Due to the view model binding,
-changes to an existing element at runtime have no effect as long as it exists in
-the DOM.
+As with all attributes, the expression language can be used. The attribute is
+only read at the beginning. Due to View-Module Binding, changes to an existing
+element at runtime have no effect while it exists in the DOM.
 
 ### import
 Loads the content for the HTML element at runtime and inserts it as inner HTML.
@@ -257,8 +247,8 @@ for data and transformation are derived from it.
 
 Example of importing a DataSource-URL with a specific data URL (locator) and
 transformation URL. As a value, the data URL (locator of the XML file) and the
-transformation URL (locator of the XSLT template) are is specified, separated by a
-blank character. 
+transformation URL (locator of the XSLT template) are is specified, separated by
+a blank character. 
 
 ```html
 <article import="{{'xml://example/data + xslt://example/style'}}">
@@ -279,8 +269,8 @@ the same name is derived from the XML locator.
 
 When inserting content from the DataSource, the type of JavaScript blocks is
 automatically changed to `composite/javascript` and only executed by the
-renderer. This ensures that the JavaScript is  executed depending on the
-enclosing condition attribute.
+renderer. This results in JavaScript being executed depending on the enclosing
+condition attribute.
 
 ### interval
 Activates an interval-controlled refresh of the HTML element without the need to
@@ -305,12 +295,12 @@ refreshing automatically and ends when:
 </span>
 ```
 
-The interval attribute can be used for simple HTML elements and also complex
-HTML constructs. For example, the SPAN element is updated every 1000ms. An
-active interval reacts dynamically to changes in the DOM and starts
-automatically when the HTML element is added to the DOM and ends when it is
-removed from the DOM. This makes the interval attribute easy to use and control
-in combination with the condition attribute.
+The interval attribute can be used for HTML elements and complex HTML
+constructs. For example, the SPAN element is updated every 1000ms. An active
+interval reacts dynamically to DOM changes. It starts automatically when the
+HTML element is added to the DOM and ends when it is removed from the DOM. This
+makes the interval attribute controllable in combination with the condition
+attribute.
 
 ```html
 <span interval="1000" condition="{{model.isVisible()}}">
@@ -318,8 +308,8 @@ in combination with the condition attribute.
 </span>
 ```
 
-For example, with the combination of interval and the variable expression, the
-implementation of a permanent counter is simple.
+For example, interval and a variable expression can implement a permanent
+counter.
 
 ```html
 {{counter:0}}
@@ -342,10 +332,10 @@ JavaScript as a composite JavaScript.
 Iterative output is based on lists, enumerations and arrays. If an HTML element
 is declared as iterative, the inner HTML is used as a template from which
 updated content is generated and inserted as inner HTML with each render cycle.
-As value for the attribute a [variable expression](
-    expression.md#variable-expression) is expected, for which a meta-object will
-be created, which allows access to the iteration in the template. Thus, the
-variable expression `iterate={{tempA:model.list}}` creates the meta-object
+The attribute value expects a [variable expression](
+    expression.md#variable-expression). It creates a meta-object that allows
+access to the iteration in the template. The variable expression
+`iterate={{tempA:model.list}}` creates the meta-object
 `tempA = {item, index, data}`.
 
 ```javascript
@@ -363,13 +353,12 @@ const model = {
 ```
 
 > [!NOTE]
-> If using arrays in combination with reactive objects, please note that iterate
-> accesses the arrays directly. If the array is a simple list of values, changes
-> to the values also mean a change to the array, which triggers the re-rendering
-> of the iterate. Should the values in the array be changed at runtime without
-> triggering a re-rendering of the iterate, the array must contain objects with
-> the values, because setting the value in the objects does not cause a change
-> in the array itself and therefore no re-renderingis triggered.  
+> If arrays are used with reactive objects, iterate accesses the arrays
+> directly. If the array is a list of values, value changes also change the
+> array and trigger re-rendering of the iterate. To change values at runtime
+> without triggering re-rendering of the iterate, the array must contain objects
+> with the values. Setting the value in the objects does not change the array
+> itself and therefore does not trigger re-rendering.
 > 
 > Alternatively, the length of the array can also be passed to the iterate. It
 > then generates a list of values with the index without accessing the elements.
@@ -488,8 +477,8 @@ for data and transformation are derived from it.
 
 Example of outputting a DataSource-URL with a specific data URL (locator) and
 transformation URL. As a value, the data URL (locator of the XML file) and the
-transformation URL (locator of the XSLT template) are is specified, separated by a
-blank character.
+transformation URL (locator of the XSLT template) are is specified, separated by
+a blank character.
 
 ```html
 <article output="{{'xml://example/data + xslt://example/style'}}">
@@ -510,7 +499,7 @@ the same name is derived from the XML locator.
 
 When inserting content from the DataSource, the type of JavaScript blocks is
 automatically changed to `composite/javascript` and only executed by the
-renderer. This ensures that the JavaScript is only executed depending on the
+renderer. This results in JavaScript being only executed depending on the
 enclosing condition attribute.
 
 ### release
@@ -578,9 +567,9 @@ __Alternatively, [reactive rendering](reactive.md) can be used, where changes in
 the data objects trigger a partial update of the view.__
 
 ### route
-The route attribute marks a composite as a path-addressable destination and is
-therefore included in the path-based control and the internal permission concept
-of routing. The attribute can only be used in the BODY tag and otherwise in
+The route attribute marks a composite as a path-addressable destination and
+includes it in path-based control and the internal permission concept of
+routing. The attribute can be used in the BODY tag and otherwise only in
 combination with the attribute composite.
 
 > [!NOTE]
@@ -591,25 +580,23 @@ combination with the attribute composite.
 [Learn more](routing.md#view)
 
 ### validate
-The attribute `validate` requires the combination with the attribute `events`.
-Together they define and control the synchronization between the markup of a
-composite and the corresponding JavaScript object (model), where a property with
-the same name must exist as a target for synchronization.
+The attribute `validate` requires the attribute `events`. Together they define
+and control synchronization between the markup of a composite and the
+corresponding JavaScript object. A property with the same name must exist as the
+synchronization target.
 
-The validation works in two steps and uses the standard HTML5 validation at the
-beginning. If this cannot determine deviations from the expected result or if no
-HTML5 validation is specified, the validation of the JavaScript object is used
-if the model provides a corresponding validate method
-`boolean validate(element, value)` and the element to be validated is embedded
-in a composite.
+Validation works in two steps and starts with standard HTML5 validation. If this
+does not detect deviations from the expected result or no HTML5 validation is
+specified, the JavaScript object validation is used. This requires a
+corresponding validate method `boolean validate(element, value)` and an element
+embedded in a composite.
 
-The synchronization and the default action of the browser are directly
-influenced by the validation. This can use for it four states as return values:
-`true`, `not true`, `text`, `undefined/void`.
+Validation directly affects synchronization and the browser default action. It
+can use four return states: `true`, `not true`, `text`, `undefined/void`.
 
 #### true
-The validation was successful. No error is shown and the default action of the
-browser is used. If possible the value is synchronized with the model.
+Validation was successful. No error is shown and the browser default action is
+used. If possible, the value is synchronized.
 
 #### not true and not undefined/void
 The validation failed and an error is shown. The return value indicates that the
@@ -656,7 +643,7 @@ expressions, must begin as follows: `@<attribute>:`.
 
 A general strategy or standard implementation for error output is deliberately
 not provided, as this is too strict in most cases and can be implemented
-individually as a central solution with little effort.
+individually as a central solution.
 
 ```css
 input[type='text']:not([fault]) {
@@ -676,8 +663,8 @@ input[type='text'][fault]:not([fault='']) {
 ```javascript
 const model = {
     validate(element, value) {
-        const PATTER_EMAIL_SIMPLE = /^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$/;
-        const test = PATTER_EMAIL_SIMPLE.test(value);
+        const PATTERN_EMAIL_SIMPLE = /^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$/;
+        const test = PATTERN_EMAIL_SIMPLE.test(value);
         return test || ("Invalid " + element.getAttribute("placeholder"));
     },
     text1: ""
@@ -733,14 +720,13 @@ Details about syntax and usage are described in chapter [Expression Language](
     expression.md).
 
 ## Scripting
-Embedded scripting brings some peculiarity with it. The standard scripting is
-executed automatically by the browser and independently of the rendering.
-Therefore, markup for rendering has been extended by the additional script type
-`composite/javascript`, which uses the normal JavaScript but is not recognized
-by the browser in comparison to `text/javascript` and therefore not executed
-directly. But the renderer recognizes the JavaScript code and executes it in
-every relevant render cycle. In this way, the execution of the SCRIPT element
-can also be combined with the `condition` attribute.
+Embedded scripting has specific runtime behavior. Standard scripts are executed
+automatically by the browser and independently of rendering. Markup for
+rendering therefore supports the additional script type `composite/javascript`.
+It uses normal JavaScript, but the browser does not recognize it as
+`text/javascript` and does not execute it directly. The renderer recognizes the
+JavaScript code and executes it in every relevant render cycle. This allows
+SCRIPT execution to be combined with the `condition` attribute.
 
 ```html
 <script type="composite/javascript">
@@ -773,11 +759,10 @@ Composite.customize("foo", function(element) {
 ```
 
 ### Selector
-Selectors work similar to custom tags. Compared to these, selectors use a CSS
+Selectors work similarly to custom tags. Unlike custom tags, selectors use a CSS
 selector to recognize elements. This selector must address the element from the
-point of view of the parent element. Selectors are more flexible and
-multifunctional. In this way, different selectors with different functions can
-affect one element.
+parent element. Different selectors with different functions can affect one
+element.
 
 Selectors are iterated in order of registration and then their callback methods
 are executed. The return value of the callback method determines whether the
@@ -802,11 +787,9 @@ Composite.customize("a.foo", function(element) {
 ```
 
 ### Interceptor
-Interceptors are a special way of customizing the rendering. Compared to the
-other possibilities, this is about manipulating elements before rendering. This
-allows individual changes to attributes and/or the markup before the renderer
-processes them. Thus, an interceptor has no effect of the implementation of the
-rendering.
+Interceptors customize rendering by manipulating elements before rendering. They
+can change attributes and/or markup before the renderer processes them. An
+interceptor has no effect on the rendering implementation.
 
 ```javascript
 Composite.customize(function(element) {

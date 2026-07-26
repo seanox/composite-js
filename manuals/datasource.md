@@ -4,12 +4,11 @@
 - - -
 
 # DataSource
-Immutable XML data source for static application data, combining structured XML
-storage with multilingual data separation, optional aggregation, and
-transformation capabilities via XPath and XSLT. The concept combines the
-characteristics of a read-only database and a content management system,
-targeting application-provided data that is accessed primarily through queries
-and transformations.
+DataSource is an immutable XML data source for static application data. It
+combines structured XML storage with multilingual data separation, optional
+aggregation and transformations through XPath and XSLT. The concept combines
+characteristics of a read-only database and a content management system for
+application-provided data accessed through queries and transformations.
 
 ## Contents Overview
 - [Data Storage](#data-storage)
@@ -22,11 +21,11 @@ and transformations.
 - [Notes](#notes)
 
 ## Data Storage
-By default, the data storage is located as `./data` relative to the application
-directory. The data storage contains the supported languages as subdirectories.
-Each language contains its own content. Redundant data/fields and more
-subdirectories corresponds to the concept. The DataSource primarily uses XML
-files. Optionally, a transformation with XSLT is possible.
+By default, the data storage is located in `./data` relative to the application
+directory. It contains the supported languages as subdirectories. Each language
+contains its own content. Redundant data/fields and additional subdirectories
+belong to the concept. DataSource primarily uses XML files. XSLT transformations
+are optional.
 
 ```
 + data
@@ -59,26 +58,25 @@ The supported languages are organized in locales in the `locales.xml` file.
 </locales>
 ```
 
-The language is selected automatically on the basis of the language setting of
-the browser. If the language set there is not supported, the language declared
-as `default` is used.
+The language is selected automatically from the browser language setting. If
+that language is not supported, the language declared as `default` is used.
 
-At runtime, the language can be changed via JavaScript with the locale. But only
-locales that are available with the DataSource are accepted. Other values cause
-an error when the method is called.
+At runtime, JavaScript can change the language with the locale. Only locales
+available in the DataSource are accepted. Other values cause an error when the
+method is called.
 
 ```javascript
 DataSource.localize("de");
 ```
 
-The currently used language can be retrieved via `DataSource.locale`. All
-available languages are returned by `DataSource.locales` as an array that starts
-with the as default declared language.
+The current language can be retrieved via `DataSource.locale`.
+`DataSource.locales` returns all available languages as an array that starts
+with the language declared as default.
 
 ## Locator
-The data in the data storage is addressed via a locator, which is a URL
-(`xml://...` or `xslt://...`), where both single and double slashes are
-supported. A locator can be used contextually or explicitly.
+Data in the data storage is addressed through a locator URL (`xml://...` or
+`xslt://...`). Single and double slashes are supported. A locator can be used
+contextually or explicitly.
 
 - __Contextual Locator__: Uses an absolute path without a file extension
   relative to the DataSource directory and does not contain a locale (language 
@@ -91,9 +89,9 @@ supported. A locator can be used contextually or explicitly.
   path based on the current URL and is not enriched with the locale.
 
 Each locator starts with a protocol that corresponds to the file extension in
-the data storage. __Only lowercase letters are accepted here__, as the automatic
-derivation of the corresponding file extension is too time-consuming when both
-uppercase and lowercase letters are combined.
+the data storage. __Only lowercase letters are accepted here__, because
+deriving the corresponding file extension is too time-consuming when uppercase
+and lowercase letters are combined.
 
 ```
 xml://fileA -> ./data/en/fileA.xml
@@ -104,16 +102,15 @@ xslt://data/en/foo/fileA.xslt -> ./data/en/foo/fileA.xslt
 ```
 
 ## XPath and XPath Functions
-The DataSource uses XPath and XPath function as a functional query language.
-Locator and transformation support this language and thus provide dynamic data
-access. __In the further documentation, only the term XPath is used, which
-includes the use of XPath functions.__
+DataSource uses XPath and XPath functions as a functional query language.
+Locators and transformations support this language and provide dynamic data
+access. __The following documentation uses the term XPath for XPath and XPath
+functions.__
 
 For more information about XPath please read:
 https://www.w3schools.com/xml/xpath_intro.asp.
 
-Only for XML locators can the XPath be added at the end, separated by a question
-mark.
+XPath can be added only to XML locators, separated by a question mark.
 
 ```
 xml://fileA?//*/@title
@@ -141,13 +138,10 @@ value of the addressed text node is then the content of the node.
 ```
 
 ## fetch
-Fetches data for a locator as _XMLDocument_ or as _boolean_, _number_, _string_,
-_NodeList_ or _null_ when using XPath. When querying nodes using XPath, nodes
-are always returned. This also includes attributes and text nodes. Attributes
-are returned as nodes with the name _attribute_. The name and value of the
-addressed attribute are represented in the node as attributes _name_ and
-_value_. Text nodes are also returned as nodes, but then with the name _text_.
-The content of the addressed text node is then the content of the node.
+Fetches data for a locator as _XMLDocument_ or, when using XPath, as _boolean_,
+_number_, _string_, _NodeList_ or _null_. XPath node queries return nodes,
+including attributes and text nodes, as described in
+[XPath and XPath Functions](#xpath-and-xpath-functions).
 
 ```javascript
 const document = DataSource.fetch("xml://paper");
@@ -156,35 +150,33 @@ const data = DataSource.fetch("xml://paper?//*/@price");
 ```
 
 ## transform
-The transformation via XSLT (1.0) of XML data provides an additional way for
-dynamically data and content and can already be done with the fetch method,
-which is based on locators. Sometimes it is necessary to work directly with the
-XMLDocument. In these cases the transform method can be used, because the method
-accepts XMLDocument as well locator (also in a mix).
+XSLT (1.0) transformation of XML data provides another way to create dynamic
+data and content. This can already be done with the locator-based fetch method.
+If direct access to the XMLDocument is required, use the transform method. It
+accepts XMLDocument and locators, also in combination.
 
 ```javascript
 DataSource.transform("xml://paper", "xslt://article");
 ```
 
-The specification of the stylesheet when using XML locators is optional. Without
-the specification, the stylesheet is automatically derived from the XML
-locators.
+The stylesheet specification is optional when using XML locators. Without it,
+the stylesheet is derived from the XML locators.
 
 ```javascript
 DataSource.transform("xml://paper");
 ```
 
-As an extension, a meta-object with data for the XSLT processor can be passed to
-the transfromation, which can then be used in the XSLT stylesheet.
+A meta-object with data for the XSLT processor can be passed to the
+transformation and used in the XSLT stylesheet.
 
 ```javascript
 DataSource.transform("xml://paper", {...});
 DataSource.transform("xml://paper", "xslt://article", {...});
 ```
 
-And the XML locator also supports XPath for transformation. For this purpose,
-the collected data is collected in an artificial XMLDocument with the root
-element _data_, which is then used as the basis for the transformation.
+The XML locator also supports XPath for transformation. The collected data is
+stored in an artificial XMLDocument with the root element _data_, which is used
+as the basis for the transformation.
 
 ```javascript
 DataSource.transform("xml://paper?//*/@price");
@@ -193,22 +185,22 @@ DataSource.transform("xml://paper?//*/@price", {...});
 DataSource.transform("xml://paper?//*/@price", "xslt://article", {...});
 ```
 
-During the transformation a new XMLDocument is created. Depending on the browser
-and XSLT processor, the structure of XMLDocument is different. Therefore, by
-default the root entity will be returned as a node. The behavior can be changed
-with option `raw`. If this is `true`, the XMLDocument is returned as original.
+During transformation, a new XMLDocument is created. Its structure depends on
+the browser and XSLT processor. By default, the root entity is returned as a
+node. The option `raw` changes this behavior. If `raw` is `true`, the original
+XMLDocument is returned.
 
-Another feature concerns JavaScript elements. Their type is automatically
-changed to `composite/javascript` so that they are not executed automatically
-when embedding, but are deliberately interpreted by the renderer. This is
-important when using [condition](markup.md#condition).
+JavaScript elements are also handled. Their type is changed automatically to
+`composite/javascript` so that they are not executed during embedding, but are
+interpreted by the renderer. This is important when using [condition](
+    markup.md#condition).
 
-Another feature concerns the creation/output of text during the transformation.
-The XSLT Processor always generates XML valid text output. Any XML syntax in a
-text is automatically masked. This makes the generation of markup difficult. The
-attribute `escape` was introduced for this purpose and can be used in XML and/or
-XSLT files. The attribute expects the values `yes`, `on`, `true` or `1`. In this
-case the automatic escaping is cancelled or undone.
+Text creation/output during transformation has another special behavior. The
+XSLT Processor always generates XML-valid text output. Any XML syntax in text is
+escaped automatically, which makes markup generation difficult. The attribute
+`escape` can be used in XML and/or XSLT files for this case. It expects the
+values `yes`, `on`, `true` or `1`. These values cancel or undo automatic
+escaping.
 
 ```xml
 <?xml version="1.0"?>
@@ -231,7 +223,7 @@ case the automatic escaping is cancelled or undone.
 <article escape="on">
   <![CDATA[
   <p>
-    Seanox aspect-js is a browser-native application runtime for single-pag
+    Seanox aspect-js is a browser-native application runtime for single-page
     applications (SPAs) and micro-frontends.
   </p>
   <a href="https://github.com/seanox/aspect-js">read more</a>
@@ -241,8 +233,8 @@ case the automatic escaping is cancelled or undone.
 
 ## collect
 Content from multiple XML files can be collected and concatenated into a new
-XMLDocument. The various contents are combined under one collector, whose name
-can be defined yourself.
+XMLDocument. The contents are combined under one collector with a configurable
+name.
 
 As an example, 3 XML files: paper.xml, envelope.xml, pen.xml
 

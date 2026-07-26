@@ -3,7 +3,7 @@
 ## Table Of Contents 
 - __[Motivation](#motivation)__
 - __[Introduction](#introduction)__
-- __[Getting Started](#introduction)__
+- __[Getting Started](getting-started.md#getting-started)__
 - __[Language](#language)__
   - [Expression Language](expression.md#expression-language)
   - [Markup](markup.md#markup)
@@ -11,7 +11,7 @@
 - __[Components](#components)__  
   - [Composite](composite.md#composite)
   - [Reactivity Rendering](reactive.md#reactivity-rendering)
-  - [View-Module Binding](binding.md#view-module-binding)
+  - [View-Module Binding](view-module-binding.md#view-module-binding)
   - [Routing](routing.md#routing)
 - __[Runtime](#runtime)__  
   - [DataSource](datasource.md#datasource)
@@ -27,7 +27,15 @@
 
 ### Introduction
 - __[Introduction](introduction.md#introduction)__
-- __[Getting Started](introduction.md#getting-started)__
+
+### Getting Started
+- __[Getting Started](getting-started.md#getting-started)__
+  - [Prerequisites](getting-started.md#prerequisites)
+  - [Choose a Runtime Variant](getting-started.md#choose-a-runtime-variant)
+  - [First Composite](getting-started.md#first-composite-explicit-rendering-flow)
+  - [What the Runtime Does Here](getting-started.md#what-the-runtime-does-here)
+  - [Optional Next Step: Reactive Model](getting-started.md#optional-next-step-reactive-model)
+  - [Learning Path](getting-started.md#learning-path)
 
 ### Language
 - __[Expression Language](expression.md#expression-language)__
@@ -96,22 +104,22 @@
   - [Namespace](composite.md#namespace)
   - [Notes](composite.md#notes)
 - __[Reactivity Rendering](reactive.md#reactivity-rendering)__
-- __[View-Module Binding](binding.md#view-module-binding)__
-  - [Application Module](binding.md#application-module)
-  - [View](binding.md#view)
-  - [Application Runtime](binding.md#application-runtime)
-  - [Composite](binding.md#composite)
-  - [Binding](binding.md#binding)
-  - [Synchronization](binding.md#synchronization)
-  - [Validation](binding.md#validation)
-  - [Events](binding.md#events)
-  - [Dock](binding.md#dock)
-  - [Undock](binding.md#undock)
-  - [Architectural Patterns](binding.md#architectural-patterns)
-    - [MVC](binding.md#mvc)
-    - [MVVM](binding.md#mvvm)
-    - [MVCS](binding.md#mvcs)
-    - [Other Architectures](binding.md#other-architectures)
+- __[View-Module Binding](view-module-binding.md#view-module-binding)__
+  - [Application Module](view-module-binding.md#application-module)
+  - [View](view-module-binding.md#view)
+  - [Application Runtime](view-module-binding.md#application-runtime)
+  - [Composite](view-module-binding.md#composite)
+  - [Binding](view-module-binding.md#binding)
+  - [Synchronization](view-module-binding.md#synchronization)
+  - [Validation](view-module-binding.md#validation)
+  - [Events](view-module-binding.md#events)
+  - [Dock](view-module-binding.md#dock)
+  - [Undock](view-module-binding.md#undock)
+  - [Architectural Patterns](view-module-binding.md#architectural-patterns)
+    - [MVC](view-module-binding.md#mvc)
+    - [MVVM](view-module-binding.md#mvvm)
+    - [MVCS](view-module-binding.md#mvcs)
+    - [Other Architectures](view-module-binding.md#other-architectures)
 - __[Routing](routing.md#routing)__
   - [Terms](routing.md#terms)
     - [Page](routing.md#page)
@@ -141,7 +149,7 @@
     - [Composite.EVENT_RENDER_START](events.md#compositeevent_render_start)
     - [Composite.EVENT_RENDER_NEXT](events.md#compositeevent_render_next)
     - [Composite.EVENT_RENDER_END](events.md#compositeevent_render_end)
-  - [View Model Binding](events.md#view-model-binding)
+  - [View-Module Binding](events.md#view-module-binding)
     - [Composite.EVENT_MOUNT_START](events.md#compositeevent_mount_start)
     - [Composite.EVENT_MOUNT_NEXT](events.md#compositeevent_mount_next)
     - [Composite.EVENT_MOUNT_END](events.md#compositeevent_mount_end)

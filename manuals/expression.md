@@ -1,27 +1,23 @@
-&#9665; [Introduction](introduction.md)
+&#9665; [Getting Started](getting-started.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#expression-language)
 &nbsp;&nbsp;&nbsp;&nbsp; [Markup](markup.md) &#9655;
 - - -
 
 # Expression Language
-Expressions or the expression language (EL) is a simple access to the
-client-side JavaScript and thus to the models and components in Seanox
-aspect-js. In the expressions the complete JavaScript API is supported, which
-is enhanced with additional keywords, so that also the numerous arithmetic and
-logical operators can be used.
+The expression language (EL) provides access to client-side JavaScript and to
+application modules in Seanox aspect-js. Expressions support the JavaScript API
+and additional keywords for arithmetic and logical operators.
 
 ```
 {{'Hello World!'}}
 ```
 
-The expression language can be used from the HTML element `BODY` on in the
-complete markup as free text, as well as in all attributes. Exceptions are the
-HTML elements `STYLE` and `SCRIPT` whose content is not supported by the
-expression language.
+The expression language can be used in markup from the HTML element `BODY`.
+It can be used as free text and in attributes. The content of the HTML elements
+`STYLE` and `SCRIPT` is not supported.
 
-The renderer interprets the expression syntax `{{...}}` hard and therefore the
-character sequence `{{` as well as `}}` must be used inside the expression via
-escape sequence `\{\{` and/or `\}\}`.
+The renderer interprets the expression syntax `{{...}}`. Inside an expression,
+the character sequences `{{` and `}}` must be escaped as `\{\{` and `\}\}`.
 
 ## Contents Overview
 - [Elements](#elements)
@@ -41,8 +37,8 @@ escape sequence `\{\{` and/or `\}\}`.
 - [Notes](#notes)
 
 ## Elements
-An expression is a set of words, where the words are classified according to
-their characteristics as parts of a phrase.
+An expression is a set of words. The words are classified by their
+characteristics.
 
 ```
 +-------------------------------------------------------------+
@@ -59,16 +55,17 @@ their characteristics as parts of a phrase.
 ```
 
 ### Text
-Text is not a regular element of the expression. This occurs for attributes when
-the expression language is combined with text.
+Text is not a regular expression element. It occurs in attributes when the
+expression language is combined with text.
 
 ```html
 <p output="Today is {{Calendar.weekday}} and it's {{Clock.time}}."></p>
 ```
 
 ### Literal
-Literals are text embedded in an expression via single or double quotation marks
-that supports the usual control characters and escape sequences.
+Literals are text embedded in an expression with single, double or backtick
+quotation marks. They support the usual control characters and escape
+sequences.
 
 ```
 {{'Hello World!'}}
@@ -90,8 +87,8 @@ undefined
 new
 ```
 
-To simplify and formulate valid markup, the JavaScript syntax for the Expression
-Language has been extended of the following keywords:
+The JavaScript syntax for the Expression Language has been extended with these
+keywords to support valid markup:
 
 | Keyword | Function                  |
 |---------|---------------------------|
@@ -111,11 +108,10 @@ Language has been extended of the following keywords:
 | `or`    | <code>&#124;&#124;</code> |
 
 ### Value
-Anything that is not a literal and keyword is potentially a Value. Value
-represents the value of an object property or a variable. In the case of object
-properties, this is referred to directly or, if available, to a corresponding
-getter. If neither an object property nor a variable can be determined, a method
-or other logic is assumed.
+Anything that is not a literal or keyword is potentially a Value. A Value
+represents an object property or variable. Object properties are accessed
+directly or through a corresponding getter. If neither an object property nor a
+variable can be determined, a method or other logic is assumed.
 
 ### Method
 Everything that is not literal, keyword and value is potentially a method. If no
@@ -126,12 +122,10 @@ Everything that is not literal, keyword, value and method is potentially
 executable logic.
 
 ## Expressions
-There are different types of expressions that can be combined. In the following
-these are explained with their differences and peculiarities.
+Different expression types can be combined.
 
-Expressions will always output all values, except for the value `undefined`. But
-this does not apply to the string `undefined`, which is interpreted as normal
-text.
+Expressions output all values except the value `undefined`. The string
+`undefined` is interpreted as normal text.
 
 ### Value-Expression
 Anything that is not a literal and keyword is potentially a Value. Value
@@ -161,8 +155,8 @@ the variable corresponds to `undefined`.
 <input type="text" id="ExampleElement"/>
 ```
 
-More complex IDs which do not only contain word characters (`_ a-z A-Z 0-9`) can
-be be enclosed in square brackets.
+More complex IDs that do not contain only word characters (`_ a-z A-Z 0-9`) can
+be enclosed in square brackets.
 
 ```
 {{#[ExampleElement:1].value}}
@@ -171,10 +165,10 @@ be be enclosed in square brackets.
 ```
 
 ### Variable-Expression
-With the expression language, variables in the page scope can also be created
-and set at the runtime. The expression must begin with the name of a variable
-(identifier), which use the word characters `_ a-z A-Z 0-9` and is separated
-from the actual expression by a colon.
+The expression language can create and set variables in the page scope at
+runtime. The expression must start with the variable name (identifier), which
+uses the word characters `_ a-z A-Z 0-9` and is separated from the expression by
+a colon.
 
 ```
 {{foo:1 +2 +3 + 'x hello'}}
@@ -186,10 +180,9 @@ The expression corresponds to the JavaScript syntax:
     `var foo = 1 +2 +3 + 'x hello';`
 
 > [!IMPORTANT]
-> __Page Scope:__ Refers to the fact that variables can only be used in the
-> markup and are isolated from the rest of the JavaScript. These variables are
-> specifically intended for the output and processing of data in HTML markup and
-> are not accessible in general JavaScript code.
+> __Page Scope:__ Variables can only be used in the markup and are isolated from
+> the rest of the JavaScript. They are intended for output and data processing
+> in HTML markup and are not accessible in general JavaScript code.
 
 ### Combination
 All types of expressions can be combined.
@@ -199,24 +192,23 @@ All types of expressions can be combined.
 ```
 
 ### (?...) tolerate
-Expressions are executed like JavaScript and can lead to corresponding errors.
-In addition, object-based approaches often require checking the existence of
-specific object levels, which makes expressions unclear.
+Expressions are executed like JavaScript and can cause corresponding errors.
+Object-based approaches often require checks for specific object levels, which
+can make expressions unclear.
 
-For these cases the tolerating syntax `(?...)` can be used in the expressions.
-The logic enclosed in the brackets, in case of an error, will not cause an
-error and there will be no output to the browser console. Instead, the brackets
-will represent the value `false`. Syntax errors are excluded from this
-tolerating behavior.
+For these cases, expressions can use the tolerating syntax `(?...)`. If the
+logic inside the brackets causes an error, no error is raised and no output is
+written to the browser console. Instead, the brackets represent the value
+`false`. Syntax errors are excluded from this tolerating behavior.
 
 ```
 {{"Expression with an error " + (?object.that.does.not.exist()) + "!"}}
 ```
 
 ## Notes
-Expressions are interpreted by the renderer that starts after loading the page.
-So expressions can be visible when loading the page. It is recommended to use
-the attribute [release](markup.md#release).
+Expressions are interpreted by the renderer after the page has loaded. They can
+therefore be visible during page loading. Use the attribute
+[release](markup.md#release) to prevent this.
 
 ```html
 <h1 release>{{'Hello World!'}}</h1>
@@ -248,6 +240,6 @@ h1:after {
 
 
 - - -
-&#9665; [Introduction](introduction.md)
+&#9665; [Getting Started](getting-started.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#expression-language)
 &nbsp;&nbsp;&nbsp;&nbsp; [Markup](markup.md) &#9655;

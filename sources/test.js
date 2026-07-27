@@ -205,7 +205,8 @@
              *            timeout is ignored.
              * expected   if you want to test for the occurrence of an error
              *            The error must occur if the test is successful.
-             *            An error object or a RegExp is expected as value.
+             *            An error constructor/function or a RegExp is expected
+             *            as value.
              * ignore     true, if the test is to be ignored
              * 
              * Implementation of test:
@@ -792,7 +793,7 @@
         /**
          * Enhancement of the JavaScript API
          * The following events are triggered during simulation:
-         *     focus, keydown, keyup, change
+         *     focus, keydown, keyup, input
          * @param {string} value simulated input value
          * @param {boolean} [clear] false suppresses emptying before input
          */
@@ -968,7 +969,7 @@
     
             /**
              * Asserts that two values are equals.
-             * Difference between equals and same: === / == or !== / !=
+             * Current implementation uses strict comparison: === / !==
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:
@@ -989,7 +990,7 @@
 
             /**
              * Asserts that two values are not equals.
-             * Difference between equals and same: === / == or !== / !=
+             * Current implementation uses strict comparison: === / !==
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:
@@ -1010,7 +1011,7 @@
     
             /**
              * Asserts that two values are the same.
-             * Difference between equals and same: === / == or !== / !=
+             * Current implementation uses strict comparison: === / !==
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:
@@ -1031,7 +1032,7 @@
             
             /**
              * Asserts two values are not the same.
-             * Difference between equals and same: === / == or !== / !=
+             * Current implementation uses strict comparison: === / !==
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:

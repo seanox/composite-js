@@ -71,7 +71,7 @@
  *
  *     <h1 output="{{messages.contact.title}}"/>
  *
- * Both objects are only available if there are also labels.
+ * Messages is always available; messages exists when labels are loaded.
  *
  * Extension for modules: These can also provide locales/messages in the module
  * directory, which are loaded in addition to the locales/messages from the data

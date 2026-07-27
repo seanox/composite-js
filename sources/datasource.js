@@ -254,9 +254,8 @@
          * includes attributes and text nodes. Attributes are returned as nodes
          * with the name attribute. The name and value of the addressed
          * attribute are represented in the node as attributes name and value.
-         * Text nodes are also returned as nodes, but then with the name text.
-         * The content of the addressed text node is then the content of the
-         * node.
+         * Text nodes are also returned as nodes with the name text.
+         * The current implementation creates an empty text wrapper node.
          *
          * @param {string} locator Locator to fetch data for as XMLDocument.
          *     Optionally, an XPath query is also supported. The XPath is
@@ -359,9 +358,8 @@
          * includes attributes and text nodes. Attributes are returned as nodes
          * with the name attribute. The name and value of the addressed
          * attribute are represented in the node as attributes name and value.
-         * Text nodes are also returned as nodes, but then with the name text.
-         * The content of the addressed text node is then the content of the
-         * node.
+         * Text nodes are also returned as nodes with the name text.
+         * The current implementation creates an empty text wrapper node.
          *
          * The method has the following various signatures:
          *     DataSource.collect(locator, ...);

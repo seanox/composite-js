@@ -163,8 +163,8 @@
          * Creates a namespace with an initial value to the passed object,
          * strings and numbers, if the namespace contains arrays and the numbers
          * can be used as index. Levels of the namespace levels are separated by
-         * a dot. Levels can as fragments also contain dots. Without arguments,
-         * the global namespace window is used.
+         * a dot. Levels can as fragments also contain dots. Namespace and value
+         * are required.
          *
          * The method has the following various signatures:
          *     Namespace.create(string, value);
@@ -261,8 +261,8 @@
          * Checks whether a namespace exists based on the passed object, strings
          * and numbers, if the namespace contains arrays and the numbers can be
          * used as index. Levels of the namespace chain are separated by a dot.
-         * Levels can also be fragments that contain dots. Without arguments the
-         * global namespace window is used.
+         * Levels can also be fragments that contain dots. Without arguments,
+         * false is returned.
          *
          * The method has the following various signatures:
          *     Namespace.exists();
@@ -441,7 +441,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a function for decoding hexadecimal code to the string objects.
+     * Adds a function that parses hexadecimal chunks from String values.
      * @returns {string} The decoded string
      */
     compliant("String.prototype.decodeHex");

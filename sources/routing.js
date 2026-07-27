@@ -80,7 +80,7 @@
     // change from / to /# does not trigger a hashchange event.
     let _routing_interrupt;
 
-    // Map with all supported interceptors
+    // Array with all supported interceptors
     const _interceptors = [];
 
     // Array with the path history (optimized)
@@ -192,16 +192,13 @@
         },
            
         /**
-         * Checks the approval to keep or remove the composite through the
-         * routing in the DOM. For approval, the model corresponding to a
-         * composite can implement the approve method, which can use different
-         * return values: undefined, true and false.
+         * Checks whether routing keeps or removes the composite in the DOM.
+         * A matching model can implement permit() and return undefined, true
+         * or false.
          *
-         * With the return values true and false, the permit method in the model
-         * makes the decision. Otherwise and even if the model does not
-         * implement a permit method, the decision is left to the routing, which
-         * checks the coverage of the path from the composite. Covered means
-         * that the specified path must be contained from the root of the
+         * true and false decide directly. If permit() is missing or returns
+         * undefined, routing falls back to checking Path.covers(path). Covered
+         * means that the specified path must be contained from the root of the
          * current working path.
          *
          * @param {string} path path of the composite
@@ -307,8 +304,8 @@
      * corresponding path in the markup (Element-to-Path).
      *
      * @param {string|Element} lookup
-     * @returns {undefined|string|Element} the path as string or undefined for
-     *     Element-To-Path or the element for Path-to-Element
+     * @returns {string|Element} For Element input: the path as string.
+     *     For path input: the matching element or document.body.
      */
      const _lookup = (lookup) => {
 
@@ -472,11 +469,9 @@
             console.warn("Ignore value for attribute route");
 
         if (_routing_active === undefined) {
-            // Activates routing during the initial rendering via the boolean
-            // attribute route. It must not have a value, otherwise it is
-            // ignored and routing is not activated. The decision was
-            // deliberate, so that interpretations such as route="off" do not
-            // cause false expectations and misunderstandings.
+            // Activates routing during initial rendering when BODY has the
+            // route attribute. A non-empty value is ignored with a warning to
+            // avoid semantic interpretations like route="off".
             _routing_active = document.body.hasAttribute("route");
             if (document.body.hasAttribute("route")
                     && document.body.getAttribute("route") !== "")

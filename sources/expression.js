@@ -98,10 +98,10 @@
         expression.replace(/[\t\r](\d+)\n/g, (match, id) => patches[id]);
 
     /**
-     * Analyzes and finds the components of an expression and creates a
-     * JavaScript from them. Created scripts are cached a reused as needed.
+     * Analyzes expression parts and creates JavaScript from them.
+     * Created scripts can be cached and reused.
+     * @param {number} type Parser mode (TYPE_*)
      * @param {string} expression Expression to analyze
-     * @param {number} [depth=0] Depth of the analysis
      * @param {Array} [patches=[]] Patches to apply
      * @returns {string} The created JavaScript
      * @throws {Error} In case of an error in the expression structure

@@ -2730,9 +2730,8 @@
     /**
      * Enhancement of the JavaScript API
      * Adds a static function to check whether an object exists in a namespace.
-     * In difference to the namespace function of the same name, qualifiers are
-     * also supported in the namespace. The effect is the same. Qualifiers are
-     * optional namespace elements at the end that use the colon as a separator.
+     * This method is an alias for Namespace.exists(...levels) and uses the same
+     * namespace syntax.
      *
      * The method has the following various signatures:
      *     Object.exists();

@@ -115,7 +115,7 @@
             // - ignore: '...'
             // - ignore: "..."
             // - ignore: `...`
-            // - detect: (^|\W)#(import|export|module)\s+...(\W|$)
+            // - detect: (^|\W)#(import|export|module|use)\s+...(\W|$)
             // - detect: \(\s*\?...\)
 
             let pattern;
@@ -271,7 +271,7 @@
 
     const _import = (...imports) => {
         // Because it is an internal method, an additional validation of the
-        // exports as data structure was omitted.
+        // imports as data structure was omitted.
         imports.forEach(include =>
             Composite.load(Composite.MODULES + "/" + include + ".js", true));
     };

@@ -205,8 +205,7 @@
              *            timeout is ignored.
              * expected   if you want to test for the occurrence of an error
              *            The error must occur if the test is successful.
-             *            An error constructor/function or a RegExp is expected
-             *            as value.
+             *            An error constructor/function or a RegExp is expected as value.
              * ignore     true, if the test is to be ignored
              * 
              * Implementation of test:

@@ -197,8 +197,8 @@
          * or false.
          *
          * true and false decide directly. If permit() is missing or returns
-         * undefined, routing falls back to checking Path.covers(path). Covered
-         * means that the specified path must be contained from the root of the
+         * undefined, routing falls back to checking Path.covers(path). Covered means
+         * that the specified path must be contained from the root of the
          * current working path.
          *
          * @param {string} path path of the composite
@@ -469,9 +469,9 @@
             console.warn("Ignore value for attribute route");
 
         if (_routing_active === undefined) {
-            // Activates routing during initial rendering when BODY has the
-            // route attribute. A non-empty value is ignored with a warning to
-            // avoid semantic interpretations like route="off".
+            // Activates routing during initial rendering when BODY has
+            // the route attribute. A non-empty value is ignored with a
+            // warning to avoid semantic interpretations like route="off".
             _routing_active = document.body.hasAttribute("route");
             if (document.body.hasAttribute("route")
                     && document.body.getAttribute("route") !== "")

@@ -1,6 +1,7 @@
 1.9.1 2027xxxx
 BF: Documentation: Update of content
 BF: Build: Optimizing npm access
+BF: Build: Correction of the missing jsdelivr default
 CR: Test: Expansion of benchmarks/tests
 CR: Tutorial: Integration into the project
 

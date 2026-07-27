@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "A browser-native application runtime for building SPAs and micro-frontends by extending HTML and JavaScript with declarative application features.",
   "main": "release/aspect-js.js",
+  "jsdelivr": "/release/aspect-js.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/seanox/aspect-js.git"
@@ -28,7 +29,6 @@
     "expression",
     "expression language",
     "micro-frontend",
-    "nonsql",
     "data repository",
     "datasource",
     "routing",

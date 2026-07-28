@@ -1,16 +1,15 @@
-<div>
-  <a href="https://github.com/seanox/aspect-js/pulls" title="Development is waiting for new issues / requests / ideas">
-    <img src="https://img.shields.io/badge/development-passive-blue?style=for-the-badge">
-  </a>
-  
-  <a href="https://github.com/seanox/aspect-js/issues">
-    <img src="https://img.shields.io/badge/maintenance-active-green?style=for-the-badge">
-  </a>
-  
-  <a href="http://seanox.de/contact">
-    <img src="https://img.shields.io/badge/support-active-green?style=for-the-badge">
-  </a>
-</div>
+<p>
+  <a href="https://github.com/seanox/aspect-js/pulls"
+      title="Development is waiting for new issues / requests / ideas"
+    ><img src="https://img.shields.io/badge/development-passive-blue?style=for-the-badge"
+  ></a>  
+  <a href="https://github.com/seanox/aspect-js/issues"
+    ><img src="https://img.shields.io/badge/maintenance-active-green?style=for-the-badge"
+  ></a>
+  <a href="http://seanox.de/contact"
+    ><img src="https://img.shields.io/badge/support-active-green?style=for-the-badge"
+  ></a>
+</p>
 
 # Description
 Seanox aspect-js is a browser-native application runtime for single-page
@@ -75,8 +74,14 @@ __Recommendations for UI frameworks:__
   
 # Manuals
 - [Getting Started](https://github.com/seanox/aspect-js/blob/master/manuals/introduction.md#introduction)
-- [Tutorial + Demo](https://github.com/seanox/aspect-js/tree/master/tutorials#readme)
+- [Tutorial](https://github.com/seanox/aspect-js/tree/master/tutorials#readme)
 - [Manuals](https://github.com/seanox/aspect-js/tree/master/manuals#readme)
+
+# Demos
+- [Micro-Frontend](
+      https://seanox.github.io/aspect-js/tutorials/micro-frontend/Step_07%20Business%20logic%20in%20detail/)
+- [Single Page Application](
+      https://seanox.github.io/aspect-js/tutorials/single-page-application%2FStep_14%20Components%20-%20Example%20for%20dynamic%20table%20with%20CSV%20download)
 
 # License Terms
 Seanox Software Solutions is an open-source project, hereinafter referred to as

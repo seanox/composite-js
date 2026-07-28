@@ -1,5 +1,4 @@
-  <a href="https://github.com/seanox/aspect-js/pulls"
-      title="Development is waiting for new issues / requests / ideas">
+  <a href="https://github.com/seanox/aspect-js/pulls" title="Development is waiting for new issues / requests / ideas">
     <img src="https://img.shields.io/badge/development-passive-blue?style=for-the-badge">
   </a>
   <a href="https://github.com/seanox/aspect-js/issues"

@@ -1,12 +1,16 @@
+<p>
   <a href="https://github.com/seanox/aspect-js/pulls" title="Development is waiting for new issues / requests / ideas">
     <img src="https://img.shields.io/badge/development-passive-blue?style=for-the-badge">
   </a>
-  <a href="https://github.com/seanox/aspect-js/issues"
-    ><img src="https://img.shields.io/badge/maintenance-active-green?style=for-the-badge"
-  ></a>
-  <a href="http://seanox.de/contact"
-    ><img src="https://img.shields.io/badge/support-active-green?style=for-the-badge"
-  ></a>
+  
+  <a href="https://github.com/seanox/aspect-js/issues">
+    <img src="https://img.shields.io/badge/maintenance-active-green?style=for-the-badge">
+  </a>
+  
+  <a href="http://seanox.de/contact">
+    <img src="https://img.shields.io/badge/support-active-green?style=for-the-badge">
+  </a>
+</p>
 
 # Description
 Seanox aspect-js is a browser-native application runtime for single-page

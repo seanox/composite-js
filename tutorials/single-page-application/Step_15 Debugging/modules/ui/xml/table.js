@@ -29,7 +29,7 @@ const Table = class extends ui.Table {
 
         // Docking is synchronous, but loading is asynchronous.
         // This way the page does not block during initial loading and rendering.
-        Composite.asynchron(() => {
+        Composite.asynchronous(() => {
 
             // The data is loaded initially (if necessary).
             this.load();
@@ -52,9 +52,9 @@ const Table = class extends ui.Table {
             }
 
             let output = table => {
-                Composite.asynchron(() => {
+                Composite.asynchronous(() => {
                     document.querySelector(table.selector).appendChild(table.render(), true);
-                    Composite.asynchron(() => {
+                    Composite.asynchronous(() => {
                         // The table header is searched for sortable elements.
                         // These are all elements with the class attribute sortable.
                         // The default order is defined by sortable-default.

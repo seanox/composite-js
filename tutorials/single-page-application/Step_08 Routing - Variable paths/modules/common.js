@@ -5,7 +5,7 @@
  * yet be able to locate anything.
  */
 Routing.customize("#", (oldHash, newHash) => {
-    Composite.asynchron((path) => {
+    Composite.asynchronous((path) => {
         const locate = Routing.locate(path);
         if (locate == null
                 || locate === "#")

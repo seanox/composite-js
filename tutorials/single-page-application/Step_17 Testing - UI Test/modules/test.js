@@ -113,7 +113,7 @@ Sequence.push(...[
 const _validationCollector = [];
 const _validateTest = (selector, text) => {
     document.querySelector(selector).typeValue(text);
-    Composite.asynchron(() => {
+    Composite.asynchronous(() => {
         let result = "";
         const fields = ["#name", "#email", "#subject", "#comment", "form"];
         for (let selector of fields) {

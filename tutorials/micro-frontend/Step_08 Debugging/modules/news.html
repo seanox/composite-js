@@ -59,9 +59,9 @@
     condition="{{news.list.exists and news.list.empty}}"></h2>
 <!--
   Messages can use placeholders, which are then filled at runtime.
-  see Messages.customize(...)
+  see Messages.populate(...)
 -->
-<h2 output="{{Messages.customize('news.list.summary', news.list.market, news.list.datatype, news.list.length)}}"
+<h2 output="{{Messages.populate('news.list.summary', news.list.market, news.list.datatype, news.list.length)}}"
     condition="{{news.list.exists and not news.list.empty}}"></h2>
 
 <table condition="{{not news.list.empty}}">
@@ -221,7 +221,7 @@
 -->
 <h2 output="{{messages.news.recipients.empty}}"
     condition="{{news.recipients.exists and news.recipients.empty}}"></h2>
-<h2 output="{{Messages.customize('news.recipients.summary', news.recipients.length)}}"
+<h2 output="{{Messages.populate('news.recipients.summary', news.recipients.length)}}"
     condition="{{news.recipients.exists and not news.recipients.empty}}"></h2>
 <table condition="{{not news.recipients.empty}}">
   <thead>

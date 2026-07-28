@@ -74,7 +74,7 @@ __Recommendations for UI frameworks:__
   
 # Manuals
 - [Getting Started](https://github.com/seanox/aspect-js/blob/master/manuals/introduction.md#introduction)
-- [Tutorial](https://github.com/seanox/aspect-js/tree/master/tutorials#readme)
+- [Tutorials](https://github.com/seanox/aspect-js/tree/master/tutorials#readme)
 - [Manuals](https://github.com/seanox/aspect-js/tree/master/manuals#readme)
 
 # Demos

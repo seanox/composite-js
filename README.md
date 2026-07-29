@@ -81,7 +81,7 @@ __Recommendations for UI frameworks:__
 - [Micro-Frontend](
       https://seanox.github.io/aspect-js/tutorials/micro-frontend/Step_07%20Business%20logic%20in%20detail/)
 - [Single Page Application](
-      https://seanox.github.io/aspect-js/tutorials/single-page-application/Step_14%20Components%20-%20Example%20for%20dynamic%20table%20with%20CSV%20download) 
+      https://seanox.github.io/aspect-js/tutorials/single-page-application/Step_14%20Components%20-%20Example%20for%20dynamic%20table%20with%20CSV%20download/) 
 
 # License Terms
 Seanox Software Solutions is an open-source project, hereinafter referred to as

@@ -9,7 +9,7 @@ identify regressions and track performance changes across engine versions.
 | 1.7.0                                                     |   `max. - ms` |   `max. - ms` |    `max. - ms` |   `max. - ms` | 
 | 1.8.0                                                     |   `max. - ms` |   `max. - ms` |    `max. - ms` |   `max. - ms` | 
 | 1.9.0                                                     | `max. 300 ms` | `max. 375 ms` | `max. 2250 ms` | `max. 325 ms` | 
-| __[xxx](#xxx)__                                           |   __Blink__   |      __WebKit |     __goanna__ |     __Gecko__ |
+| __[xxx](#xxx)__                                           |   __Blink__   |    __WebKit__ |     __goanna__ |     __Gecko__ |
 | 1.7.0                                                     |   `max. - ms` |   `max. - ms` |    `max. - ms` |   `max. - ms` | 
 | 1.8.0                                                     |   `max. - ms` |   `max. - ms` |    `max. - ms` |   `max. - ms` | 
 | 1.9.0                                                     |   `max. - ms` |   `max. - ms` |    `max. - ms` |   `max. - ms` | 

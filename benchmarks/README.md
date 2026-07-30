@@ -14,6 +14,7 @@ identify regressions and track performance changes across engine versions.
     </tr>
     <tr>
       <th></th>
+
       <th>Blink</th>
       <th>WebKit</th>
       <th>goanna</th>
@@ -71,11 +72,6 @@ identify regressions and track performance changes across engine versions.
     <tr>
       <td>
       </td>
-
-      <td></td>
-      <td></td>
-      <td></td>
-      <td></td>
 
       <td></td>
       <td></td>

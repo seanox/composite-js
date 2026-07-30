@@ -13,25 +13,6 @@
 
         Test.activate();
 
-        // Benchmark 5: Worst Case - All 10,000 Bindings Must Update
-        //
-        // Creates 10,000 DOM bindings that depend on the same reactive value.
-        // When the reactive counter changes, all dependent bindings are
-        // invalidated and must be processed by the reactive update pipeline.
-        //
-        // This benchmark measures the throughput and overhead of dependency
-        // tracking, change propagation, expression evaluation, and binding
-        // updates under a worst-case full invalidation scenario.
-        //
-        // It intentionally represents a case where every binding is affected,
-        // so the benchmark evaluates the framework's raw update capacity rather
-        // than its ability to optimize away unchanged work.
-        //
-        // Blink    max. 1750 ms   i5-1240P
-        // WebKit   max.  600 ms   A14 (iPad Gen 10)
-        // goanna   max. 1850 ms   i5-1240P
-        // Gecko    max. 1350 ms   i5-1240P
-
         const state = {counter: 0}.reactive();
         const result = {duration: ""}.reactive();
 

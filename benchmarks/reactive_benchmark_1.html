@@ -16,21 +16,6 @@
 
         Test.activate();
 
-        // Benchmark 1: Leaf Update
-        //
-        // Renders a static 10×10×10×10 DOM tree (10,000 nodes) and then updates
-        // exactly one reactive value bound to #target.
-        //
-        // The benchmark verifies that a reactive renderer invalidates only the
-        // affected binding instead of traversing or re-rendering unrelated
-        // parts of the DOM. The size of the surrounding tree serves solely to
-        // detect unnecessary work during the update phase.
-        //
-        // Blink    max.  75 ms   i5-1240P
-        // WebKit   max.  75 ms   A14 (iPad Gen 10)
-        // goanna   max. 250 ms   i5-1240P
-        // Gecko    max.  75 ms   i5-1240P
-
         const model = {value: 0}.reactive();
         const result = {duration: ""}.reactive();
 

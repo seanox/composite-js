@@ -13,26 +13,6 @@
 
        Test.activate();
 
-       // Benchmark 3: 1000 Small Updates (Batching)
-       //
-       // Performs 1000 synchronous updates to a single reactive value.
-       //
-       // The benchmark primarily measures the efficiency of the framework's
-       // reactivity system, scheduler and batching strategy. An optimized
-       // renderer should coalesce the updates into a single (or very few)
-       // render pass(es) instead of rendering after every assignment.
-       //
-       // This benchmark is intentionally focused on update coalescing. It does
-       // not measure DOM complexity, diffing performance, layout, paint,
-       // component trees or overall application rendering performance.  
-       //
-       // Modern frameworks optimize this case.
-       //
-       // Blink    max.  5 ms   i5-1240P
-       // WebKit   max. 10 ms   A14 (iPad Gen 10)
-       // goanna   max. 50 ms   i5-1240P
-       // Gecko    max.  5 ms   i5-1240P
-      
        const model = {value: 0}.reactive();
        const result = {duration: ""}.reactive();
       

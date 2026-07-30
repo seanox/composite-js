@@ -16,11 +16,6 @@
     
         Test.activate();
 
-        // Blink    max.  300   i5-1240P
-        // WebKit   max.  375   A14 (iPad Gen 10)
-        // goanna   max. 2250   i5-1240P
-        // Gecko    max.  325   i5-1240P
-
         let timing = Date.now();
         Composite.listen(Composite.EVENT_RENDER_END, () => {
             timing = Date.now() -timing;

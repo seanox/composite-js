@@ -13,31 +13,6 @@
 
         Test.activate();
 
-        // Benchmark 4: Granular Reactive Update
-        //
-        // Renders 10,000 flat DOM nodes and then updates exactly one reactive
-        // value in the middle of the list (index 5000).
-        //
-        // The benchmark measures whether the reactive system invalidates only
-        // the affected binding or unnecessarily re-evaluates unrelated nodes.
-        //
-        // Ideal:
-        //   State change -> one dependency -> one text node update.
-        //
-        // Poor implementations:
-        //   State change -> list re-evaluation -> many template executions -> many DOM checks.
-        //
-        // This benchmark primarily evaluates:
-        // - dependency tracking
-        // - update granularity
-        // - scheduler overhead
-        // - incremental DOM update performance
-        //
-        // Blink    max.  50 ms   i5-1240P
-        // WebKit   max.  75 ms   A14 (iPad Gen 10)
-        // goanna   max. 200 ms   i5-1240P
-        // Gecko    max.  50 ms   i5-1240P
-
         const state = {
             nodes: Array.from({length: 10000}, (_, i) => ({value: i}))
         }.reactive();

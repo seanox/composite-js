@@ -14,11 +14,6 @@
 
         Test.activate();
 
-        // Blink    max.  250 ms   i5-1240P
-        // WebKit   max.  250 ms   A14 (iPad Gen 10)
-        // goanna   max. 2250 ms   i5-1240P
-        // Gecko    max.  450 ms   i5-1240P
-
         let source;
         Composite.listen(Composite.EVENT_RENDER_END, () => {
             source = Test.read("scripting_parse_benchmark.js");

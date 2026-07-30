@@ -35,22 +35,6 @@
             }
         };
 
-        // 1: Blink    max.  50   i5-1240P
-        // 2: Blink    max.  20   i5-1240P
-        // 3: Blink    max.  25   i5-1240P
-
-        // 1: WebKit   max. 100   A14 (iPad Gen 10)
-        // 2: WebKit   max.  65   A14 (iPad Gen 10)
-        // 3: WebKit   max.  65   A14 (iPad Gen 10)
-
-        // 1: goanna   max. 115   i5-1240P
-        // 2: goanna   max. 100   i5-1240P
-        // 3: goanna   max. 300   i5-1240P
-
-        // 1: Gecko    max.  75   i5-1240P
-        // 2: Gecko    max.  25   i5-1240P
-        // 3: Gecko    max.  55   i5-1240P
-
         const timing = Date.now();
         Composite.listen(Composite.EVENT_RENDER_END, function() {
             if (Test.status().queue !== undefined)

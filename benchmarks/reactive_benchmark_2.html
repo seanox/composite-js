@@ -16,29 +16,6 @@
 
         Test.activate();
 
-        // Benchmark 2: Root-Update
-        //
-        // Renders a tree whose entire structure depends on state.x.
-        // Updating state.x at the root invalidates almost the complete render
-        // tree.
-        //
-        // The benchmark measures:
-        // - Reactive invalidation from the root
-        // - Template evaluation
-        // - Renderer throughput
-        // - DOM creation and insertion
-        // - End-to-end render latency until rendering has finished
-        //
-        // Increasing state.x from 10 to 11 expands every nesting level,
-        // growing the tree from 10^4 (10,000) to 11^4 (14,641) rendered nodes.
-        // This represents a worst-case full-tree update where nearly every node
-        // must be regenerated.
-        //
-        // Blink    max. 575 ms   i5-1240P
-        // WebKit   max. 725 ms   A14 (iPad Gen 10)
-        // goanna   max. --- ms   i5-1240P
-        // Gecko    max. 750 ms   i5-1240P
-
         const state = {x: 10}.reactive();
         const result = {duration: ""}.reactive();
 

@@ -12,7 +12,7 @@ methods, and manages the module lifecycle.
 The runtime provides the infrastructure for connecting views and modules but
 does not define the architectural role of a module.
 
-<img src="./binding_view_module.svg"/>
+<img src="./view-module-binding_view_module.svg"/>
 
 Depending on the application architecture, a module may implement a ViewModel,
 Controller, Service, Application Model, or another architectural role defined by

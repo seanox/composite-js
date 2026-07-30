@@ -29,7 +29,6 @@ identify regressions and track performance changes across engine versions.
       <th>goanna</th>
       <th>Gecko</th>
     </tr>
-  </tr>
   </thead>
   <tbody>
     <tr>
@@ -69,7 +68,6 @@ identify regressions and track performance changes across engine versions.
       <td>max. 2250 ms</td>
       <td>max.  325 ms</td>
     </tr>
-
     <tr>
       <td>
       </td>

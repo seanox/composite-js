@@ -8,12 +8,6 @@ identify regressions and track performance changes across engine versions.
   <thead>
     <tr>
       <th></th>
-      <th colspan="4">1.7.0</th>
-      <th colspan="4">1.8.0</th>
-      <th colspan="4">1.9.0</th>
-    </tr>
-    <tr>
-      <th></th>
 
       <th>Blink</th>
       <th>WebKit</th>
@@ -36,6 +30,7 @@ identify regressions and track performance changes across engine versions.
       <td>
         <details>
           <summary>Deep Iteration Rendering</summary>
+          <p></p>
           <p>
             Renders a four-level nested template with 10×10×10×10 iterations,
             producing 11,110 loop instances in total (10 + 100 + 1,000 + 10,000).

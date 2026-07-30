@@ -2764,32 +2764,42 @@
      * The original method is reused in the background.
      */ 
     const _request_open = XMLHttpRequest.prototype.open;
+
+    // Requests whose events are already monitored. Because open can be called
+    // more than once for a request, the registration of the listeners must be
+    // unique, otherwise the events are fired more than once. The state of the
+    // request cannot be used for this, because it returns to UNSENT with abort.
+    const _request_monitoring = new WeakSet();
+
     XMLHttpRequest.prototype.open = function(...variants) {
 
-        const callback = (event = null) => {
-            if (!event)
-                return;
-            if (event.type === "loadstart")
-                event = [Composite.EVENT_HTTP_START, event];
-            else if (event.type === "progress")
-                event = [Composite.EVENT_HTTP_PROGRESS, event]; 
-            else if (event.type === "readystatechange")
-                event = [Composite.EVENT_HTTP_RECEIVE, event]; 
-            else if (event.type === "load")
-                event = [Composite.EVENT_HTTP_LOAD, event]; 
-            else if (event.type === "abort")
-                event = [Composite.EVENT_HTTP_ABORT, event]; 
-            else if (event.type === "error")
-                event = [Composite.EVENT_HTTP_ERROR, event];   
-            else if (event.type === "timeout")
-                event = [Composite.EVENT_HTTP_TIMEOUT, event];   
-            else if (event.type === "loadend")
-                event = [Composite.EVENT_HTTP_END, event]; 
-            else return;
-            Composite.fire(...event); 
-        };
+        if (!_request_monitoring.has(this)) {
 
-        if (this.status === XMLHttpRequest.UNSENT) {
+            _request_monitoring.add(this);
+
+            const callback = (event = null) => {
+                if (!event)
+                    return;
+                if (event.type === "loadstart")
+                    event = [Composite.EVENT_HTTP_START, event];
+                else if (event.type === "progress")
+                    event = [Composite.EVENT_HTTP_PROGRESS, event];
+                else if (event.type === "readystatechange")
+                    event = [Composite.EVENT_HTTP_RECEIVE, event];
+                else if (event.type === "load")
+                    event = [Composite.EVENT_HTTP_LOAD, event];
+                else if (event.type === "abort")
+                    event = [Composite.EVENT_HTTP_ABORT, event];
+                else if (event.type === "error")
+                    event = [Composite.EVENT_HTTP_ERROR, event];
+                else if (event.type === "timeout")
+                    event = [Composite.EVENT_HTTP_TIMEOUT, event];
+                else if (event.type === "loadend")
+                    event = [Composite.EVENT_HTTP_END, event];
+                else return;
+                Composite.fire(...event);
+            };
+
             this.addEventListener("loadstart", callback);
             this.addEventListener("progress", callback);
             this.addEventListener("readystatechange", callback);

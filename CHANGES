@@ -1,4 +1,8 @@
 1.9.1 2027xxxx
+BF: Composite: Correction of the registration of the HTTP events
+    With repeated calls of XMLHttpRequest.open for a request, the listeners were
+    registered more than once and the events Composite.EVENT_HTTP_* were fired
+    more than once.
 BF: Documentation: Update of content
 BF: Build: Optimizing npm access
 BF: Build: Correction of the missing jsdelivr default

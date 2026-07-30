@@ -4,7 +4,7 @@
 - - -
 
 # Events
-Seanox aspect-js provides events for extensions and for notifying the
+Seanox aspect-js provides events for extensions and for notifying the 
 application about runtime environment states.
 
 ## Contents Overview
@@ -119,48 +119,67 @@ Composite.listen(Composite.EVENT_MODULE_UNDOCK, function(event, context, module)
 ```
 
 ## HTTP
-The Composite API supports application-wide event management for XMLHttpRequest.
+The Composite API supports application-wide event management for HTTP requests.
 This can implement request-related application logic, e.g. for logging or
 spinners.
 
+The events are described independently of the request API. Currently, only
+requests via XMLHttpRequest are captured. For each event, the corresponding
+XMLHttpRequest event is named as a reference.
+
+The callback method is passed the event of the underlying request, not the
+request object itself. With XMLHttpRequest, this is a `ProgressEvent` whose
+property `target` contains the corresponding XMLHttpRequest.
+
 ```javascript
-Composite.listen(Composite.EVENT_HTTP_***, function(event, XMLHttpRequest) {
+Composite.listen(Composite.EVENT_HTTP_***, function(event, payload) {
     ...
 });
 ```
 
+The events are also triggered by the requests with which the application runtime
+loads the outsourced resources of the composites. These requests are
+synchronous. Synchronous requests do not dispatch the events `loadstart` and
+`progress`, and the states 2 and 3 are skipped. Therefore
+`Composite.EVENT_HTTP_START` and `Composite.EVENT_HTTP_PROGRESS` do not occur
+for them. A spinner is of no use here anyway, because the browser cannot repaint
+during a synchronous request.
+
 ### Composite.EVENT_HTTP_START
-Corresponds to the XMLHttpRequest event: `loadstart` and is triggered when a
-request to load data is started.
+Triggered when a request to load data is started.  
+XMLHttpRequest: `loadstart`
 
 ### Composite.EVENT_HTTP_PROGRESS
-Corresponds to the XMLHttpRequest event: `progress`. The progress event is
-triggered periodically when a request receives further data.
+Triggered periodically when a request receives further data.  
+XMLHttpRequest: `progress`
 
 ### Composite.EVENT_HTTP_RECEIVE
-Corresponds to the XMLHttpRequest-Event: `readystatechange` and is triggered
-when the status of the request/response changes.
+Triggered when the status of the request/response changes.  
+XMLHttpRequest: `readystatechange`
 
 ### Composite.EVENT_HTTP_LOAD
-Corresponds to the XMLHttpRequest event: `load` and is triggered when a resource
-is loaded.
+Triggered when a resource is loaded. The event is also triggered for HTTP status
+codes that indicate an error, because the transfer itself was successful.  
+XMLHttpRequest: `load`
 
 ### Composite.EVENT_HTTP_ABORT
-Corresponds to the XMLHttpRequest event: `abort` and is triggered when the
-loading of a resource is aborted.
+Triggered when the loading of a resource is aborted.  
+XMLHttpRequest: `abort`
 
 ### Composite.EVENT_HTTP_TIMEOUT
-Corresponds to the XMLHttpRequest event: `timeout` and is triggered when the
-loading of a resource is aborted because the maximum loading time has been
-exceeded.
+Triggered when the loading of a resource is aborted because the maximum loading
+time has been exceeded.  
+XMLHttpRequest: `timeout`
 
 ### Composite.EVENT_HTTP_ERROR
-Corresponds to the XMLHttpRequest event: `error` and is triggered when an error
-occurs.
+Triggered when the request fails, e.g. due to a network error. HTTP status codes
+that indicate an error do not trigger this event.  
+XMLHttpRequest: `error`
 
 ### Composite.EVENT_HTTP_END
-Corresponds to the XMLHttpRequest event: `loading` and is triggered when the
-request is completed, regardless of any errors or successful completion.
+Triggered when the request is completed, regardless of any errors or successful
+completion.  
+XMLHttpRequest: `loadend`
 
 ## Error
 The Composite API supports application-wide event management for runtime errors

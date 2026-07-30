@@ -3,48 +3,46 @@ These benchmarks serve as a performance reference for regression testing and
 comparing rendering performance between releases. The measured values help
 identify regressions and track performance changes across engine versions.
 
-__Blink, goanna, Gecko:__ i5-1240P  
-__WebKit:__ A14 (iPad Gen 10)
-
-| __[Deep Iteration Rendering](#deep-iteration-rendering)__           |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-|:--------------------------------------------------------------------|-----------------:|--------------:|---------------:|---------------:|
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |    `max. 300 ms` | `max. 375 ms` | `max. 2250 ms` |  `max. 325 ms` | 
-| __[Expression Evaluation](#expression-evaluation)__                 |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-|                                                                     |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-|                                                                     |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-|                                                                     |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-|                                                                     |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |     `max. 50 ms` | `max. 100 ms` |  `max. 115 ms` |   `max. 75 ms` | 
-|                                                                     |     `max. 20 ms` | `max.  65 ms` |  `max. 100 ms` |   `max. 25 ms` | 
-|                                                                     |     `max. 25 ms` | `max.  65 ms` |  `max. 300 ms` |   `max. 55 ms` | 
-| __[Reactive: Leaf Update](#reactive-leaf-update)__                  |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |     `max. 75 ms` |  `max. 75 ms` |  `max. 250 ms` |   `max. 75 ms` | 
-| __[Reactive: Root-Update](#reactive-root-update)__                  |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |    `max. 575 ms` | `max. 725 ms` |  `max. --- ms` |  `max. 750 ms` | 
-| __[Reactive: Batching](#reactive-batching)__                        |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |      `max. 5 ms` |  `max. 10 ms` |   `max. 50 ms` |    `max. 5 ms` | 
-| __[Reactive: Granular Update](#reactive-granular-update)__          |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |     `max. 50 ms` |  `max. 75 ms` |  `max. 200 ms` |   `max. 50 ms` | 
-| __[Reactive: Worst Case](#reactive-worst-case)__                    |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |   `max. 1750 ms` | `max. 600 ms` | `max. 1850 ms` | `max. 1350 ms` | 
-| __[Script Parsing and Evaluation](#script-parsing-and-evaluation)__ |        __Blink__ |    __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |      `max. - ms` |   `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |    `max. 250 ms` | `max. 250 ms` | `max. 2250 ms` |  `max. 450 ms` | 
+|                                                                     |   __i5-1240P__ | __A14 (iPad Gen 10)__ |   __i5-1240P__ |   __i5-1240P__ |
+|:--------------------------------------------------------------------|---------------:|----------------------:|---------------:|---------------:|
+| __[Deep Iteration Rendering](#deep-iteration-rendering)__           |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |  `max. 300 ms` |         `max. 375 ms` | `max. 2250 ms` |  `max. 325 ms` | 
+| __[Expression Evaluation](#expression-evaluation)__                 |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+|                                                                     |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+|                                                                     |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+|                                                                     |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+|                                                                     |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |   `max. 50 ms` |         `max. 100 ms` |  `max. 115 ms` |   `max. 75 ms` | 
+|                                                                     |   `max. 20 ms` |         `max.  65 ms` |  `max. 100 ms` |   `max. 25 ms` | 
+|                                                                     |   `max. 25 ms` |         `max.  65 ms` |  `max. 300 ms` |   `max. 55 ms` | 
+| __[Reactive: Leaf Update](#reactive-leaf-update)__                  |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |   `max. 75 ms` |          `max. 75 ms` |  `max. 250 ms` |   `max. 75 ms` | 
+| __[Reactive: Root-Update](#reactive-root-update)__                  |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |  `max. 575 ms` |         `max. 725 ms` |  `max. --- ms` |  `max. 750 ms` | 
+| __[Reactive: Batching](#reactive-batching)__                        |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |    `max. 5 ms` |          `max. 10 ms` |   `max. 50 ms` |    `max. 5 ms` | 
+| __[Reactive: Granular Update](#reactive-granular-update)__          |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |   `max. 50 ms` |          `max. 75 ms` |  `max. 200 ms` |   `max. 50 ms` | 
+| __[Reactive: Worst Case](#reactive-worst-case)__                    |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               | `max. 1750 ms` |         `max. 600 ms` | `max. 1850 ms` | `max. 1350 ms` | 
+| __[Script Parsing and Evaluation](#script-parsing-and-evaluation)__ |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |  `max. 250 ms` |         `max. 250 ms` | `max. 2250 ms` |  `max. 450 ms` | 
 
 ## Deep Iteration Rendering
 Renders a four-level nested template with 10×10×10×10 iterations, producing

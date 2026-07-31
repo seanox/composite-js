@@ -137,22 +137,17 @@ to optimize away unchanged work.
 
 ## Script Parsing and Evaluation
 Processes a JavaScript source file containing 1,765 expression elements 2,500
-times through the custom scripting engine and measures the total processing
-time.
+times through the custom scripting engine and measures the total processing and
+evaluation time.
 
-The benchmark evaluates the overhead of the scripting preprocessing pipeline,
-including macro detection, macro expansion and script preparation before
-execution. It verifies the performance and stability of repeated processing of
-identical source code and detects unnecessary overhead in the script loading
-path.
+The benchmark measures the performance of the complete scripting pipeline,
+including preprocessing, macro detection and expansion, script preparation,
+parsing, compilation, and runtime execution. It supports custom scripting 
+features such as `#import`, `#export`, `#module`, `#use`, and tolerant
+expressions while correctly ignoring JavaScript literals and comments during
+preprocessing.
 
-The benchmark includes support for custom scripting features such as #import,
-#export, #module, #use and tolerant expressions while ignoring JavaScript
-literals and comments during preprocessing.
-
-Executes a JavaScript source file containing 1,765 expression elements 2,500
-times through the custom scripting engine and measures the total evaluation time.
-
-The benchmark verifies the performance and stability of the parser, compiler and
-runtime execution path under repeated script execution. It detects unnecessary
-overhead during parsing and evaluation of identical source code.
+By repeatedly processing identical source code, the benchmark evaluates the
+stability and efficiency of the entire script loading and execution path, 
+helping identify unnecessary overhead in preprocessing, parsing, compilation, 
+and evaluation.

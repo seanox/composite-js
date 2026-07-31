@@ -19,14 +19,6 @@ identify regressions and track performance changes across engine versions.
 | 1.9.0                                                               |   `max. 50 ms` |         `max. 100 ms` |  `max. 115 ms` |   `max. 75 ms` | 
 |                                                                     |   `max. 20 ms` |         `max.  65 ms` |  `max. 100 ms` |   `max. 25 ms` | 
 |                                                                     |   `max. 25 ms` |         `max.  65 ms` |  `max. 300 ms` |   `max. 55 ms` | 
-| __[Reactive: Leaf Update](#reactive-leaf-update)__                  |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |   `max. 75 ms` |          `max. 75 ms` |  `max. 250 ms` |   `max. 75 ms` | 
-| __[Reactive: Root-Update](#reactive-root-update)__                  |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
-| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |  `max. 575 ms` |         `max. 725 ms` |  `max. --- ms` |  `max. 750 ms` | 
 | __[Reactive: Batching](#reactive-batching)__                        |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
 | 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
 | 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
@@ -35,6 +27,14 @@ identify regressions and track performance changes across engine versions.
 | 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
 | 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
 | 1.9.0                                                               |   `max. 50 ms` |          `max. 75 ms` |  `max. 200 ms` |   `max. 50 ms` | 
+| __[Reactive: Leaf Update](#reactive-leaf-update)__                  |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |   `max. 75 ms` |          `max. 75 ms` |  `max. 250 ms` |   `max. 75 ms` | 
+| __[Reactive: Root-Update](#reactive-root-update)__                  |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
+| 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
+| 1.9.0                                                               |  `max. 575 ms` |         `max. 725 ms` |  `max. --- ms` |  `max. 750 ms` | 
 | __[Reactive: Worst Case](#reactive-worst-case)__                    |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
 | 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
 | 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
@@ -64,30 +64,6 @@ operations and type conversion.
 The benchmark measures the performance of the expression parser and evaluator
 under repeated execution. It verifies that expressions can resolve deep property
 paths efficiently without unnecessary overhead during high-frequency evaluation.
-
-## Reactive: Leaf Update
-Renders a static 10×10×10×10 DOM tree (10,000 nodes) and then updates exactly
-one reactive value bound to #target.
-
-The benchmark verifies that a reactive renderer invalidates only the affected
-binding instead of traversing or re-rendering unrelated parts of the DOM. The
-size of the surrounding tree serves solely to detect unnecessary work during the
-update phase.
-
-## Reactive: Root-Update
-Renders a tree whose entire structure depends on state.x. Updating state.x at
-the root invalidates almost the complete render tree.
-
-The benchmark measures:
-- Reactive invalidation from the root
-- Template evaluation
-- Renderer throughput
-- DOM creation and insertion
-- End-to-end render latency until rendering has finished
-
-Increasing state.x from 10 to 11 expands every nesting level, growing the tree
-from 10^4 (10,000) to 11^4 (14,641) rendered nodes. This represents a worst-case
-full-tree update where nearly every node must be regenerated.
 
 ## Reactive: Batching
 Performs 1000 synchronous updates to a single reactive value.
@@ -121,6 +97,30 @@ This benchmark primarily evaluates:
 - update granularity
 - scheduler overhead
 - incremental DOM update performance
+
+## Reactive: Leaf Update
+Renders a static 10×10×10×10 DOM tree (10,000 nodes) and then updates exactly
+one reactive value bound to #target.
+
+The benchmark verifies that a reactive renderer invalidates only the affected
+binding instead of traversing or re-rendering unrelated parts of the DOM. The
+size of the surrounding tree serves solely to detect unnecessary work during the
+update phase.
+
+## Reactive: Root-Update
+Renders a tree whose entire structure depends on state.x. Updating state.x at
+the root invalidates almost the complete render tree.
+
+The benchmark measures:
+- Reactive invalidation from the root
+- Template evaluation
+- Renderer throughput
+- DOM creation and insertion
+- End-to-end render latency until rendering has finished
+
+Increasing state.x from 10 to 11 expands every nesting level, growing the tree
+from 10^4 (10,000) to 11^4 (14,641) rendered nodes. This represents a worst-case
+full-tree update where nearly every node must be regenerated.
 
 ## Reactive: Worst Case
 Creates 10,000 DOM bindings that depend on the same reactive value. When the

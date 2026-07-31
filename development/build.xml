@@ -1,26 +1,26 @@
 <?xml version="1.0" ?>
 <project name="aspect-js" default="usage" basedir="${ant.file}/../..">
   <target name="usage">
-    <echo>Following targets are available:                               </echo>
-    <echo>                                                               </echo>
-    <echo>  changes    Synchronizes README.md with CHANGES               </echo>
-    <echo>                                                               </echo>
-    <echo>  release    Creates the release as archive for distribution   </echo>
-    <echo>             Synchronizes README.md with CHANGES               </echo>
-    <echo>                                                               </echo>
-    <echo>  publish    Creates the release as archive for distribution   </echo>
-    <echo>             Synchronizes README.md with CHANGES               </echo>
-    <echo>             Publishes the version to the npm repository       </echo>
-    <echo>                                                               </echo>
-    <echo>  test       Creates a release for testing                     </echo>
-    <echo>                                                               </echo>    
-    <echo>  test-max   Starts the included development server            </echo>
-    <echo>             Console output of the access log                  </echo>
-    <echo>                                                               </echo>
-    <echo>  start      Starts the included development server            </echo>
-    <echo>             Console output of the access log                  </echo>
-    <echo>                                                               </echo>
-    <echo>  stop       Stops the included development server             </echo>
+    <echo>Following targets are available:                                 </echo>
+    <echo>                                                                 </echo>
+    <echo>  changes        Synchronizes README.md with CHANGES             </echo>
+    <echo>                                                                 </echo>
+    <echo>  release        Creates the release as archive for distribution </echo>
+    <echo>                 Synchronizes README.md with CHANGES             </echo>
+    <echo>                                                                 </echo>
+    <echo>  publish        Creates the release as archive for distribution </echo>
+    <echo>                 Synchronizes README.md with CHANGES             </echo>
+    <echo>                 Publishes the version to the npm repository     </echo>
+    <echo>                                                                 </echo>
+    <echo>  compile        Prepare the environment for testing             </echo>
+    <echo>                 Combinable with my task start.                  </echo>
+    <echo>  compile-max    Prepare the environment for testing with max    </echo>
+    <echo>                 Combinable with my task start.                  </echo>
+    <echo>                                                                 </echo>
+    <echo>  start          Starts the included development server          </echo>
+    <echo>                 Console output of the access log                </echo>
+    <echo>                                                                 </echo>
+    <echo>  stop           Stops the included development server           </echo>
   </target>
   
   <property name="workspace" value="${basedir}"/>
@@ -295,7 +295,8 @@
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_14 Components - Example for dynamic table with CSV download/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_15 Debugging/assets"/>
     
-    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_09 Testing/assets"/>
+    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_09 Testing - Activation/assets"/>
+    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_10 Testing - UI Test/assets"/>
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_16 Testing - Activation/assets"/>
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_17 Testing - UI Test/assets"/>
 
@@ -358,20 +359,18 @@
     <replaceregexp file="${workspace}/package.json" match="(&quot;version&quot;: &quot;)\d+(?:\.\d+)+(\&quot;)" flags="g" replace="\10.0.0\2" byline="false"/>
   </target>
 
-  <target name="test" depends="release">
+  <target name="compile" depends="release">
     <copy file="${release.file.debug.testing}"
         tofile="${workspace.test}/${ant.project.name}.js" overwrite="true"/>
     <copy file="${release.file.debug.testing}"
         tofile="${workspace.benchmarks}/${ant.project.name}.js" overwrite="true"/>
-    <antcall target="run"/>
   </target>
 
-  <target name="test-max" depends="release">
+  <target name="compile-max" depends="release">
     <copy file="${release.file.debug.testing.max}"
         tofile="${workspace.test}/${ant.project.name}.js" overwrite="true"/>
     <copy file="${release.file.debug.testing.max}"
         tofile="${workspace.benchmarks}/${ant.project.name}.js" overwrite="true"/>
-    <antcall target="run"/>
   </target>
 
   <target name="start">

@@ -23,7 +23,7 @@ and also terminated most simply by command line from the project directory with
 the included Ant script.
 
 ```
-ant -f ./development/build.xml run
+ant -f ./development/build.xml start
 ```
 ```
 ant -f ./development/build.xml stop
@@ -48,7 +48,8 @@ The release is created by Ant script directly from the root directory of the
 project.
 
 ```
-ant -f ./development/build.xml test
+ant -f ./development/build.xml compile
+ant -f ./development/build.xml compile-max
 ```
 
 ## Test
@@ -92,10 +93,8 @@ Overview of engines
 https://en.wikipedia.org/wiki/Comparison_of_browser_engines
 
 ### Procedure
-- Create a release
-  `ant -f ./development/build.xml test`
-- Start the server
-  `ant -f ./development/build.xml run`
+- Create a release and start the server
+  `ant -f ./development/build.xml compile start`
 - URLs to be tested
   http://127.0.0.1:8000  
   http://127.0.0.1:8000/index.html    

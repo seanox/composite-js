@@ -34,7 +34,7 @@ identify regressions and track performance changes across engine versions.
 | __[Reactive: Root-Update](#reactive-root-update)__                  |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
 | 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
 | 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
-| 1.9.0                                                               |  `max. 575 ms` |         `max. 725 ms` |            `-` |  `max. 750 ms` | 
+| 1.9.0                                                               |  `max. 575 ms` |         `max. 725 ms` |      `timeout` |  `max. 750 ms` | 
 | __[Reactive: Worst Case](#reactive-worst-case)__                    |      __Blink__ |            __WebKit__ |     __goanna__ |      __Gecko__ |
 | 1.7.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 
 | 1.8.0                                                               |    `max. - ms` |           `max. - ms` |    `max. - ms` |    `max. - ms` | 

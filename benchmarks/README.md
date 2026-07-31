@@ -111,10 +111,10 @@ The benchmark measures whether the reactive system invalidates only the affected
 binding or unnecessarily re-evaluates unrelated nodes.
 
 Ideal:  
-State change -> one dependency -> one text node update.
+State change &rarr; one dependency &rarr; one text node update.
 
 Poor implementations:  
-State change -> list re-evaluation -> many template executions -> many DOM checks.
+State change &rarr; list re-evaluation &rarr; many template executions &rarr; many DOM checks.
 
 This benchmark primarily evaluates:
 - dependency tracking

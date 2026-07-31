@@ -4561,7 +4561,7 @@
  *       - locales.xml
  *     + modules
  *     + resources
- *     - index.html
+ *     - playground.html
  *
  * The elements for the supported languages are organized in locales in this
  * file. Locales is a set of supported country codes. In each country code, the

@@ -28,7 +28,8 @@ These references are available when comparing the individual steps.
 - [Step_06 Usage of dynamic data](micro-frontend%2FStep_06%20Usage%20of%20dynamic%20data)
 - [Step_07 Business logic in detail](micro-frontend%2FStep_07%20Business%20logic%20in%20detail)
 - [Step_08 Debugging](micro-frontend%2FStep_08%20Debugging)
-- [Step_09 Testing](micro-frontend%2FStep_09%20Testing) not yet implemented
+- [Step_09 Testing - Activation](micro-frontend/Step_09%20Testing%20-%20Activation) not yet implemented
+- [Step_10 Testing - UI Test](micro-frontend/Step_10%20Testing%20-%20UI%20Test) not yet implemented
 
 ## SPA (Single Page Application)
 - [Step_01 Prototype as framework](single-page-application%2FStep_01%20Prototype%20as%20framework)

@@ -1,4 +1,4 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
   <head>
     <title>Seanox aspect-js Benchmark</title>
@@ -20,56 +20,51 @@
       }
 
       body {
+        margin: 0;
         font-family: monospace;
         overflow: hidden;
-        margin: 0;
+        display: grid;
+        grid-template-rows: 3em 1fr;
+        grid-template-columns: 20% 40% 40%;
+        height: 100vh;
       }
-      body > table {
-        border-collapse: collapse;
-        height: 100%;
-        width: 100%;
-        position: absolute;
-        inset: 0;
-      }
-      body > table th {
+
+      header {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: inherit;
         background: var(--header);
-        height: 3em;
         border-bottom: 3px solid var(--border);
+        align-items: center;
+        padding-left: .5em;
       }
-      body > table td {
-        padding: 0;
-        position: relative;
-        vertical-align: top;
+      header > div {
+        font-weight: bold;
       }
-      body > table td:first-child {
-        width: 20%;
-      }
-      body > table td:not(:first-child) {
-        width: 40%;
-        border-left: 3px solid var(--border);
-      }
-      body > table td > * {
-        overflow: auto;
-      }
-      body > table iframe {
-        border: 0;
-        position: absolute;
-        inset: 0;
-        height: 100%;
-        width: 100%;
+
+      main {
+        display: contents;
       }
 
       #progress,
-      #output {
+      #output,
+      #frame {
+        overflow: auto;
+        position: relative;
+      }
+
+      #frame iframe {
         position: absolute;
         inset: 0;
-        overflow: auto;
+        border: 0;
+        width: 100%;
+        height: 100%;
       }
 
       #progress > div {
+        padding: .75em;
         border-left: .5em solid var(--gray);
         cursor: pointer;
-        padding: .75em;
       }
       #progress > div + div {
         border-top: 1px dotted var(--line);
@@ -92,9 +87,9 @@
       }
 
       #output pre {
-        border-left: .5em solid var(--gray);
         margin: 0;
         padding: .75em;
+        border-left: .5em solid var(--gray);
       }
       #output pre + pre {
         border-top: 1px dotted var(--line);
@@ -110,22 +105,22 @@
         border-left-color: var(--error);
       }
     </style>
+    <script src="aspect-js.js"></script>
     <script type="text/test-cases">
+        compatibility.html
 
-      compatibility.html
-
-      composite_render_benchmark.html
-      expression_benchmark.html
-      reactive_batching_benchmark.html
-      reactive_granular_update_benchmark.html
-      reactive_leaf_update_benchmark.html
-      reactive_root_update_benchmark.html
-      reactive_worst_case_benchmark.html
-      scripting_parse_benchmark.html
+        composite_render_benchmark.html
+        expression_benchmark.html
+        reactive_batching_benchmark.html
+        reactive_granular_update_benchmark.html
+        reactive_leaf_update_benchmark.html
+        reactive_root_update_benchmark.html
+        reactive_worst_case_benchmark.html
+        scripting_parse_benchmark.html
     </script>
     <script src="aspect-js.js"></script>
     <script type="text/javascript">
-    
+
       let queue;
       let faults;
       let lock;
@@ -234,7 +229,7 @@
               test.className = "progress";
           }
       });
-      
+
       Test.listen(Test.EVENT_INTERRUPT, (event, status) => {
           outputMessage("warn", "Interrupt of " + locateTest());
           performTest(event, status);
@@ -243,7 +238,7 @@
       });
 
       const benchmarks = [];
-      
+
       console.listen((event, ...variants) => {
           if (event === undefined
                   || event === null)
@@ -262,23 +257,15 @@
     </script>
   </head>
   <body>
-    <table>
-      <tr>
-        <th>Tests</th>
-        <th>Output</th>
-        <th>Frame</th>
-      </tr>
-      <tr>
-        <td>
-          <div id="progress"></div>
-        </td>
-        <td>
-          <div id="output"></div>
-        </td>
-        <td>
-          <iframe></iframe>
-        </td>
-      </tr>
-    </table>
+    <header>
+      <div>Tests</div>
+      <div>Output</div>
+      <div>Frame</div>
+    </header>
+    <main>
+      <div id="progress"></div>
+      <div id="output"></div>
+      <div id="frame"><iframe></iframe></div>
+    </main>
   </body>
 </html>

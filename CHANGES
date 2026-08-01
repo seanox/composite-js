@@ -8,6 +8,8 @@ BF: Build: Optimizing npm access
 BF: Build: Correction of the missing jsdelivr default
 CR: Test: Expansion of benchmarks/tests
 CR: Tutorials: Integration into the project
+CR: Composite: Refactoring the rendering
+    Allocation of responsibility according to the appropriate method.
 
 1.9.0 20260717
 BF: Composite: Validation corrections and optimization

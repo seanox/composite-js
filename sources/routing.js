@@ -37,7 +37,7 @@
  *
  *         View
  *         ----
- * A view is the primary projection of models/components/content. This
+ * A view is the primary projection of modules/components/content. This
  * projection can contain additional substructures in the form of views and
  * sub-views. Views can be static, always shown, or controlled by path and
  * permissions. Paths address the complete chain of nested views and shows the
@@ -193,7 +193,7 @@
            
         /**
          * Checks whether routing keeps or removes the composite in the DOM.
-         * A matching model can implement permit() and return undefined, true
+         * A matching module can implement permit() and return undefined, true
          * or false.
          *
          * true and false decide directly. If permit() is missing or returns
@@ -222,9 +222,9 @@
             if (!composite)
                 return false;
 
-            const model = (composite[1] || "").trim();
+            const module = (composite[1] || "").trim();
             const namespace = (composite[2] || "").replace(/:/g, ".");
-            const scope = namespace.length > 0 ? namespace + "." + model : model;
+            const scope = namespace.length > 0 ? namespace + "." + module : module;
 
             const object = (function(context, namespace) {
                 return namespace.split('.').reduce(function(scope, target) {

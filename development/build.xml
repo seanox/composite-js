@@ -25,7 +25,6 @@
   
   <property name="workspace" value="${basedir}"/>
   <property name="workspace.development" value="${workspace}/development"/>
-  <property name="workspace.development.optimize" value="${workspace.development}/optimize"/>
   <property name="workspace.release" value="${workspace}/release"/>
   <property name="workspace.release.temp" value="${workspace.release}/temp"/>
   <property name="workspace.sources" value="${workspace}/sources"/>
@@ -134,10 +133,10 @@
     <attribute name="input"/>
     <attribute name="output"/>
     <sequential>
-      <exec executable="cmd.exe" dir="${workspace.development.optimize}">
+      <exec executable="cmd.exe" dir="${workspace.development}">
         <arg value="/c npx babel @{input} -o @{output} --presets=@babel/preset-env"/>
       </exec>
-      <exec executable="cmd.exe" dir="${workspace.development.optimize}">
+      <exec executable="cmd.exe" dir="${workspace.development}">
         <arg value="/c npx prettier --write --tab-width 2 --use-tabs @{output}"/>
       </exec>
     </sequential>
@@ -147,7 +146,7 @@
     <attribute name="input"/>
     <sequential>
       <exec executable="cmd.exe" dir="${workspace.release}" failonerror="true">
-        <arg value="/c npx eslint --config ${workspace.development.optimize}\.eslintrc @{input}"/>
+        <arg value="/c npx eslint --config ${workspace.development}\.eslintrc @{input}"/>
       </exec>
     </sequential>
   </macrodef>
@@ -156,7 +155,7 @@
     <attribute name="input"/>
     <attribute name="output"/>
     <sequential>
-      <exec executable="cmd.exe" dir="${workspace.development.optimize}">
+      <exec executable="cmd.exe" dir="${workspace.development}">
         <arg value="/c npx uglifyjs @{input} -c -m --no-module -o @{output}"/>
       </exec>
     </sequential>
@@ -197,7 +196,7 @@
     <delete dir="${workspace.release}"/>
     <mkdir dir="${workspace.release}"/>
 
-    <exec executable="cmd.exe" dir="${workspace.development.optimize}">
+    <exec executable="cmd.exe" dir="${workspace.development}">
       <arg value="/c npm install"/>
     </exec>
 
@@ -263,8 +262,8 @@
     <file-replace-tabs input="${release.file.max}"/>
     <file-replace-tabs input="${release.file.testing.max}"/>
 
-    <delete dir="${workspace.development.optimize}/node_modules"/>
-    <delete file="${workspace.development.optimize}/package-lock.json"/>
+    <delete dir="${workspace.development}/node_modules"/>
+    <delete file="${workspace.development}/package-lock.json"/>
 
     <delete>
       <fileset dir="${workspace.tutorials}">

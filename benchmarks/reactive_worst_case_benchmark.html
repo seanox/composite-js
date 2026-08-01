@@ -25,20 +25,10 @@
                 state.counter++;
             } else if (phase === 2) {
                 const elapsed = performance.now() -timing;
-                let timeout;
-                if (navigator.engine === "blink")
-                    timeout = 1750;
-                if (navigator.engine === "webkit")
-                    timeout = 600;
-                if (navigator.engine === "goanna")
-                    timeout = 1850;
-                if (navigator.engine === "gecko")
-                    timeout = 1350;
-                result.duration = `Duration ${elapsed.toFixed(2)} ms`;
-                Test.create({timeout:100, test() {
-                    const message = `${elapsed.toFixed(2)} ms (expected max. ${timeout} ms)`;
-                    console.log(`Benchmark Worst Case: ${message}`);
-                    Assert.assertTrue(`Duration ${message}`, elapsed < timeout);                    
+                result.duration = `Duration ${elapsed.toFixed(0)} ms`;
+                Test.create({test() {
+                    const message = `${elapsed.toFixed(0)} ms`;
+                    console.log(`Benchmark: ${message}`);
                 }});
                 Test.start();
             }

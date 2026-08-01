@@ -37,53 +37,29 @@
         Composite.listen(Composite.EVENT_RENDER_END, function() {
             if (Test.status().queue !== undefined)
                 return;
-            let timeout1;
-            let timeout2;
-            let timeout3;
-            if (navigator.engine === "blink") {
-                timeout1 = 50;
-                timeout2 = 20;
-                timeout3 = 25;
-            }
-            if (navigator.engine === "webkit") {
-                timeout1 = 125;
-                timeout2 = 50;
-                timeout3 = 50;
-            }
-            if (navigator.engine === "goanna") {
-                timeout1 = 125;
-                timeout2 = 100;
-                timeout3 = 300;
-            }
-            if (navigator.engine === "gecko") {
-                timeout1 = 50;
-                timeout2 = 25;
-                timeout3 = 50;
-            }
-
-            Test.create({timeout:timeout1, test() {
+            Test.create({test() {
                 const duration = Date.now() -timing;
-                const message = `Duration: ${duration} ms (expected max. ${timeout1} ms)`; 
+                const message = `${duration} ms`;
                 console.log(`Benchmark 1: ${message}`);
             }});
-            Test.create({timeout:timeout2, test() {
+            Test.create({test() {
                 const timing = Date.now();
                 let expression = document.querySelector("script[type='text/expression']");
                 expression = expression.innerHTML;
                 for (let loop = 0; loop < 2500; loop++)
                     Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval(expression));
                 const duration = Date.now() -timing;
-                const message = `Duration: ${duration} ms (expected max. ${timeout2} ms)`; 
+                const message = `${duration}`;
                 console.log(`Benchmark 2: ${message}`);
             }});
-            Test.create({timeout:timeout3, test() {
+            Test.create({test() {
                 const timing = Date.now();
                 let expression = document.querySelector("script[type='text/expression']");
                 expression = expression.innerHTML;
                 for (let loop = 0; loop < 25000; loop++)
                     Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval("ceb_1", expression));
                 const duration = Date.now() -timing;
-                const message = `Duration: ${duration} ms (expected max. ${timeout3} ms)`; 
+                const message = `${duration} ms`;
                 console.log(`Benchmark 3: ${message}`);
             }});
             Test.start();

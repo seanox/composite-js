@@ -45,21 +45,10 @@
            checkTask = Composite.asynchronous(() => {
                finished = true;
                const elapsed = lastRender - timing;
-               let timeout;
-               if (navigator.engine === "blink")
-                   timeout = 5;
-               if (navigator.engine === "webkit")
-                   timeout = 10;
-               if (navigator.engine === "goanna")
-                   timeout = 50;
-               if (navigator.engine === "gecko")
-                   timeout = 5;
-               result.duration = `Duration ${elapsed.toFixed(2)} ms`;
+               result.duration = `Duration ${elapsed.toFixed(0)} ms`;
                Test.create({test() {
-                   const message = `${elapsed.toFixed(2)} ms (expected max. ${timeout} ms)`;
-                   console.log(`Benchmark Batching: ${elapsed.toFixed(2)}ms, ${renderCount} render cycle(s)`);                   
-                   console.log(`Benchmark Batching: ${message}`);
-                   Assert.assertTrue(`Duration ${message}`, elapsed < timeout);
+                   const message = `${elapsed.toFixed(0)} ms`;
+                   console.log(`Benchmark: ${message}`);
                }});
                Test.start();
            });

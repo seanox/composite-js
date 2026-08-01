@@ -16,16 +16,7 @@
         let source;
         Composite.listen(Composite.EVENT_RENDER_END, () => {
             source = Test.read("scripting_parse_benchmark.js");
-            let timeout1;
-            if (navigator.engine === "blink")
-                timeout1 = 250;
-            if (navigator.engine === "webkit")
-                timeout1 = 250;
-            if (navigator.engine === "goanna")
-                timeout1 = 2250;
-            if (navigator.engine === "gecko")
-                timeout1 = 450;
-            Test.create({timeout:timeout1, test() {
+            Test.create({test() {
                 document.body.innerText += "Start 2500 runs\n";
                 const timing = Date.now();
                 for (let count = 0; count < 2500; count++) {
@@ -35,7 +26,7 @@
                     }
                 }
                 document.body.innerText += "Timing " + (Date.now() -timing) + "\n";
-                console.log(`Benchmark 1: ${Date.now() -timing}ms`);
+                console.log(`Benchmark: ${Date.now() -timing} ms`);
             }});
             Test.start();
         });

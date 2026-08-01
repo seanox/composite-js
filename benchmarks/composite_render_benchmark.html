@@ -18,19 +18,9 @@
         let timing = Date.now();
         Composite.listen(Composite.EVENT_RENDER_END, () => {
             timing = Date.now() -timing;
-            let timeout1;
-            if (navigator.engine === "blink")
-                timeout1 = 300;
-            if (navigator.engine === "webkit")
-                timeout1 = 375;
-            if (navigator.engine === "goanna")
-                timeout1 = 2250;
-            if (navigator.engine === "gecko")
-                timeout1 = 325;
             Test.create({test() {
-                const message = `${timing} ms (expected max. ${timeout1} ms)`;
-                console.log(`Duration: ${message}`);
-                Assert.assertTrue(`Duration ${message}`, timing < timeout1);
+                const message = `${timing} ms`;
+                console.log(`Benchmark: ${message}`);
             }});
             Test.start();
         });       

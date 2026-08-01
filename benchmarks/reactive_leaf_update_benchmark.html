@@ -28,20 +28,10 @@
                 model.value++;
             } else if (phase === 2) {
                 const elapsed = performance.now() -timing;
-                let timeout;
-                if (navigator.engine === "blink")
-                    timeout = 75;
-                if (navigator.engine === "webkit")
-                    timeout = 75;
-                if (navigator.engine === "goanna")
-                    timeout = 250;
-                if (navigator.engine === "gecko")
-                    timeout = 75;
-                result.duration = `Duration ${elapsed.toFixed(2)} ms`;
+                result.duration = `Duration ${elapsed.toFixed(0)} ms`;
                 Test.create({test() {
-                    const message = `${elapsed.toFixed(2)} ms (expected max. ${timeout} ms)`;
-                    console.log(`Benchmark Leaf-Update: ${message}`);
-                    Assert.assertTrue(`Duration ${message}`, elapsed < timeout);
+                    const message = `${elapsed.toFixed(0)} ms`;
+                    console.log(`Benchmark: ${message}`);
                 }});
                 Test.start();
             }

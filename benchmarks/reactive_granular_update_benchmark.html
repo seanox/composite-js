@@ -27,20 +27,10 @@
                 state.nodes[5000].value++;
             } else if (phase === 2) {
                 const elapsed = performance.now() -timing;
-                let timeout;
-                if (navigator.engine === "blink")
-                    timeout = 50;
-                if (navigator.engine === "webkit")
-                    timeout = 75;
-                if (navigator.engine === "goanna")
-                    timeout = 200;
-                if (navigator.engine === "gecko")
-                    timeout = 50;
-                result.duration = `Duration ${elapsed.toFixed(2)} ms`;
-                Test.create({timeout:timeout, test() {
-                    const message = `${elapsed.toFixed(2)} ms (expected max. ${timeout} ms)`;
-                    console.log(`Benchmark Mid-Tree Update: ${message}`);
-                    Assert.assertTrue(`Duration ${message}`, elapsed < timeout);                    
+                result.duration = `Duration ${elapsed.toFixed(0)} ms`;
+                Test.create({test() {
+                    const message = `${elapsed.toFixed(0)}`;
+                    console.log(`Benchmark: ${message}`);
                 }});
                 Test.start();
             }

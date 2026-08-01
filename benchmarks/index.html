@@ -3,113 +3,111 @@
   <head>
     <title>Seanox aspect-js Benchmark</title>
     <style>
+      :root {
+        --border:  #ffffff;
+        --header:  #f0f0f0;
+        --gray:    #c0c0c0;
+        --line:    #909090;
+
+        --info:    #00a0f0;
+        --success: #70a040;
+        --error:   #ff0000;
+        --warn:    #ffa000;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         font-family: monospace;
         overflow: hidden;
+        margin: 0;
       }
-      
       body > table {
         border-collapse: collapse;
         height: 100%;
-        left: 0px;
-        overflow: hidden;
-        position: absolute;
-        top: 0px;
         width: 100%;
+        position: absolute;
+        inset: 0;
+      }
+      body > table th {
+        background: var(--header);
+        height: 3em;
+        border-bottom: 3px solid var(--border);
       }
       body > table td {
-        border: 0px solid;
-        margin: 0px;
-        padding: 0px;
+        padding: 0;
         position: relative;
         vertical-align: top;
-        width: 40%;
       }
       body > table td:first-child {
         width: 20%;
       }
-      body > table th {
-        background: #F0F0F0;
-        height: 3em;
+      body > table td:not(:first-child) {
+        width: 40%;
+        border-left: 3px solid var(--border);
       }
-      body > table th + th,
-      body > table td + td {
-        border-left: 3px solid #FFFFFF;
-      }      
-      body > table th {
-        border-bottom: 3px solid #FFFFFF;
-      }      
       body > table td > * {
         overflow: auto;
       }
-      
-      body > table td iframe {
-        border: 0px solid;
-        height: 100%;
+      body > table iframe {
+        border: 0;
         position: absolute;
-        top: 0px; left:0px;
+        inset: 0;
+        height: 100%;
         width: 100%;
       }
-      
-      #progress {
-        height: 100%;
+
+      #progress,
+      #output {
         position: absolute;
-        top: 0em;
-        left: 0em;
-        width: 100%;
-      }      
+        inset: 0;
+        overflow: auto;
+      }
+
       #progress > div {
-        border-left: 0.5em solid;
-        border-left-color: #C0C0C0;
+        border-left: .5em solid var(--gray);
         cursor: pointer;
-        margin: 0em;
-        padding: 0.75em;
-      }
-      #progress > div.progress {
-        border-left-color: #00A0F0;
-      }
-      #progress > div.successful {
-        border-left-color: #70A040;
-      }
-      #progress > div.failed {
-        border-left-color: #FF0000;
+        padding: .75em;
       }
       #progress > div + div {
-        border-top: 1px dotted #909090;
+        border-top: 1px dotted var(--line);
         margin-top: 1px;
-      }      
-      #progress > div span ~ span {
-        color: #C0C0C0;
-      } 
-      #progress > div.failed span ~ span {
-        color: #FF0000;
-      } 
-            
-      #output {
-        height: 100%;
-        position:absolute;
-        top: 0em;
-        left: 0em;
-        width: 100%;
       }
+      #progress > div.progress {
+        border-left-color: var(--info);
+      }
+      #progress > div.successful {
+        border-left-color: var(--success);
+      }
+      #progress > div.failed {
+        border-left-color: var(--error);
+      }
+      #progress > div span ~ span {
+        color: var(--gray);
+      }
+      #progress > div.failed span ~ span {
+        color: var(--error);
+      }
+
       #output pre {
-        border-left: 0.5em solid;
-        border-left-color: #C0C0C0;
-        margin: 0em;
-        padding: 0.75em;
+        border-left: .5em solid var(--gray);
+        margin: 0;
+        padding: .75em;
       }
       #output pre + pre {
+        border-top: 1px dotted var(--line);
         margin-top: 1px;
-        border-top: 1px dotted #909090;
-      }
-      #output pre.error {
-        border-left-color: #FF0000;
       }
       #output pre.info {
-        border-left-color: #00A0F0;
+        border-left-color: var(--info);
       }
       #output pre.warn {
-        border-left-color: #FFA000;
+        border-left-color: var(--warn);
+      }
+      #output pre.error {
+        border-left-color: var(--error);
       }
     </style>
     <script type="text/test-cases">
@@ -220,6 +218,9 @@
               if (!!faults)
                   outputMessage("error", "Some of the tests failed.");
               else outputMessage("info", "All tests were successful.");
+              if (benchmarks.length > 0)
+                  outputMessage("info", "Benchmark summary\r\n\t" + benchmarks.map(
+                          value => value.padStart(7)).join("\r\n\t"));
           }
           lock = false;   
           
@@ -240,6 +241,8 @@
           if (queue.length > 0)
               loadTest(queue.shift());
       });
+
+      const benchmarks = [];
       
       console.listen((event, ...variants) => {
           if (event === undefined
@@ -252,6 +255,9 @@
                   event = "warn";
           message = message.replace(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+/i, "");
           outputMessage(event, message);
+          const match = message.match(/Benchmark(?:\s+\d+)?:\s*(\d+)\s*(ms)/i);
+          if (match)
+              benchmarks.push(match[1] + " " + match[2]);
       });
     </script>
   </head>

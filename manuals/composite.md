@@ -47,7 +47,7 @@ A component in markup consists of an HTML element marked as composite with a
 unique ID, which is also called Composite ID.
 
 ```html
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
   <head>
     <script src="aspect-js.js"></script>

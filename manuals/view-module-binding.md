@@ -89,7 +89,7 @@ Each composite is identified by its Composite ID, which connects the HTML
 element, the corresponding module, and the CSS selector.
 
 ```html
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
   <head>
     <script src="aspect-js.js"></script>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
   <head>
     <title>Seanox aspect-js Benchmark</title>
@@ -62,8 +62,8 @@
       }
 
       #progress > div {
-        padding: .75em;
-        border-left: .5em solid var(--gray);
+        padding: 0.75em;
+        border-left: 0.5em solid var(--gray);
         cursor: pointer;
       }
       #progress > div + div {
@@ -88,8 +88,8 @@
 
       #output pre {
         margin: 0;
-        padding: .75em;
-        border-left: .5em solid var(--gray);
+        padding: 0.75em;
+        border-left: 0.5em solid var(--gray);
       }
       #output pre + pre {
         border-top: 1px dotted var(--line);
@@ -105,7 +105,6 @@
         border-left-color: var(--error);
       }
     </style>
-    <script src="aspect-js.js"></script>
     <script type="text/test-cases">
         compatibility.html
 
@@ -120,140 +119,154 @@
     </script>
     <script src="aspect-js.js"></script>
     <script type="text/javascript">
+      (() => {
+          "use strict";
 
-      let queue;
-      let faults;
-      let lock;
+          let progressElement;
+          let outputElement;
+          let iframeElement;
 
-      window.addEventListener("load", () => {
-          queue = document.querySelector("script[type='text/test-cases']");
-          queue = queue.textContent.trim().split(/\s+/);
-          queue = queue.filter(entry => !entry.match(/^\*/));
-          const content = "<div id=\"%1\">%2<br><meter></meter> <span>-</span>/<span>-</span></div>";
-          queue.forEach((entry) => {
-              let text = content;
-              text = text.replace(/%1/g, entry.hashCode());
-              text = text.replace(/%2/g, entry);
-              document.querySelector("#progress").innerHTML += text;
-          });
-          lock = true;
-          const tests = document.querySelectorAll("#progress div[id]");
-          tests.forEach((test) => {
-              test.addEventListener("click", (event) => {
-                  if (lock)
+          let queue;
+          let faults;
+
+          const benchmarks = [];
+
+          const attachProgress = () => {
+              const fragment = document.createDocumentFragment();
+              queue = document.querySelector("script[type='text/test-cases']");
+              queue = queue.textContent.trim().split(/\s+/);
+              queue = queue.filter(entry => !entry.match(/^\*/));
+              queue.forEach(entry => {
+                  const id = entry.hashCode();
+                  const item = document.createElement("div");
+                  item.id = id;
+                  item.dataset.test = entry;
+                  item.innerHTML = `${entry}<br><meter></meter> <span>-</span>/<span>-</span>`;
+                  fragment.appendChild(item);
+              });
+              progressElement.appendChild(fragment);
+              progressElement.addEventListener("click", (event) => {
+                  const target = event.target.closest('#progress > div');
+                  if (!target)
                       return;
-                  const test = event.currentTarget.textContent.match(/^\S+/);
+                  const targetName = target.dataset.test;
                   if (event.ctrlKey
                           || event.shiftKey) {
-                      let target = location.href.replace(/[^\/]+$/, test);
-                      target = window.open(target, "_extern_test");
-                      if (target)
-                          target.focus();
+                    const targetUrl = location.href.replace(/([^\/]+$)|$/, targetName);
+                    const targetWindow = window.open(targetUrl, '_extern_test');
+                      if (targetWindow)
+                          targetWindow.focus();
                       return;
-                  } 
+                  }
                   faults = false;
-                  document.querySelector("#output").innerHTML = "";
-                  loadTest(test);
+                  outputElement.innerHTML = '';
+                  loadTest(targetName);
               });
+          };
+
+          const attachTestListeners = () => {
+
+              Test.activate();
+
+              Test.listen(Test.EVENT_START, (event, status) => {
+                  outputMessage("info",
+                          `Start of ${locateTest()}\r\n\t${status.queue.size} tests found`);
+              });
+
+              Test.listen(Test.EVENT_PERFORM, (event, status) => {
+                  performTest(event, status);
+              });
+
+              Test.listen(Test.EVENT_FINISH, (event, status) => {
+
+                  performTest(event, status);
+                  if (queue.length <= 0) {
+                    if (faults)
+                        outputMessage("error", "Some of the tests failed.");
+                    else outputMessage("info", "All tests were successful.");
+                    if (benchmarks.length)
+                        outputMessage("info", "Benchmark summary\r\n\t"
+                                + benchmarks.map(value => value.padStart(7)).join("\r\n\t"));
+                  } else loadTest(queue.shift());
+
+                  window.focus();
+                  document.body.focus();
+
+                  let test = locateTest();
+                  test = document.querySelector("#" + test.hashCode());
+                  if (test && !test.className) {
+                      test.scrollIntoView(false);
+                      test.className = "progress";
+                  }
+              });
+
+              Test.listen(Test.EVENT_INTERRUPT, (event, status) => {
+                  outputMessage("warn", "Interrupt of " + locateTest());
+                  performTest(event, status);
+                  if (queue.length > 0)
+                      loadTest(queue.shift());
+              });
+
+              console.listen((event, ...variants) => {
+                  if (event == null)
+                      return;
+                  let message = variants.join(", ");
+                  event = (event || "").trim();
+                  if (event.match(/^error$/i))
+                      if (!String(message).match(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+Test/i))
+                          event = "warn";
+                  message = message.replace(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+/i, "");
+                  outputMessage(event, message);
+
+                  const match = message.match(/Benchmark(?:\s+\d+)?:\s*(\d+)\s*(ms)/i);
+                  if (match)
+                      benchmarks.push(match[1] + " " + match[2]);
+              });
+          };
+
+          window.addEventListener("load", () => {
+              progressElement = document.querySelector("#progress");
+              outputElement = document.querySelector("#output");
+              iframeElement = document.querySelector("#frame iframe");
+              attachProgress();
+              attachTestListeners();
+              loadTest(queue.shift());
           });
-          loadTest(queue.shift());
-      });
 
-      const locateTest = function() {
-          return String(document.querySelector("iframe").getAttribute("src").match(/^[^\?]+/));
-      };
+          const locateTest = () => {
+              return String(iframeElement.getAttribute("src").match(/^[^\?]+/));
+          };
 
-      const loadTest = function(test) {
-          outputMessage("info", "Loading " + test);
-          document.querySelector("iframe").setAttribute("src", test || queue.shift() + "?" + Date.now());
-      };
+          const loadTest = (test) => {
+              outputMessage("info", "Loading " + test);
+              iframeElement.setAttribute("src", test || queue.shift() + "?" + Date.now());
+          };
 
-      const performTest = function(event, status) {
-          let test = locateTest();
-          test = document.querySelector("#" + test.hashCode());
-          test.scrollIntoView(false);
-
-          const meter = test.querySelector("meter");
-          meter.max = status.queue.size;
-          meter.value = status.queue.progress;
-          test.querySelector("span").textContent = status.queue.progress;
-          test.querySelector("span + span").textContent = status.queue.faults;
-          test.className = status.queue.faults ? "failed" : "successful";
-          if (status.queue.faults)
-              faults = true;  
-      };
-
-      const outputMessage = function(event, message) {
-          const output = document.querySelector("#output");
-          const content = document.createElement("pre");
-          content.className = event;
-          content.textContent = String(message || "").trim();
-          if (content.textContent)
-              output.appendChild(content);
-          output.innerHTML = output.innerHTML.trim();
-          output.scrollTop = output.scrollHeight;          
-      };
-      
-      Test.activate();
-      
-      Test.listen(Test.EVENT_START, (event, status) => {
-          outputMessage("info", "Start of " + locateTest()
-                  + "\r\n\t" + status.queue.size + " tests found");
-      });    
-      
-      Test.listen(Test.EVENT_PERFORM, (event, status) => {
-          performTest(event, status);
-      });      
-      
-      Test.listen(Test.EVENT_FINISH, (event, status) => {
-          performTest(event, status);
-          if (queue.length > 0) {
-              loadTest(queue.shift());
-          } else {
-              if (!!faults)
-                  outputMessage("error", "Some of the tests failed.");
-              else outputMessage("info", "All tests were successful.");
-              if (benchmarks.length > 0)
-                  outputMessage("info", "Benchmark summary\r\n\t" + benchmarks.map(
-                          value => value.padStart(7)).join("\r\n\t"));
-          }
-          lock = false;   
-          
-          window.focus();
-          document.body.focus();
-
-          let test = locateTest();
-          test = document.querySelector("#" + test.hashCode());
-          if (test && !test.className) {
+          const performTest = (event, status) => {
+              let test = locateTest();
+              test = document.querySelector("#" + test.hashCode());
               test.scrollIntoView(false);
-              test.className = "progress";
-          }
-      });
 
-      Test.listen(Test.EVENT_INTERRUPT, (event, status) => {
-          outputMessage("warn", "Interrupt of " + locateTest());
-          performTest(event, status);
-          if (queue.length > 0)
-              loadTest(queue.shift());
-      });
+              const meter = test.querySelector("meter");
+              meter.max = status.queue.size;
+              meter.value = status.queue.progress;
+              test.querySelector("span").textContent = status.queue.progress;
+              test.querySelector("span + span").textContent = status.queue.faults;
+              test.className = status.queue.faults ? "failed" : "successful";
+              if (status.queue.faults)
+                  faults = true;
+          };
 
-      const benchmarks = [];
-
-      console.listen((event, ...variants) => {
-          if (event === undefined
-                  || event === null)
-              return;
-          let message = variants.join(", ");
-          event = (event || "").trim();
-          if (event.match(/^error$/i))
-              if (!String(message).match(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+Test/i))
-                  event = "warn";
-          message = message.replace(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+/i, "");
-          outputMessage(event, message);
-          const match = message.match(/Benchmark(?:\s+\d+)?:\s*(\d+)\s*(ms)/i);
-          if (match)
-              benchmarks.push(match[1] + " " + match[2]);
-      });
+          const outputMessage = (level, message) => {
+              if (!message)
+                  return;
+              const output = document.createElement("pre");
+              output.className = level;
+              output.textContent = String(message).trim();
+              outputElement.appendChild(output);
+              outputElement.scrollTop = outputElement.scrollHeight;
+          };
+      })();
     </script>
   </head>
   <body>

@@ -1,351 +1,284 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <meta charset="ISO-8859-1">
-    <title>Seanox aspect-js test environment</title>
+    <title>Seanox aspect-js Benchmark</title>
     <style>
+      :root {
+        --border:  #ffffff;
+        --header:  #f0f0f0;
+        --gray:    #c0c0c0;
+        --line:    #909090;
+
+        --info:    #00a0f0;
+        --success: #70a040;
+        --error:   #ff0000;
+        --warn:    #ffa000;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
+        margin: 0;
         font-family: monospace;
         overflow: hidden;
+        display: grid;
+        grid-template-rows: 3em 1fr;
+        grid-template-columns: 20% 40% 40%;
+        height: 100vh;
       }
-      
-      body > table {
-        border-collapse: collapse;
-        height: 100%;
-        left: 0px;
-        overflow: hidden;
-        position: absolute;
-        top: 0px;
-        width: 100%;
+
+      header {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: inherit;
+        background: var(--header);
+        border-bottom: 3px solid var(--border);
+        align-items: center;
+        padding-left: .5em;
       }
-      body > table td {
-        border: 0px solid;
-        margin: 0px;
-        padding: 0px;
-        position: relative;
-        vertical-align: top;
-        width: 40%;
+      header > div {
+        font-weight: bold;
       }
-      body > table td:first-child {
-        width: 20%;
+
+      main {
+        display: contents;
       }
-      body > table th {
-        background: #F0F0F0;
-        height: 3em;
-      }
-      body > table th + th,
-      body > table td + td {
-        border-left: 3px solid #FFFFFF;
-      }      
-      body > table th {
-        border-bottom: 3px solid #FFFFFF;
-      }      
-      body > table td > * {
+
+      #progress,
+      #output,
+      #frame {
         overflow: auto;
+        position: relative;
       }
-      
-      body > table td iframe {
-        border: 0px solid;
-        height: 100%;
+
+      #frame iframe {
         position: absolute;
-        top: 0px; left:0px;
+        inset: 0;
+        border: 0;
         width: 100%;
+        height: 100%;
       }
-      
-      #progress {
-        height: 100%;
-        position: absolute;
-        top: 0em;
-        left: 0em;
-        width: 100%;
-      }      
+
       #progress > div {
-        border-left: 0.5em solid;
-        border-left-color: #C0C0C0;
-        cursor: pointer;
-        margin: 0em;
         padding: 0.75em;
-      }
-      #progress > div.progress {
-        border-left-color: #00A0F0;
-      }
-      #progress > div.successful {
-        border-left-color: #70A040;
-      }
-      #progress > div.failed {
-        border-left-color: #FF0000;
+        border-left: 0.5em solid var(--gray);
+        cursor: pointer;
       }
       #progress > div + div {
-        border-top: 1px dotted #909090;
+        border-top: 1px dotted var(--line);
         margin-top: 1px;
-      }      
-      #progress > div span ~ span {
-        color: #C0C0C0;
-      } 
-      #progress > div.failed span ~ span {
-        color: #FF0000;
-      } 
-            
-      #output {
-        height: 100%;
-        position:absolute;
-        top: 0em;
-        left: 0em;
-        width: 100%;
       }
+      #progress > div.progress {
+        border-left-color: var(--info);
+      }
+      #progress > div.successful {
+        border-left-color: var(--success);
+      }
+      #progress > div.failed {
+        border-left-color: var(--error);
+      }
+      #progress > div span ~ span {
+        color: var(--gray);
+      }
+      #progress > div.failed span ~ span {
+        color: var(--error);
+      }
+
       #output pre {
-        border-left: 0.5em solid;
-        border-left-color: #C0C0C0;
-        margin: 0em;
+        margin: 0;
         padding: 0.75em;
+        border-left: 0.5em solid var(--gray);
       }
       #output pre + pre {
+        border-top: 1px dotted var(--line);
         margin-top: 1px;
-        border-top: 1px dotted #909090;
-      }
-      #output pre.error {
-        border-left-color: #FF0000;
       }
       #output pre.info {
-        border-left-color: #00A0F0;
+        border-left-color: var(--info);
       }
       #output pre.warn {
-        border-left-color: #FFA000;
+        border-left-color: var(--warn);
+      }
+      #output pre.error {
+        border-left-color: var(--error);
       }
     </style>
     <script type="text/test-cases">
+        compatibility.html
 
-      compatibility.html
-
-      composite_docking.html
-      composite_events_http.html
-      composite_events_error.html
-      composite_events_module.html
-      composite_events_render.html
-      composite_module.html
-      composite_module_namespace.html
-      composite_module_namespace_mount.html
-      composite_module_namespace_scopes.html
-      composite_mount_models.html
-      composite_mount_refresh.html
-      composite_mount_synchronization.html
-      composite_mount.html
-      composite_object_lookup.html
-      composite_render_attributes.html
-      composite_render_condition.html
-      composite_render_customize.html
-      composite_render_customize_interceptors.html
-      composite_render_customize_macros.html
-      composite_render_customize_selectors.html
-      composite_render_events.html
-      composite_render_protection.html
-      composite_render_export.html
-      composite_render_import.html
-      composite_render_import_datasource.html
-      composite_render_interval.html
-      composite_render_iterate.html
-      composite_render_output.html
-      composite_render_output_datasource.html
-      composite_render_param.html
-      composite_render_recursive.html
-      composite_render_release.html
-      composite_render_script.html
-      composite_render_text.html
-      composite_render_validate.html
-      composite_render_validate_message.html
-      composite_render_value.html
-
-      datasource_collect.html
-      datasource_locales.html
-      datasource_locator.html
-
-      expression_datasource.html
-      expression_element.html
-      expression_lookup.html
-      expression_parse.html
-      expression_syntax.html
-
-      extension_namespace.html
-      extension_namespace_models.html
-      extension_string_decodeBase64.html
-      extension_string_encodeBase64.html
-      extension_string_hashcode.html
-      extension_string_unescape.html
-      extension_window_serial.html
-
-      messages_locales.html
-      messages_locales_module.html
-
-      reactive_attributes.html
-      reactive_attributes_custom.html
-      reactive_condition.html
-      reactive_import.html
-      reactive_input_events.html
-      reactive_iterate.html
-      reactive_module.html
-      reactive_objects.html
-      reactive_output.html
-      reactive_recursion.html
-      reactive_routing.html
-      reactive_text.html
-
-      routing_approve.html
-      routing_active_on.html
-      routing_active_off.html
-      routing_interceptors.html
-      routing_path_normalize.html
-      routing_route.html
-
-      scripting_syntax.html
+        composite_render_benchmark.html
+        expression_benchmark.html
+        reactive_batching_benchmark.html
+        reactive_granular_update_benchmark.html
+        reactive_leaf_update_benchmark.html
+        reactive_root_update_benchmark.html
+        reactive_worst_case_benchmark.html
+        scripting_parse_benchmark.html
     </script>
     <script src="aspect-js.js"></script>
     <script type="text/javascript">
-    
-      let queue;
-      let faults;
-      let lock;
+      (() => {
+          "use strict";
 
-      window.addEventListener("load", () => {
-          queue = document.querySelector("script[type='text/test-cases']");
-          queue = queue.textContent.trim().split(/\s+/);
-          queue = queue.filter(entry => !entry.match(/^\*/));
-          const content = "<div id=\"%1\">%2<br><meter></meter> <span>-</span>/<span>-</span></div>";
-          queue.forEach((entry) => {
-              let text = content;
-              text = text.replace(/%1/g, entry.hashCode());
-              text = text.replace(/%2/g, entry);
-              document.querySelector("#progress").innerHTML += text;
-          });
-          lock = true;
-          const tests = document.querySelectorAll("#progress div[id]");
-          tests.forEach((test) => {
-              test.addEventListener("click", (event) => {
-                  if (lock)
+          let progressElement;
+          let outputElement;
+          let iframeElement;
+
+          let queue;
+          let faults;
+
+          const benchmarks = [];
+
+          const attachProgress = () => {
+              const fragment = document.createDocumentFragment();
+              queue = document.querySelector("script[type='text/test-cases']");
+              queue = queue.textContent.trim().split(/\s+/);
+              queue = queue.filter(entry => !entry.match(/^\*/));
+              queue.forEach(entry => {
+                  const id = entry.hashCode();
+                  const item = document.createElement("div");
+                  item.id = id;
+                  item.dataset.test = entry;
+                  item.innerHTML = `${entry}<br><meter></meter> <span>-</span>/<span>-</span>`;
+                  fragment.appendChild(item);
+              });
+              progressElement.appendChild(fragment);
+              progressElement.addEventListener("click", (event) => {
+                  const target = event.target.closest('#progress > div');
+                  if (!target)
                       return;
-                  const test = event.currentTarget.textContent.match(/^\S+/);
+                  const targetName = target.dataset.test;
                   if (event.ctrlKey
                           || event.shiftKey) {
-                      let target = location.href.replace(/[^\/]+$/, test);
-                      target = window.open(target, "_extern_test");
-                      if (target)
-                          target.focus();
+                    const targetUrl = location.href.replace(/([^\/]+$)|$/, targetName);
+                    const targetWindow = window.open(targetUrl, '_extern_test');
+                      if (targetWindow)
+                          targetWindow.focus();
                       return;
-                  } 
+                  }
                   faults = false;
-                  document.querySelector("#output").innerHTML = "";
-                  loadTest(test);
+                  outputElement.innerHTML = '';
+                  loadTest(targetName);
               });
+          };
+
+          const attachTestListeners = () => {
+
+              Test.activate();
+
+              Test.listen(Test.EVENT_START, (event, status) => {
+                  outputMessage("info",
+                          `Start of ${locateTest()}\r\n\t${status.queue.size} tests found`);
+              });
+
+              Test.listen(Test.EVENT_PERFORM, (event, status) => {
+                  performTest(event, status);
+              });
+
+              Test.listen(Test.EVENT_FINISH, (event, status) => {
+
+                  performTest(event, status);
+                  if (queue.length <= 0) {
+                    if (faults)
+                        outputMessage("error", "Some of the tests failed.");
+                    else outputMessage("info", "All tests were successful.");
+                    if (benchmarks.length)
+                        outputMessage("info", "Benchmark summary\r\n\t"
+                                + benchmarks.map(value => value.padStart(7)).join("\r\n\t"));
+                  } else loadTest(queue.shift());
+
+                  window.focus();
+                  document.body.focus();
+
+                  let test = locateTest();
+                  test = document.querySelector("#" + test.hashCode());
+                  if (test && !test.className) {
+                      test.scrollIntoView(false);
+                      test.className = "progress";
+                  }
+              });
+
+              Test.listen(Test.EVENT_INTERRUPT, (event, status) => {
+                  outputMessage("warn", "Interrupt of " + locateTest());
+                  performTest(event, status);
+                  if (queue.length > 0)
+                      loadTest(queue.shift());
+              });
+
+              console.listen((event, ...variants) => {
+                  if (event == null)
+                      return;
+                  let message = variants.join(", ");
+                  event = (event || "").trim();
+                  if (event.match(/^error$/i))
+                      if (!String(message).match(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+Test/i))
+                          event = "warn";
+                  message = message.replace(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+/i, "");
+                  outputMessage(event, message);
+
+                  const match = message.match(/Benchmark(?:\s+\d+)?:\s*(\d+)\s*(ms)/i);
+                  if (match)
+                      benchmarks.push(match[1] + " " + match[2]);
+              });
+          };
+
+          window.addEventListener("load", () => {
+              progressElement = document.querySelector("#progress");
+              outputElement = document.querySelector("#output");
+              iframeElement = document.querySelector("#frame iframe");
+              attachProgress();
+              attachTestListeners();
+              loadTest(queue.shift());
           });
-          loadTest(queue.shift());
-      });
 
-      const locateTest = function() {
-          return String(document.querySelector("iframe").getAttribute("src").match(/^[^\?]+/));
-      };
+          const locateTest = () => {
+              return String(iframeElement.getAttribute("src").match(/^[^\?]+/));
+          };
 
-      const loadTest = function(test) {
-          outputMessage("info", "Loading " + test);
-          document.querySelector("iframe").setAttribute("src", test || queue.shift() + "?" + Date.now());
-      };
+          const loadTest = (test) => {
+              outputMessage("info", "Loading " + test);
+              iframeElement.setAttribute("src", test || queue.shift() + "?" + Date.now());
+          };
 
-      const performTest = function(event, status) {
-          let test = locateTest();
-          test = document.querySelector("#" + test.hashCode());
-          test.scrollIntoView(false);
-
-          const meter = test.querySelector("meter");
-          meter.max = status.queue.size;
-          meter.value = status.queue.progress;
-          test.querySelector("span").textContent = status.queue.progress;
-          test.querySelector("span + span").textContent = status.queue.faults;
-          test.className = status.queue.faults ? "failed" : "successful";
-          if (status.queue.faults)
-              faults = true;  
-      };
-
-      const outputMessage = function(event, message) {
-          const output = document.querySelector("#output");
-          const content = document.createElement("pre");
-          content.className = event;
-          content.textContent = String(message || "").trim();
-          if (content.textContent)
-              output.appendChild(content);
-          output.innerHTML = output.innerHTML.trim();
-          output.scrollTop = output.scrollHeight;          
-      };
-      
-      Test.activate();
-      
-      Test.listen(Test.EVENT_START, (event, status) => {
-          outputMessage("info", "Start of " + locateTest()
-                  + "\r\n\t" + status.queue.size + " tests found");
-      });    
-      
-      Test.listen(Test.EVENT_PERFORM, (event, status) => {
-          performTest(event, status);
-      });      
-      
-      Test.listen(Test.EVENT_FINISH, (event, status) => {
-          performTest(event, status);
-          if (queue.length > 0) {
-              loadTest(queue.shift());
-          } else {
-              if (!!faults)
-                  outputMessage("error", "Some of the tests failed.");
-              else outputMessage("info", "All tests were successful.");
-          }
-          lock = false;   
-          
-          window.focus();
-          document.body.focus();
-
-          let test = locateTest();
-          test = document.querySelector("#" + test.hashCode());
-          if (test && !test.className) {
+          const performTest = (event, status) => {
+              let test = locateTest();
+              test = document.querySelector("#" + test.hashCode());
               test.scrollIntoView(false);
-              test.className = "progress";
-          }
-      });
-      
-      Test.listen(Test.EVENT_INTERRUPT, (event, status) => {
-          outputMessage("warn", "Interrupt of " + locateTest());
-          performTest(event, status);
-          if (queue.length > 0)
-              loadTest(queue.shift());
-      });
-      
-      console.listen((event, ...variants) => {
-          if (event === undefined
-                  || event === null)
-              return;
-          let message = variants.join(", ");
-          event = (event || "").trim();
-          if (event.match(/^error$/i))
-              if (!String(message).match(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+Test/i))
-                  event = "warn";
-          message = message.replace(/^[a-z]+,[\w\s]+\d{4}\s\d{2}:\d{2}:\d{2}\s[a-z]+\s+/i, "");
-          outputMessage(event, message);
-      });
+
+              const meter = test.querySelector("meter");
+              meter.max = status.queue.size;
+              meter.value = status.queue.progress;
+              test.querySelector("span").textContent = status.queue.progress;
+              test.querySelector("span + span").textContent = status.queue.faults;
+              test.className = status.queue.faults ? "failed" : "successful";
+              if (status.queue.faults)
+                  faults = true;
+          };
+
+          const outputMessage = (level, message) => {
+              if (!message)
+                  return;
+              const output = document.createElement("pre");
+              output.className = level;
+              output.textContent = String(message).trim();
+              outputElement.appendChild(output);
+              outputElement.scrollTop = outputElement.scrollHeight;
+          };
+      })();
     </script>
   </head>
   <body>
-    <table>
-      <tr>
-        <th>Tests</th>
-        <th>Output</th>
-        <th>Frame</th>
-      </tr>
-      <tr>
-        <td>
-          <div id="progress"></div>
-        </td>
-        <td>
-          <div id="output"></div>
-        </td>
-        <td>
-          <iframe></iframe>
-        </td>
-      </tr>
-    </table>
+    <header>
+      <div>Tests</div>
+      <div>Output</div>
+      <div>Frame</div>
+    </header>
+    <main>
+      <div id="progress"></div>
+      <div id="output"></div>
+      <div id="frame"><iframe></iframe></div>
+    </main>
   </body>
 </html>

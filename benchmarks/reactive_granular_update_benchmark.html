@@ -30,7 +30,7 @@
                 result.duration = `Duration ${elapsed.toFixed(0)} ms`;
                 Test.create({test() {
                     const message = `${elapsed.toFixed(0)}`;
-                    console.log(`Benchmark: ${message}`);
+                    console.log(`Benchmark: ${message} ms`);
                 }});
                 Test.start();
             }

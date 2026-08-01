@@ -50,7 +50,7 @@
                     Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval(expression));
                 const duration = Date.now() -timing;
                 const message = `${duration}`;
-                console.log(`Benchmark 2: ${message}`);
+                console.log(`Benchmark 2: ${message} ms`);
             }});
             Test.create({test() {
                 const timing = Date.now();

@@ -26,13 +26,18 @@ declarative views, expression language, component composition and view-module
 binding directly in the browser while preserving HTML as the primary view
 language and JavaScript as the application language.
 
-__Recommendations for UI frameworks:__
-- https://bulma.io/
+__Recommended CSS/UI frameworks:__
 - https://picocss.com/
-- https://vanillaframework.io/
-- https://fomantic-ui.com/
+- https://bulma.io/
 - https://getbootstrap.com/
+- https://vanillaframework.io/
 - https://getuikit.com/
+- https://fomantic-ui.com/
+- https://w3schools.com/w3css/
+
+Recommended are __CSS-only__, __CSS-first__ and __HTML-first__ UI toolkits that
+provide styling and optional UI components without replacing HTML or managing
+rendering, component lifecycle or application state.
 
 # Features
 - __HTML and JavaScript Integration__  

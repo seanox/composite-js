@@ -34,7 +34,7 @@ __Recommended CSS/UI frameworks:__
 - https://getuikit.com/
 - https://fomantic-ui.com/
 - https://w3schools.com/w3css/
-- https://www.patternfly.org/ (CSS/HTML only)
+- https://patternfly.org/ (CSS/HTML only)
 
 Recommended are __CSS-only__, __CSS-first__ and __HTML-first__ UI toolkits that
 provide styling and optional UI components without replacing HTML or managing

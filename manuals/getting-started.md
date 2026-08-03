@@ -135,9 +135,9 @@ single-page applications. Each path consists of incremental steps that extend or
 modify the previous result. The differences between consecutive steps illustrate
 the implementation of individual concepts.
 
-- [Micro-Frontend](../../../tree/master/tutorials/micro-frontend)
+- [Micro-Frontend](https://seanox.github.io/aspect-js/tutorials/#micro-frontend)
 - [SPA (Single Page Application)](
-      ../../../tree/master/tutorials/single-page-application)
+      https://seanox.github.io/aspect-js/tutorials/#spa-single-page-application)
 
 
 

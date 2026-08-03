@@ -373,108 +373,6 @@
         })();},
 
         /**
-         * Lock mechanism for methods: render, mound and scan. The lock controls
-         * that the methods are not used concurrently and/or asynchronously.
-         * Each method opens its own transaction (lock). During a transaction,
-         * the method call requires a lock. If this lock does not exist or
-         * differs from the current transaction, the method call is parked in a
-         * queue until the current lock is released. The methods themselves can
-         * call themselves recursively and do so with the lock they know. In
-         * addition to the lock mechanism, the methods also control the START,
-         * NEXT, and END events.
-         * @param {Object} context Context (render, mound or scan)
-         * @param {string|Element} selector Selector to identify elements
-         * @returns {Object} The created lock as a meta-object
-         * @throws {Error} In case of an invalid context
-         */
-        lock(context, selector) {
-            
-            context.queue = context.queue || [];
-
-            if (context.lock === undefined
-                    || context.lock === false) {
-                context.lock = {ticks:1, selector, queue:[],
-                        share() {
-                            this.ticks++;
-                            return this;
-                        },
-                        release() {
-                            this.ticks--;
-                            if (this.ticks > 0)
-                                return;
-                            if (context === Composite.render) {
-
-                                // To ensure that on conditions when the lock is
-                                // created for the marker, the children are also
-                                // mounted, the selector must be switched to the
-                                // element, because the marker is a text node
-                                // without children.
-
-                                let selector = this.selector;
-                                if (selector instanceof Node
-                                        && selector.nodeType === Node.TEXT_NODE) {
-                                    let serial = selector.ordinal();
-                                    let object = _render_meta[serial] || {};
-                                    if (object.condition
-                                            && object.condition.element
-                                            && object.condition.marker === this.selector)
-                                        selector = object.condition.element;
-                                }
-
-                                // If the selector is a string, several elements
-                                // must be assumed, which may or may not have a
-                                // relation to the DOM. Therefore, they are all
-                                // considered and mounted separately.
-
-                                let nodes = [];
-                                if (typeof selector === "string") {
-                                    const scope = document.querySelectorAll(selector);
-                                    Array.from(scope).forEach((node) => {
-                                        if (!nodes.includes(node))
-                                            nodes.push(node);
-                                        const scope = node.querySelectorAll("*");
-                                        Array.from(scope).forEach((node) => {
-                                            if (!nodes.includes(node))
-                                                nodes.push(node);
-                                        });
-                                    });
-                                } else if (selector instanceof Element) {
-                                    nodes = selector.querySelectorAll("*");
-                                    nodes = [selector].concat(Array.from(nodes));
-                                }
-                                
-                                // Mount all elements in a composite, including
-                                // the composite element itself
-                                nodes.forEach((node) =>
-                                    Composite.mount(node));
-                                
-                                Composite.fire(Composite.EVENT_RENDER_END, this.selector);
-                            } else if (context === Composite.mount) {
-                                Composite.fire(Composite.EVENT_MOUNT_END, this.selector);
-                            } else throw new Error("Invalid context: " + context);
-                            const selector = context.queue.shift();
-                            if (selector)
-                                Composite.asynchronous(context, selector);
-                            context.lock = false;
-                    }};
-                
-                if (context === Composite.render)
-                    Composite.fire(Composite.EVENT_RENDER_START, selector);
-                else if (context === Composite.mount)
-                    Composite.fire(Composite.EVENT_MOUNT_START, selector);
-                else throw new Error("Invalid context: " + context);            
-            } else {
-                if (context === Composite.render)
-                    Composite.fire(Composite.EVENT_RENDER_NEXT, selector);
-                else if (context === Composite.mount)
-                    Composite.fire(Composite.EVENT_MOUNT_NEXT, selector);
-                else throw new Error("Invalid context: " + context);            
-            }
-            
-            return context.lock;
-        },
-        
-        /**
          * Registers a callback function for composite events.
          * @param {string} event Event type (see Composite.EVENT_***)
          * @param {function} callback Callback function to be registered
@@ -880,7 +778,7 @@
                 return;
             }
 
-            lock = Composite.lock(Composite.mount, selector);
+            lock = _lock(Composite.mount, selector);
                 
             try {
                 
@@ -1391,7 +1289,7 @@
                 _render_context_workspace.length = 0;
             }
 
-            lock = Composite.lock(Composite.render, selector);
+            lock = _lock(Composite.render, selector);
 
             const origin = selector;
             
@@ -1785,6 +1683,107 @@
      * All docked models are included in the set.
      */
     const _models = new Set();
+
+    /**
+     * Lock mechanism for methods: render, mound and scan. The lock controls
+     * that the methods are not used concurrently and/or asynchronously. Each
+     * method opens its own transaction (lock). During a transaction, the method
+     * call requires a lock. If this lock does not exist or differs from the
+     * current transaction, the method call is parked in a queue until the
+     * current lock is released. The methods themselves can call themselves
+     * recursively and do so with the lock they know. In addition to the lock
+     * mechanism, the methods also control the START, NEXT, and END events.
+     * @param {Object} context Context (render, mound or scan)
+     * @param {string|Element} selector Selector to identify elements
+     * @returns {Object} The created lock as a meta-object
+     * @throws {Error} In case of an invalid context
+     */
+    const _lock = (context, selector) => {
+
+        context.queue = context.queue || [];
+
+        if (context.lock === undefined
+                || context.lock === false) {
+            context.lock = {ticks:1, selector, queue:[],
+
+                share() {
+                    this.ticks++;
+                    return this;
+                },
+                release() {
+                    this.ticks--;
+                    if (this.ticks > 0)
+                        return;
+                    if (context === Composite.render) {
+
+                        // To ensure that on conditions when the lock is created
+                        // for the marker, the children are also mounted, the
+                        // selector must be switched to the element, because the
+                        // marker is a text node without children.
+
+                        let selector = this.selector;
+                        if (selector instanceof Node
+                                && selector.nodeType === Node.TEXT_NODE) {
+                            let serial = selector.ordinal();
+                            let object = _render_meta[serial] || {};
+                            if (object.condition
+                                    && object.condition.element
+                                    && object.condition.marker === this.selector)
+                                selector = object.condition.element;
+                        }
+
+                        // If the selector is a string, several elements must be
+                        // assumed, which may or may not have a relation to the
+                        // DOM. Therefore, they are all considered and mounted
+                        // separately.
+
+                        let nodes = [];
+                        if (typeof selector === "string") {
+                            const scope = document.querySelectorAll(selector);
+                            Array.from(scope).forEach((node) => {
+                                if (!nodes.includes(node))
+                                    nodes.push(node);
+                                const scope = node.querySelectorAll("*");
+                                Array.from(scope).forEach((node) => {
+                                    if (!nodes.includes(node))
+                                        nodes.push(node);
+                                });
+                            });
+                        } else if (selector instanceof Element) {
+                            nodes = selector.querySelectorAll("*");
+                            nodes = [selector].concat(Array.from(nodes));
+                        }
+
+                        // Mount all elements in a composite, including the
+                        // composite element itself
+                        nodes.forEach((node) =>
+                            Composite.mount(node));
+
+                        Composite.fire(Composite.EVENT_RENDER_END, this.selector);
+                    } else if (context === Composite.mount) {
+                        Composite.fire(Composite.EVENT_MOUNT_END, this.selector);
+                    } else throw new Error("Invalid context: " + context);
+                    const selector = context.queue.shift();
+                    if (selector)
+                        Composite.asynchronous(context, selector);
+                    context.lock = false;
+                }};
+
+            if (context === Composite.render)
+                Composite.fire(Composite.EVENT_RENDER_START, selector);
+            else if (context === Composite.mount)
+                Composite.fire(Composite.EVENT_MOUNT_START, selector);
+            else throw new Error("Invalid context: " + context);
+        } else {
+            if (context === Composite.render)
+                Composite.fire(Composite.EVENT_RENDER_NEXT, selector);
+            else if (context === Composite.mount)
+                Composite.fire(Composite.EVENT_MOUNT_NEXT, selector);
+            else throw new Error("Invalid context: " + context);
+        }
+
+        return context.lock;
+    }
 
     const _recursion_detection = (element) => {
         const id = (element instanceof Element ? element.id || "" : "").trim();

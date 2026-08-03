@@ -1,3 +1,4 @@
+&#9665; [Motivation](motivation.md)
 &#8801; [Table of Contents](README.md#introduction)
 &nbsp;&nbsp;&nbsp;&nbsp; [Getting Started](getting-started.md) &#9655;
 - - -
@@ -190,5 +191,6 @@ in later sections.
 
 
 - - -
+&#9665; [Motivation](motivation.md)
 &#8801; [Table of Contents](README.md#introduction)
 &nbsp;&nbsp;&nbsp;&nbsp; [Getting Started](getting-started.md) &#9655;

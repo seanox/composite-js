@@ -78,9 +78,9 @@ rendering, component lifecycle or application state.
   Provides APIs for implementing and executing unit and integration tests.
   
 # Manuals
-- [Getting Started](https://github.com/seanox/aspect-js/blob/master/manuals/introduction.md#introduction)
-- [Tutorials](https://github.com/seanox/aspect-js/tree/master/tutorials#readme)
-- [Manuals](https://github.com/seanox/aspect-js/tree/master/manuals#readme)
+- [Getting Started](https://seanox.github.io/aspect-js/manuals/getting-started.html)
+- [Tutorials](https://seanox.github.io/aspect-js/tutorials/)
+- [Manuals](https://seanox.github.io/aspect-js/manuals/)
 
 # Demos
 - [Micro-Frontend](

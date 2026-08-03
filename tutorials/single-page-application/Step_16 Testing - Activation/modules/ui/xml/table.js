@@ -61,30 +61,39 @@ const Table = class extends ui.Table {
                         let nodes = Array.from(document.querySelectorAll(table.selector + " thead"));
                         if (nodes.length <= 0)
                             throw new Error("Invalid table structure: thead is missing");
-                        // A click event is assigned to all detected elements.
-                        // With the click the sorting and the re-rendering is called.
-                        for (let thead of nodes)
-                            thead.addEventListener("click", event => {
-                                if (!event.target
-                                        || !event.target.hasAttribute("id")
-                                        || !event.target.classList.contains("sortable"))
-                                    return;
-                                let column = event.target;
-                                if (!column || (column.getAttribute("id") || "").trim().length <= 0)
-                                    column = document.querySelector(table.selector + " thead *.sortable.sortable-default[id]");
-                                if (!column)
-                                    return;
-                                column = (column.getAttribute("id") || "").trim();
-                                if (!column)
-                                    return;
-                                if (!sorting
-                                        || sorting.column != column)
-                                    sorting = {column, reverse:false}
-                                else sorting.reverse = !sorting.reverse;
-                                table.sort(sorting.column, sorting.reverse);
-                                output(table);  
-                            });
-                    });                    
+
+                        const callback = (event) => {
+                            if (event.type === "keydown"
+                                    && event.key !== "Enter")
+                                return;
+                            if (!event.target
+                                    || !event.target.hasAttribute("id")
+                                    || !event.target.classList.contains("sortable"))
+                                return;
+                            let column = event.target;
+                            if (!column || (column.getAttribute("id") || "").trim().length <= 0)
+                                column = document.querySelector(table.selector + " thead *.sortable.sortable-default[id]");
+                            if (!column)
+                                return;
+                            column = (column.getAttribute("id") || "").trim();
+                            if (!column)
+                                return;
+                            if (!sorting
+                                    || sorting.column != column)
+                                sorting = {column, reverse:false}
+                            else sorting.reverse = !sorting.reverse;
+                            table.sort(sorting.column, sorting.reverse);
+                            output(table);
+                        };
+
+                        // A keydown and click event listener is assigned to all
+                        // detected elements. Both events trigger the sorting
+                        // and re-rendering process.
+                        for (let thead of nodes) {
+                            thead.addEventListener("keydown", callback);
+                            thead.addEventListener("click", callback);
+                        }
+                    });
                 });
             };
 

@@ -1,8 +1,8 @@
 # Description
 The tutorials describe the development of a single-page application (SPA) and a
-micro-frontend with [Seanox aspect-js](https://github.com/seanox/aspect-js). Each
-tutorial consists of a sequence of small examples that illustrate the
-implementation from an initial version to the final application.
+micro-frontend with Seanox aspect-js. Each tutorial consists of a sequence of
+small examples that illustrate the implementation from an initial version to the
+final application.
 
 The tutorials focus on the differences between the individual steps. A file or
 directory comparison tool is therefore required to examine the changes.

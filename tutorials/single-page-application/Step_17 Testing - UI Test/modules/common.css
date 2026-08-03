@@ -8,6 +8,9 @@ main {
   max-width: 1564px!important;
   min-height: calc(100vh - 6.4em)!important;
 }
+a[tabindex] {
+  cursor: pointer;
+}
 input:invalid {
   background-color: rgba(255, 152, 0, 0.5);
 }

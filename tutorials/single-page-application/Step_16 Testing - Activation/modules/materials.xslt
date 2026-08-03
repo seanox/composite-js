@@ -49,27 +49,27 @@
               The events are taken over by the abstract table component. 
             
             -->
-            <a href="###" id="id" class="sortable sortable-default">
+            <a tabindex="0" id="id" class="sortable sortable-default">
               {{Messages['materials.id.title']}}
             </a>
           </th>
           <th>
-            <a href="###" id="density" class="sortable">
+            <a tabindex="0" id="density" class="sortable">
               {{Messages['materials.density.title']}}
             </a>
           </th>
           <th colspan="2">
-            <a href="###" id="pei" class="sortable">
+            <a tabindex="0" id="pei" class="sortable">
               {{Messages['materials.pei.title']}}
             </a>
           </th>
           <th>
-            <a href="###" id="tc" class="sortable">
+            <a tabindex="0" id="tc" class="sortable">
               {{Messages['materials.tc.title']}}
             </a>
           </th>
           <th>
-            <a href="###" id="drf" class="sortable">
+            <a tabindex="0" id="drf" class="sortable">
               {{Messages['materials.drf.title']}}
             </a>
           </th> 
@@ -77,27 +77,27 @@
         <tr class="w3-orange">
           <th></th> 
           <th>
-            <a href="###" id="density" class="sortable">
+            <a tabindex="0" id="density" class="sortable">
               kg/m³
             </a>
           </th>
           <th>
-            <a href="###" id="pei_1" class="sortable">
+            <a tabindex="0" id="pei_1" class="sortable">
               MJ/m³
             </a>
           </th>
           <th>
-            <a href="###" id="pei_2" class="sortable">
+            <a tabindex="0" id="pei_2" class="sortable">
               kWh/m³
             </a>
           </th>
           <th>
-            <a href="###" id="tc" class="sortable">
+            <a tabindex="0" id="tc" class="sortable">
               W/(mK)
             </a>
           </th>
           <th>
-            <a href="###" id="drf" class="sortable">
+            <a tabindex="0" id="drf" class="sortable">
               μ
             </a>
           </th>

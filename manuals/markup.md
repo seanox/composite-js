@@ -312,7 +312,7 @@ For example, interval and a variable expression can implement a permanent
 counter.
 
 ```html
-{% raw %}{{counter:0}}{% endraw %}
+{{counter:0}}
 <p interval="1000">
   {{counter:parseInt(counter) +1}}
   {{counter}}

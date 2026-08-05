@@ -285,7 +285,7 @@ refreshing automatically and ends when:
 - the element no longer exists in the DOM
 - the condition attribute is used that is not true
 
-```text
+```html
 <span interval="1000">
   ...
 </span>
@@ -302,7 +302,7 @@ HTML element is added to the DOM and ends when it is removed from the DOM. This
 makes the interval attribute controllable in combination with the condition
 attribute.
 
-```text
+```html
 <span interval="1000" condition="{{model.isVisible()}}">
   ...
 </span>
@@ -311,10 +311,10 @@ attribute.
 For example, interval and a variable expression can implement a permanent
 counter.
 
-```text
-{{counter:0}}
+```html
+\{\{counter:0}}
 <p interval="1000">
-  {{counter:parseInt(counter) +1}}
+  &#123;&#123;counter:parseInt(counter) +1}}
   {{counter}}
 </p>
 ```
@@ -322,7 +322,7 @@ counter.
 It is also possible to use the interval attribute in combination with embedded
 JavaScript as a composite JavaScript.
 
-```text
+```html
 <script type="composite/javascript" interval="1000">
     ...
 </script>

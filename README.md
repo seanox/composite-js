@@ -110,7 +110,7 @@ specific language governing permissions and limitations under the License.
 
 # System Requirement
 - ECMAScript 6 support or higher (normally the current browsers)  
-  Engines (tested): Blink, Gecko, Goanna, WebKit, ...  
+  Engines (tested): Blink, Gecko, Goanna, WebKit
 - Web server for hosting
 
 # Downloads

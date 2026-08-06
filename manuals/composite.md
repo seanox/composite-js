@@ -5,10 +5,10 @@
 
 # Components
 Seanox aspect-js is designed for a modular and component-based architecture. For
-this purpose, the application runtime supports declarative marking of components
-in the markup as well as automatic mechanisms for [View-Module Bindung](
-    view-module-binding.md#view-module-binding) and loading of outsourced
-resources at runtime.
+this purpose, the application runtime (runtime) supports declarative marking of
+components in the markup as well as automatic mechanisms for
+[View-Module Bindung](view-module-binding.md#view-module-binding) and loading of
+outsourced resources at runtime.
 
 ## Contents Overview
 - [Module](#module)
@@ -35,7 +35,7 @@ A component represents a functional unit that can consist of one or more modules
 A composite is a component consisting of markup, CSS, JavaScript and optionally
 other resources. In terms of the [View-Module Binding](
     view-module-binding.md#view-module-binding), a composite connects the view
-with an application module.
+with an application module (module).
 
 __The composite concept differs from the JavaScript module concept. Composites
 load and execute JavaScript linearly within a render cycle.__
@@ -57,7 +57,7 @@ unique ID, which is called Composite ID.
 ```
 
 In JavaScript, the Composite ID is used as the name for the corresponding
-application object.
+module.
 
 ```javascript
 const example = {
@@ -78,7 +78,7 @@ Markup, CSS and JavaScript of composites can be stored externally. The default
 directory `./modules` can be changed via the property `Composite.MODULES`. File
 names are derived from the Composite ID of the HTML element marked as
 `composite`. The resources to externalize can be selected individually for each
-component.
+composite.
 
 ```
 + modules
@@ -94,7 +94,7 @@ are processed when a composite is required in the view. This minimizes loading
 time because only the resources needed for the current rendering are loaded.
 
 External resource loading is optional and can be configured individually for
-each component. Resources are loaded and embedded in the following order: CSS,
+each composite. Resources are loaded and embedded in the following order: CSS,
 JavaScript, HTML/Markup.
 
 If the request for a resource returns status `404`, the resource is assumed not
@@ -102,7 +102,7 @@ to be externalized. By design, status `404` is interpreted as __resource not
 provided__ and not as a loading error. Any status code other than `200` or `404`
 causes an error.
 
-Resource loading is performed only once with the component's first request for
+Resource loading is performed only once with the composite's first request for
 the view, and the content is then cached.
 
 ### CSS
@@ -158,9 +158,9 @@ Composites or their data objects are comparable with static managed beans that
 use the global namespace as singletons, facades or delegates. Namespaces are
 used to structure these application objects.
 
-__For modules, the macros [#use](scripting.md#use) and
-[#export](scripting.md#export) are recommended. `#use` creates a namespace if it
-does not already exist, while `#export` publishes JavaScript elements to that
+__For modules, the macros [#use](scripting.md#use) and [#export](
+    scripting.md#export) are recommended. `#use` creates a namespace if it does
+not already exist, while `#export` publishes JavaScript elements to that
 namespace.__
 
 ```javascript

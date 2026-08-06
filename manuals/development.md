@@ -36,7 +36,7 @@ The following important addresses are configured:
 | http://127.0.0.1:8000/           | Test environment                   |
 | http://127.0.0.1:8000/test       | Test environment with context path |
 | http://127.0.0.1:8000/playground | Playground                         |
-| http://127.0.0.1:8000/tutorial   | Tutorials                          |
+| http://127.0.0.1:8000/tutorials  | Tutorials                          |
 
 Logging is configured to use the command line for output.
 
@@ -100,7 +100,7 @@ https://en.wikipedia.org/wiki/Comparison_of_browser_engines
   http://127.0.0.1:8000/index.html    
   http://127.0.0.1:8000/test  
   http://127.0.0.1:8000/test/index.html  
-  http://127.0.0.1:8000/tutorial  
+  http://127.0.0.1:8000/tutorials
 - Broweser to be tested  
   MS Edge, Google Chrome, Firefox, Palemoon, Safari iOS, Safari MacOS
 
@@ -113,7 +113,7 @@ https://en.wikipedia.org/wiki/Comparison_of_browser_engines
 - Create a release
 - Publish the release with a tag
 - Create a release in GitHub for the tag
-- Update the tutorial and create a release there too
+- Update the tutorials and create a release there too
 
 ### npmjs.com
 - Go to the project directory

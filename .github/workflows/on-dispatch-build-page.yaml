@@ -1,4 +1,5 @@
-name: Build & Deploy GitHub Page
+name: "on-dispatch: Build and Deploy GitHub Page"
+
 on:
   push:
   workflow_dispatch:
@@ -11,22 +12,35 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - run: |
+      - uses: actions/checkout@v5
+
+      - name: Protect Liquid expressions in Markdown
+        run: |
           find . -type f -name "*.md" -print0 |
           while IFS= read -r -d '' file; do
-            sed -E 's/(\{\{.*?\}\})/{% raw %}\1{% endraw %}/g' "$file" > "$file.tmp" \
-                && mv "$file.tmp" "$file"
+            sed -E 's/(\{\{.*?\}\})/{% raw %}\1{% endraw %}/g' "$file" > "$file.tmp" &&
+            mv "$file.tmp" "$file"
           done
+
+      - name: Create temporary Gemfile
+        run: |
+          cat > Gemfile <<'EOF'
+          source "https://rubygems.org"
+
+          gem "github-pages", group: :jekyll_plugins
+          EOF
+
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
           bundler-cache: true
-      - run: |
-          gem install jekyll
-      - run: |
-          jekyll build --source ./ --destination _site
+
+      - name: Build Jekyll site
+        run: |
+          bundle exec jekyll build --source ./ --destination _site
+
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
@@ -34,8 +48,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - uses: actions/deploy-pages@v5

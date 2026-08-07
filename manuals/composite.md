@@ -56,7 +56,7 @@ unique ID, which is called Composite ID.
 </html>
 ```
 
-In JavaScript, the Composite ID is used as the name for the corresponding
+In JavaScript, the composite ID is used as the name for the corresponding
 module.
 
 ```javascript
@@ -65,7 +65,7 @@ const example = {
 }
 ```
 
-And also in CSS, the Composite ID is used as the selector mapping.
+And also in CSS, the composite ID is used as the selector mapping.
 
 ```css
 #example {
@@ -76,7 +76,7 @@ And also in CSS, the Composite ID is used as the selector mapping.
 ## Resources
 Markup, CSS and JavaScript of composites can be stored externally. The default
 directory `./modules` can be changed via the property `Composite.MODULES`. File
-names are derived from the Composite ID of the HTML element marked as
+names are derived from the composite ID of the HTML element marked as
 `composite`. The resources to externalize can be selected individually for each
 composite.
 
@@ -179,7 +179,7 @@ const masterdata = {
 The example creates the namespace `example.administration` if necessary and
 exports `masterdata` into that namespace.
 
-In markup, namespaces are derived from Composite IDs. The nesting of composites
+In markup, namespaces are derived from composite IDs. The nesting of composites
 does not define namespaces because each composite is treated independently.
 
 ```html

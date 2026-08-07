@@ -10,6 +10,7 @@ CR: Test: Expansion of benchmarks/tests
 CR: Tutorials: Integration into the project
 CR: Composite: Refactoring the rendering
     Allocation of responsibility according to the appropriate method.
+CR: Documentation: Using GitHub Pages
 
 1.9.0 20260717
 BF: Composite: Validation corrections and optimization

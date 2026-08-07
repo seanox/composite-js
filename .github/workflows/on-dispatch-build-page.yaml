@@ -1,7 +1,6 @@
 name: "on-dispatch: Build and Deploy GitHub Page"
 
 on:
-  push:
   workflow_dispatch:
 
 permissions:
@@ -12,7 +11,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v5
 
@@ -24,14 +22,6 @@ jobs:
             mv "$file.tmp" "$file"
           done
 
-      - name: Create temporary Gemfile
-        run: |
-          cat > Gemfile <<'EOF'
-          source "https://rubygems.org"
-
-          gem "github-pages", group: :jekyll_plugins
-          EOF
-
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
@@ -39,10 +29,17 @@ jobs:
 
       - name: Build Jekyll site
         run: |
+          printf '%s\n' \
+              'source "https://rubygems.org"' \
+              'gem "github-pages", group: :jekyll_plugins' \
+              > Gemfile
+          
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          echo "url: \"https://${GITHUB_REPOSITORY_OWNER}.github.io\"" > _config.yml
-          echo "baseurl: \"/${REPO_NAME}\"" >> _config.yml
-          cat _config.yml          
+          printf '%s\n' \
+              "url: \"https://${GITHUB_REPOSITORY_OWNER}.github.io\"" \
+              "baseurl: \"/${REPO_NAME}\"" \
+              > _config.yml
+          
           bundle exec jekyll build --source ./ --destination _site
 
       - uses: actions/upload-pages-artifact@v5
@@ -52,10 +49,8 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - uses: actions/deploy-pages@v5

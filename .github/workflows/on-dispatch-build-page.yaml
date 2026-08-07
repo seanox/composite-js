@@ -12,7 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@v5
 
       - name: Protect Liquid expressions in Markdown
         run: |
@@ -22,27 +23,33 @@ jobs:
             mv "$file.tmp" "$file"
           done
 
-      - uses: ruby/setup-ruby@v1
+      - name: Create Gemfile and Jekyll config
+        run: |
+          printf '%s\n' \
+            'source "https://rubygems.org"' \
+            'gem "github-pages", group: :jekyll_plugins' \
+            > Gemfile
+
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          printf '%s\n' \
+            "url: \"https://${GITHUB_REPOSITORY_OWNER}.github.io\"" \
+            "baseurl: \"/${REPO_NAME}\"" \
+            > _config.yml
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.1'
           bundler-cache: true
 
       - name: Build Jekyll site
         run: |
-          printf '%s\n' \
-              'source "https://rubygems.org"' \
-              'gem "github-pages", group: :jekyll_plugins' \
-              > Gemfile
-          
-          REPO_NAME="${GITHUB_REPOSITORY#*/}"
-          printf '%s\n' \
-              "url: \"https://${GITHUB_REPOSITORY_OWNER}.github.io\"" \
-              "baseurl: \"/${REPO_NAME}\"" \
-              > _config.yml
-          
-          bundle exec jekyll build --source ./ --destination _site
+          bundle exec jekyll build \
+            --source ./ \
+            --destination _site
 
-      - uses: actions/upload-pages-artifact@v5
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -52,5 +59,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
-      - uses: actions/deploy-pages@v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

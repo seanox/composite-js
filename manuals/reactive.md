@@ -98,7 +98,7 @@ window.setTimeout(() =>
     model.valueA = 5, 6000);
 ```
 
-In this example, after approx. 5 seconds, reactive instance `model` reads the
+In this example, after approx. 5 seconds, Reactive instance `model` reads the
 original object as a reactive instance and takes over `valueB`. After approx. 6
 seconds, the write access to `model` triggers the view update.
 

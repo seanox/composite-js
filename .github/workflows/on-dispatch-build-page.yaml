@@ -1,5 +1,6 @@
 name: Build & Deploy GitHub Page
 on:
+  push:
   workflow_dispatch:
 
 permissions:
@@ -27,7 +28,7 @@ jobs:
           jekyll build \
             --source processed_manuals \
             --destination _site
-      - uses: actions/upload-pages-artifact@v2
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -38,4 +39,4 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/deploy-pages@v2
+      - uses: actions/deploy-pages@v5

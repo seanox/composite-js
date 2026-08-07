@@ -45,11 +45,11 @@ In a single page application, the page is the basic framework and runtime
 environment of the entire application.
 
 ### View
-A view is the primary projection of modules, components or content. This
-projection can contain additional views and sub-views. Views can be static,
-always shown, or path-controlled with the attribute `route`. Paths address the
-complete chain of nested views and show the parent views in addition to the
-target view.
+A view is the primary projection of application modules (module), components or
+content. This projection can contain additional views and sub-views. Views can
+be static, always shown, or path-controlled with the attribute `route`. Paths
+address the complete chain of nested views and show the parent views in addition
+to the target view.
 
 ```html
 <body route>
@@ -246,17 +246,17 @@ interceptors directly affect the following path resolution and view rendering.__
 
 ## Paths
 Paths are used for navigation, routing and view-flow control. The target can be
-a view or, when using interceptors, a function. For SPAs (single-page
-applications), the anchor part of the URL is used for navigation and routes.
+a view or, when using interceptors, a function. For SPAs (Single-Page
+Applications), the anchor part of the URL is used for navigation and routes.
 
 ```
 https://example.local/example/#path
 ```
 
-Similar to a file system, absolute and relative paths are supported.
-Paths consist of case-sensitive words that only use 7-bit ASCII characters above
-the space character. Characters outside this range are URL encoded. The words
-are separated by the hash character (`#`). 
+Similar to a file system, absolute and relative paths are supported. Paths
+consist of case-sensitive words that only use 7-bit ASCII characters above the
+space character. Characters outside this range are URL encoded. The words are
+separated by the hash character (`#`). 
 
 ```
 #a#b#c#d

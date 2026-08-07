@@ -88,9 +88,10 @@ Optional style in `modules/example.css`:
 ```
 
 This example shows the explicit data/render flow: `events` triggers
-synchronization from input to application model (model), `validate` controls the
-sync result, and `render` refreshes selected targets (`#preview`). The
-expression `{{example.message}}` outputs model data into the markup.
+synchronization from input to the application model implemented by the module,
+`validate` controls the sync result, and `render` refreshes selected targets
+(`#preview`). The expression `{{example.message}}` outputs model data into the
+markup.
 
 ## What the Runtime Does Here
 When the page is rendered, the composite `id="example"` is used as the composite

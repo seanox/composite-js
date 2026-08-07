@@ -76,9 +76,10 @@ Reactive is a proxy and remains logically separated from the original object.
 This supports bidirectional synchronization after initialization. In detail,
 bidirectional synchronization is monodirectional and driven by Get and Set. From
 the Reactive instance perspective, Get synchronizes from the original object to
-the Reactive instance (object -> reactive). Set synchronizes from the Reactive
-instance to the original object (reactive -> object). Changes to the original
-object are considered when data is accessed, without affecting the view.
+the Reactive instance (object &rarr; reactive). Set synchronizes from the
+reactive instance to the original object (reactive &rarr; object). Changes to
+the original object are considered when data is accessed, without affecting the
+view.
 
 ```javascript
 const object = {valueA:1};
@@ -97,20 +98,20 @@ window.setTimeout(() =>
     model.valueA = 5, 6000);
 ```
 
-In this example, after approx. 5 seconds, `model` reads the original object as a
-reactive instance and takes over `valueB`. After approx. 6 seconds, the write
-access to `model` triggers the view update.
+In this example, after approx. 5 seconds, reactive instance `model` reads the
+original object as a reactive instance and takes over `valueB`. After approx. 6
+seconds, the write access to `model` triggers the view update.
 
 Reactive works permanently recursively on all object levels and also on the
 objects which are added later as values. Even if these objects do not explicitly
 use Reactive, new instances are created for the referenced objects. Initiating
-objects and reactive models are logically decoupled and are synchronized
-bidirectionally. In contrast, views and reactive models, like models internally,
-use proxies that behave and can be used like the initiating originals. However,
-proxies are separate instances that are compatible but not identical to the
-initiating object. This logical separation is necessary so that the renderer can
-generate appropriate notifications when data changes and thus update the
-consumers in the view.
+objects and Reactive instances are logically decoupled and are synchronized
+bidirectionally. In contrast, views and Reactive instances, like instances
+internally, use proxies that behave and can be used like the initiating
+originals. However, proxies are separate instances that are compatible but not
+identical to the initiating object. This logical separation is necessary so
+that the renderer can generate appropriate notifications when data changes and
+thus update the consumers in the view.
 
 ```javascript
 const objectA = {}

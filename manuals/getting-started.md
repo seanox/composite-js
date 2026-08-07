@@ -11,8 +11,8 @@
   and data)
 
 ## Choose a Runtime Variant
-The runtime consists of one JavaScript file. It can be included through a
-release-channel URL or downloaded as a release.
+The application runtime (runtime) consists of one JavaScript file. It can be
+included through a release-channel URL or downloaded as a release.
 
 Release channels continuously provide the latest final major versions.
 
@@ -58,7 +58,7 @@ Add module resources in the default module directory:
 - index.html
 ```
 
-Implement the model in `modules/example.js`:
+Implement the module in `modules/example.js`:
 
 ```javascript
 const example = {
@@ -88,19 +88,21 @@ Optional style in `modules/example.css`:
 ```
 
 This example shows the explicit data/render flow: `events` triggers
-synchronization from input to model, `validate` controls the sync result, and
-`render` refreshes selected targets (`#preview`). The expression
-`{{example.message}}` outputs model data into the markup.
+synchronization from input to application model (model), `validate` controls the
+sync result, and `render` refreshes selected targets (`#preview`). The
+expression `{{example.message}}` outputs model data into the markup.
 
 ## What the Runtime Does Here
-When the page is rendered, the composite `id="example"` is used as the component
-key. aspect-js resolves resources by that ID and loads CSS, JavaScript, and HTML
-in this order. The JavaScript model and markup are then connected through
-view-module binding, based on matching IDs and model properties.
+When the page is rendered, the composite `id="example"` is used as the composite
+ID. Seanox aspect-js resolves resources by that ID and loads CSS, JavaScript,
+and HTML in this order. The JavaScript module with its exported
+application model and the markup are then connected through View-Module Binding
+(binding).
 
-`#export example;` is required because Composite JavaScript runs in an isolated
-scope. Without export, the model is not published to the runtime namespace used
-by the binding.
+`#export example;` is required because composite JavaScript resources are
+executed in an isolated scope. Exporting the application model makes it
+available in the runtime namespace so that the composite view can access its
+data and logic.
 
 The HTML resource (`modules/example.html`) is auto-loaded only if the composite
 element has no inner HTML and does not use `import` or `output`.
@@ -131,7 +133,7 @@ Changes to reactive model values update consumers automatically.
 
 ## Learning Path
 The following tutorials provide separate learning paths for micro-frontends and
-single-page applications. Each path consists of incremental steps that extend or
+Single-Page Applications. Each path consists of incremental steps that extend or
 modify the previous result. The differences between consecutive steps illustrate
 the implementation of individual concepts.
 

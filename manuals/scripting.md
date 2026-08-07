@@ -4,15 +4,15 @@
 - - -
 
 # Scripting
-Seanox aspect-js uses Composite JavaScript, a JavaScript dialect for browsers
-extended with a small set of [macros](#macros).
+Seanox aspect-js uses Composite JavaScript, an extension of JavaScript for
+browser environments that provides a small set of [macros](#macros).
 
-Composite JavaScript is executed directly in an isolated runtime scope rather
-than as a script element. Variables, constants and functions declared in a
-module are local to that module and are not automatically available in the
-global scope or in other modules. The [macros](#macros) provide language
-extensions for tasks such as importing modules, exporting declarations and
-creating namespaces.
+Composite JavaScript is used for the JavaScript resources of composites. It is
+executed directly in an isolated runtime scope rather than as a script element.
+Variables, constants and functions declared in a module remain local to that
+module and are not automatically available in the global scope or in other
+modules. The [macros](#macros) provide language extensions for tasks such as
+importing modules, exporting declarations and creating namespaces.
 
 ## Contents Overview
 - [Embedded Composite-JavaScript](#embedded-composite-javascript)
@@ -42,9 +42,8 @@ be combined with other composite attributes to control execution.
 
 ## Modules
 Modules are part of the composite concept. Composite resources (JS, CSS, HTML)
-can be outsourced to the module directory and loaded at runtime. This allows
-modules to be outsourced to the module directory and loaded at runtime,
-supporting modular deployment of platform and modules in micro-frontends.
+can be outsourced to the module directory and loaded at runtime, supporting
+modular deployment of platform and modules in micro-frontends.
 
 Modules can also be used in JavaScript without composites. The logic is stored
 in individual files in the module directory and, if necessary, in further
@@ -62,8 +61,8 @@ subdirectories.
 - index.html
 ```
 
-The modules are then loaded programmatically with `Compoiste.include(...)`,
-`Compoiste.load(...)` or preferably with the macro [#import](#import).
+The modules are then loaded programmatically with `Composite.include(...)`,
+`Composite.load(...)` or preferably with the macro [#import](#import).
 
 __When calling modules, the file extension is omitted.__
 
@@ -114,10 +113,10 @@ const utilities = {
 ```
 
 ### #import
-The macro loads one or separated by spaces several (Composite-)JavaScript
-modules from the module directory. JavaScript modules are loaded only once, no
-matter if directly via [#import](#import) or indirectly as a resource to a
-composite.
+The macro loads one or several application modules implemented as Composite
+JavaScript resources from the module directory. Modules are loaded only once,
+regardless of whether they are loaded directly via `#import` or indirectly as a
+resource of a composite.
 
 __When calling modules, the file extension is omitted.__
 

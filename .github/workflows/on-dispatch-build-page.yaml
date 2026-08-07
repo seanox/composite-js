@@ -14,9 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          find ./manuals -name "*.md" -print0 | while IFS= read -r -d '' file; do
-            sed -E 's/(\{\{.*?\}\})/{% raw %}\1{% endraw %}/g' "$file" > "$file.tmp"
-            mv "$file.tmp" "$file"
+          find . -type f -name "*.md" -print0 |
+          while IFS= read -r -d '' file; do
+            sed -E 's/(\{\{.*?\}\})/{% raw %}\1{% endraw %}/g' "$file" > "$file.tmp" \
+                && mv "$file.tmp" "$file"
           done
       - uses: ruby/setup-ruby@v1
         with:
@@ -25,9 +26,7 @@ jobs:
       - run: |
           gem install jekyll
       - run: |
-          jekyll build \
-            --source processed_manuals \
-            --destination _site
+          jekyll build --source ./ --destination _site
       - uses: actions/upload-pages-artifact@v5
         with:
           path: _site

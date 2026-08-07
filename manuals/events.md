@@ -4,7 +4,7 @@
 - - -
 
 # Events
-Seanox aspect-js provides events for extensions and for notifying the 
+Seanox aspect-js provides events for extensions and for notifying the
 application about runtime environment states.
 
 ## Contents Overview
@@ -55,9 +55,9 @@ starts rendering during a render cycle. Processing starts after the event.
 The event occurs after rendering has ended. Processing ends before the event.
 
 ## View-Module Binding
-The following events occur during View-Module Binding. The current selector is
-passed to the callback method. The method can influence the selector and the
-corresponding element, but not View-Module Binding.
+The following events occur during View-Module Binding (binding). The current
+selector is passed to the callback method. The method can influence the selector
+and the corresponding element, but not the binding.
 
 ```javascript
 Composite.listen(Composite.EVENT_MOUNT_***, function(event, selector) {
@@ -66,19 +66,17 @@ Composite.listen(Composite.EVENT_MOUNT_***, function(event, selector) {
 ```
 
 ### Composite.EVENT_MOUNT_START
-The event occurs when View-Module Binding starts. Processing starts after the
-event.
+The event occurs when binding starts. Processing starts after the event.
 
 ### Composite.EVENT_MOUNT_NEXT
-The event occurs during recursive View-Module Binding iteration when another
-element starts binding during a render cycle. Processing starts after the event.
+The event occurs during recursive binding iteration when another element starts
+binding during a render cycle. Processing starts after the event.
 
 ### Composite.EVENT_MOUNT_END
-The event occurs after View-Module Binding has ended. Processing ends before the
-event.
+The event occurs after binding has ended. Processing ends before the event.
 
 ## Modules
-The following events occur during the use of modules.
+The following events occur during the use of application modules (modules).
 
 ### Composite.EVENT_MODULE_LOAD
 Occurs when a module is initially loaded. If a module is loaded and unloaded
@@ -138,7 +136,7 @@ Composite.listen(Composite.EVENT_HTTP_***, function(event, payload) {
 ```
 
 The events are also triggered by the requests with which the application runtime
-loads the outsourced resources of the composites. These requests are
+(runtime) loads the outsourced resources of the composites. These requests are
 synchronous. Synchronous requests do not dispatch the events `loadstart` and
 `progress`, and the states 2 and 3 are skipped. Therefore
 `Composite.EVENT_HTTP_START` and `Composite.EVENT_HTTP_PROGRESS` do not occur

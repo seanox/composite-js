@@ -7,8 +7,8 @@
 Seanox aspect-js is designed for a modular and component-based architecture. For
 this purpose, the application runtime (runtime) supports declarative marking of
 components in the markup as well as automatic mechanisms for
-[View-Module Bindung](view-module-binding.md#view-module-binding) and loading of
-outsourced resources at runtime.
+[View-Module Bindung (binding)](view-module-binding.md#view-module-binding) and
+loading of outsourced resources at runtime.
 
 ## Contents Overview
 - [Module](#module)
@@ -33,12 +33,18 @@ A component represents a functional unit that can consist of one or more modules
 
 ## Composite
 A composite is a component consisting of markup, CSS, JavaScript and optionally
-other resources. In terms of the [View-Module Binding](
+other resources. In terms of the [View-Module Binding (binding)](
     view-module-binding.md#view-module-binding), a composite connects the view
 with an application module (module).
 
-__The composite concept differs from the JavaScript module concept. Composites
-load and execute JavaScript linearly within a render cycle.__
+__A composite resource is not an ECMAScript module. Composite scripts are
+runtime-loaded and executed in the composite lifecycle.__
+
+The binding between a composite in the view and its module is resolved by the
+composite identifier and namespace mapping. Namespace usage within a module
+does not define the [View-Module Binding (binding)](
+    view-module-binding.md#view-module-binding) itself; it is used for
+structuring and exposing application logic.
 
 ## Structure
 A component in markup consists of an HTML element marked as composite with a
@@ -89,9 +95,9 @@ composite.
 ```
 
 ## Loading
-Resources and [View-Module Binding](view-module-binding.md#view-module-binding)
-are processed when a composite is required in the view. This minimizes loading
-time because only the resources needed for the current rendering are loaded.
+Resources and [binding](view-module-binding.md#view-module-binding) are
+processed when a composite is required in the view. This minimizes loading time
+because only the resources needed for the current rendering are loaded.
 
 External resource loading is optional and can be configured individually for
 each composite. Resources are loaded and embedded in the following order: CSS,
@@ -160,7 +166,7 @@ used to structure these application objects.
 
 __For modules, the macros [#use](scripting.md#use) and [#export](
     scripting.md#export) are recommended. `#use` creates a namespace if it does
-not already exist, while `#export` publishes JavaScript elements to that
+not already exist, while `#export` publishes JavaScript declarations to that
 namespace.__
 
 ```javascript

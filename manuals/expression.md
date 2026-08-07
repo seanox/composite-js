@@ -4,9 +4,9 @@
 - - -
 
 # Expression Language
-The expression language (EL) provides access to client-side JavaScript and to
-application modules in Seanox aspect-js. Expressions support the JavaScript API
-and additional keywords for arithmetic and logical operators.
+The expression language provides access to client-side JavaScript and to
+application modules (modules) in Seanox aspect-js. Expressions support the
+JavaScript API and additional keywords for arithmetic and logical operators.
 
 ```
 {{'Hello World!'}}
@@ -75,7 +75,7 @@ sequences.
 
 ### Keyword
 The following standard JavaScript syntax keywords are supported in the
-Expression Language:
+expression language:
 
 ```
 true
@@ -87,7 +87,7 @@ undefined
 new
 ```
 
-The JavaScript syntax for the Expression Language has been extended with these
+The JavaScript syntax for the expression language has been extended with these
 keywords to support valid markup:
 
 | Keyword | Function                  |

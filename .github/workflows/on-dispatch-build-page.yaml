@@ -10,4 +10,4 @@ permissions:
 
 jobs:
   github-page:
-    uses: seanox/seanox-automation/.github/workflows/github-page-update.yaml@1.x
+    uses: seanox/seanox-automation/workflows/github-page-update.yaml@1.x

@@ -1,91 +1,195 @@
 # Terminologie-Leitfaden
-
 Dieses Dokument definiert die Terminologie der Seanox aspect-js-Dokumentation.
-Jeder Begriff besitzt genau eine Bedeutung und darf nur in seinem vorgesehenen
-Kontext verwendet werden.
 
-Ziel ist eine konsistente, eindeutige und architekturneutrale Dokumentation.
+Ziel ist eine technische Dokumentation, die:
+- fachlich präzise ist,
+- eine eindeutige Sprache verwendet,
+- Konzepte klar voneinander trennt,
+- für den Leser verständlich und gut lesbar bleibt.
 
-## Regel 1 - Framework-Begriffe haben Vorrang
+Terminologie wird nicht mechanisch wiederholt.
+Ein eingeführter Begriff darf innerhalb eines eindeutigen Kontextes vereinfacht
+verwendet werden, wenn dadurch keine Bedeutung verloren geht.
 
-Wenn Konzepte der Seanox aspect-js-Runtime beschrieben werden, sind
-ausschliesslich die Framework-Begriffe zu verwenden.
+# Regel 1 - Framework-Begriffe haben Vorrang
+Wenn Konzepte der Seanox aspect-js-Runtime beschrieben werden, sind die
+Framework-Begriffe zu verwenden.
 
-| Begriff                | Bedeutung                                                                 |
-| ---------------------- | ------------------------------------------------------------------------- |
-| __Application Module__ | Von der Runtime verwaltetes JavaScript-Objekt eines Composite ohne festgelegte Architekturrolle |
-| __Composite__          | Runtime-Component aus Markup, CSS, JavaScript und einem Application Module; verbindet View und Application Module |
-| __Component__          | Allgemeiner funktionaler Baustein einer Anwendung                         |
-| __View__               | HTML-Repräsentation der Benutzeroberfläche                                |
-| __Application Runtime__| Infrastruktur zur Ausführung der Anwendung                                |
+| Begriff             | Bedeutung                                                                                       |
+|---------------------|-------------------------------------------------------------------------------------------------|
+| Application Module  | Von der Runtime verwaltetes JavaScript-Objekt eines Composite ohne festgelegte Architekturrolle |
+| Composite           | Runtime-Komponente aus Markup, CSS, JavaScript und einem Application Module                     |
+| Component           | Allgemeiner funktionaler Baustein einer Anwendung                                               |
+| View                | HTML-Repräsentation der Benutzeroberfläche                                                      |
+| Application Runtime | Infrastruktur zur Ausführung der Anwendung                                                      |
 
-Framework-Begriffe dürfen nicht durch allgemeinere oder architekturspezifische
+Framework-Begriffe dürfen nicht durch fachlich ähnliche, aber ungenauere
 Begriffe ersetzt werden.
 
-## Regel 2 - Framework-Begriffe sind Eigennamen
+Beispiel:
 
-Die von Seanox aspect-js eingeführten Begriffe werden als Eigennamen behandelt
-und stets in derselben Schreibweise verwendet.
+Falsch:
+"The runtime connects the ViewModel."
 
-__Richtig__
+Richtig:
+"The runtime connects the View with the Application Module."
 
-- Application Module
-- Composite
-- Component
-- View
-- Application Runtime
-- Composite ID
+# Regel 2 - Framework-Begriffe werden korrekt eingeführt
+Framework-Begriffe werden bei ihrer erstmaligen Verwendung vollständig und in
+der definierten Schreibweise verwendet.
 
-__Falsch__
+Die definierte Grossschreibung bleibt erhalten, wenn der vollständige
+Framework-Begriff verwendet wird.
 
-- application module
-- composite object
-- runtime module
-- composite Id
+Richtig:
+"The Application Module contains the application logic."
 
-## Regel 3 - Begriffe folgen ihrer Abstraktion
+Nicht:
+"The application module contains the application logic."
 
-Es ist stets der spezifischste zutreffende Begriff zu verwenden.
-
-```text
-Component
-    │
-    ▼
-Composite
-    │
-    ▼
-Application Module
-```
+Bei qualifizierten Framework-Begriffen mit mehreren Wörtern kann eine Kurzform
+eingeführt werden. Die Kurzform wird unmittelbar nach der vollständigen
+Bezeichnung in Klammern angegeben.
 
 Beispiele:
-- __Component__ beschreibt allgemeine Komponenten.
-- __Composite__ beschreibt Runtime-Komponenten.
-- __Application Module__ beschreibt das JavaScript-Laufzeitobjekt eines
-  Composite.
 
-Je konkreter das beschriebene Konzept ist, desto spezifischer ist auch die
-Terminologie.
+"The Application Runtime (runtime) initializes the Composite."
 
-## Regel 4 - _Component_ und _Composite_ unterscheiden
+"The Application Module (module) contains the application logic."
 
-Eine __Component__ bezeichnet einen allgemeinen funktionalen Baustein einer
-Anwendung.
+Die Kurzform wird in Kleinbuchstaben geschrieben und bezeichnet weiterhin
+denselben Framework-Begriff.
 
-Ein __Composite__ ist eine spezielle Component der Seanox aspect-js-Runtime. Es
-besteht aus Markup, CSS, JavaScript sowie einem Application Module und bildet
-die Laufzeiteinheit der Anwendung.
+# Regel 3 - Begriffe dürfen nach Einführung verkürzt werden
+Nach der eindeutigen Einführung einer Kurzform darf diese innerhalb desselben
+semantischen Kontextes verwendet werden.
+
+Eine Kurzform ist zulässig, wenn:
+- der Bezug eindeutig ist,
+- kein anderes Konzept mit derselben Kurzform existiert,
+- der Leser die Bedeutung ohne erneute Erklärung versteht,
+- die Kurzform die Lesbarkeit verbessert.
+
+Beispiel:
+
+Richtig:
+"The Application Module (module) manages the connection to the View.
+The module controls the lifecycle of the component."
+
+Nicht erforderlich:
+"The Application Module (module) manages the connection to the View.
+The Application Module controls the lifecycle of the component."
+
+Die Kurzform wird nach ihrer Einführung kleingeschrieben.
+
+Die vollständige Bezeichnung wird nicht erneut verwendet, solange keine
+Definition, Abgrenzung, Gegenüberstellung oder andere eindeutige fachliche
+Anforderung dies erforderlich macht.
+
+# Regel 4 - Terminologie-Kontext über Absätze hinweg
+Ein einmal eingeführter Fachbegriff bleibt innerhalb desselben Abschnitts aktiv.
+
+Ein neuer Absatz stellt keinen neuen Kontext dar.
+
+Nachfolgende Absätze dürfen die etablierte Kurzform verwenden, wenn:
+- weiterhin dasselbe Konzept beschrieben wird,
+- keine neue Definition erfolgt,
+- keine Gegenüberstellung mit einem anderen Konzept erfolgt,
+- keine Mehrdeutigkeit entsteht.
+
+Beispiel:
+
+Erste Einführung:
+"The Application Runtime (runtime) initializes the Composite."
+
+Nachfolgende Absätze:
+"The runtime manages the lifecycle of the Composite."
+
+Nicht erforderlich:
+"The Application Runtime manages the lifecycle of the Composite."
+
+Eine erneute Verwendung der vollständigen Terminologie ist nur erforderlich bei:
+- Definition eines Begriffs:
+  "An Application Module is a runtime-managed object..."
+- Abgrenzung:
+  "An Application Module differs from an ECMAScript module..."
+- Vergleich:
+  "Application Modules and Domain Models have different responsibilities."
+- Wechsel des fachlichen Kontexts:
+  Runtime -> Architektur -> Fachdomäne
+
+# Regel 5 - Kontext bleibt erhalten
+Ein Begriffskontext bleibt bestehen über:
+- zusammenhängende Sätze,
+- Absätze,
+- einen Abschnitt.
+
+Ein neuer Absatz bedeutet keinen automatischen Kontextwechsel.
+
+Eine eingeführte Kurzform darf auch in nachfolgenden Absätzen verwendet werden,
+solange der fachliche Kontext erhalten bleibt und keine Mehrdeutigkeit entsteht.
+
+Ein vollständiger Begriff muss nicht erneut eingeführt werden, solange weiterhin
+dasselbe Konzept beschrieben wird.
+
+Beispiel:
+
+Richtig:
+"The Application Runtime (runtime) initializes the Composite.
+The runtime then creates the Application Module."
+
+Nicht erforderlich:
+"The Application Runtime initializes the Composite.
+The Application Runtime then creates the Application Module."
+
+# Regel 6 - Keine unnötige Wiederholung von Fachbegriffen
+Die vollständige Terminologie wird nicht wiederholt, wenn sie keinen
+zusätzlichen Informationswert liefert.
+
+Vermeide:
+"The Application Module receives events. The Application Module processes
+events. The Application Module updates the View."
+
+Besser:
+"The Application Module receives events. The module processes events and
+updates the View."
+
+Eine etablierte Kurzform darf dabei kleingeschrieben verwendet werden.
+
+# Regel 7 - Vollständige Begriffe bei wichtigen Stellen
+Die vollständige Bezeichnung bleibt erforderlich bei:
+- erstmaliger Einführung,
+- Definitionen,
+- Überschriften,
+- Tabellen,
+- Vergleichen,
+- Abgrenzungen verschiedener Konzepte.
+
+Beispiel:
+
+Richtig:
+"An Application Module differs from an ECMAScript module."
+
+Nicht:
+"A module differs from a module."
+
+Die vollständige Bezeichnung ist insbesondere dann erforderlich, wenn die
+Kurzform eine andere Bedeutung haben könnte.
+
+# Regel 8 - Component und Composite unterscheiden
+Eine Component bezeichnet einen allgemeinen funktionalen Baustein.
+
+Ein Composite ist eine spezielle Runtime-Component von Seanox aspect-js.
 
 Daraus folgt:
 - Jedes Composite ist eine Component.
 - Nicht jede Component ist ein Composite.
 
-Wird ein Runtime-Konzept beschrieben, ist grundsätzlich der Begriff
-__Composite__ zu verwenden.
+Bei Runtime-Konzepten ist Composite zu verwenden.
 
-## Regel 5 - Architekturrollen sind keine Runtime-Konzepte
-
+# Regel 9 - Architekturrollen sind keine Runtime-Konzepte
 Architekturrollen beschreiben ausschliesslich die Implementierung eines
-__Application Modules__ innerhalb einer Anwendung.
+Application Modules innerhalb einer Anwendung.
 
 Beispiele:
 - ViewModel
@@ -93,18 +197,17 @@ Beispiele:
 - Service
 - Application Model
 
-Die Runtime kennt diese Rollen nicht und trifft darüber keine Annahmen.
+Die Runtime kennt diese Rollen nicht.
 
-__Richtig__
-> The runtime connects the View with its Application Module.
-> In MVVM, the Application Module implements the ViewModel role.
+Richtig:
+"The runtime connects the View with its Application Module.
+In MVVM, the Application Module implements the ViewModel role."
 
-__Falsch__
-> The runtime connects the View with the ViewModel.
+Falsch:
+"The runtime connects the View with the ViewModel."
 
-## Regel 6 - Domain Models gehören ausschliesslich zur Fachdomäne
-
-Ein __Domain Model__ beschreibt fachliche Objekte, Regeln und Prozesse.
+# Regel 10 - Domain Models gehören zur Fachdomäne
+Ein Domain Model beschreibt fachliche Objekte und Regeln.
 
 Beispiele:
 - Customer
@@ -119,166 +222,108 @@ Ein Domain Model ist nicht verantwortlich für:
 - UI-Zustand
 - Events
 
-## Regel 7 - _Model_ niemals ohne Präzisierung verwenden
+# Regel 11 - Model nur mit eindeutiger Bedeutung verwenden
+Der Begriff Model ist allein zu vermeiden.
 
-Der Begriff __Model__ ist mehrdeutig und darf nicht allein verwendet werden.
-
-Stattdessen ist immer einer der konkreten Begriffe zu verwenden:
+Verwende:
 - Application Model
 - Domain Model
 - ViewModel
 
-## Regel 8 - _Object_ ist ein JavaScript-Begriff
+Ausnahme:
+Nach Einführung eines dieser Begriffe darf eine Kurzform nur verwendet werden,
+wenn der Kontext eindeutig bleibt.
 
-Der Begriff __Object__ bezeichnet ausschliesslich JavaScript-Konzepte.
+Beispiel:
+"The Domain Model represents customers.
+The model contains customer validation rules."
 
-Beispiele:
-- JavaScript object
-- object tree
-- object hierarchy
-- object property
+Nur erlaubt, wenn kein anderes Model-Konzept im Kontext existiert.
 
-Er darf nicht synonym verwendet werden für:
-- Component
-- Composite
-- Application Module
+# Regel 12 - Module eindeutig verwenden
+Module kann verschiedene Bedeutungen haben.
 
-## Regel 9 - _Module_ immer eindeutig verwenden
+| Begriff            | Kontext                    |
+|--------------------|----------------------------|
+| Application Module | Seanox aspect-js Runtime   |
+| ECMAScript module  | JavaScript                 |
+| Software module    | Allgemeine Softwaretechnik |
 
-Der Begriff __Module__ besitzt mehrere Bedeutungen und muss bei Bedarf
-qualifiziert werden.
+Bei erstmaliger Erwähnung eines Seanox-Runtime-Konzepts ist "Application Module"
+zu verwenden.
 
-| Begriff                | Kontext                    |
-| ---------------------- | -------------------------- |
-| __Application Module__ | Seanox aspect-js Runtime   |
-| __ECMAScript module__  | JavaScript                 |
-| __Software module__    | Allgemeine Softwaretechnik |
-| __Module directory__   | Dateisystem                |
+Nach Einführung darf "module" verwendet werden, wenn ausschliesslich das
+Application Module gemeint ist.
 
-Bezieht sich die Dokumentation auf die Runtime, ist grundsätzlich __Application
-Module__ zu verwenden.
+Wenn mehrere Module-Konzepte im selben Kontext vorkommen, ist die vollständige
+Bezeichnung zu verwenden, um Mehrdeutigkeit zu vermeiden.
 
-## Regel 10 - Runtime-Dokumentation verwendet Runtime-Begriffe
+# Regel 13 - Begriffe folgen ihrer Ebene
+| Ebene          | Begriffe                                                 |
+|----------------|----------------------------------------------------------|
+| JavaScript     | Object, ECMAScript module                                |
+| Seanox Runtime | Application Runtime, Composite, Application Module, View |
+| Komponenten    | Component                                                |
+| Architektur    | ViewModel, Controller, Service                           |
+| Fachdomäne     | Domain Model                                             |
 
-Kapitel über die Runtime verwenden ausschliesslich Runtime-Terminologie.
+Begriffe verschiedener Ebenen dürfen nicht synonym verwendet werden.
 
-Bevorzugte Begriffe:
-- Application Runtime
-- Composite
-- Application Module
-- View
+# Regel 14 - Kontext bestimmt die Terminologie
+Die Terminologie richtet sich nach dem beschriebenen Konzept.
 
-Architekturbegriffe dürfen ausschliesslich als Beispiele oder mögliche Rollen
-auftreten.
+| Kontext     | Begriffe                                                 |
+|-------------|----------------------------------------------------------|
+| Runtime     | Application Runtime, Composite, Application Module, View |
+| Architektur | ViewModel, Controller, Service                           |
+| Fachdomäne  | Domain Model                                             |
+| JavaScript  | Object, ECMAScript module                                |
 
-## Regel 11 - Architekturkapitel verwenden Architekturbegriffe
+Ein Wechsel des Absatzes alleine ist kein Kontextwechsel.
 
-Kapitel über Anwendungsarchitekturen verwenden die jeweilige Terminologie der
-beschriebenen Architektur.
+# Regel 15 - Lesbarkeit hat Vorrang
+Die Dokumentation soll für Menschen verständlich bleiben.
 
-Beispiele:
+Vermeide:
+- unnötige Wiederholung langer Begriffe,
+- künstlich aufgeblähte Sätze,
+- Terminologieketten ohne Informationsgewinn.
 
-| Architektur            | Begriffe             |
-| ---------------------- | -------------------- |
-| MVC                    | Controller           |
-| MVVM                   | ViewModel            |
-| MVCS                   | Controller, Service  |
-| DDD                    | Domain Model         |
-| Clean Architecture     | Use Case, Adapter    |
+Bevorzuge:
+- klare Erstdefinition,
+- konsistente Kurzformen,
+- natürliche Sprache.
 
-Sobald die Runtime beschrieben wird, ist wieder der Begriff __Application
-Module__ zu verwenden.
+# Regel 16 - Keine Rückumwandlung
+Eine einmal sinnvoll eingeführte Kurzform darf nicht wieder automatisch in die
+vollständige Terminologie zurückgeführt werden.
 
-## Regel 12 - Begriffe werden genau einmal definiert
+Dies gilt auch für die Gross- und Kleinschreibung der Kurzform.
 
-Jeder grundlegende Begriff erhält genau eine massgebliche Definition.
+Beispiel:
 
-Empfohlene Zuordnung:
+Erlaubt:
+"The Application Runtime (runtime) initializes the Composite.
+The runtime then creates the Application Module.
+The module handles lifecycle events."
 
-| Begriff                | Kapitel              |
-| ---------------------- | -------------------- |
-| Application Runtime    | Introduction         |
-| Component              | Components           |
-| Composite              | Components           |
-| Application Module     | View-Module Binding  |
-| View                   | View-Module Binding  |
+Nicht:
+"The Application Runtime (runtime) initializes the Composite.
+The runtime then creates the Application Module.
+The Application Module handles lifecycle events."
 
-Spätere Kapitel verwenden diese Begriffe, ohne sie erneut zu definieren.
+wenn keine neue Abgrenzung erforderlich ist.
 
-Bei Bedarf wird auf die ursprüngliche Definition verwiesen.
+# Regel 17 - Finaler Terminologie-Review
+Nach allen Änderungen prüfen:
+- Ist jeder Fachbegriff eindeutig?
+- Sind erstmalige Begriffe vollständig?
+- Sind Framework-Begriffe in ihrer definierten Schreibweise korrekt
+  grossgeschrieben?
+- Werden sinnvolle Kurzformen kleingeschrieben verwendet?
+- Sind Wiederholungen sinnvoll reduziert?
+- Wurde kein Konzept durch ein anderes ersetzt?
+- Bleibt der Text natürlich lesbar?
 
-## Regel 13 - Ein Begriff bleibt innerhalb eines Abschnitts konstant
-
-Nachdem ein Begriff eingeführt wurde, wird er innerhalb desselben Kapitels oder
-Abschnitts konsequent verwendet.
-
-__Richtig__
-> The Application Module is instantiated by the runtime. The Application Module
-> manages the application state.
-
-__Falsch__
-> The Application Module is instantiated by the runtime. The object manages the
-> application state.
-
-## Regel 14 - Die Runtime ist architekturneutral
-
-Die Runtime kennt ausschliesslich ihre eigenen Konzepte.
-
-Welche Architekturrolle ein Application Module übernimmt, entscheidet allein die
-Anwendung.
-
-```text
-Application Runtime
-        │
-        ▼
-Application Module
-        │
-        ▼
-Architekturrolle
-        ├─ ViewModel
-        ├─ Controller
-        ├─ Service
-        └─ Application Model
-```
-
-## Regel 15 - Begriffe folgen ihrer Verantwortlichkeit
-
-Jede Begriffskategorie gehört zu einer klar abgegrenzten Ebene.
-
-| Ebene                    | Begriffe                                                   |
-| ------------------------ | ---------------------------------------------------------- |
-| JavaScript               | Object, ECMAScript module                                  |
-| Seanox aspect-js Runtime | Application Runtime, Composite, Application Module, View   |
-| Allgemeine Komponenten   | Component                                                  |
-| Anwendungsarchitektur    | ViewModel, Controller, Service, Application Model          |
-| Fachdomäne               | Domain Model                                               |
-
-Begriffe unterschiedlicher Ebenen dürfen weder synonym verwendet noch
-miteinander vermischt werden.
-
-## Regel 16 - Terminologie folgt dem Kontext
-
-Die verwendete Terminologie richtet sich nach dem Gegenstand des jeweiligen
-Abschnitts.
-
-| Kontext       | Zulässige Terminologie                                    |
-| ------------- | --------------------------------------------------------- |
-| Runtime       | Application Runtime, Composite, Application Module, View  |
-| Komponenten   | Component, Composite                                      |
-| Architektur   | ViewModel, Controller, Service                            |
-| Fachdomäne    | Domain Model                                              |
-| JavaScript    | Object, ECMAScript module                                 |
-
-Beim Wechsel des Kontexts wird auch die Terminologie entsprechend angepasst.
-
-## Regel 17 - Terminologie hat Vorrang vor Architekturmustern
-
-Die Dokumentation beschreibt primär die Konzepte von Seanox aspect-js und nicht
-die Konzepte einer bestimmten Anwendungsarchitektur.
-
-Auch wenn ein __Application Module__ in einer Anwendung die Rolle eines
-ViewModels, Controllers oder Services übernimmt, wird bei der Beschreibung der
-Runtime stets der Framework-Begriff verwendet.
-
-Architekturbegriffe werden ausschliesslich verwendet, wenn explizit die
-Anwendungsarchitektur beschrieben wird.
+Das Ziel ist nicht maximale Terminologiedichte, sondern maximale
+Verständlichkeit bei fachlicher Genauigkeit.

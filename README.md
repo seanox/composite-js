@@ -6,7 +6,7 @@
   <a href="https://github.com/seanox/aspect-js/issues"
     ><img src="https://img.shields.io/badge/maintenance-active-green?style=for-the-badge"
   ></a>
-  <a href="http://seanox.de/contact"
+  <a href="http://seanox.com/contact"
     ><img src="https://img.shields.io/badge/support-active-green?style=for-the-badge"
   ></a>
 </p>
@@ -159,6 +159,6 @@ CR: Test: Update web server to version 5.9.0
 [Read more](https://raw.githubusercontent.com/seanox/aspect-js/master/CHANGES)
 
 # Contact
-[Issues](https://github.com/seanox/aspect-js-tutorial/issues)  
+[Issues](https://github.com/seanox/aspect-js/issues)  
 [Requests](https://github.com/seanox/aspect-js-tutorial/pulls)  
 [Mail](http://seanox.com/contact)

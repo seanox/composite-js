@@ -5,12 +5,12 @@
 
 # View-Module Binding
 View-Module Binding (binding) is the mechanism used by Seanox aspect-js to
-connect a view with an application module (module). The application runtime
-(runtime) establishes this technical connection within a composite, synchronizes
+connect a View with an Application Module (module). The Application Runtime
+(runtime) establishes this technical connection within a Composite, synchronizes
 values, propagates events, invokes module methods, and manages the module
 lifecycle.
 
-The runtime provides the infrastructure for connecting views and modules but
+The runtime provides the infrastructure for connecting Views and modules but
 does not define the architectural role of a module.
 
 <img src="./view-module-binding_view_module.svg"/>
@@ -37,15 +37,15 @@ the application.
   - [Other Architectures](#other-architectures)
 
 ## Application Module
-An application module (module) is the JavaScript object associated with a
-composite.
+An Application Module (module) is the JavaScript object associated with a
+Composite.
 
-Together with HTML, CSS, and optional additional resources, it forms a composite
+Together with HTML, CSS, and optional additional resources, it forms a Composite
 within an application. Modules provide application-specific functionality for
-views, which may include data, state, interactions, presentation logic, or
+Views, which may include data, state, interactions, presentation logic, or
 coordination with other parts of the application.
 
-The runtime connects the view with its corresponding module but does not impose
+The runtime connects the View with its corresponding module but does not impose
 an architectural pattern. A module can implement one of many architectural
 roles, for example:
 - ViewModel
@@ -58,38 +58,38 @@ Modules can contain presentation logic, coordinate Domain Models, invoke
 services or manage UI-specific state.
 
 ## View
-The view defines the user interface and is implemented with HTML markup. It
+The View defines the user interface and is implemented with HTML markup. It
 represents the information and interactions provided by the associated module
-according to its own structure. The view is responsible for presentation and
+according to its own structure. The View is responsible for presentation and
 does not define application logic. The runtime connects and synchronizes the
-view with the associated module.
+View with the associated module.
 
 ## Application Runtime
-The application runtime (runtime) provides the infrastructure required to
-connect views and modules.
+The Application Runtime (runtime) provides the infrastructure required to
+connect Views and modules.
 
 Its responsibilities include:
-- connecting views with modules,
-- synchronizing values between views and modules,
+- connecting Views with modules,
+- synchronizing values between Views and modules,
 - forwarding UI events,
 - rendering and reactive updates,
 - routing,
-- component management, and
+- Composite management, and
 - lifecycle management.
 
-The runtime manages the binding mechanisms between the view and the module. It
+The runtime manages the binding mechanisms between the View and the module. It
 provides infrastructure for rendering, synchronization, events, routing and
 lifecycle management, but does not implement application logic or define the
 architectural role of a module.
 
 ## Composite
-A composite is the basis for view-module binding and consists of:
+A Composite is the basis for View-Module Binding and consists of:
 - HTML
 - CSS
-- JavaScript (module)
+- JavaScript (Application Module)
 - optional additional resources
 
-Each composite is identified by its composite ID, which connects the HTML
+Each Composite is identified by its Composite ID, which connects the HTML
 element, the corresponding module, and the CSS selector.
 
 ```html
@@ -116,13 +116,13 @@ const example = {
 }
 ```
 
-The composite ID uniquely identifies a composite within the application. It is
+The Composite ID uniquely identifies a Composite within the application. It is
 formed from the `id` and `composite` attributes of the HTML element and
 determines the location of the corresponding module in the runtime namespace
-hierarchy. A composite ID consists of letters, digits, and underscores and must
+hierarchy. A Composite ID consists of letters, digits, and underscores and must
 start with a letter or an underscore.
 
-Elements inside the composite that define an `id` can be mapped to corresponding
+Elements inside the Composite that define an `id` can be mapped to corresponding
 properties or methods of the module according to the binding
 configuration.
 
@@ -148,15 +148,15 @@ const model = {
 ```
 
 ## Binding
-View-Module Binding connects the HTML view of a composite with its associated
-application module. The runtime performs event wiring and synchronization based
+View-Module Binding connects the HTML View of a Composite with its associated
+module. The runtime performs event wiring and synchronization based
 on the binding configuration.
 
 The runtime:
 - synchronizes values,
 - forwards UI events,
 - invokes module methods, and
-- updates the view.
+- updates the View.
 
 ```javascript
 const model = {
@@ -195,7 +195,7 @@ by the events declared with the `events` attribute.
 More details about the usage can be found in chapter [events](markup.md#events).
 
 ## Validation
-Validation controls whether synchronization of values between the view and the
+Validation controls whether synchronization of values between the View and the
 module is performed. It is declared with the `validate` attribute together with
 the `events` attribute. The corresponding validation method is implemented by
 the module.
@@ -238,9 +238,9 @@ const contact = {
 ```
 
 ## Dock
-When a composite becomes part of the DOM, its module is docked and, if
-implemented, `dock()` is executed before the composite is rendered. The method
-can be used to prepare the view.
+When a Composite becomes part of the DOM, its module is docked and, if
+implemented, `dock()` is executed before the Composite is rendered. The method
+can be used to prepare the View.
 
 ```javascript
 const model = {
@@ -251,7 +251,7 @@ const model = {
 ```
 
 ## Undock
-When a composite is removed from the DOM, its module is undocked, after which
+When a Composite is removed from the DOM, its module is undocked, after which
 the optional `undock()` method is executed. The method can be used for cleanup.
 
 ```javascript
@@ -262,13 +262,13 @@ const model = {
 };
 ```
 
-If a composite is controlled by a condition, docking and undocking depend on the
+If a Composite is controlled by a condition, docking and undocking depend on the
 evaluation of that condition.
 
 ## Architectural Patterns
 View-Module Binding is independent of the application architecture.
 
-The runtime connects views with their associated modules.
+The runtime connects Views with their associated modules.
 
 <img src="./view-module-binding_view_module.svg"/>
 
@@ -305,7 +305,7 @@ A module may also implement:
 - an Application Model
 - another architectural role defined by the application
 
-The runtime connects views with their associated modules.
+The runtime connects Views with their associated modules.
 
 The architectural role of that module is defined solely by the application.
 

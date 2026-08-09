@@ -11,3 +11,10 @@ permissions:
 jobs:
   github-page:
     uses: seanox/seanox-automation/.github/workflows/github-page-update.yaml@1.x
+    with:
+      includes: |
+        manuals
+        release
+        tutorials
+        CHANGES
+        README.md

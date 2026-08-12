@@ -1,4 +1,4 @@
-&#9665; [Introduction](introduction.md)
+&#9665; [Architecture](architecture.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#getting-started)
 &nbsp;&nbsp;&nbsp;&nbsp; [Expression Language](expression.md) &#9655;
 - - -
@@ -145,6 +145,6 @@ the implementation of individual concepts.
 
 
 - - -
-&#9665; [Introduction](introduction.md)
+&#9665; [Architecture](architecture.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#getting-started)
 &nbsp;&nbsp;&nbsp;&nbsp; [Expression Language](expression.md) &#9655;

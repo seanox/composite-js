@@ -3,24 +3,23 @@
 - - -
 
 # Motivation
-The separation of web applications into frontend and backend, together with
-browser-based applications and distributed services, changed the structure of
-web applications.
+Frontend applications -- regardless of whether they are implemented as
+Single-Page Applications or micro-frontends -- are increasingly being structured
+around business domains. They are partitioned into loosely coupled software
+modules, which are subsequently composed into applications.
 
-Seanox aspect-js is based on concepts such as declarative views, expression
-languages, component structures and the connection between Views and Application
-Modules (modules). These concepts, also present in technologies such as
-JavaServer Faces (JSF), are implemented as part of its programming model using
-native browser technologies.
+The motivation was a vision of a browser-native application runtime that
+composes modules at runtime.
 
-Another influence was the application of concepts from microservice
-architectures to micro-frontends architectures. This includes structuring
-frontend applications into independent software modules that can be composed
-at runtime.
-
-The project provides mechanisms for declarative application structures, reactive
-rendering, modular resources and application composition using HTML, CSS and
-JavaScript.
+The runtime combines established concepts and principles of web applications
+with declarative UI concepts, such as those found in JavaServer Faces (JSF),
+including views, expression languages, and components,
+while using the browser's native programming model:
+- HTML as the primary view language
+- JavaScript as the primary application language
+- for single-page applications and micro-frontends
+- without compilation
+- with an optional build process
 
 
 

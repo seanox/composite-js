@@ -4,18 +4,19 @@
 - - -
 
 # Scripting
-Seanox aspect-js uses Composite JavaScript, an extension of JavaScript for
+Seanox composite-js uses Composite JavaScript, an extension of JavaScript for
 browser environments that provides a small set of [macros](#macros).
 
-Composite JavaScript is used for the JavaScript resources of Composites. It is
-executed directly in an isolated runtime scope rather than as a script element.
-Variables, constants and functions declared in an Application Module (module)
-remain local to that module and are not automatically available in the global
-scope or in other modules. The [macros](#macros) provide language extensions for
-tasks such as importing modules, exporting declarations and creating namespaces.
+Composite JavaScript is used for the JavaScript resources in the module
+directory. It is executed directly in an isolated module scope rather than as a
+script element. Variables, constants and functions declared in a composite
+script remain local to that script and are not automatically available in the
+global scope or in other scripts. The [macros](#macros) provide language
+extensions for tasks such as loading further JavaScript resources, exporting
+declarations and creating namespaces.
 
 ## Contents Overview
-- [Embedded Composite-JavaScript](#embedded-composite-javascript)
+- [Embedded Composite JavaScript](#embedded-composite-javascript)
 - [Modules](#modules)
 - [Macros](#macros)
   - [#export](#export)
@@ -27,12 +28,13 @@ tasks such as importing modules, exporting declarations and creating namespaces.
 
 ## Embedded Composite JavaScript
 Embedded scripting has specific runtime behavior. Standard scripts are executed
-automatically by the browser and independently of rendering. Markup for rendering
-therefore supports the additional script type `composite/javascript`. It uses
-normal JavaScript, but the browser does not recognize it as `text/javascript`
-and does not execute it directly. The renderer recognizes the JavaScript code
-and executes it in every relevant render cycle. This allows SCRIPT elements to
-be combined with other composite attributes to control execution.
+automatically by the browser and independently of rendering. Markup for
+rendering therefore supports the additional script type `composite/javascript`.
+It uses standard JavaScript, but the browser does not recognize it as
+`text/javascript` and does not execute it directly. The composer recognizes the
+JavaScript code and executes it in every relevant render cycle. This allows
+SCRIPT elements to be combined with declarative attributes such as `condition`
+to control execution.
 
 ```html
 <script type="composite/javascript">
@@ -41,12 +43,18 @@ be combined with other composite attributes to control execution.
 ```
 
 ## Modules
-Application Modules (modules) are part of the Composite concept. Composite
-resources (JS, CSS, HTML) can be outsourced to the module directory and loaded
-at runtime, supporting modular deployment of platform and modules in
-micro-frontends.
+The JavaScript resources in the module directory are called modules. For a
+composite, this resource is the [composite script](composite.md#javascript) that
+provides the application module. The resources of a composite (JS, CSS, HTML)
+can be outsourced to the module directory and loaded at runtime, which supports
+the modular deployment of platform and modules in micro-frontends.
 
-Modules can also be used in JavaScript without Composites. The logic is stored
+> [!NOTE]
+> The term "module" is used here informally for JavaScript resources in the
+> module directory. For the distinction between Composite module, application
+> module and ECMAScript module, see [Modules](composite.md#modules).
+
+Modules can also be used in JavaScript without composites. The logic is stored
 in individual files in the module directory and, if necessary, in further
 subdirectories.
 
@@ -77,14 +85,15 @@ Macros are a meta-syntax that fits into the existing JavaScript syntax. They are
 abbreviated notations for common JavaScript statements.
 
 ### #export
-Composite JavaScript is executed directly in an isolated runtime scope rather
+Composite JavaScript is executed directly in an isolated module scope rather
 than as a script element. Variables, constants and functions declared in a
 module are local to that module and are not automatically available in the
 global scope or in other modules.
 
 The `#export` macro makes selected variables, constants and functions available
-in the global scope. It expects a space-separated list of names that extends to
-the end of the line or the next semicolon.
+in the global scope. Objects that participate in Composite binding must be
+exported in this way. The macro expects a space-separated list of names that
+extends to the end of the line or the next semicolon.
 
 ```javascript
 const connector = {
@@ -117,7 +126,7 @@ const utilities = {
 The macro loads one or several modules implemented as Composite JavaScript
 resources from the module directory. Modules are loaded only once, regardless of
 whether they are loaded directly via `#import` or indirectly as a resource of a
-Composite.
+composite.
 
 __When calling modules, the file extension is omitted.__
 

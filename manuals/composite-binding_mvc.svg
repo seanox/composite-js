@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="241" height="190" viewBox="0 0 241 190">
+  <!-- Pfeil View <-> Module -->
+  <path d="M67.42 77.6H131.18" fill="none" stroke="#000"/>
+  <path d="M60.42 77.6L67.42 75.27V79.93Z" fill="#000"/>
+  <path d="M138.18 77.6L131.18 79.93V75.27Z" fill="#000"/>
+
+  <!-- Pfeil Runtime -> View -->
+  <path d="M99.3 27.6V59.48" fill="none" stroke="#000"/>
+  <path d="M99.3 66.48L96.97 59.48H101.63Z" fill="#000"/>
+
+  <!-- Pfeile nach unten -->
+  <path d="M169.3 87.6V109.48" fill="none" stroke="#000"/>
+  <path d="M169.3 116.48L166.97 109.48H171.63Z" fill="#000"/>
+
+  <path d="M169.3 137.6V159.48" fill="none" stroke="#000"/>
+  <path d="M169.3 166.48L166.97 159.48H171.63Z" fill="#000"/>
+
+  <!-- Beschriftungen -->
+  <text x="29" y="81" font-family="sans-serif" font-size="12" text-anchor="middle">View</text>
+  <text x="99" y="21" font-family="sans-serif" font-size="12" text-anchor="middle">Runtime</text>
+  <text x="169" y="81" font-family="sans-serif" font-size="12" text-anchor="middle">Module</text>
+  <text x="169" y="131" font-family="sans-serif" font-size="12" text-anchor="middle">(implements Controller)</text>
+  <text x="169" y="181" font-family="sans-serif" font-size="12" text-anchor="middle">Domain Model</text>
+</svg>

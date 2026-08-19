@@ -7,7 +7,7 @@
 The Test API supports implementation and execution of integration tests. It can
 be used for suites, scenarios and single test cases.
 
-As a modular part of Seanox aspect-js, the Test API is included in all releases
+As a modular part of _composite-js_, the Test API is included in all releases
 except the core versions. Because it changes error handling and console output,
 it must be activated explicitly at runtime.
 
@@ -406,17 +406,17 @@ Details about configuration and usage are described in chapter
 [Configuration - monitor](#monitor).
 
 ## Control
-The test progress and the execution of the tests can be controlled by the
-Test API.
+The test progress and the execution of the tests can be controlled by the Test
+API.
 
 ```javascript
 Test.start();
 Test.start({auto: boolean});
 ```
 
-The start can be done manually or when using `auto = true`, by loading the
-page. If the page is already loaded, the parameter `auto` is ignored and the
-start is executed immediately.
+The start can be done manually or when using `auto = true`, by loading the page.
+If the page is already loaded, the parameter `auto` is ignored and the start is
+executed immediately.
 
 ```javascript
 Test.suspend();

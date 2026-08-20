@@ -1,5 +1,5 @@
 &#9665; [DataSource](datasource.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#resource-bundle-i18nl10n)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#runtime)
 &nbsp;&nbsp;&nbsp;&nbsp; [Events](events.md) &#9655;
 - - -
 
@@ -84,21 +84,13 @@ const welcome = Messages.populate("welcome", "Mr.", "Doe", "with extended user r
 Placeholders can be used multiple times. Excess placeholders or placeholders for
 which no value has been specified are removed from the generated message.
 
-JavaScript can change the language and locale for Messages at runtime. Only
-locales available in the DataSource are accepted. Other values cause an error
-when the method is called.
-
-```javascript
-DataSource.localize("de");
-```
-
-The current language can be retrieved via `DataSource.locale`.
-`DataSource.locales` returns all available languages as an array that starts
-with the language declared as default.
+JavaScript can change the language and locale for Messages at runtime using the
+same mechanism as DataSource — see [Locales](datasource.md#locales) for
+`DataSource.localize()`, `DataSource.locale` and `DataSource.locales`.
 
 
 
 - - -
 &#9665; [DataSource](datasource.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#resource-bundle)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#runtime)
 &nbsp;&nbsp;&nbsp;&nbsp; [Events](events.md) &#9655;

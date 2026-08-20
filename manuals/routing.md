@@ -1,10 +1,10 @@
-&#9665; [View-Module Binding](view-module-binding.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#routing)
+&#9665; [Composite Binding](composite-binding.md)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#components)
 &nbsp;&nbsp;&nbsp;&nbsp; [DataSource](datasource.md) &#9655;
 - - -
 
 # Routing
-Seanox aspect-js can organize page presentation in views addressed by paths
+Seanox composite-js can organize page presentation in views addressed by paths
 (routes). Routing supports a hierarchical directory structure based on the IDs
 of nested composites in the markup. It controls visibility and access permission
 for views through paths, the so-called view flow. Routing uses the DOM to insert
@@ -32,7 +32,14 @@ and remove views depending on the situation.
   - [View Flow](#view-flow)
 - [Navigation](#navigation)
 - [Permission Concept](#permission-concept)
+  - [undefined / no return value](#undefined--no-return-value)
+  - [true](#true)
+  - [false](#false)
+  - [string](#string)
 - [Interceptors](#interceptors)
+  - [Execution order](#execution-order)
+  - [Path matching](#path-matching)
+  - [Navigation changes](#navigation-changes)
 - [Paths](#paths)
   - [Root Path](#root-path)
   - [Relative Path](#relative-path)
@@ -45,11 +52,10 @@ In a single page application, the page is the basic framework and runtime
 environment of the entire application.
 
 ### View
-A view is the primary projection of application modules (module), components or
-content. This projection can contain additional views and sub-views. Views can
-be static, always shown, or path-controlled with the attribute `route`. Paths
-address the complete chain of nested views and show the parent views in addition
-to the target view.
+A view is a representation of composites or content that may also contain other
+views and subviews. Views can be static and therefore always shown, or
+path-controlled with the attribute `route`. Paths address the complete chain of
+nested views and show the parent views in addition to the target view.
 
 ```html
 <body route>
@@ -103,30 +109,18 @@ Routing.forward("##");
 Routing.forward("##x");
 ```
 
-Unlike the navigate method, forwarding is executed directly and does not trigger
+Unlike the route method, forwarding is executed directly and does not trigger
 asynchronous forwarding by changing the location hash.
 
-Relative paths without hash at the beginning are possible, but only work with
-`Routing.route(path)` and `Routing.forward(path)`.
-
-```javascript
-Routing.route("x#y#z");
-Routing.forward("x#y#z");
-```
-
-> [!IMPORTANT] 
-> __Links with these paths are interpreted by the browser as a reference to
-> another page.__
-
-__Routing accepts all paths (routes) that only use 7-bit ASCII characters. It
-covers the destinations from the root. Subsequent path components are treated as
-path parameters and can be used in the business logic of the views. Special
-characters in parameters are URL-encoded.__
+__Routing accepts all paths (routes) and covers the destinations from the root.
+Subsequent path components are treated as path parameters and can be used in the
+business logic of the views. For character restrictions and encoding of paths,
+see chapter [Paths](#paths).__
 
 ## Permission Concept
-The permission concept is based on permit methods in modules. The runtime calls
-the permit method during each (re-)rendering if the module implements it. These
-return values are possible:
+The permission concept is based on `permit` methods in the application modules.
+The composer calls the permit method during each (re-)rendering if the
+application module implements it. These return values are possible:
 
 ### undefined / no return value
 The view is shown if the current path covers the path of the view.
@@ -142,7 +136,7 @@ The return value is a path. The view and possible sub-views are not shown and
 the page/navigation is redirected to the returned path.
 
 ```javascript
-const model = {
+const example = {
     permit() {
         if (condition === 1)
             return;        
@@ -153,6 +147,8 @@ const model = {
         return false;
     }    
 };
+
+#export example;
 ```
 
 ## Interceptors
@@ -242,10 +238,10 @@ Because interceptors are executed sequentially, subsequent interceptors operate
 on the updated navigation target.
 
 __Interceptors are executed before the normal routing process. Changes made by
-interceptors directly affect the following path resolution and view rendering.__
+Interceptors directly affect the following path resolution and view rendering.__
 
 ## Paths
-Paths are used for navigation, routing and view-flow control. The target can be
+Paths are used for navigation, routing and view flow control. The target can be
 a view or, when using interceptors, a function. For SPAs (Single-Page
 Applications), the anchor part of the URL is used for navigation and routes.
 
@@ -256,7 +252,7 @@ https://example.local/example/#path
 Similar to a file system, absolute and relative paths are supported. Paths
 consist of case-sensitive words that only use 7-bit ASCII characters above the
 space character. Characters outside this range are URL encoded. The words are
-separated by the hash character (`#`). 
+separated by the separator character (`#`). 
 
 ```
 #a#b#c#d
@@ -272,35 +268,21 @@ the root.
 #a#b#c#d####x -> #a#x
 ```
 
-The navigation can be effected by changing the URL hash in the browser (direct
-input), by using hash links, and in JavaScript with `window.location.hash`,
-`window.location.href`, `Routing.navigate(path)` and `Routing.forward(path)`.
-
-Relative paths without hash at the beginning are possible, but only work with
-`Routing.route(path)` and `Routing.forward(path)`.
-
-```javascript
-Routing.route("x#y#z");
-Routing.forward("x#y#z");
-```
-
-> [!IMPORTANT]
-> __Links with these paths are interpreted by the browser as a reference to
-> another page.__
+The navigation with these paths is described in chapter
+[Navigation](#navigation).
 
 The following path types are supported.
 
 ### Root Path
-These paths are empty or contain only one hash character.
+These paths are empty or contain only one separator character.
 
 ```html
 <a href="#">Back to the root</a>
 ```
 
 ### Relative Path
-Relative Paths are based on the current path and begin with either a word or a
-return. Return jumps also use the hash sign, whereby the number of repetitions
-indicates the number of return jumps.
+Relative paths are based on the current path and begin with either a word or a
+sequence of the separator (`#`) described above.
 
 ```html
 <a href="##">Back to the parent</a>
@@ -309,25 +291,30 @@ indicates the number of return jumps.
 <a href="###x">Back to the parent + parent + x</a>
 ```
 
-Relative paths without hash at the beginning are possible, but only work with
-`Routing.route(path)` and `Routing.forward(path)`.
+Relative paths without separator at the beginning are possible, but only work
+with `Routing.route(path)` and `Routing.forward(path)`.
 
 ```javascript
 Routing.route("x#y#z");
 Routing.forward("x#y#z");
 ```
 
+> [!IMPORTANT] 
+> __Links with these paths are interpreted by the browser as a reference to
+> another page.__
+
 ### Absolute Path
-Absolute Paths start with the root, represented by a leading hash sign (`#`).
+Absolute paths start with the root, represented by a leading separator
+character (`#`). If the path consists of just this separator and nothing
+else, it is the [Root Path](#root-path).
 
 ```html
-<a href="#">Back to the root</a>
 <a href="#a#b#c">Back to the root + a + b + c</a>
 ```
 
 
 
 - - -
-&#9665; [View-Module Binding](view-module-binding.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#routing)
+&#9665; [Composite Binding](composite-binding.md)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#components)
 &nbsp;&nbsp;&nbsp;&nbsp; [DataSource](datasource.md) &#9655;

@@ -1,5 +1,5 @@
 &#9665; [API Extensions](extensions.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#test)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#development)
 &nbsp;&nbsp;&nbsp;&nbsp; [Development](development.md) &#9655;
 - - -
 
@@ -7,9 +7,9 @@
 The Test API supports implementation and execution of integration tests. It can
 be used for suites, scenarios and single test cases.
 
-As a modular part of _composite-js_, the Test API is included in all releases
-except the core versions. Because it changes error handling and console output,
-it must be activated explicitly at runtime.
+As a modular part of _composite-js_, the Test API is included in all testing
+releases. Because it changes error handling and console output, it must be
+activated explicitly at runtime.
 
 ```javascript
 Test.activate();
@@ -24,7 +24,7 @@ Test.start();
 ## Contents Overview
 - [Task](#task)
   - [name](#name)
-  - [test](#test)
+  - [test](#test-1)
   - [timeout](#timeout)
   - [expected](#expected)
   - [ignore](#ignore)
@@ -363,10 +363,9 @@ forwarding, listeners and buffers for console output.
 
 ### Forwarding
 The forwarding runs completely in the background and distributes the output to
-the browser console output and to the components of the Test API. In the case
-of (I)Frames, the output is forwarded to enclosing or superordinate
-window-objects and is accessible there via buffer and listener with an activated
-Test API.
+the browser console output and to the components of the Test API. In the case of
+(I)Frames, the output is forwarded to enclosing or superordinate window-objects
+and is accessible there via buffer and listener with an activated Test API.
 
 ### Buffer
 When the Test API is enabled, the console object of the JavaScript API is
@@ -435,7 +434,7 @@ Continues the test execution if it was stopped before.
 Test.interrupt();
 ```
 
-Interrupts the current test run and discards all outstanding tests.
+Interrupts the current test run and discards all outstanding tests.  
 The test run can be restarted with `Test.start()`.
 
 ```javascript
@@ -523,7 +522,7 @@ The Test API also activates extensions of the JavaScript API.
 ### Element
 
 #### Element.prototype.typeValue
-Method that simulates keyboard input for element objects.
+Method that simulates keyboard input for element objects.  
 The following events are triggered during simulation: 
     focus, keydown, keyup, change
 
@@ -547,8 +546,8 @@ document.querySelector("#inputText").typeValue("Hello World!", false);
 ```
 
 #### Element.prototype.toPlainString
-Method that creates a simple string for an element object. The string is based
-on `Element.prototype.outerHTML`.
+Method that creates a simple string for an element object.  
+The string is based on `Element.prototype.outerHTML`.
 
 ```html
 <form action="/api/example" method="POST">
@@ -583,8 +582,8 @@ document.querySelector("#button").trigger("click", true, false);
 ### Node
 
 #### Node.prototype.toPlainString
-Method that creates a simple string for a node object. The string is based on
-`XMLSerializer.serializeToString(node)`.
+Method that creates a simple string for a node object.  
+The string is based on `XMLSerializer.serializeToString(node)`.
 
 ```javascript
 const text = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -612,8 +611,8 @@ Output:
 ### Object
 
 #### Object.prototype.toPlainString
-Method that creates a simple string for an object. The string is based on
-`JSON.stringify(object)`.
+Method that creates a simple string for an object.  
+The string is based on `JSON.stringify(object)`.
 
 ```javascript
 const example = {a:1, b:2, c() {return;}};
@@ -630,5 +629,5 @@ Output:
 
 - - -
 &#9665; [API Extensions](extensions.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#test)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#development)
 &nbsp;&nbsp;&nbsp;&nbsp; [Development](development.md) &#9655;

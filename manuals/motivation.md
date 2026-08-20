@@ -8,8 +8,8 @@ Single-Page Applications or micro-frontends -- are increasingly being structured
 around business domains. They are partitioned into loosely coupled software
 modules, which are subsequently composed into applications.
 
-The motivation was a vision of a browser-native application runtime that
-composes modules at runtime.
+A browser application runtime for composing such modules at runtime -- that
+was the vision.
 
 The runtime combines established concepts and principles of web applications
 with declarative UI concepts, such as those found in JavaServer Faces (JSF),

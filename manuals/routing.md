@@ -304,9 +304,9 @@ Routing.forward("x#y#z");
 > another page.__
 
 ### Absolute Path
-Absolute paths start with the root, represented by a leading separator
-character (`#`). If the path consists of just this separator and nothing
-else, it is the [Root Path](#root-path).
+Absolute paths start with the root, represented by a leading separator character
+(`#`). If the path consists of just this separator and nothing else, it is the
+[Root Path](#root-path).
 
 ```html
 <a href="#a#b#c">Back to the root + a + b + c</a>

@@ -1,7 +1,0 @@
-#home {
-  max-width: 1500px;
-}
-#home > div {
-  position: absolute;
-  top: calc(50vh - 2.25em);
-}

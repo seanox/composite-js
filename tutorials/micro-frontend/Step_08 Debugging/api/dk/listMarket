@@ -1,9 +1,0 @@
-[
-  {"id": "AF", "text": "Afrika", "news": 0},
-  {"id": "NA", "text": "Nordamerika", "news": 15},
-  {"id": "SA", "text": "Sydamerika", "news": 0},
-  {"id": "AN", "text": "Antarktis", "news": 0},
-  {"id": "AS", "text": "Asien", "news": 0},
-  {"id": "OC", "text": "Australien", "news": 0},
-  {"id": "EU", "text": "Europa", "news": 20}
-]

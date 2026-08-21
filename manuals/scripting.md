@@ -22,20 +22,19 @@ namespaces.
 - [Macros](#macros)
   - [#export](#export)
   - [#import](#import)
-  - [#output](#output)
   - [#use](#use)
   - [(?...) tolerate](#-tolerate)
 - [Debugging](#debugging)
 
 ## Embedded Composite Script
 Embedded scripting has specific runtime behavior. Standard scripts are executed
-automatically by the browser and independently of rendering. Markup for rendering
-therefore supports the additional script type `composite/javascript`. It uses
-normal JavaScript, but the browser does not recognize it as `text/javascript`
-and does not execute it directly. The composer recognizes the JavaScript code
-and executes it in every relevant render cycle. This allows SCRIPT elements to
-be combined with declarative attributes such as `condition` to control
-execution.
+automatically by the browser and independently of rendering. Markup for
+rendering therefore supports the additional script type `composite/javascript`.
+It uses normal JavaScript, but the browser does not recognize it as
+`text/javascript` and does not execute it directly. The composer recognizes the
+JavaScript code and executes it in every relevant render cycle. This allows
+SCRIPT elements to be combined with declarative attributes such as `condition`
+to control execution.
 
 ```html
 <script type="composite/javascript">
@@ -44,15 +43,14 @@ execution.
 ```
 
 ## Modules
-The module directory contains Composite modules, each grouping the resources
-of a Composite. A JavaScript resource within a Composite module is called a
-[Composite script](composite.md#javascript) and provides the application
-module.
+The module directory contains Composite modules, each grouping the resources of
+a Composite. A JavaScript resource within a Composite module is called a
+[Composite script](composite.md#javascript) and provides the application module.
 
 JavaScript resources in the module directory can also exist independently of a
 Composite. These are referred to informally as modules and can be used without
-composites. The logic is stored in individual files in the module directory
-and, if necessary, in further subdirectories.
+composites. The logic is stored in individual files in the module directory and,
+if necessary, in further subdirectories.
 
 The resources of a Composite (JS, CSS, HTML) can be outsourced to the module
 directory and loaded at runtime, which supports the modular deployment of
@@ -85,10 +83,10 @@ Macros are a meta-syntax that fits into the existing JavaScript syntax. They are
 abbreviated notations for common JavaScript statements.
 
 ### #export
-Composite script is executed directly in an isolated module scope rather
-than as a script element. Variables, constants and functions declared in a
-module are local to that module and are not automatically available in the
-global scope or in other modules.
+Composite script is executed directly in an isolated module scope rather than as
+a script element. Variables, constants and functions declared in a module are
+local to that module and are not automatically available in the global scope or
+in other modules.
 
 The `#export` macro makes selected variables, constants and functions available
 in the global scope. Objects that participate in Composite binding must be
@@ -123,9 +121,9 @@ const utilities = {
 ```
 
 ### #import
-The macro loads one or several modules implemented as Composite script
-resources from the module directory. Modules are loaded only once, regardless of
-whether they are loaded directly via `#import` or indirectly as a resource of a
+The macro loads one or several modules implemented as Composite script resources
+from the module directory. Modules are loaded only once, regardless of whether
+they are loaded directly via `#import` or indirectly as a resource of a
 composite.
 
 __When calling modules, the file extension is omitted.__
@@ -153,23 +151,6 @@ in the module names by the slash.
 #import example/io/connector;
 ```
 
-### #output
-This macro expects text to the end of the line or to the next semicolon,
-which is written to the browser console at the debug level. It is primarily
-useful as an aid for debugging.
-
-```javascript
-#output some text;
-```
-
-As a special feature, the string expression syntax of JavaScript is also
-supported, which allows the use of variables.
-
-```javascript
-const value = "Hallo Welt!";
-#output some more complex text: ${value} ... ${1 + 2};
-```
-
 ### #use
 The macro expects one or more space-separated namespaces to be created at the
 object level if they do not already exist.
@@ -191,20 +172,17 @@ const value = (?object.that.does.not.exist());
 ```
 
 ## Debugging
-Resources and modules, including JavaScript, are loaded only at runtime. The
-browser therefore does not know the sources and does not show the modules in the
-developer tools. This is relevant for breakpoints: modules should generate
-console output for debugging. This can be done manually via the `console`
-object or with the macro [#output](#output).
+When loading Composite Scripts, the Runtime automatically appends a `sourceURL`
+directive mapping the evaluated script to its original module path:
 
 ```javascript
-#output example;
-...
+//# sourceURL=/modules/example/module.js
 ```
 
-The entry point into the JavaScript can thus be accessed through the browser
-console. The console output contains the link to the source file required to
-open the module in the debugger, where breakpoints can be set.
+This allows browser DevTools to expose the dynamically executed script as a
+source in the sources panel. Composite scripts can therefore be opened,
+searched, and debugged with breakpoints and the Debugger like regular JavaScript
+sources.
 
 
 

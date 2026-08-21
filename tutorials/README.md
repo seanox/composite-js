@@ -27,9 +27,8 @@ These references are available when comparing the individual steps.
 - [Step_05 The first module](micro-frontend%2FStep_05%20The%20first%20module)
 - [Step_06 Usage of dynamic data](micro-frontend%2FStep_06%20Usage%20of%20dynamic%20data)
 - [Step_07 Business logic in detail](micro-frontend%2FStep_07%20Business%20logic%20in%20detail)
-- [Step_08 Debugging](micro-frontend%2FStep_08%20Debugging)
-- [Step_09 Testing - Activation](micro-frontend/Step_09%20Testing%20-%20Activation) not yet implemented
-- [Step_10 Testing - UI Test](micro-frontend/Step_10%20Testing%20-%20UI%20Test) not yet implemented
+- [Step_08 Testing - Activation](micro-frontend/Step_09%20Testing%20-%20Activation) not yet implemented
+- [Step_09 Testing - UI Test](micro-frontend/Step_10%20Testing%20-%20UI%20Test) not yet implemented
 
 ## SPA (Single Page Application)
 - [Step_01 Prototype as framework](single-page-application%2FStep_01%20Prototype%20as%20framework)
@@ -46,6 +45,5 @@ These references are available when comparing the individual steps.
 - [Step_12 Components - Macros and modules](single-page-application%2FStep_12%20Components%20-%20Macros%20and%20modules)
 - [Step_13 Components - Example for a spinner](single-page-application%2FStep_13%20Components%20-%20Example%20for%20a%20spinner)
 - [Step_14 Components - Example for dynamic table with CSV download](single-page-application%2FStep_14%20Components%20-%20Example%20for%20dynamic%20table%20with%20CSV%20download)
-- [Step_15 Debugging](single-page-application%2FStep_15%20Debugging)
-- [Step_16 Testing - Activation](single-page-application%2FStep_16%20Testing%20-%20Activation)
-- [Step_17 Testing - UI Test](single-page-application%2FStep_17%20Testing%20-%20UI%20Test)
+- [Step_15 Testing - Activation](single-page-application%2FStep_16%20Testing%20-%20Activation)
+- [Step_16 Testing - UI Test](single-page-application%2FStep_17%20Testing%20-%20UI%20Test)

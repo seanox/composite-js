@@ -17,12 +17,12 @@
  *
  *     DESCRIPTION
  *     ----
- * Expression language and composite JavaScript are two important components.
- * Both are based on JavaScript enriched with macros. In addition, Composite
- * JavaScript can be loaded at runtime and can itself load other Composite
- * JavaScript scripts. Because in the end everything is based on a simple eval
- * command, it was important to isolate the execution of the scripts so that
- * internal methods and constants cannot be accessed unintentionally.
+ * Expression language and composite script are two important components. Both
+ * are based on ECMAScript/JavaScript enriched with macros. In addition,
+ * composite scriot can be loaded at runtime and can itself load other composite
+ * scripts. Because in the end everything is based on a simple eval command, it
+ * was important to isolate the execution of the scripts so that internal
+ * methods and constants cannot be accessed unintentionally.
  */
 (() => {
 
@@ -30,7 +30,7 @@
     compliant(null, window.Scripting = {
 
         /**
-         * As a special feature, Composite JavaScript supports macros.
+         * As a special feature, composite script supports macros.
          *
          * Macros are based on a keyword starting with a hash symbol followed by
          * arguments separated by spaces. Macros end with the next line break, a
@@ -39,26 +39,26 @@
          *
          *     #import
          *     ----
-         * Expects a space-separated list of composite modules whose path must
+         * Expects a space-separated list of composite modules whose paths must
          * be relative to the URL.
          *
          *     #import io/api/connector and/much more
          *
          * Composite modules consist of the optional resources CSS, JS and HTML.
-         * The #import macro can only load CSS and JS. The behavior is the same
-         * as when loading composites in the markup. The server status 404 does
-         * not cause an error, because all resources of a composite are
-         * optional, also JavaScript. Server states other than 200 and 404 cause
-         * an error. CSS resources are added to the HEAD and lead to an error if
-         * no HEAD element exists in the DOM. Markup (HTML) is not loaded
-         * because no target can be set for the output. The macro can be used
-         * multiple in the Composite JavaScript.
+         * The #import macro can only load CSS and JavaScript. The behavior is
+         * the same as when loading composites in the markup. Server status 404
+         * does not cause an error because all resources of a composite are
+         * optional including JavaScript. Server states other than 200 and 404
+         * cause an error. CSS resources are added to the HEAD and cause an
+         * error if no HEAD element exists in the DOM. Markup (HTML) is not
+         * loaded because no target can be set for the output. The macro can be
+         * used multiple times in composite script.
          *
          *
          *     #export
          *     ----
-         * Expects a space-separated list of exports. Export are variables or
-         * constants in a module that are made usable for the global scope.
+         * Expects a space-separated list of exports. Exports are variables or
+         * constants in a module that are made usable in the global scope.
          *
          *     #export connector and much more
          *
@@ -68,24 +68,11 @@
          *
          *     #export connector@io.example
          *
-         * The macro #module is intended for debugging. It writes the following
-         * text as debug output to the console. The browser shows this output
-         * with source, which can then be used as an entry point for debugging.
-         *
-         *
-         *     #module
-         *     ----
-         * Expected a space-separated list of words to be output in the debug
-         * level of the browser console. The output is a string expression and
-         * supports the corresponding syntax.
-         *
-         *     #module console debug output
-         *
          *
          *     #use
          *     ----
-         * Expected to see a space-separated list of namespaces to create if
-         * they don't already exist.
+         * Expects a space-separated list of namespaces to create if they do not
+         * already exist.
          *
          *     #use namespaces to be created
          *
@@ -99,11 +86,16 @@
          * errors.
          *
          * @param {string} script
-         * @returns {*} the return value from the script
+         * @param {string} [url] Optional sourceURL
+         * @returns {*} the return value from the script         *
          */
-        eval(script) {
+        eval(...variants) {
 
-            if (typeof script !== "string")
+            let [url, script] = variants.length > 1
+                    ? variants : [undefined, variants[0]];
+
+            if (typeof script !== "string"
+                    || (url && typeof url !== "string"))
                 throw new TypeError("Invalid data type");
 
             // Performance is important here.
@@ -188,7 +180,7 @@
 
                     case "#":
                         let string = script.substring(cursor -1, cursor +10);
-                        let match = string.match(/(^|\W)(#(?:import|export|module|use))\s/);
+                        let match = string.match(/(^|\W)(#(?:import|export|use))\s/);
                         if (match) {
                             let macro = match[2];
                             for (let offset = cursor +macro.length; offset <= script.length; offset++) {
@@ -222,13 +214,6 @@
                                         macro = "_export(...[" + exports.join(",") + "])";
                                         break;
 
-                                    case "#module":
-                                        macro = parameters.replace(/\\/g, "\\\\")
-                                            .replace(/`/g, "\\`").trim();
-                                        if (macro)
-                                            macro = "console.debug(`Module: " + macro + "`)";
-                                        break;
-
                                     case "#use":
                                         if (!parameters.match(/^([_a-z]\w*)(\.[_a-z]\w*)*(\s+([_a-z]\w*)(\.[_a-z]\w*)*)*$/i))
                                             throw new Error(("Invalid macro: #use " + parameters).trim());
@@ -250,7 +235,7 @@
                 }
             }
 
-            return this.run(script);
+            return this.run(url ? script + "\n\n//# sourceURL=" + url + "\n" : script);
         },
 
         /**

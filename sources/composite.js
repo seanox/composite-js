@@ -1481,7 +1481,7 @@
 
             const content = _render_cache[resource];
             if (resource.match(/\.js(\?.*)?$/i)) {
-                try {Scripting.eval(content);
+                try {Scripting.eval(resource, content);
                 } catch (error) {
                     console.error(resource, error.name + ": " + error.message);
                     throw error;

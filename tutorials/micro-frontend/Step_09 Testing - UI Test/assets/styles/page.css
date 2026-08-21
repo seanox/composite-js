@@ -1,0 +1,377 @@
+body {
+  background-color: darkgray;
+  margin: 0px;
+  padding: 0px;
+}
+* {
+  box-sizing: border-box;
+}
+*:disabled {
+  cursor: not-allowed!important;
+}
+  
+
+
+header {
+  background: white;
+  border-bottom: 1px solid darkgray;
+  color: white;
+  display: block;
+  height: 75px;
+  left: 0px;
+  line-height: 75px;
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  z-index: 1;
+}
+
+header div {
+  background: orange;
+  border: 1px solid orange;
+  border-radius: 3px;
+  box-sizing: border-box;
+  display: block;
+  font: 30px sans-serif;
+  font-weight: bold;
+  height: 50px;
+  left: 79px;
+  line-height: 50px;
+  position: relative;
+  text-align: center;
+  top:11px;
+  vertical-align: middle;
+  width: 50px;
+}
+header div:before {
+  color: gray;
+  content: attr(name);
+  display: block;
+  font: 24px serif;
+  font-weight: bold;
+  height: 25px;
+  left: 50px;
+  line-height: 25px;
+  margin-left: 10px;
+  position: absolute;
+}
+header div:after {
+  color: darkgray;
+  content: attr(slogan);
+  display: block;
+  font: 21px serif;
+  height: 25px;
+  left: 50px;
+  line-height: 25px;
+  margin-left: 10px;
+  position: absolute;
+  top: 25px;
+  white-space: nowrap;
+}
+
+
+
+main {
+  background-color: #FAFAFA;
+  color: gray;
+  display: block;
+  min-height: 100%;
+  min-width: 100%;
+  padding: 89px 20mm 118px 20mm;
+  position: absolute;
+  top: 0px;
+}
+main h1 {
+  color: darkgray;
+  font: 42px serif;
+  line-height: 1;
+  margin: 0px 0px 10px 0px;
+}
+main h1 + h1 {
+  color: gray;
+}
+main h2 {
+  font: 20px serif;
+  line-height: 1.1;
+  margin: 12px 0px 10px 0px;
+}  
+
+main > p {
+  font: 16px sans-serif;
+}
+
+
+
+main form,
+main form > p {
+  margin: 0px;
+  padding: 0px;  
+}
+main p.error input[type='text'] {
+  border-color: red!important;
+  color: red!important;
+}
+main p.error label {
+  color: red!important;
+}
+
+main form > table {
+  border: none;
+  border-collapse: collapse;
+}
+main form > table td,
+main form > table td > p {
+  margin: 0px;
+  padding: 0px;  
+}
+main form > table td + td {
+  padding-left: 24px;
+}
+main form table td,
+main form table tr {
+  border: none!important;
+}
+
+main form label {
+  cursor: pointer;
+  display: block;
+  font: 16px sans-serif;
+  height: 41px;
+  padding: 15px 0px  6px 0px;
+}
+
+main form input[type='text'] {
+  background: white;
+  border-radius: 1px;
+  border: 1px solid darkgray;
+  font: 16px sans-serif;
+  height: 35px;
+  padding: 0px 5px;
+  margin-bottom: 6px;
+  width: 350px;
+}
+main form input[type='text']:disabled {
+  background: lightgray;
+}
+
+main form select {
+  background: white;
+  border: 1px solid darkgray;
+  border-radius: 1px;
+  cursor: pointer;
+  font: 16px sans-serif;
+  height: 35px;
+  margin-bottom: 6px;
+  padding: 0px 5px;
+  width: 350px;
+}
+main form select:disabled {
+  background: lightgray;
+}
+main form select option {
+  background: white;
+  cursor: pointer;
+  font: 16px sans-serif;
+}
+main form select option:disabled {
+  background: white;
+  color: darkgray;
+}
+
+main form button {
+  border-radius: 1px;
+  background: orange;
+  border: 1px solid orange;
+  color: white;
+  cursor: pointer;
+  font: 16px sans-serif;
+  height: 35px;
+  margin: 6px 0px 21px 0px;
+  padding: 0px 24px 0px 24px;
+}
+main form button:hover {
+  background: darkorange;
+  border-color: darkorange;
+}
+main form button:disabled {
+  background: lightgray;
+  border-color: darkgray;
+  color: darkgray;
+}
+main form button span {
+  font:14px Icons;
+  margin-right: 8px;
+  position: relative;
+  top:-1px;
+}
+
+
+
+main input[type='checkbox'] {
+  display: none;
+}
+main input[type='checkbox'] ~ label  {
+  display: inline-block;
+  padding-left:6px;
+  line-height: 41px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+main input[type='checkbox'] ~ label::before {
+  border:1px solid darkgray;
+  border-radius: 1px;
+  content: '';
+  cursor: pointer;
+  display: inline-block;
+  height: 21px;
+  left: -6px;
+  top: 6px;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  width: 21px;
+}
+main input[type='checkbox'][checked='partial'] ~ label::before {
+  content: '+'!important;;
+  font-family: sans-serif!important;
+  font-weight: bolder!important;
+}
+main input[type='checkbox']:checked ~ label::before {
+  background-color: orange;
+  border-color: orange;
+  color: white;
+  content: '\e801';
+  font:16px Icons;
+  line-height: 20px;
+}
+main input[type='checkbox']:checked:hover ~ label::before {
+  background-color: darkorange;
+  border-color: darkorange;
+}
+main input[type='checkbox']:disabled ~ label::before {
+  background-color: lightgray;
+  border-color: darkgray;
+  color: darkgray;
+  cursor: not-allowed;
+}
+ 
+
+
+main a[href] {
+  text-decoration: none;
+  border-bottom: 1px solid;
+  color: orange;  
+}
+
+
+
+main table {
+  border-bottom: 1px solid darkgray;
+  border-collapse: collapse;
+  font: 16px sans-serif;
+  width: 100%;  
+}
+main table th {
+  border-bottom: 1px solid darkgray;
+  height: 41px;
+  padding: 6px;
+  text-align: left;
+  white-space: nowrap;
+}
+main table td {
+  height: 41px;
+  padding: 6px;
+  text-align: left;
+}
+main table tr[disabled='true'] td {
+  background: lightgray;
+  border-color: white!important;
+  color: darkgray;
+}
+main table > tbody > tr + tr:not(:first-child):not(.group) > td {
+  border-top: 1px solid lightgray;
+}
+main table > tbody > tr.group > td {
+  border-top: 1px solid darkgray;
+  border-bottom: 1px solid white;
+}
+main table tr td span {
+  display: block;
+}
+main table tr td span + span {
+  color: darkgray;
+}
+
+
+
+footer {
+  background: white;
+  border-top: 1px darkgray solid;
+  bottom: 0px;
+  color: white;
+  display: block;
+  font: 14px sans-serif;
+  height: 50px;
+  left: 0px;
+  line-height: 50px;
+  padding: 0px 15px;
+  position: absolute;
+  width: 100%;
+  z-index: 1;
+}
+
+
+
+main > p:last-of-type {
+  bottom: 46px;
+  color: darkgray;
+  font: 14px sans-serif;
+  position: absolute;
+  text-align: right;
+  right: 20mm;
+}
+
+
+
+#spinner {
+  display: none;
+}
+#spinner[enabled] {
+  display: block;
+}
+
+#spinner[enabled]:before {
+  content: '';
+  background: #000000;
+  display: block;
+  height: 100%;
+  left: 0px;
+  opacity: 0.50;
+  position: fixed;
+  top:0px;
+  width: 100%;
+  z-index: 65534;
+  animation: spinner-fadeIn  ease 0.5s;
+}
+@keyframes spinner-fadeIn {
+  0%   {opacity:0;}
+  100% {opacity:0.50;}
+}
+
+#spinner[enabled]:after {
+  content: '';
+  background: darkorange;
+  border-radius: 50%;
+  display: block;
+  height: 50px;
+  left: 50%;
+  top: 50%;
+  position: fixed;
+  width: 50px;
+  z-index: 65535;
+  animation: spinner-fading 1s ease-in infinite;
+}
+@keyframes spinner-fading {
+  0% {transform:scale(0); opacity:1;}
+  100% {transform:scale(1); opacity:0;}
+}

@@ -279,7 +279,6 @@
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_05 The first module/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_06 Usage of dynamic data/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_07 Business logic in detail/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_08 Debugging/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_02 Integration of Seanox aspect-js/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_03 Prototype - Splitting into components/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_04 Internationalization (i18n)/assets"/>
@@ -293,12 +292,11 @@
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_12 Components - Macros and modules/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_13 Components - Example for a spinner/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_14 Components - Example for dynamic table with CSV download/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_15 Debugging/assets"/>
-    
-    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_09 Testing - Activation/assets"/>
-    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_10 Testing - UI Test/assets"/>
-    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_16 Testing - Activation/assets"/>
-    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_17 Testing - UI Test/assets"/>
+
+    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_08 Testing - Activation/assets"/>
+    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_09 Testing - UI Test/assets"/>
+    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_15 Testing - Activation/assets"/>
+    <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_16 Testing - UI Test/assets"/>
 
     <mkdir dir="${workspace.release.temp}"/>
     <copy todir="${workspace.release.temp}">

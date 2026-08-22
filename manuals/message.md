@@ -19,9 +19,10 @@ directory.
 - index.html
 ```
 
-The elements for supported languages, locales and/or clients are organized as
-sets in this file. Each set defines the key-value pairs as label entries.
-Clients are used like locales and are not mentioned separately below.
+The elements for supported languages, locales and/or clients (tenants) are
+organized as sets in this file. Each set defines the key-value pairs as label
+entries. Clients (tenants) are used like locales and are not mentioned
+separately below.
 
 ```xml
 <?xml version="1.0"?>
@@ -41,6 +42,8 @@ Clients are used like locales and are not mentioned separately below.
 
 The language is selected automatically from the browser language setting. If
 that language is not supported, the language declared as `default` is used.
+JavaScript can change the language and locale at runtime with
+`DataSource.localize()` — see [Locales](datasource.md#locales).
 
 After loading the application, Messages are available as an associative array.
 They can be used directly in JavaScript and in markup expressions.
@@ -83,10 +86,6 @@ const welcome = Messages.populate("welcome", "Mr.", "Doe", "with extended user r
 
 Placeholders can be used multiple times. Excess placeholders or placeholders for
 which no value has been specified are removed from the generated message.
-
-JavaScript can change the language and locale for Messages at runtime using the
-same mechanism as DataSource — see [Locales](datasource.md#locales) for
-`DataSource.localize()`, `DataSource.locale` and `DataSource.locales`.
 
 
 

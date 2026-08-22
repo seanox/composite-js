@@ -1,114 +1,141 @@
 &#9665; [Motivation](motivation.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#introduction)
-&nbsp;&nbsp;&nbsp;&nbsp; [Getting Started](getting-started.md) &#9655;
+&nbsp;&nbsp;&nbsp;&nbsp; [Architecture](architecture.md) &#9655;
 - - -
 
 # Introduction
+Seanox composite-js is a browser application runtime for composing loosely
+coupled, domain-oriented application units at runtime. It is intended for
+Single-Page Applications and micro-frontends and combines established concepts
+and principles of web applications with declarative UI concepts.
 
-## What is Seanox aspect-js?
-Seanox aspect-js is a browser-native __runtime__ for Single-Page Applications
-(SPAs) and micro-frontends.
+The framework uses the browser's native programming model. HTML is the primary
+view language, JavaScript is the primary application language, and CSS defines
+the presentation. Applications do not require compilation, although an optional
+build process can be used for packaging, optimization, or deployment.
 
-Applications consist of HTML, CSS, JavaScript and other resources that the
-runtime loads, connects and manages. Native browser technologies are extended
-with declarative application concepts such as expression language,
-__composites__, __composite binding__, routing and reactive rendering without
-requiring compilation.
+## Contents Overview
+- [Overview](#overview)
+- [Composing Modules at Runtime](#composing-modules-at-runtime)
+- [Declarative UI Concepts](#declarative-ui-concepts)
+- [Composite Binding](#composite-binding)
+- [Rendering](#rendering)
+- [Design Principles](#design-principles)
+  - [Browser's Native Programming Model](#browsers-native-programming-model)
+  - [Declarative Application Model](#declarative-application-model)
+  - [HTML as the Primary View Language](#html-as-the-primary-view-language)
+  - [JavaScript as the Primary Application Language](#javascript-as-the-primary-application-language)
+  - [Composing Modules at Runtime](#composing-modules-at-runtime-1)
+  - [Architecture Neutrality](#architecture-neutrality)
+  - [Without Compilation](#without-compilation)
+  - [Optional Build Process](#optional-build-process)
+- [Summary](#summary)
 
-The programming model brings established enterprise UI concepts, as used by
-frameworks such as JavaServer Faces (JSF), directly to the browser while
-preserving HTML as the primary view language and JavaScript as the application
-language.
+## Overview
+Frontend applications are increasingly structured around business domains and
+partitioned into loosely coupled software modules. Seanox composite-js provides
+a browser application runtime that composes such modules into applications at
+runtime.
 
-Inspired by microservice architectures, Seanox aspect-js applies these concepts
-to micro-frontends and allows frontend applications to be structured as
-independent, composable units that can be loaded and deployed as runtime
-modules.
+The framework treats an application as a composition of independently identified
+application units called Composites. Each Composite combines a declarative view,
+application logic, and the resources required for its realization within the
+DOM. The runtime resolves these resources, connects them with a concrete DOM
+context, and realizes the resulting Composite in the browser.
+
+## Composing Modules at Runtime
+The central idea of _composite-js_ is the composition of application units at
+runtime. An application is partitioned into loosely coupled Composites, each
+with its own identity, resources, view, application logic, and runtime
+representation. That identity is the Composite ID, declared in the markup and
+used by the runtime as the reference for every relationship of a Composite.
+
+The runtime resolves and loads these resources and realizes each Composite
+within a concrete DOM context, so composition is part of the running
+application rather than exclusively a build-time operation. Accordingly, the
+DOM is not merely the output of the application but also part of its running
+state, interpreted and processed by the runtime.
+
+## Declarative UI Concepts
+Seanox composite-js combines the browser's native programming model with
+declarative UI concepts such as views and Expressions. A view describes the
+declarative presentation of a Composite, defined by markup and styled by CSS.
+The corresponding application logic is provided by an application module and
+made available to the view through Expressions and Composite binding.
+
+## Composite Binding
+Composite binding connects the view with explicitly exported objects of the
+application module. It is established by the runtime while a Composite is
+realized, so the view can access application logic without an additional wiring
+layer.
+
+## Rendering
+Rendering is the process by which the runtime transforms the declarative model
+into its running state, both for the initial realization of a Composite and for
+later updates.
+
+These concepts, their responsibilities, and their relationships are defined in
+full detail in [Architecture](architecture.md).
 
 ## Design Principles
+The following principles characterize how _composite-js_ approaches application
+development.
 
-### Browser-native Execution
-Seanox aspect-js runs directly in the browser and uses standard web technologies
-as the foundation. Applications consist of HTML, CSS and JavaScript and other
-resources that are loaded and connected at runtime. The runtime does not require
-a compilation step to execute an application.
+### Browser's Native Programming Model
+Applications use the native programming model of the browser. HTML, JavaScript,
+CSS, the DOM, and standard ECMAScript mechanisms remain the technical
+foundation, while _composite-js_ adds the runtime mechanisms required for
+composition.
 
-### HTML as View Language
-HTML remains the primary language for describing the user interface. The runtime
-extends HTML with declarative attributes and expressions that control rendering,
-interaction, composite usage and data access, while application logic remains
-implemented in JavaScript.
+### Declarative Application Model
+Application structure and presentation are described declaratively in the DOM.
+Markup can represent Composites, relationships, Expressions, and runtime
+instructions in addition to visual content. The DOM is therefore part of the
+running program state processed by the runtime.
 
-### Composite Scripts / Application Modules
-Applications are structured into __composites__, which contain __composite
-scripts__ providing the logic of the application. These scripts take the role of
-an __application module__, whose architectural responsibilities are not
-predefined: they may implement any structure (object, function, class) and any
-responsibility (ViewModel, Controller, Service, etc.).
+### HTML as the Primary View Language
+A view uses regular markup together with the declarative concepts and
+instructions processed by the runtime. CSS defines its presentation.
+
+### JavaScript as the Primary Application Language
+Application logic is implemented in JavaScript. A Composite script establishes
+the application module of a Composite, but the runtime does not prescribe how
+that application module must be structured internally.
+
+### Composing Modules at Runtime
+Composition is part of the running application model rather than exclusively a
+build-time operation, as described in [Composing Modules at Runtime](
+    #composing-modules-at-runtime).
 
 ### Architecture Neutrality
-Seanox aspect-js does not prescribe the internal architecture of an application 
-module. The runtime connects HTML views with composite scripts without
-determining their internal responsibilities or requiring a specific pattern such
-as MVC, MVVM or MVCS. The architectural role of a Composite Script is defined
-solely by its implementation.
+The framework provides mechanisms for structuring and composing applications
+without enforcing a specific application architecture. Composites can represent
+business domains, technical concerns, or other application structures.
 
-### Separation of Runtime and Application Logic
-The runtime provides mechanisms required for application execution, including
-resource loading, composite management, Composite Binding, rendering, reactive
-updates, routing and lifecycle handling. Application-specific behavior, business
-logic and domain logic are implemented inside composite scripts.
+### Without Compilation
+The fundamental programming and execution model does not require compilation.
+Composite-specific relationships and instructions are processed by the runtime
+in the browser.
 
-### Composite Binding
-The runtime connects a Composite’s HTML view with its corresponding application
-module, providing synchronization, event forwarding, method invocation and
-lifecycle integration, without assuming any predefined architectural role for
-the application module.
+### Optional Build Process
+A build process can be used for packaging, optimization, or deployment, but it
+does not define the semantics of the application model. The relationships
+between Composite, Composite module, view, application module, composer, and
+runtime remain independent of such a process.
 
-### Separation of Application State and Domain Data
-Application state and domain data represent different concerns. UI‑specific
-state belongs to the Application Module or its presentation logic, while domain
-models represent domain‑specific data and rules. Domain models are not used as
-containers for UI state such as selection, visibility or presentation status.
+## Summary
+Seanox composite-js is a browser application runtime for Single-Page
+Applications and micro-frontends. It structures applications as compositions of
+independently identified Composites, each of which combines a declarative view,
+application logic, and associated resources within a DOM context.
 
-## Documentation Structure
-The documentation is organized into sections that describe Seanox aspect-js from
-different perspectives. The sections are grouped by concepts, application
-structure, runtime behavior and development topics.
-
-The [Introduction](README.md#introduction) describes the basic concepts and
-terminology used throughout the documentation.
-
-The [Architecture](README.md#architecture) section describes the structural and
-technical foundation of Seanox aspect-js. It defines the core concepts of the
-composite system, including composite, composite module, application module,
-composite ID and composite binding, and explains how these elements interact
-within the runtime.
-
-The [Language](README.md#language) section describes the declarative and
-scripting capabilities used to define application behavior. It covers the
-expression language, markup and scripting features used to describe views,
-interactions and application logic.
-
-The [Components](README.md#components) section describes the structural building
-blocks of an application, including loading, rendering, reactivity, composite
-binding and routing.
-
-The [Runtime](README.md#runtime) section describes the infrastructure provided
-during application execution. It covers data access, resource handling, events
-and runtime extensions that support the execution of composites and application
-modules.
-
-The [Development](README.md#development) section describes tools and processes
-related to application development, testing and project maintenance.
-
-Each section focuses on a specific aspect of the framework. Concepts introduced
-in earlier sections are used as a foundation for more detailed descriptions in
-later sections.
+Applications are composed at runtime, use the native programming model of the
+browser, and do not require compilation. The framework provides these mechanisms
+without enforcing a specific application architecture.
 
 
 
 - - -
 &#9665; [Motivation](motivation.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#introduction)
-&nbsp;&nbsp;&nbsp;&nbsp; [Getting Started](getting-started.md) &#9655;
+&nbsp;&nbsp;&nbsp;&nbsp; [Architecture](architecture.md) &#9655;

@@ -20,7 +20,8 @@ CR: Project: Refactoring after renaming to composite-js
     - composite.js and the Composite object become composer.js and the Composer
       object
 CR: Composer: Refactoring the rendering
-    Allocation of responsibility according to the appropriate method.
+    Allocation of responsibility according to the appropriate method, without
+    affecting runtime behavior.
 
 1.9.0 20260717
 BF: Composite: Validation corrections and optimization

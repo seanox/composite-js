@@ -78,20 +78,20 @@ Data in the data storage is addressed through a locator URL (`xml://...` or
 `xslt://...`). Single and double slashes are supported. A locator can be used
 contextually or explicitly.
 
-- __Contextual Locator__: Uses an absolute path without a file extension
+- __Contextual locator__: Uses an absolute path without a file extension
   relative to the DataSource directory and does not contain a locale (language 
   specification) in the path. The locale is determined automatically based on
   the browser's language setting or, if not supported, the default locale from
   the `locales.xml` in the DataSource data storage.
 
-- __Explicit Locator__: Uses a fully qualified URL with a file extension
+- __Explicit locator__: Uses a fully qualified URL with a file extension
   (`xml://....xml` or `xslt://....xslt`). This locator addresses an absolute
   path based on the current URL and is not enriched with the locale.
 
 Each locator starts with a protocol that corresponds to the file extension in
-the data storage. __Only lowercase letters are accepted here__, because
-deriving the corresponding file extension is too time-consuming when uppercase
-and lowercase letters are combined.
+the data storage. __Only lowercase letters are accepted here__, because deriving
+the corresponding file extension is too time-consuming when uppercase and
+lowercase letters are combined.
 
 ```
 xml://fileA -> ./data/en/fileA.xml
@@ -130,8 +130,8 @@ _value_.
 <attribute name="name of the attribute" value="value of the attribute"/>
 ```
 
-Text nodes are also returned as nodes, but then with the name _text_. The
-value of the addressed text node is then the content of the node.
+Text nodes are also returned as nodes, but then with the name _text_. The value
+of the addressed text node is then the content of the node.
 
 ```
 <text>content of the text node</text>
@@ -192,8 +192,8 @@ XMLDocument is returned.
 
 JavaScript elements are also handled. Their type is changed automatically to
 `composite/javascript` so that they are not executed during embedding, but are
-interpreted by the renderer. This is important when using [condition](
-    markup.md#condition).
+interpreted by the composer during rendering. This is important when using
+[condition](markup.md#condition).
 
 Text creation/output during transformation has another special behavior. The
 XSLT Processor always generates XML-valid text output. Any XML syntax in text is
@@ -223,10 +223,10 @@ escaping.
 <article escape="on">
   <![CDATA[
   <p>
-    Seanox aspect-js is a browser-native application runtime for single-page
+    Seanox composite-js is a browser-native runtime for single-page
     applications (SPAs) and micro-frontends.
   </p>
-  <a href="https://github.com/seanox/aspect-js">read more</a>
+  <a href="https://github.com/seanox/composite-js">read more</a>
   ]]>
 </article>
 ```
@@ -294,26 +294,8 @@ Collecting with an own _articles_ collector.
 DataSource.collect("articles", "xml://paper", "xml://envelope", "xml://pen");
 ```
 
-```xml
-<?xml version="1.0"?>
-<articles>
-  <article>
-    <id>100</id>
-    <description>Paper</description>
-    <price>1.00</price>
-  </article>
-  <article>
-    <id>200</id>
-    <description>Envelope</description>
-    <price>2.00</price>
-  </article>
-  <article>
-    <id>300</id>
-    <description>Pen</description>
-    <price>3.00</price>
-  </article>
-</articles>
-```
+The result is the same as before, but with `articles` as the root element
+instead of `collector`.
 
 ## Notes
 The DataSource can also be used directly in the markup with the attributes
@@ -343,4 +325,3 @@ The DataSource can also be used directly in the markup with the attributes
 &#9665; [Routing](routing.md)
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#datasource)
 &nbsp;&nbsp;&nbsp;&nbsp; [Resource Bundle](message.md) &#9655;
->

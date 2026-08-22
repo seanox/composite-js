@@ -11,8 +11,8 @@
   and data)
 
 ## Choose a Runtime Variant
-The application runtime (runtime) consists of one JavaScript file. It can be
-included through a release-channel URL or downloaded as a release.
+The runtime consists of one JavaScript file. It can be included through a
+release-channel URL or downloaded as a release.
 
 Release channels continuously provide the latest final major versions.
 
@@ -21,36 +21,39 @@ available in two variants. The standard variant is compressed for production
 environments. The uncompressed and documented max variant is available for
 development and error analysis.
 
-- https://cdn.jsdelivr.net/npm/@seanox/aspect-js/release/aspect-js.js  
+- https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js.js  
   __for deployment without Test API__
 
-- https://cdn.jsdelivr.net/npm/@seanox/aspect-js/release/aspect-js-max.js  
-  __for deployment without Test API__ not minimized and with comments
+- https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js-max.js  
+  __for deployment without Test API__ not compressed and with comments
 
-- https://cdn.jsdelivr.net/npm/@seanox/aspect-js/release/aspect-js-testing.js  
+- https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js-testing.js  
   for development and testing
 
-- https://cdn.jsdelivr.net/npm/@seanox/aspect-js/release/aspect-js-testing-max.js  
-  for development and testing not minimized and with comments
+- https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js-testing-max.js  
+  for development and testing not compressed and with comments
 
-## First Composite (Explicit Rendering Flow)
-Create `index.html` and declare one composite:
+## First Composite
+Create `index.html` and declare a composite:
 
 ```html
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="https://cdn.jsdelivr.net/npm/@seanox/aspect-js/release/aspect-js-testing-max.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js-testing-max.js"></script>
   </head>
   <body>
-    <div id="example" composite></div>
+    <section id="example" composite></section>
   </body>
 </html>
 ```
 
-Add module resources in the default module directory:
+The combination of the `composite` attribute and the `id` attribute defines the
+Composite ID, in this case `example`.
 
-```text
+Create the resources of the composite module:
+
+```
 + modules
   - example.css
   - example.js
@@ -58,9 +61,9 @@ Add module resources in the default module directory:
 - index.html
 ```
 
-Implement the module in `modules/example.js`:
+Implement the composite script in `modules/example.js`:
 
-```javascript
+```
 const example = {
     message: "",
     validate(element, value) {
@@ -71,6 +74,11 @@ const example = {
 #export example;
 ```
 
+The composite script establishes the application module of the Composite. The
+runtime does not prescribe how application logic must be structured. It can be
+implemented using objects, functions, classes, or combinations of these
+structures.
+
 Implement the view in `modules/example.html`:
 
 ```html
@@ -79,7 +87,7 @@ Implement the view in `modules/example.html`:
 <p id="preview">{{example.message}}</p>
 ```
 
-Optional style in `modules/example.css`:
+Optional styles in `modules/example.css`:
 
 ```css
 #example {
@@ -87,31 +95,88 @@ Optional style in `modules/example.css`:
 }
 ```
 
-This example shows the explicit data/render flow: `events` triggers
-synchronization from input to the application model implemented by the module,
-`validate` controls the sync result, and `render` refreshes selected targets
-(`#preview`). The expression `{{example.message}}` outputs model data into the
-markup.
+The view describes the declarative presentation of the Composite. It contains
+markup and expressions and refers to application data provided by the
+application module. The expression `{{example.message}}` accesses data exposed
+by the application module through Composite binding.
 
-## What the Runtime Does Here
-When the page is rendered, the composite `id="example"` is used as the composite
-ID. Seanox aspect-js resolves resources by that ID and loads CSS, JavaScript,
-and HTML in this order. The JavaScript module with its exported
-application model and the markup are then connected through View-Module Binding
-(binding).
+## What Happens During Realization
+When the runtime encounters the Composite declaration, it forms the Composite ID
+from the `id` attribute and the `composite` attribute, resolves the
+corresponding Composite module and loads its resources:
 
-`#export example;` is required because composite JavaScript resources are
-executed in an isolated scope. Exporting the application model makes it
-available in the runtime namespace so that the composite view can access its
-data and logic.
+```
+Composite Module
+    -> example.html
+    -> example.css
+    -> example.js
+```
 
-The HTML resource (`modules/example.html`) is auto-loaded only if the composite
-element has no inner HTML and does not use `import` or `output`.
+The composer then realizes the Composite within the declared DOM context.
 
-## Optional Next Step: Reactive Model
-The first example intentionally uses explicit `render`, so the update mechanism
-is visible. As a next step, you can make the model reactive and remove `render`
-for this case.
+Conceptually, the realization follows this dependency chain:
+
+```
+Composite declaration
+    -> Composite ID
+        -> Composite Module resolution
+            -> resource loading
+                -> Composite Script execution
+                    -> Application Module establishment
+                        -> View realization
+                            -> Composite Binding
+                                -> running Composite
+```
+
+As shown here, the Composite lifecycle begins with the loading of the
+Composite module. At the end of this process, the Composite reaches its
+running state. The resulting Composite consists of:
+
+```
+Composite
+    -> DOM context
+    -> JavaScript context
+    -> CSS context
+```
+
+## Composite Script and Application Module
+The Composite script and the application module are related but distinct
+concepts.
+
+```
+Composite Script
+    -> establishes
+        -> Application Module
+```
+
+The Composite script is the executable JavaScript program of the Composite
+module, whose execution establishes the application module as the resulting
+runtime representation of the application logic.
+
+Objects that participate in Composite binding must be explicitly exported:
+
+```
+#export example;
+```
+
+Without the export, the object would remain internal to the Composite script
+and would not be available to the view.
+
+## Composite Binding
+Composite binding connects the declarative DOM structure of the view with
+explicitly exported objects of the application module.
+
+```
+View
+    <-> Composite Binding <-> Application Module
+```
+
+The runtime resolves this relationship during realization and makes the
+application data available to the view.
+
+## Optional Next Step: Reactive Application Data
+The previous example uses explicit rendering so that the data flow remains
+visible.
 
 ```javascript
 const example = {
@@ -130,17 +195,21 @@ const example = {
 <p>{{example.message}}</p>
 ```
 
-Changes to reactive model values update consumers automatically.
+When reactive application data is used, the runtime reacts to changes of its
+properties. Any expression in the view that depends on a changed property is
+updated automatically, so explicit rendering is no longer required in this
+case.
 
 ## Learning Path
 The following tutorials provide separate learning paths for micro-frontends and
-Single-Page Applications. Each path consists of incremental steps that extend or
-modify the previous result. The differences between consecutive steps illustrate
-the implementation of individual concepts.
+Single-Page Applications. Each path consists of incremental steps, from a
+prototype to a finished application, that extend or modify the previous result.
+The commented differences between consecutive steps illustrate the
+implementation of individual concepts.
 
-- [Micro-Frontend](https://seanox.github.io/aspect-js/tutorials/#micro-frontend)
+- [Micro-Frontend](https://seanox.github.io/composite-js/tutorials/#micro-frontend)
 - [SPA (Single Page Application)](
-      https://seanox.github.io/aspect-js/tutorials/#spa-single-page-application)
+      https://seanox.github.io/composite-js/tutorials/#spa-single-page-application)
 
 
 

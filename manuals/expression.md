@@ -4,20 +4,21 @@
 - - -
 
 # Expression Language
-The expression language provides access to client-side JavaScript and to
-application modules (modules) in Seanox aspect-js. Expressions support the
-JavaScript API and additional keywords for arithmetic and logical operators.
+The expression language provides access to client-side JavaScript and to the
+application modules in _composite-js_. Expressions support the JavaScript API
+and additional keywords for arithmetic and logical operators.
 
 ```
 {{'Hello World!'}}
 ```
 
-The expression language can be used in markup from the HTML element `BODY`.
-It can be used as free text and in attributes. The content of the HTML elements
+The expression language can be used in markup from the HTML element `BODY`. It
+can be used as free text and in attributes. The content of the HTML elements
 `STYLE` and `SCRIPT` is not supported.
 
-The renderer interprets the expression syntax `{{...}}`. Inside an expression,
-the character sequences `{{` and `}}` must be escaped as `\{\{` and `\}\}`.
+During rendering, the composer interprets the expression syntax `{{...}}`.
+Inside an expression, the character sequences `{{` and `}}` must be escaped as
+`\{\{` and `\}\}`.
 
 ## Contents Overview
 - [Elements](#elements)
@@ -64,8 +65,7 @@ expression language is combined with text.
 
 ### Literal
 Literals are text embedded in an expression with single, double or backtick
-quotation marks. They support the usual control characters and escape
-sequences.
+quotation marks. They support the usual control characters and escape sequences.
 
 ```
 {{'Hello World!'}}
@@ -108,7 +108,7 @@ keywords to support valid markup:
 | `or`    | <code>&#124;&#124;</code> |
 
 ### Value
-Anything that is not a literal or keyword is potentially a Value. A Value
+Anything that is not a literal or keyword is potentially a value. A Value
 represents an object property or variable. Object properties are accessed
 directly or through a corresponding getter. If neither an object property nor a
 variable can be determined, a method or other logic is assumed.
@@ -128,17 +128,14 @@ Expressions output all values except the value `undefined`. The string
 `undefined` is interpreted as normal text.
 
 ### Value-Expression
-Anything that is not a literal and keyword is potentially a Value. Value
-represents the value of an object property or a variable. In the case of object
-properties, this is referred to directly or, if available, to a corresponding
-getter.
+Outputs a [value](#value) — the value of an object property or a variable.
 
 ```
 {{Example.object.field}}
 ```
 
 ### Method-Expression
-Everything that is not literal, keyword and value is potentially a method
+Calls a [method](#method) and outputs its return value.
 
 ```
 {{Example.getData()}}
@@ -206,8 +203,8 @@ written to the browser console. Instead, the brackets represent the value
 ```
 
 ## Notes
-Expressions are interpreted by the renderer after the page has loaded. They can
-therefore be visible during page loading. Use the attribute
+Expressions are interpreted by the composer during rendering after the page has
+loaded. They can therefore be visible during page loading. Use the attribute
 [release](markup.md#release) to prevent this.
 
 ```html

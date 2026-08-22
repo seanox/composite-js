@@ -90,7 +90,8 @@ Ideal:
 State change &rarr; one dependency &rarr; one text node update.
 
 Poor implementations:  
-State change &rarr; list re-evaluation &rarr; many template executions &rarr; many DOM checks.
+State change &rarr; list re-evaluation &rarr; many template executions &rarr;
+many DOM checks.
 
 This benchmark primarily evaluates:
 - dependency tracking
@@ -143,9 +144,8 @@ evaluation time.
 The benchmark measures the performance of the complete scripting pipeline,
 including preprocessing, macro detection and expansion, script preparation,
 parsing, compilation, and runtime execution. It supports custom scripting 
-features such as `#import`, `#export`, `#module`, `#use`, and tolerant
-expressions while correctly ignoring JavaScript literals and comments during
-preprocessing.
+features such as `#import`, `#export`, `#use`, and tolerant expressions while
+correctly ignoring JavaScript literals and comments during preprocessing.
 
 By repeatedly processing identical source code, the benchmark evaluates the
 stability and efficiency of the entire script loading and execution path, 

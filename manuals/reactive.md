@@ -32,11 +32,11 @@ DOM and free text that use the `value` property directly or indirectly in an
 expression. Rendering occurs when the changed value is final in the data object,
 which can be relevant when using getters and setters.
 
-No new reactive instance can be created from an existing reactive instance.
+No new reactive instance can be created from an existing one &ndash;
 `Object.prototype.reactive()` and `Reactive(...)` always return a reference to
-themselves. When another reactive object is added as a value to an existing
-reactive instance, a new reactive instance is created from the original object
-that is added as a reactive object.
+the same instance. However, if a reactive object is assigned as a value to
+another (different) reactive instance, a new reactive instance is created from
+its underlying original object.
 
 ```javascript
 const objectA = ({}).reactive();
@@ -72,7 +72,9 @@ before the consumers.__
 ## Synchronization
 __Reactive is a substitute for another object and controls access to the
 original object. Reactive and the object are independent instances, but reactive
-is tightly bound to the original object but logically separated from it.__
+is tightly bound to the original object but logically separated from it. This
+logical separation is necessary so that the composer can generate notifications
+when data changes and thus trigger rendering of the consumers in the view.__
 
 ```javascript
 const objectA = {};
@@ -117,14 +119,10 @@ seconds, the write access to `instance` triggers the view update.
 ## Nested Objects
 Reactive works permanently recursively on all object levels and also on the
 objects which are added later as values. Even if these objects do not explicitly
-use reactive, new instances are created for the referenced objects. Initiating
-objects and reactive instances are logically decoupled and are synchronized
-bidirectionally. In contrast, views and reactive instances, like instances
-internally, use proxies that behave and can be used like the initiating
-originals. However, proxies are separate instances that are compatible but not
-identical to the initiating object. This logical separation is necessary so
-that the composer can generate appropriate notifications when data changes and
-thus trigger rendering of the consumers in the view.
+use reactive, new instances are created for the referenced objects. Views and
+reactive instances, like instances internally, use proxies that behave and can
+be used like the initiating originals. However, proxies are separate instances
+that are compatible but not identical to the initiating object.
 
 ```javascript
 const objectA = {}

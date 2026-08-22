@@ -97,6 +97,8 @@ the URL hash in the browser, by using hash links and in JavaScript with
 <a href="##x">Back to the parent + x</a>
 ```
 
+The path syntax is described in chapter [Paths](#paths).
+
 ```javascript
 Routing.route("#a#b#c");
 Routing.route("##");
@@ -114,8 +116,7 @@ asynchronous forwarding by changing the location hash.
 
 __Routing accepts all paths (routes) and covers the destinations from the root.
 Subsequent path components are treated as path parameters and can be used in the
-business logic of the views. For character restrictions and encoding of paths,
-see chapter [Paths](#paths).__
+business logic of the views.__
 
 ## Permission Concept
 The permission concept is based on `permit` methods in the application modules.
@@ -152,9 +153,10 @@ const example = {
 ```
 
 ## Interceptors
-Interceptors allow custom logic to be executed during navigation before the
-target path is evaluated and the view flow is processed by routing. They are
-intended to react to specific paths and can influence whether the navigation
+Interceptors allow custom logic to be executed during navigation before routing
+checks path validity, resolves the target view and updates the view flow. They
+are suitable for tasks such as authentication checks, redirects, route migration
+or custom navigation handling and can influence whether the navigation
 continues.
 
 An interceptor is registered with `Routing.customize(path, actor)`. The `path`
@@ -168,10 +170,6 @@ Routing.customize("#a#b#c", (previousHash, newHash) => {
     console.log("Navigation from", previousHash, "to", newHash);
 });
 ```
-
-Interceptors are processed before routing checks path validity, resolves the
-target view and updates the view flow. They are suitable for tasks such as
-authentication checks, redirects, route migration or custom navigation handling.
 
 ### Execution order
 Interceptors are executed in the order in which they were registered.
@@ -234,11 +232,8 @@ Routing.customize("#old-path", (oldHash, newHash) => {
 });
 ```
 
-Because interceptors are executed sequentially, subsequent interceptors operate
-on the updated navigation target.
-
-__Interceptors are executed before the normal routing process. Changes made by
-Interceptors directly affect the following path resolution and view rendering.__
+__Changes made by interceptors directly affect the following path resolution and
+view rendering.__
 
 ## Paths
 Paths are used for navigation, routing and view flow control. The target can be

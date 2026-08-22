@@ -71,27 +71,23 @@ platform and modules in micro-frontends.
 The modules are then loaded programmatically with `Composer.include(...)`,
 `Composer.load(...)` or preferably with the macro [#import](#import).
 
-__When calling modules, the file extension is omitted.__
-
 ```javascript
 #import moduleA moduleB
 #import example/moduleE example/moduleF
 ```
 
 ## Macros
-Macros are a meta-syntax that fits into the existing JavaScript syntax. They are
-abbreviated notations for common JavaScript statements.
+Macros are abbreviated notations for common JavaScript statements. A
+preprocessor resolves them before execution, so the JavaScript engine only
+executes standard ECMAScript and the surrounding language constructs remain
+effective.
 
 ### #export
-Composite script is executed directly in an isolated module scope rather than as
-a script element. Variables, constants and functions declared in a module are
-local to that module and are not automatically available in the global scope or
-in other modules.
-
-The `#export` macro makes selected variables, constants and functions available
-in the global scope. Objects that participate in Composite binding must be
-exported in this way. The macro expects a space-separated list of names that
-extends to the end of the line or the next semicolon.
+The `#export` macro makes selected variables, constants and functions of the
+isolated module scope available in the global scope. Objects that participate in
+Composite binding must be exported in this way. The macro expects a
+space-separated list of names that extends to the end of the line or the next
+semicolon.
 
 ```javascript
 const connector = {
@@ -134,8 +130,7 @@ __When calling modules, the file extension is omitted.__
 ```
 
 It should be noted that the macro will result in an error if the server state is
-different from 200. Since the macro integrates into the general JavaScript
-syntax, the error can be caught as usual with try-catch.
+different from 200. The error can be caught as usual with try-catch.
 
 ```javascript
 try {#import moduleA;

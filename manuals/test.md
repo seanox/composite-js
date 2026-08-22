@@ -60,16 +60,6 @@ The smallest component in an integration test is called _task_ because _case_ is
 a JavaScript keyword. A task can be implemented alone, but is always used in a
 scenario.
 
-```javascript
-Test.activate();
-
-Test.create({test() {
-    Assert.assertTrue(true);
-}});
-
-Test.start();
-```
-
 Task is primarily a meta-object.
 
 ```
@@ -131,7 +121,7 @@ assertions, and additional assertions can be implemented. If an assertion is not
 `true`, an error is thrown, optionally with an individual error message.
 
 __The methods use different signatures, which are described in the examples
-below.__
+below. Each assertion accepts an optional error message as the first argument.__
 
 ### assertTrue
 Asserts that a value is `true`.
@@ -150,9 +140,7 @@ Assert.assertFalse("message", false);
 ```
 
 ### assertEquals
-Asserts that two values are equals.
-
-Difference between equals and same: `=== / ==` or `!== / !=`
+Asserts that two values are equal.
 
 ```javascript
 Assert.assertEquals(expected, value);
@@ -160,9 +148,7 @@ Assert.assertEquals("message", expected, value);
 ```
 
 ### assertNotEquals
-Asserts that two values are not equals, as negation of `Assert.assertEquals(...)`.
-
-Difference between equals and same: `=== / ==` or `!== / !=`
+Asserts that two values are not equal, as negation of `Assert.assertEquals(...)`.
 
 ```javascript
 Assert.assertNotEquals(unexpected, value);
@@ -172,22 +158,23 @@ Assert.assertNotEquals("message", unexpected, value);
 ### assertSame
 Asserts that two values are the same.
 
-Difference between equals and same: `=== / ==` or `!== / !=`
-
 ```javascript
 Assert.assertSame(expected, value);
 Assert.assertSame("message", expected, value);
 ```
 
 ### assertNotSame
-Asserts two values are not the same, as negation of `Assert.assertSame(...)`.
-
-Difference between equals and same: === / == or !== / !=
+Asserts that two values are not the same, as negation of
+`Assert.assertSame(...)`.
 
 ```javascript
 Assert.assertNotSame(unexpected, value);
 Assert.assertNotSame("message", unexpected, value);
 ```
+
+> [!NOTE]
+> Equals compares with `===` and `!==`, same with `==` and `!=`. Same therefore
+> applies type coercion, whereas equals requires both type and value to match.
 
 ### assertNull
 Asserts that a value is `null`.
@@ -269,36 +256,29 @@ Without this, the console is used to output information about the test process.
 
 ```javascript
 Test.start({monitor: {
-
     start(status) {
-        The method is called with the start.
+        // The method is called with the start.
     },
-
     suspend(status) {
-        The method is called with suspension.
+        // The method is called with suspension.
     },
-
     resume(status) {
-        The method is called if the test run is stopped and is to be
-        continued later.
+        // The method is called when the test run is stopped and will be
+        // continued later.
     },
-
     interrupt(status) {
-        The method is called if you want to abort the test run.
-        The test run cannot then be resumed.
+        // The method is called if you want to abort the test run.
+        // The test run cannot then be resumed.
     },
-
     perform(status) {
-        The method is called before a test task is performed.
+        // The method is called before a test task is performed.
     },
-
     response(status) {
-        The method is called when a test task has been performed.
-        Here you can find the result of the test task.
+        // The method is called when a test task has been performed.
+        // Here you can find the result of the test task.
     },
-
     finish(status) {
-        The method is called when all test tasks have been completed.
+        // The method is called when all test tasks have been completed.
     }
 }});
 ```
@@ -397,9 +377,8 @@ and depends on the initial call of the corresponding console methods. Which
 often makes it easier to use the spread syntax `...`.
 
 ## Monitoring
-Monitoring monitors the progress of the test and is informed of the various
-steps and statuses during execution. The monitor is optional. Without this, the
-console is used to output information about the test process.
+Monitoring is configured with the monitor of the Test API and is informed of the
+various steps and statuses during execution.
 
 Details about configuration and usage are described in chapter
 [Configuration - monitor](#monitor).
@@ -413,9 +392,8 @@ Test.start();
 Test.start({auto: boolean});
 ```
 
-The start can be done manually or when using `auto = true`, by loading the page.
-If the page is already loaded, the parameter `auto` is ignored and the start is
-executed immediately.
+The start can be done manually or, when using [auto](#auto), by loading the
+page.
 
 ```javascript
 Test.suspend();
@@ -441,48 +419,9 @@ The test run can be restarted with `Test.start()`.
 Test.status();
 ```
 
-Returns a snapshot of the status of the current test. The status contains
-details of the current task and the queue. The details are read-only and cannot
-be changed. If no test is executed, false is returned.
-
-```javascript
-{
-    task: {
-        title:
-            title of the test task,
-        meta:
-            meta information about the test itself (name, test,
-            timeout, expected, serial),
-        running:
-            indicator when the test task is in progress
-        timing:
-            start time from the test task in milliseconds
-        timeout:
-            optional, the time in milliseconds when a timeout is
-            expected
-        duration:
-            total execution time of the test task in milliseconds, is
-            set with the end of the test task
-        error:
-            optional, if an unexpected error (also asser error) has
-            occurred, which terminated the test task
-    },
-    queue: {
-        timing:
-            start time in milliseconds,
-        size:
-            original queue length,
-        length:
-            number of outstanding tests,
-        progress:
-            number of tests performed,
-        lock:
-            indicator when a test is performed and the queue is waiting,
-        faults:
-            number of detected faults
-    }
-}
-```
+Returns a snapshot of the status of the current test, with the same structure as
+the status passed to the [monitor](#monitor). If no test is executed, false is
+returned.
 
 ## Events
 Events and their callback methods are another way of monitoring test execution.

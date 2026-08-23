@@ -2,13 +2,13 @@
 <html>
   <head>
     <meta charset="ISO-8859-1">
-    <title>Seanox aspect-js test environment</title>
+    <title>Seanox composite-js Test Environment</title>
     <style>
       body {
         font-family: monospace;
       }
     </style>
-    <script src="aspect-js.js"></script>
+    <script src="composite-js.js"></script>
     <script src="scripts/capture.js"></script>
     <script type="text/javascript">
     
@@ -46,7 +46,7 @@
             },
             publishImg() {
                 const img = document.createElement("img");
-                img.src = "https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/smile.png";
+                img.src = "https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/smile.png";
                 return img;
             }
         };
@@ -190,7 +190,7 @@
       /resources/import_a.htmlx 200 X
       /resources/import_b.htmlx 200 X
       /resources/import_o.htmlx 404 XXX
-      https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/import_x.htmlx 200 X
+      https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_x.htmlx 200 X
       /resources/import_c.htmlx 200 X
       /nix.xxx 404 XXX
     </script>
@@ -205,7 +205,7 @@
     <article import="{{aModel.publishForm()}}">
       loading form...  
     </article>
-    <article import="{{'https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/import_x.htmlx'}}">
+    <article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_x.htmlx'}}">
       loading resource...  
     </article>
     <section iterate="{{x:[1,2,3]}}">

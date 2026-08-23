@@ -2,14 +2,14 @@
 <html>
   <head>
     <meta charset="ISO-8859-1">
-    <title>Seanox aspect-js test environment</title>
+    <title>Seanox composite-js Test Environment</title>
     <style>
       body {
         font-family: monospace;
         white-space: pre;
       }
     </style>
-    <script src="aspect-js.js"></script>
+    <script src="composite-js.js"></script>
     <script src="scripts/capture.js"></script>
     <script type="text/javascript">
         Test.activate();
@@ -561,7 +561,7 @@
       {{#_condition.ordinal()}}
       <!--
         Creates an infinite loop during rendering and must be caught in code.
-        But it is not a bug in aspect-js!
+        But it is not a bug in composite-js!
       -->
       {{modelA.count(#_condition.serial)}}
       <button id="button@modelA" event="click">
@@ -572,7 +572,7 @@
         {{#[button@model//String('A')//].ordinal()}}
         <!--
           Creates an infinite loop during rendering and must be caught in code.
-          But it is not a bug in aspect-js!
+          But it is not a bug in composite-js!
         -->
         {{modelA.count(#[button@modelA].serial)}}
       </button>

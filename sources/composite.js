@@ -1,5 +1,5 @@
 /**
- * Seanox aspect-js, application runtime for single-page applications
+ * Seanox composite-js, application runtime for single-page applications
  * Copyright (C) 2025 Seanox Software Solutions
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -18,8 +18,8 @@
  *     DESCRIPTION
  *     ----
  *
- * With aspect-js, the declarative approach of HTML is adopted and extended. In
- * addition to the expression language, HTML elements are enhanced with
+ * With composite-js, the declarative approach of HTML is adopted and extended.
+ * In addition to the expression language, HTML elements are enhanced with
  * attributes for functions and view-module binding. The corresponding renderer
  * is integrated into the composite implementation, actively observes the DOM
  * using MutationObserver, and recursively reacts to DOM changes.
@@ -97,7 +97,7 @@
  *     PRINCIPLES
  *     ----
  *
- * The world is static. So also aspect-js and all components. This avoids the
+ * The world is static. So also composite-js and all components. This avoids the
  * management and establishment of instances.
  *
  * Attributes ID and COMPOSITE are elementary and immutable.
@@ -108,7 +108,7 @@
  * Attributes of elements are elementary and immutable even if they contain an
  * expression.
  *
- * Clean Code Rendering - The aspect-js relevant attributes are stored in
+ * Clean Code Rendering - The composite-js relevant attributes are stored in
  * meta-objects to each element and are removed in the markup. The following
  * attributes are essential: COMPOSITE, ID -- they are cached and remain at the
  * markup, these cannot be changed. the MutationObserver will restore them.
@@ -1243,7 +1243,7 @@
          *   Tag, Selector, Interceptor
          *
          * Details are described in the documentation:
-         * https://github.com/seanox/aspect-js/blob/master/manual/en/markup.md#contents-overview           
+         * https://seanox.github.io/composite-js/manuals/markup.html
          * 
          * @param {Element|string} selector DOM element or a string
          * @param {boolean} [lock] Unlocking of the model validation

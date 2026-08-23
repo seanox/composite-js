@@ -1,5 +1,5 @@
 /**
- * Seanox aspect-js, application runtime for single-page applications
+ * Seanox composite-js, application runtime for single-page applications
  * Copyright (C) 2025 Seanox Software Solutions
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -76,7 +76,7 @@
  * not true, an error is thrown.
  *
  *
- * The Test API is part of aspect-js but must be activated explicitly.
+ * The Test API is part of composite-js but must be activated explicitly.
  *
  *     Test.activate();
  *

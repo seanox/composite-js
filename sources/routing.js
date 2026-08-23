@@ -1,5 +1,5 @@
 /**
- * Seanox aspect-js, application runtime for single-page applications
+ * Seanox composite-js, application runtime for single-page applications
  * Copyright (C) 2025 Seanox Software Solutions
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -18,8 +18,8 @@
  *     DESCRIPTION
  *     ----
  *
- * The presentation of the page can be organized in Seanox aspect-js in views,
- * which are addressed via paths (routes). For this purpose, the routing
+ * The presentation of the page can be organized in Seanox composite-js in
+ * views, which are addressed via paths (routes). For this purpose, the routing
  * supports a hierarchical directory structure based on the IDs of the nested
  * composites in the markup. The routing then controls the visibility and
  * permission for accessing the views via paths - the so-called view flow. For

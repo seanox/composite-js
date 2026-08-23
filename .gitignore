@@ -14,5 +14,5 @@
 /release/*.zip
 /release/*source*.js
 /release/*debug*.js
-/test/aspect-js.js
-/benchmarks/aspect-js.js
+/test/composite-js.js
+/benchmarks/composite-js.js

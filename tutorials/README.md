@@ -1,6 +1,6 @@
 # Description
 The tutorials describe the development of a single-page application (SPA) and a
-micro-frontend with Seanox aspect-js. Each tutorial consists of a sequence of
+micro-frontend with Seanox composite-js. Each tutorial consists of a sequence of
 small examples that illustrate the implementation from an initial version to the
 final application.
 
@@ -21,7 +21,7 @@ These references are available when comparing the individual steps.
 
 ## Micro-Frontend
 - [Step_01 Prototype as framework](micro-frontend%2FStep_01%20Prototype%20as%20framework)
-- [Step_02 Integration of Seanox aspect-js](micro-frontend%2FStep_02%20Integration%20of%20Seanox%20aspect-js)
+- [Step_02 Integration of Seanox composite-js](micro-frontend%2FStep_02%20Integration%20of%20Seanox%20composite-js)
 - [Step_03 Prototype - Splitting into components](micro-frontend%2FStep_03%20Prototype%20-%20Splitting%20into%20components)
 - [Step_04 Internationalization (i18n)](micro-frontend%2FStep_04%20Internationalization%20%28i18n%29)
 - [Step_05 The first module](micro-frontend%2FStep_05%20The%20first%20module)
@@ -32,7 +32,7 @@ These references are available when comparing the individual steps.
 
 ## SPA (Single Page Application)
 - [Step_01 Prototype as framework](single-page-application%2FStep_01%20Prototype%20as%20framework)
-- [Step_02 Integration of Seanox aspect-js](single-page-application%2FStep_02%20Integration%20of%20Seanox%20aspect-js)
+- [Step_02 Integration of Seanox composite-js](single-page-application%2FStep_02%20Integration%20of%20Seanox%20composite-js)
 - [Step_03 Prototype - Splitting into components](single-page-application%2FStep_03%20Prototype%20-%20Splitting%20into%20components)
 - [Step_04 Internationalization (i18n)](single-page-application%2FStep_04%20Internationalization%20%28i18n%29)
 - [Step_05 The first module](single-page-application%2FStep_05%20The%20first%20module)

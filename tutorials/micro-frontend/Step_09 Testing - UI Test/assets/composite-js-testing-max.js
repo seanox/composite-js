@@ -2786,7 +2786,7 @@
 		 *   Tag, Selector, Interceptor
 		 *
 		 * Details are described in the documentation:
-		 * https://github.com/seanox/composite-js/blob/master/manual/en/markup.md#contents-overview
+		 * https://seanox.github.io/composite-js/manuals/markup.html
 		 *
 		 * @param {Element|string} selector DOM element or a string
 		 * @param {boolean} [lock] Unlocking of the model validation

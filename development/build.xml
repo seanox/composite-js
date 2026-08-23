@@ -1,5 +1,5 @@
 <?xml version="1.0" ?>
-<project name="aspect-js" default="usage" basedir="${ant.file}/../..">
+<project name="composite-js" default="usage" basedir="${ant.file}/../..">
   <target name="usage">
     <echo>Following targets are available:                                 </echo>
     <echo>                                                                 </echo>
@@ -100,7 +100,7 @@
         match="(download/)\d+(?:\.\d)+" flags="gi" byline="false"
         replace="\1${release.version}"/>
     <replaceregexp file="${workspace}/README.md"
-        match="(aspect-js )\d+(?:\.\d)+" flags="gi" byline="false"
+        match="(${ant.project.name} )\d+(?:\.\d)+" flags="gi" byline="false"
         replace="\1${release.version}"/>
   </target>
 
@@ -268,18 +268,18 @@
 
     <delete>
       <fileset dir="${workspace.tutorials}">
-        <include name="**/aspect-js*.js"/>
+        <include name="**/${ant.project.name}*.js"/>
       </fileset>
     </delete>
     
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_02 Integration of Seanox aspect-js/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_02 Integration of Seanox ${ant.project.name}/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_03 Prototype - Splitting into components/assets"/>  
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_03 Prototype - Splitting into components/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_04 Internationalization (i18n)/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_05 The first module/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_06 Usage of dynamic data/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_07 Business logic in detail/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_02 Integration of Seanox aspect-js/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_02 Integration of Seanox ${ant.project.name}/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_03 Prototype - Splitting into components/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_04 Internationalization (i18n)/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_05 The first module/assets"/>

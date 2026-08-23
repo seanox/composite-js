@@ -1,16 +1,16 @@
 {
-  "name": "@seanox/aspect-js",
+  "name": "@seanox/composite-js",
   "version": "0.0.0",
   "description": "A browser-native application runtime for building SPAs and micro-frontends by extending HTML and JavaScript with declarative application features.",
-  "main": "release/aspect-js.js",
-  "jsdelivr": "/release/aspect-js.js",
+  "main": "release/composite-js.js",
+  "jsdelivr": "/release/composite-js.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seanox/aspect-js.git"
+    "url": "git+https://github.com/seanox/composite-js.git"
   },
   "keywords": [
     "seanox",
-    "aspect-js",
+    "composite-js",
     "runtime",
     "application runtime",
     "ui",
@@ -38,7 +38,7 @@
   "author": "Seanox Software Solutions",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/seanox/aspect-js/issues"
+    "url": "https://github.com/seanox/composite-js/issues"
   },
-  "homepage": "https://github.com/seanox/aspect-js#readme"
+  "homepage": "https://github.com/seanox/composite-js#readme"
 }

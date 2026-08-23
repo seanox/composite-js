@@ -4,8 +4,8 @@
 - - -
 
 # Test
-The Test API supports implementation and execution of integration tests. It can
-be used for suites, scenarios and single test cases.
+The Test API supports implementation and execution of integration and unit
+tests. It can be used for suites, scenarios and single test cases.
 
 As a modular part of _composite-js_, the Test API is included in all testing
 releases. Because it changes error handling and console output, it must be

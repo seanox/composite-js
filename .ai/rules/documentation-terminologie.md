@@ -1,5 +1,5 @@
 # Terminologie-Leitfaden
-Dieses Dokument definiert die Terminologie der Seanox aspect-js-Dokumentation.
+Dieses Dokument definiert die Terminologie der Seanox composite-js-Dokumentation.
 
 Ziel ist eine technische Dokumentation, die:
 - fachlich präzise ist,
@@ -12,7 +12,7 @@ Ein eingeführter Begriff darf innerhalb eines eindeutigen Kontextes vereinfacht
 verwendet werden, wenn dadurch keine Bedeutung verloren geht.
 
 # Regel 1 - Framework-Begriffe haben Vorrang
-Wenn Konzepte der Seanox aspect-js-Runtime beschrieben werden, sind die
+Wenn Konzepte der Seanox composite-js-Runtime beschrieben werden, sind die
 Framework-Begriffe zu verwenden.
 
 | Begriff             | Bedeutung                                                                                       |
@@ -179,7 +179,7 @@ Kurzform eine andere Bedeutung haben könnte.
 # Regel 8 - Component und Composite unterscheiden
 Eine Component bezeichnet einen allgemeinen funktionalen Baustein.
 
-Ein Composite ist eine spezielle Runtime-Component von Seanox aspect-js.
+Ein Composite ist eine spezielle Runtime-Component von Seanox composite-js.
 
 Daraus folgt:
 - Jedes Composite ist eine Component.
@@ -243,11 +243,11 @@ Nur erlaubt, wenn kein anderes Model-Konzept im Kontext existiert.
 # Regel 12 - Module eindeutig verwenden
 Module kann verschiedene Bedeutungen haben.
 
-| Begriff            | Kontext                    |
-|--------------------|----------------------------|
-| Application Module | Seanox aspect-js Runtime   |
-| ECMAScript module  | JavaScript                 |
-| Software module    | Allgemeine Softwaretechnik |
+| Begriff            | Kontext                     |
+|--------------------|-----------------------------|
+| Application Module | Seanox composite-js Runtime |
+| ECMAScript module  | JavaScript                  |
+| Software module    | Allgemeine Softwaretechnik  |
 
 Bei erstmaliger Erwähnung eines Seanox-Runtime-Konzepts ist "Application Module"
 zu verwenden.

@@ -1,5 +1,5 @@
 /**
- * Seanox aspect-js, application runtime for single-page applications
+ * Seanox composite-js, application runtime for single-page applications
  * Copyright (C) 2025 Seanox Software Solutions
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -1562,8 +1562,8 @@
 })();
 
 /**
- * With aspect-js, the declarative approach of HTML is adopted and extended. In
- * addition to the expression language, HTML elements are enhanced with
+ * With composite-js, the declarative approach of HTML is adopted and extended.
+ * In addition to the expression language, HTML elements are enhanced with
  * attributes for functions and view-module binding. The corresponding renderer
  * is integrated into the composite implementation, actively observes the DOM
  * using MutationObserver, and recursively reacts to DOM changes.
@@ -1641,7 +1641,7 @@
  *     PRINCIPLES
  *     ----
  *
- * The world is static. So also aspect-js and all components. This avoids the
+ * The world is static. So also composite-js and all components. This avoids the
  * management and establishment of instances.
  *
  * Attributes ID and COMPOSITE are elementary and immutable.
@@ -1652,7 +1652,7 @@
  * Attributes of elements are elementary and immutable even if they contain an
  * expression.
  *
- * Clean Code Rendering - The aspect-js relevant attributes are stored in
+ * Clean Code Rendering - The composite-js relevant attributes are stored in
  * meta-objects to each element and are removed in the markup. The following
  * attributes are essential: COMPOSITE, ID -- they are cached and remain at the
  * markup, these cannot be changed. the MutationObserver will restore them.
@@ -2786,7 +2786,7 @@
 		 *   Tag, Selector, Interceptor
 		 *
 		 * Details are described in the documentation:
-		 * https://github.com/seanox/aspect-js/blob/master/manual/en/markup.md#contents-overview
+		 * https://github.com/seanox/composite-js/blob/master/manual/en/markup.md#contents-overview
 		 *
 		 * @param {Element|string} selector DOM element or a string
 		 * @param {boolean} [lock] Unlocking of the model validation
@@ -5075,8 +5075,8 @@
 })();
 
 /**
- * The presentation of the page can be organized in Seanox aspect-js in views,
- * which are addressed via paths (routes). For this purpose, the routing
+ * The presentation of the page can be organized in Seanox composite-js in
+ * views, which are addressed via paths (routes). For this purpose, the routing
  * supports a hierarchical directory structure based on the IDs of the nested
  * composites in the markup. The routing then controls the visibility and
  * permission for accessing the views via paths - the so-called view flow. For
@@ -5814,7 +5814,7 @@
  * not true, an error is thrown.
  *
  *
- * The Test API is part of aspect-js but must be activated explicitly.
+ * The Test API is part of composite-js but must be activated explicitly.
  *
  *     Test.activate();
  *

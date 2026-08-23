@@ -2,7 +2,7 @@
 // so that it can be used. To do this, only the path of the module is specified
 // without the file extension. The file extension is omitted, as modules are
 // always composites and can consist of markup, CSS and JavaScript.
-//    see also https://github.com/seanox/aspect-js/blob/master/manual/scripting.md#import
+//    see also https://github.com/seanox/composite-js/blob/master/manual/scripting.md#import
 #import io/mail;
 
 // Modules (Composite-JavaScript) use their own scope. Variables and constants
@@ -73,7 +73,7 @@ const contact = ({
     // interface. In this case, a possible value is not synchronized with the
     // model.
     //
-    //    see https://github.com/seanox/aspect-js/blob/master/manual/markup.md#validate
+    //    see https://github.com/seanox/composite-js/blob/master/manual/markup.md#validate
     validate(element, value) {
         
         // Determine whether a single field should be validated during input

@@ -1,7 +1,7 @@
 // The Test API is intended for unit testing, but it can also be used for UI
 // testing. By default, the Test API is included in all distributions, including
 // the productive one, and therefore the API must be consciously activated.
-//   see also https://github.com/seanox/aspect-js/blob/master/manual/test.md
+//   see also https://github.com/seanox/composite-js/blob/master/manual/test.md
 Test.activate();
 
 // Important: In this example, we deviate slightly from the concept with the

@@ -19,5 +19,5 @@ const mail = {
 // The macro #export is used for this purpose. As an argument, the name of the
 // object to be exported is required. Optionally, a namespace under which the
 // object is to be made known can be defined by separating it with the @ symbol.
-//    see also https://github.com/seanox/aspect-js/blob/master/manual/scripting.md#export
+//    see also https://github.com/seanox/composite-js/blob/master/manual/scripting.md#export
 #export mail@io;

@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="assets/styles/font-awesome.css">
     <!--
     
-      Integration of Seanox aspect-js
-      Seanox aspect-js is pure JavaScript and consists of a file.
+      Integration of Seanox composite-js
+      Seanox composite-js is pure JavaScript and consists of a file.
       The library can be downloaded and integrated standalone or a release channel can be used.
-          see also https://github.com/seanox/aspect-js/blob/master/manual/introduction.md#getting-started
+          see also https://github.com/seanox/composite-js/blob/master/manual/introduction.md#getting-started
 
           404 Resource Not Found is shown in the console:      
       http://127.0.0.1/.../data/locales.xml
-      aspect-js supports a NoSQL data source and a resource bundle for internationalization.
+      composite-js supports a NoSQL data source and a resource bundle for internationalization.
       During the start, the framework searches for appropriate data.
       If these are missing, this is okay.
       The explanation will follow a later in step 04.
@@ -23,7 +23,7 @@
           404 Resource Not Found is shown in the console:      
       http://127.0.0.1/.../modules/common.css
       http://127.0.0.1/.../modules/common.js
-      aspect-js supports a module concept.
+      composite-js supports a module concept.
       Because the framework can not know the structure of the modules, it is helpful in some cases,
       if already when initializing the application general is done, there is the module "common",
       which is searched automatically with the program start.
@@ -31,7 +31,7 @@
       The explanation will follow a later in step 03.
 
     -->
-    <script type="text/javascript" src="assets/aspect-js-max.js"></script>
+    <script type="text/javascript" src="assets/composite-js-max.js"></script>
     <!-- 
       The styles have been moved to the module files.
           see: /modules/*.css
@@ -40,13 +40,13 @@
   <body>
     <!--
     
-      aspect-js supports a module concept where the modules are called composites.
+      composite-js supports a module concept where the modules are called composites.
       Composites are declared with an ID and the attribute composite.
       Composites can consist of markup (HTML), CSS and JavaScript.
       All these components are optional and can be moved to the module directory.
       The renderer automatically searches for corresponding components in the module directory.
       Markup is only searched for if the composite has no inner HTML.
-          see also: https://github.com/seanox/aspect-js/blob/master/manual/composite.md#components
+          see also: https://github.com/seanox/composite-js/blob/master/manual/composite.md#components
 
           attribute release
       The optional attribute does not display the elements until they have been rendered.

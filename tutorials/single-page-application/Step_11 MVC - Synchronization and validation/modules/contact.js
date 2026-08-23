@@ -66,7 +66,7 @@ const contact = ({
     // interface. In this case, a possible value is not synchronized with the
     // model.
     //
-    //    see https://github.com/seanox/aspect-js/blob/master/manual/markup.md#validate
+    //    see https://github.com/seanox/composite-js/blob/master/manual/markup.md#validate
     validate(element, value) {
         
         // Determine whether a single field should be validated during input

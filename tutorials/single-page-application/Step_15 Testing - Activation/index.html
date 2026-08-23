@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="assets/styles/font-awesome.css">
     <!--
     
-      Integration of Seanox aspect-js
-      Seanox aspect-js is pure JavaScript and consists of a file.
+      Integration of Seanox composite-js
+      Seanox composite-js is pure JavaScript and consists of a file.
       The library can be downloaded and integrated standalone or a release channel can be used.
-          see also https://github.com/seanox/aspect-js/blob/master/manual/introduction.md#getting-started
+          see also https://github.com/seanox/composite-js/blob/master/manual/introduction.md#getting-started
 
           404 Resource Not Found is shown in the console:      
       http://127.0.0.1/.../data/locales.xml
-      aspect-js supports a NoSQL data source and a resource bundle for internationalization.
+      composite-js supports a NoSQL data source and a resource bundle for internationalization.
       During the start, the framework searches for appropriate data.
       If these are missing, this is okay.
       The explanation will follow a later in step 04.
@@ -23,7 +23,7 @@
           404 Resource Not Found is shown in the console:      
       http://127.0.0.1/.../modules/common.css
       http://127.0.0.1/.../modules/common.js
-      aspect-js supports a module concept.
+      composite-js supports a module concept.
       Because the framework can not know the structure of the modules, it is helpful in some cases,
       if already when initializing the application general is done, there is the module "common",
       which is searched automatically with the program start.
@@ -34,9 +34,9 @@
     <!--
       As the test environment also manipulates the JavaScript API, it is not
       recommended for the final release of an application. For this reason,
-      Seanox aspect-js is available in a special version with the Test API.
+      Seanox composite-js is available in a special version with the Test API.
     -->
-    <script type="text/javascript" src="assets/aspect-js-testing-max.js"></script>
+    <script type="text/javascript" src="assets/composite-js-testing-max.js"></script>
     <!-- 
       The styles have been moved to the module files.
           see: /modules/*.css
@@ -49,13 +49,13 @@
   <body route class="{{Routing.location.substring(1)}}">
     <!--
     
-      aspect-js supports a module concept where the modules are called composites.
+      composite-js supports a module concept where the modules are called composites.
       Composites are declared with an ID and the attribute composite.
       Composites can consist of markup (HTML), CSS and JavaScript.
       All these components are optional and can be moved to the module directory.
       The renderer automatically searches for corresponding components in the module directory.
       Markup is only searched for if the composite has no inner HTML.
-          see also: https://github.com/seanox/aspect-js/blob/master/manual/composite.md#components
+          see also: https://github.com/seanox/composite-js/blob/master/manual/composite.md#components
 
           attribute release
       The optional attribute does not display the elements until they have been rendered.
@@ -68,19 +68,19 @@
       The language is automatically determined by the language support of the browser
       or can be set explicitly using the DataSource on which the resource bundle is based.
       In addition, a default language can be set in the XML file locales.xml if an unsupported language is requested.
-          see also https://github.com/seanox/aspect-js/blob/master/manual/message.md#resource-bundle-messages
+          see also https://github.com/seanox/composite-js/blob/master/manual/message.md#resource-bundle-messages
 
       In this example, the language setting is used by the browser.
       In the next step we build the first module to change the language via the menu.
       
-      The expression language of Seanox aspect-js is used for the output of the texts.
-          see also https://github.com/seanox/aspect-js/blob/master/manual/expression.md#expression-language
+      The expression language of Seanox composite-js is used for the output of the texts.
+          see also https://github.com/seanox/composite-js/blob/master/manual/expression.md#expression-language
       This has full JavaScript support and provides the additional object Messages for the resource bundle.
 
 
 
       Using the DataSource is only one of many ways to use dynamic data.
-          see also https://github.com/seanox/aspect-js/blob/master/manual/datasource.md#datasource
+          see also https://github.com/seanox/composite-js/blob/master/manual/datasource.md#datasource
       However, the DataSource is more of an example for semi-dynamic data because it is based on static data in the web space.  
 
     -->
@@ -110,7 +110,7 @@
       Composites without the attribute 'route' are not controlled by routing and
       are therefore visible if the parent element is visible.
 
-          see also: https://github.com/seanox/aspect-js/blob/master/manual/routing.md
+          see also: https://github.com/seanox/composite-js/blob/master/manual/routing.md
     -->
 
     <!-- Page content -->

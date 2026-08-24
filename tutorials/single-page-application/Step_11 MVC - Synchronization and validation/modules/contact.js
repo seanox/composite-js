@@ -86,19 +86,19 @@ const contact = ({
         // or the validate method was called with no other field.
         //     - standard HTML5 validation is used 
         if (field == "name")
-            return Composite.validate(element);
+            return Composer.validate(element);
 
         // Validation of field email, if the element is email
         // or the validate method was called with no other field.
         //     - standard HTML5 validation is used 
         if (field == "email")
-            return Composite.validate(element);
+            return Composer.validate(element);
         
         // Validation of field subject, if the element is subject
         // or the validate method was called with no other field.
         //     - standard HTML5 validation is used 
         if (field == "subject")
-            return Composite.validate(element);
+            return Composer.validate(element);
         
         // Validation of field comment, if the element is comment
         // or the validate method was called with no other field.
@@ -115,7 +115,7 @@ const contact = ({
         if (element == document.querySelector("#contact #submit")) {
             for (let field of ["name", "email", "subject", "comment"]) {
                 let element = document.querySelector("#contact #" + field);
-                if (!Composite.validate(element))
+                if (!Composer.validate(element))
                     return false;
                 let pattern = Messages["contact." + field + ".pattern"];
                 if (!(this[field] || "").match(new RegExp(pattern)))

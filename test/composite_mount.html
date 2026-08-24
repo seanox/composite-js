@@ -126,7 +126,7 @@
         };
 
         let timeout = null;
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             if (timeout)
                 window.clearInterval(timeout);
             timeout = window.setTimeout(() => {

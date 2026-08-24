@@ -41,7 +41,7 @@
         }});  
         
         let count = 0;
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             let nodes = document.querySelectorAll("input[type='text']");
             nodes = Array.from(nodes);
             if (count < nodes.length)

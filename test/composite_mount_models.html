@@ -21,22 +21,22 @@
         Test.activate();
 
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             if (capture.size() === 1)
-                Composite.asynchronous(() => {
+                Composer.asynchronous(() => {
                     document.querySelector("#button_1_C").click();
                 });
             else if (capture.size() === 3)
-                Composite.asynchronous(() => {
+                Composer.asynchronous(() => {
                     document.querySelector("#model_2_B\\:model_2_C\\:button_2_C\\@model_2_A").click();
                 });
             else if (capture.size() === 5)
-                Composite.asynchronous(() => {
+                Composer.asynchronous(() => {
                     document.querySelector("#button_2_C").click();
                 });
             else if (capture.size() === 7)
-                Composite.asynchronous(() => {
+                Composer.asynchronous(() => {
                     document.querySelector("#button_1_C\\@model_1_C").click();
                 });
             const count = capture.patterns().length;

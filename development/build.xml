@@ -220,7 +220,7 @@
         <file name="datasource.js"/>
         <file name="scripting.js"/>
         <file name="expression.js"/>
-        <file name="composite.js"/>
+        <file name="composer.js"/>
         <file name="messages.js"/>
         <file name="reactive.js"/>
         <file name="routing.js"/>
@@ -241,7 +241,7 @@
         <file name="datasource.js"/>
         <file name="scripting.js"/>
         <file name="expression.js"/>
-        <file name="composite.js"/>
+        <file name="composer.js"/>
         <file name="messages.js"/>
         <file name="reactive.js"/>
         <file name="routing.js"/>

@@ -492,7 +492,7 @@
                                 && meta.name.trim().length > 0)
                             Test.worker.task.title += " " + meta.name.replace(/[\x00-\x20]+/g, " ").trim();
                         Test.fire(Test.EVENT_PERFORM, Test.status());
-                        Composite.asynchronous(() => {
+                        Composer.asynchronous(() => {
                             const task = Test.worker.task;
                             try {task.meta.test();
                             } catch (error) {

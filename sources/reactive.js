@@ -55,19 +55,19 @@
     });
 
     let _selector = null;
-    Composite.listen(Composite.EVENT_RENDER_START, (event, selector) =>
+    Composer.listen(Composer.EVENT_RENDER_START, (event, selector) =>
         _selector = selector);
-    Composite.listen(Composite.EVENT_RENDER_NEXT, (event, selector) =>
+    Composer.listen(Composer.EVENT_RENDER_NEXT, (event, selector) =>
         _selector = selector);
-    Composite.listen(Composite.EVENT_RENDER_END, (event, selector) =>
+    Composer.listen(Composer.EVENT_RENDER_END, (event, selector) =>
         _selector = null);
 
     let _selector_cache = null;
-    Composite.listen(Composite.EVENT_MODULE_DOCK, (event, selector) => {
+    Composer.listen(Composer.EVENT_MODULE_DOCK, (event, selector) => {
         _selector_cache = _selector;
         _selector = null;
     });
-    Composite.listen(Composite.EVENT_MODULE_READY, (event, selector) => {
+    Composer.listen(Composer.EVENT_MODULE_READY, (event, selector) => {
         _selector = _selector_cache;
         _selector_cache = null;
     });
@@ -176,7 +176,7 @@
 
                     // The registration is delayed so that the getting of values
                     // does not block unnecessarily.
-                    Composite.asynchronous((selector, target, key, notifications) => {
+                    Composer.asynchronous((selector, target, key, notifications) => {
 
                         // Registration is performed only during rendering and
                         // if the key exists in the object.
@@ -254,7 +254,7 @@
 
                     // The registration is delayed so that the setting of values
                     // does not block unnecessarily.
-                    Composite.asynchronous((selector, target, key, notifications) => {
+                    Composer.asynchronous((selector, target, key, notifications) => {
 
                         // Update only if the key exists in the object.
                         // Recursions during rendering are prevented via the
@@ -268,7 +268,7 @@
                             // and so it can be removed this case.
                             if (!document.body.contains(recipient))
                                 recipients.delete(recipient.ordinal());
-                            else Composite.render(recipient);
+                            else Composer.render(recipient);
                         }
 
                     }, _selector, target, key, this.notifications);

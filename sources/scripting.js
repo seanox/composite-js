@@ -249,7 +249,7 @@
                 throw new TypeError("Invalid data type");
             if (!script.trim())
                 return;
-            with (Composite.render.context)
+            with (Composer.render.context)
                 return eval(script);
         }
     });
@@ -258,7 +258,7 @@
         // Because it is an internal method, an additional validation of the
         // imports as data structure was omitted.
         imports.forEach(include =>
-            Composite.load(Composite.MODULES + "/" + include + ".js", true));
+            Composer.load(Composer.MODULES + "/" + include + ".js", true));
     };
 
     const _export = (...exports) => {

@@ -34,7 +34,7 @@
         };
 
         const timing = Date.now();
-        Composite.listen(Composite.EVENT_RENDER_END, function() {
+        Composer.listen(Composer.EVENT_RENDER_END, function() {
             if (Test.status().queue !== undefined)
                 return;
             Test.create({test() {

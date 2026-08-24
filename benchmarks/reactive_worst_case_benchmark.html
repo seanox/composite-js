@@ -18,7 +18,7 @@
         let phase = 0;
         let timing;
 
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             phase++;
             if (phase === 1) {
                 timing = performance.now();

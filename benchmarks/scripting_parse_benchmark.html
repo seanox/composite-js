@@ -14,7 +14,7 @@
         Test.activate();
 
         let source;
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             source = Test.read("scripting_parse_benchmark.js");
             Test.create({test() {
                 document.body.innerText += "Start 2500 runs\n";

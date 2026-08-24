@@ -22,7 +22,7 @@
        let checkTask;
        let lastRender;
       
-       Composite.listen(Composite.EVENT_RENDER_END, () => {
+       Composer.listen(Composer.EVENT_RENDER_END, () => {
 
            if (finished)
                return;
@@ -42,7 +42,7 @@
            if (checkTask)
                checkTask.cancel();
            
-           checkTask = Composite.asynchronous(() => {
+           checkTask = Composer.asynchronous(() => {
                finished = true;
                const elapsed = lastRender - timing;
                result.duration = `Duration ${elapsed.toFixed(0)} ms`;

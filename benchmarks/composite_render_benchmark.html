@@ -16,7 +16,7 @@
         Test.activate();
 
         let timing = Date.now();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             timing = Date.now() -timing;
             Test.create({test() {
                 const message = `${timing} ms`;

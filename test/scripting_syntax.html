@@ -15,10 +15,10 @@
 
         Test.activate();
 
-        Composite.include("syntax");
+        Composer.include("syntax");
 
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             const count = capture.patterns().length;
             if (capture.size() === count)
@@ -54,7 +54,7 @@
       ----
       #import syntaxC;
       #use u1.u2.u3;
-      Composite.render("body");
+      Composer.render("body");
     </script>
     <script type="text/test">
       false
@@ -79,7 +79,7 @@
       ----
       #import syntaxC;
       #use u1.u2.u3;
-      Composite.render("body");
+      Composer.render("body");
     </script>
   </head>
   <body>
@@ -106,7 +106,7 @@
     <script type="composite/javascript">
       #import syntaxC;
       #use u1.u2.u3;
-      Composite.render("body");
+      Composer.render("body");
     </script>
   </body>
 </html>

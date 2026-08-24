@@ -17,7 +17,7 @@
         Test.activate();
 
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             capture.snap(document.querySelector("#InputTextA").getAttribute("value"));
             if (capture.size() === 2)

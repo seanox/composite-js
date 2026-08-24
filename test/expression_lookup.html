@@ -30,7 +30,7 @@
             content = content.replace(/\s+/g, " ").trim();
             Assert.assertEquals("ma mb true EA EA mercedes", content);
         }});
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             Test.start();
         });
     </script>

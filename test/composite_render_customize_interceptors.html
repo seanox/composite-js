@@ -26,17 +26,17 @@
         let elementCount2 = 0;
         let elementCount3 = 0;
         
-        Composite.customize(() => {
+        Composer.customize(() => {
             elementCount1++;
         });
-        Composite.customize((element) => {
+        Composer.customize((element) => {
             elementCount2++;
             if (element instanceof Element
                     && element.hasAttribute("value")
                     && element.getAttribute("value") === "xx3")
                 insertTestValue(element, 3);
         });
-        Composite.customize(() => {
+        Composer.customize(() => {
             elementCount3++;
         });
         
@@ -54,7 +54,7 @@
             Assert.assertEquals(19, elementCount3);
         }});
         
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             Test.start();
         });
     </script>

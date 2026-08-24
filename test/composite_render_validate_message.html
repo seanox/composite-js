@@ -20,7 +20,7 @@
       Test.activate();
 
       const snapshots = [];
-      Composite.listen(Composite.EVENT_RENDER_END, () => {
+      Composer.listen(Composer.EVENT_RENDER_END, () => {
           if (snapshots.length > 0)
               return;
           const snapshot = () => {

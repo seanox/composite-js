@@ -66,7 +66,7 @@
         });
         
         let count = 0;
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             switch (++count) {
                 case 1:
                     textA.value = "";
@@ -76,30 +76,30 @@
                     textE.value = "";
                     textF.value = "";
                     
-                    Composite.asynchronous(() => {
+                    Composer.asynchronous(() => {
                         textA.typeValue("HelloWorld");
                     });                    
                     return;
                 case 2:
-                    Composite.asynchronous(() => {
+                    Composer.asynchronous(() => {
                         textB.typeValue("HelloWorld");
                     });                    
                     return;
                 case 12:
-                    Composite.asynchronous(() => {
+                    Composer.asynchronous(() => {
                         textC.typeValue("HelloWorld");
                     });                    
                     return;  
                 case 22:
-                    Composite.asynchronous(() => {
+                    Composer.asynchronous(() => {
                         textD.typeValue("HelloWorld");
                     });                    
                     return;   
                 case 42:
-                    Composite.asynchronous(() => {
+                    Composer.asynchronous(() => {
                         textE.typeValue("HelloWorld");
                     });  
-                    Composite.asynchronous(() => {
+                    Composer.asynchronous(() => {
                         textF.typeValue("HelloWorld");
                     });                    
                     Test.start();

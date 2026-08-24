@@ -27,7 +27,7 @@
             }
         }});
         
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             if (Test.status().queue != null)
                 return;    
             let content = document.body.innerHTML;

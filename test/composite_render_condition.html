@@ -54,13 +54,13 @@
         };        
         
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, (event, element) => {
+        Composer.listen(Composer.EVENT_RENDER_END, (event, element) => {
             if (element instanceof Node
                     && element.nodeType === Node.TEXT_NODE)
                 return;
             capture.snap();
             if (capture.snapshots().length < capture.patterns().length)
-                Composite.asynchronous(Composite.render, document.body);
+                Composer.asynchronous(Composer.render, document.body);
             if (capture.snapshots().length === capture.patterns().length)
                 Test.start();
             if (capture.snapshots().length > capture.size())

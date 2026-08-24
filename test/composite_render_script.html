@@ -62,7 +62,7 @@
         
         let count = 0;
         let targets = {};
-        Composite.listen(Composite.EVENT_RENDER_END, (event, target) => {
+        Composer.listen(Composer.EVENT_RENDER_END, (event, target) => {
             if (targets[target.nodeName] === undefined)
                 targets[target.nodeName] = 0;
             targets[target.nodeName]++;
@@ -72,7 +72,7 @@
             if (target.nodeName === "BODY") {
                 ++count;
                 if (count <= 9)
-                    Composite.render(document.body);
+                    Composer.render(document.body);
                 if (count === 10)
                     Test.start();
                 if (count > 10)

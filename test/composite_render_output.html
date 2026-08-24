@@ -42,22 +42,22 @@
         }});
 
         const snapshots = [];
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             let snapshot = document.body.textContent;
             snapshot = snapshot.replace(/^\s+/mg, "");
             snapshots.push(snapshot);
             const count = document.querySelectorAll("script[type=\"text/test\"]").length;
             switch (snapshots.length) {
                 case 1:
-                    Composite.render(document.body);
+                    Composer.render(document.body);
                     break;
                 case 2:
                     TestModel.isVisibleB = true;
-                    Composite.render(document.body);
+                    Composer.render(document.body);
                     break;   
                 case 3:
                     TestModel.isVisibleB3 = true;
-                    Composite.render("#B0"); 
+                    Composer.render("#B0");
                     break;
                 case 4:
                     Test.start();

@@ -21,23 +21,23 @@
             text.textContent = value;
             element.appendChild(text);
         };
-        Composite.customize("xa", (element) => {
+        Composer.customize("xa", (element) => {
             insertTestValue(element, 0);
         });
-        Composite.customize("x1", (element) => {
+        Composer.customize("x1", (element) => {
             insertTestValue(element, 2);
         });
-        Composite.customize("xb", (element) => {
+        Composer.customize("xb", (element) => {
             insertTestValue(element, 3);
         });
-        Composite.customize("xb", (element) => {
+        Composer.customize("xb", (element) => {
             insertTestValue(element, 31);
         });        
-        Composite.customize("xc", (element) => {
+        Composer.customize("xc", (element) => {
             insertTestValue(element, 4);
             return false;
         });
-        Composite.customize("xd", (element) => {
+        Composer.customize("xd", (element) => {
             insertTestValue(element, 5);
         });
         
@@ -46,7 +46,7 @@
         }});
         
         let count = 0;
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             if (++count === 2)
                 Test.start();
         });

@@ -16,7 +16,7 @@
         Test.activate();
 
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             const count = capture.patterns().length;
             if (capture.size() === count)
@@ -25,7 +25,7 @@
                 Assert.assertEquals("expected {1} steps but was {2}", count, capture.size());
         });
 
-        Composite.listen(Composite.EVENT_ERROR, (event, error) => {
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => {
             capture.snap(error.message);
         });
 

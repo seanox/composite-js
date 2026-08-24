@@ -17,7 +17,7 @@
 
         const values = [];
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             if (document.querySelector("input"))
                 capture.snap(document.querySelector("input").value);

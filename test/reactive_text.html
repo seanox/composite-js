@@ -14,7 +14,7 @@
         Test.activate();
 
         const snapshots = [];
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             const snapshot = document.body.textContent.trim();
             snapshots.push(snapshot);
             const count = document.querySelectorAll("script[type=\"text/test\"]").length;

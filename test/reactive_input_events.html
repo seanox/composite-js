@@ -15,7 +15,7 @@
 
         const snapshots = [];
         const values = [];
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             const snapshot = document.body.textContent.trim();
             snapshots.push(snapshot);
             values.push(document.querySelector("#value").value);

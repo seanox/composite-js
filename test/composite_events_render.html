@@ -26,17 +26,17 @@
                 TestModel.events[event] = 0;
             TestModel.events[event]++;
         };
-        Composite.listen(Composite.EVENT_RENDER_START, TestModel.onEvent);
-        Composite.listen(Composite.EVENT_RENDER_NEXT, TestModel.onEvent);
-        Composite.listen(Composite.EVENT_RENDER_END, TestModel.onEvent); 
+        Composer.listen(Composer.EVENT_RENDER_START, TestModel.onEvent);
+        Composer.listen(Composer.EVENT_RENDER_NEXT, TestModel.onEvent);
+        Composer.listen(Composer.EVENT_RENDER_END, TestModel.onEvent);
         
         Test.create({test() {
-            const events = TestModel.events[Composite.EVENT_RENDER_START];
+            const events = TestModel.events[Composer.EVENT_RENDER_START];
             Assert.assertTrue(events !== undefined);
             Assert.assertEquals(1, events);
         }});
         Test.create({test() {
-            const events = TestModel.events[Composite.EVENT_RENDER_NEXT];
+            const events = TestModel.events[Composer.EVENT_RENDER_NEXT];
             Assert.assertTrue(events !== undefined);
             // 73 initial elements + text
             // +63 text dynamic (added by renderer)
@@ -44,11 +44,11 @@
             Assert.assertEquals(220, events);
         }});
         Test.create({test() {
-            const events = TestModel.events[Composite.EVENT_RENDER_END];
+            const events = TestModel.events[Composer.EVENT_RENDER_END];
             Assert.assertTrue(events !== undefined);
             Assert.assertEquals(1, events);
         }});
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             Test.start();
         });
     </script>

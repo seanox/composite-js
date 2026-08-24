@@ -13,7 +13,7 @@
 
         Test.activate();
 
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             Test.start();
         });
 
@@ -27,7 +27,7 @@
         }});
 
         const calls = [];
-        Composite.listen(Composite.EVENT_MODULE_LOAD,
+        Composer.listen(Composer.EVENT_MODULE_LOAD,
             (event, context, module) => calls.push([context, module]));
     </script>
   </head>

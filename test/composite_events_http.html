@@ -63,14 +63,14 @@
                 document.body.innerHTML += "onEnd\r\n";
             };
         
-            Composite.listen(Composite.EVENT_HTTP_START, onStart);
-            Composite.listen(Composite.EVENT_HTTP_PROGRESS, onProgress);
-            Composite.listen(Composite.EVENT_HTTP_RECEIVE, onReceive);
-            Composite.listen(Composite.EVENT_HTTP_LOAD, onSuccess);
-            Composite.listen(Composite.EVENT_HTTP_ABORT, onAbort);
-            Composite.listen(Composite.EVENT_HTTP_TIMEOUT, onTimeout);
-            Composite.listen(Composite.EVENT_HTTP_ERROR, onError);
-            Composite.listen(Composite.EVENT_HTTP_END, onEnd);
+            Composer.listen(Composer.EVENT_HTTP_START, onStart);
+            Composer.listen(Composer.EVENT_HTTP_PROGRESS, onProgress);
+            Composer.listen(Composer.EVENT_HTTP_RECEIVE, onReceive);
+            Composer.listen(Composer.EVENT_HTTP_LOAD, onSuccess);
+            Composer.listen(Composer.EVENT_HTTP_ABORT, onAbort);
+            Composer.listen(Composer.EVENT_HTTP_TIMEOUT, onTimeout);
+            Composer.listen(Composer.EVENT_HTTP_ERROR, onError);
+            Composer.listen(Composer.EVENT_HTTP_END, onEnd);
             
             const request = new XMLHttpRequest();
             request.open("GET", "https://github.com/seanox");

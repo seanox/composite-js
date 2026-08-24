@@ -38,19 +38,19 @@ a browser application runtime that composes such modules into applications at
 runtime.
 
 The framework treats an application as a composition of independently identified
-application units called Composites. Each Composite combines a declarative view,
+application units called composites. Each composite combines a declarative view,
 application logic, and the resources required for its realization within the
 DOM. The runtime resolves these resources, connects them with a concrete DOM
-context, and realizes the resulting Composite in the browser.
+context, and realizes the resulting composite in the browser.
 
 ## Composing Modules at Runtime
 The central idea of _composite-js_ is the composition of application units at
-runtime. An application is partitioned into loosely coupled Composites, each
+runtime. An application is partitioned into loosely coupled composites, each
 with its own identity, resources, view, application logic, and runtime
-representation. That identity is the Composite ID, declared in the markup and
-used by the runtime as the reference for every relationship of a Composite.
+representation. That identity is the composite ID, declared in the markup and
+used by the runtime as the reference for every relationship of a composite.
 
-The runtime resolves and loads these resources and realizes each Composite
+The runtime resolves and loads these resources and realizes each composite
 within a concrete DOM context, so composition is part of the running
 application rather than exclusively a build-time operation. Accordingly, the
 DOM is not merely the output of the application but also part of its running
@@ -58,20 +58,20 @@ state, interpreted and processed by the runtime.
 
 ## Declarative UI Concepts
 Seanox composite-js combines the browser's native programming model with
-declarative UI concepts such as views and Expressions. A view describes the
-declarative presentation of a Composite, defined by markup and styled by CSS.
+declarative UI concepts such as views and expressions. A view describes the
+declarative presentation of a composite, defined by markup and styled by CSS.
 The corresponding application logic is provided by an application module and
-made available to the view through Expressions and Composite binding.
+made available to the view through expressions and composite binding.
 
 ## Composite Binding
 Composite binding connects the view with explicitly exported objects of the
-application module. It is established by the runtime while a Composite is
+application module. It is established by the runtime while a composite is
 realized, so the view can access application logic without an additional wiring
 layer.
 
 ## Rendering
 Rendering is the process by which the runtime transforms the declarative model
-into its running state, both for the initial realization of a Composite and for
+into its running state, both for the initial realization of a composite and for
 later updates.
 
 These concepts, their responsibilities, and their relationships are defined in
@@ -89,7 +89,7 @@ composition.
 
 ### Declarative Application Model
 Application structure and presentation are described declaratively in the DOM.
-Markup can represent Composites, relationships, Expressions, and runtime
+Markup can represent composites, relationships, expressions, and runtime
 instructions in addition to visual content. The DOM is therefore part of the
 running program state processed by the runtime.
 
@@ -98,8 +98,8 @@ A view uses regular markup together with the declarative concepts and
 instructions processed by the runtime. CSS defines its presentation.
 
 ### JavaScript as the Primary Application Language
-Application logic is implemented in JavaScript. A Composite script establishes
-the application module of a Composite, but the runtime does not prescribe how
+Application logic is implemented in JavaScript. A composite script establishes
+the application module of a composite, but the runtime does not prescribe how
 that application module must be structured internally.
 
 ### Composing Modules at Runtime
@@ -114,19 +114,19 @@ business domains, technical concerns, or other application structures.
 
 ### Without Compilation
 The fundamental programming and execution model does not require compilation.
-Composite-specific relationships and instructions are processed by the runtime
+composite-specific relationships and instructions are processed by the runtime
 in the browser.
 
 ### Optional Build Process
 A build process can be used for packaging, optimization, or deployment, but it
 does not define the semantics of the application model. The relationships
-between Composite, Composite module, view, application module, composer, and
+between composite, composite module, view, application module, composer, and
 runtime remain independent of such a process.
 
 ## Summary
 Seanox composite-js is a browser application runtime for Single-Page
 Applications and micro-frontends. It structures applications as compositions of
-independently identified Composites, each of which combines a declarative view,
+independently identified composites, each of which combines a declarative view,
 application logic, and associated resources within a DOM context.
 
 Applications are composed at runtime, use the native programming model of the

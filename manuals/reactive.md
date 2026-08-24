@@ -93,7 +93,7 @@ driven separately by Get and Set. From the reactive instance perspective, Get
 synchronizes from the original object to the reactive instance (object &rarr;
 reactive). Set synchronizes from the reactive instance to the original object
 (reactive &rarr; object). Changes to the original object are considered when
-data is accessed, without affecting the View.
+data is accessed, without affecting the view.
 
 ```javascript
 const object = {valueA:1};

@@ -7,7 +7,7 @@
 The architecture of _composite-js_ defines the concepts, responsibilities, and
 relationships that form its application and runtime model.
 
-A _composite-js_ application consists of independently identified Composites
+A _composite-js_ application consists of independently identified composites
 that are realized within the DOM by the runtime. The following sections define
 each concept, its responsibilities, and its relationships to the others.
 
@@ -46,57 +46,57 @@ The architecture distinguishes between application units, resource units,
 application logic, declarative presentation, and runtime mechanisms.
 
 > __Application__
-> - is composed of Composites
+> - is composed of composites
 >
 > __Composite__
-> - has a Composite ID
+> - has a composite ID
 > - has a DOM context
 > - has a JavaScript context
 > - has a CSS context
-> - is realized from a Composite Module
-> - is associated with an Application Module
-> - participates in the Composite Lifecycle
+> - is realized from a composite module
+> - is associated with an application module
+> - participates in the composite lifecycle
 >
 > __Composite Module__
-> - provides Markup
+> - provides markup
 > - provides CSS
-> - provides a Composite Script
+> - provides a composite script
 > - can provide additional resources
 >
 > __Composite Script__
-> - is ECMAScript extended by Composite-specific macros
+> - is ECMAScript extended by composite-specific macros
 > - is executed in an isolated module scope
-> - establishes the Application Module
+> - establishes the application module
 >
 > __View__
 > - describes the declarative presentation
-> - can contain Expressions
-> - can contain Runtime instructions
+> - can contain expressions
+> - can contain runtime instructions
 >
 > __Application Module__
 > - provides the application logic
-> - is addressed through the Composite ID
-> - provides exported objects for Composite Binding
+> - is addressed through the composite ID
+> - provides exported objects for composite binding
 >
 > __Composite Binding__
-> - connects the View with the Application Module
+> - connects the view with the application module
 >
 > __Composer__
 > - processes the declarative program state
-> - realizes Composites
-> - establishes Composite Bindings
+> - realizes composites
+> - establishes composite bindings
 > - manages DOM relationships
-> - performs Lifecycle transitions
+> - performs lifecycle transitions
 >
 > __Runtime__
-> - loads Composite Modules
+> - loads composite modules
 > - resolves resources
-> - provides Rendering
-> - manages Bindings
-> - manages the Composite Lifecycle
+> - provides rendering
+> - manages bindings
+> - manages the composite lifecycle
 
 ## Composite
-A Composite is an independently identified, domain-oriented application unit
+A composite is an independently identified, domain-oriented application unit
 within the DOM. Its runtime representation consists of three related contexts:
 
 > __Composite__
@@ -104,24 +104,24 @@ within the DOM. Its runtime representation consists of three related contexts:
 > - JavaScript context
 > - CSS context
 
-The DOM context is defined by the HTML element that declares the Composite and
+The DOM context is defined by the HTML element that declares the composite and
 includes the DOM region associated with that element. The JavaScript context is
 provided by the corresponding application module. The CSS context consists of
-the stylesheets and CSS rules associated with the Composite. None of them
-represents the Composite independently.
+the stylesheets and CSS rules associated with the composite. None of them
+represents the composite independently.
 
-A Composite is not a single JavaScript object, an ECMAScript module, or a
+A composite is not a single JavaScript object, an ECMAScript module, or a
 reusable UI component, but a logical application unit spanning these contexts.
 
 The term _domain-oriented_ describes a conceptual assignment rather than a
-technical restriction. A Composite can represent a business domain, a technical
+technical restriction. A composite can represent a business domain, a technical
 concern, or another application structure. The runtime does not enforce a
 particular application architecture.
 
 ### Composite Declaration
-A Composite is declared by applying the `composite` attribute to an HTML
+A composite is declared by applying the `composite` attribute to an HTML
 element. The element must also have an `id` attribute that identifies the
-Composite.
+composite.
 
 ```html
 <section id="customer" composite>
@@ -129,19 +129,19 @@ Composite.
 ```
 
 The declaration establishes the element as the root of the DOM context of the
-Composite. The combination of the `composite` attribute and the `id` attribute
-forms the Composite ID.
+composite. The combination of the `composite` attribute and the `id` attribute
+forms the composite ID.
 
 ### Composite Responsibilities
-A Composite provides the logical boundary within which its declarative
+A composite provides the logical boundary within which its declarative
 presentation, application logic, and associated styles operate together.
 
 It does not define how its resources are packaged, loaded, or resolved, and it
 does not perform its own realization. These responsibilities belong to the
-Composite module, the runtime, and the composer.
+composite module, the runtime, and the composer.
 
 ## Composite ID
-The Composite ID is the unique identity of a Composite and its global namespace
+The composite ID is the unique identity of a composite and its global namespace
 within the application.
 
 It is formed by the semantic combination of the `id` and `composite` attributes
@@ -152,9 +152,9 @@ on an HTML element.
 </section>
 ```
 
-In this declaration, `customer` is the Composite ID because the value occurs on
-an element declared as a Composite. The attribute value alone does not form a
-Composite ID outside that relationship.
+In this declaration, `customer` is the composite ID because the value occurs on
+an element declared as a composite. The attribute value alone does not form a
+composite ID outside that relationship.
 
 The Composite ID connects:
 - the Composite in the DOM
@@ -163,19 +163,19 @@ The Composite ID connects:
 - the application module
 - the associated resources
 
-The runtime uses the Composite ID for name resolution, resource resolution,
-assignment of Composite modules, management of the application module namespace,
-Composite binding, and lifecycle management.
+The runtime uses the composite ID for name resolution, resource resolution,
+assignment of composite modules, management of the application module namespace,
+composite binding, and lifecycle management.
 
-The Composite ID is therefore the primary identity of the runtime model,
-comparable to a primary key: every relationship of a Composite is derived from
+The composite ID is therefore the primary identity of the runtime model,
+comparable to a primary key: every relationship of a composite is derived from
 it, and none of these relationships exists without it.
 
 ## Conceptual Composition
 Several concepts in _composite-js_ are formed by the semantic association of
 existing elements rather than by separate language constructs or artifacts.
 
-The Composite ID is an example of this principle. It is not merely an attribute
+The composite ID is an example of this principle. It is not merely an attribute
 value.
 
 ```text

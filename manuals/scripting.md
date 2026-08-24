@@ -43,16 +43,16 @@ to control execution.
 ```
 
 ## Modules
-The module directory contains Composite modules, each grouping the resources of
-a Composite. A JavaScript resource within a Composite module is called a
-[Composite script](composite.md#javascript) and provides the application module.
+The module directory contains composite modules, each grouping the resources of
+a composite. A JavaScript resource within a composite module is called a
+[composite script](composite.md#javascript) and provides the application module.
 
 JavaScript resources in the module directory can also exist independently of a
-Composite. These are referred to informally as modules and can be used without
+composite. These are referred to informally as modules and can be used without
 composites. The logic is stored in individual files in the module directory and,
 if necessary, in further subdirectories.
 
-The resources of a Composite (JS, CSS, HTML) can be outsourced to the module
+The resources of a composite (JS, CSS, HTML) can be outsourced to the module
 directory and loaded at runtime, which supports the modular deployment of
 platform and modules in micro-frontends.
 
@@ -85,7 +85,7 @@ effective.
 ### #export
 The `#export` macro makes selected variables, constants and functions of the
 isolated module scope available in the global scope. Objects that participate in
-Composite binding must be exported in this way. The macro expects a
+composite binding must be exported in this way. The macro expects a
 space-separated list of names that extends to the end of the line or the next
 semicolon.
 
@@ -117,7 +117,7 @@ const utilities = {
 ```
 
 ### #import
-The macro loads one or several modules implemented as Composite script resources
+The macro loads one or several modules implemented as composite script resources
 from the module directory. Modules are loaded only once, regardless of whether
 they are loaded directly via `#import` or indirectly as a resource of a
 composite.
@@ -167,7 +167,7 @@ const value = (?object.that.does.not.exist());
 ```
 
 ## Debugging
-When loading Composite Scripts, the Runtime automatically appends a `sourceURL`
+When loading composite scripts, the runtime automatically appends a `sourceURL`
 directive mapping the evaluated script to its original module path:
 
 ```javascript

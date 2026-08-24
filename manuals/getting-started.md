@@ -49,7 +49,7 @@ Create `index.html` and declare a composite:
 ```
 
 The combination of the `composite` attribute and the `id` attribute defines the
-Composite ID, in this case `example`.
+composite ID, in this case `example`.
 
 Create the resources of the composite module:
 
@@ -74,7 +74,7 @@ const example = {
 #export example;
 ```
 
-The composite script establishes the application module of the Composite. The
+The composite script establishes the application module of the composite. The
 runtime does not prescribe how application logic must be structured. It can be
 implemented using objects, functions, classes, or combinations of these
 structures.
@@ -95,15 +95,15 @@ Optional styles in `modules/example.css`:
 }
 ```
 
-The view describes the declarative presentation of the Composite. It contains
+The view describes the declarative presentation of the composite. It contains
 markup and expressions and refers to application data provided by the
 application module. The expression `{{example.message}}` accesses data exposed
-by the application module through Composite binding.
+by the application module through composite binding.
 
 ## What Happens During Realization
-When the runtime encounters the Composite declaration, it forms the Composite ID
+When the runtime encounters the composite declaration, it forms the composite ID
 from the `id` attribute and the `composite` attribute, resolves the
-corresponding Composite module and loads its resources:
+corresponding composite module and loads its resources:
 
 ```
 Composite Module
@@ -112,7 +112,7 @@ Composite Module
     -> example.js
 ```
 
-The composer then realizes the Composite within the declared DOM context.
+The composer then realizes the composite within the declared DOM context.
 
 Conceptually, the realization follows this dependency chain:
 
@@ -128,9 +128,9 @@ Composite declaration
                                 -> running Composite
 ```
 
-As shown here, the Composite lifecycle begins with the loading of the
-Composite module. At the end of this process, the Composite reaches its
-running state. The resulting Composite consists of:
+As shown here, the composite lifecycle begins with the loading of the
+composite module. At the end of this process, the composite reaches its
+running state. The resulting composite consists of:
 
 ```
 Composite
@@ -140,7 +140,7 @@ Composite
 ```
 
 ## Composite Script and Application Module
-The Composite script and the application module are related but distinct
+The composite script and the application module are related but distinct
 concepts.
 
 ```
@@ -149,17 +149,17 @@ Composite Script
         -> Application Module
 ```
 
-The Composite script is the executable JavaScript program of the Composite
+The composite script is the executable JavaScript program of the composite
 module, whose execution establishes the application module as the resulting
 runtime representation of the application logic.
 
-Objects that participate in Composite binding must be explicitly exported:
+Objects that participate in composite binding must be explicitly exported:
 
 ```
 #export example;
 ```
 
-Without the export, the object would remain internal to the Composite script
+Without the export, the object would remain internal to the composite script
 and would not be available to the view.
 
 ## Composite Binding

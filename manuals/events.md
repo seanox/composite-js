@@ -5,7 +5,7 @@
 
 # Events
 Seanox composite-js provides events for extensions and for notifying the
-application about runtime state changes during the Composite lifecycle.
+application about runtime state changes during the composite lifecycle.
 
 ## Contents Overview
 - [Rendering](#rendering)

@@ -20,9 +20,9 @@
         }});
       
         let count = 0;
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             if (++count < 3)
-                Composite.render(document.body);
+                Composer.render(document.body);
             else if (count === 3)
                 Test.start();
         });

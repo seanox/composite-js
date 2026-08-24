@@ -17,7 +17,7 @@
         let raw_a = "S";
         
         const snapshots = [];
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             let snapshot = document.body.textContent;
             snapshot = snapshot.replace(/^\s+/mg, "");
             snapshots.push(snapshot);
@@ -29,9 +29,9 @@
                 case 4: raw_x = false; break;
             }
             if (snapshots.length < count)
-                Composite.asynchronous(Composite.render, document.body);
+                Composer.asynchronous(Composer.render, document.body);
             if (snapshots.length === count)
-                Composite.asynchronous(Test.start);
+                Composer.asynchronous(Test.start);
             if (snapshots.length > count)
                 Assert.assertEquals("expected {1} steps but was {2}", count, snapshots.length);
         });

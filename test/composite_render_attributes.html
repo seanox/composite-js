@@ -22,7 +22,7 @@
         }});
 
         const snapshots = [];
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
 
             if (snapshots.length === 0) {
                 document.querySelectorAll("input[type='checkbox']")[0].checked = true;
@@ -39,7 +39,7 @@
 
             if (snapshots.length < 10)
                 window.setTimeout(() =>
-                    Composite.render(document.body), 250);
+                    Composer.render(document.body), 250);
             else Test.start();
         });
     </script>

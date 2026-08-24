@@ -19,7 +19,7 @@
     
         Test.activate();
         
-        Composite.customize("@ATTRIBUTES-STATICS", "href name pattern placeholder target type required");
+        Composer.customize("@ATTRIBUTES-STATICS", "href name pattern placeholder target type required");
 
         const EMAIL_PATTERN = "^[a-z0-9]+([\\w\\.\\-]*[a-z0-9])*@[a-z0-9]+([\\w\\.\\-]*[a-z0-9])*$";
         const EMAIL_MESSAGE = "Mandatory with a valid e-mail address."
@@ -50,9 +50,9 @@
                 if (element === document.querySelector("#model #submit")
                         || element === document.querySelector("#model #button")
                         || element === document.querySelector("#model #link")) {
-                    return Composite.validate("#model #email, #model #password");
+                    return Composer.validate("#model #email, #model #password");
                 }
-                return Composite.validate(element);
+                return Composer.validate(element);
             },
             submitClicks: 0,
             submit: {
@@ -81,7 +81,7 @@
         });
         
         const snapshots = [];
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             let snapshot = () => {
                 const signature = (selector) => {
                     const element = document.querySelector(selector);

@@ -15,7 +15,7 @@
         Test.activate();
         
         const urlMap = new Map();
-        Composite.listen(Composite.EVENT_HTTP_END, (ignore, event) => {
+        Composer.listen(Composer.EVENT_HTTP_END, (ignore, event) => {
             let responseURL = event.target.responseURL;
             let sourceLocation = window.location.protocol + "//" + window.location.host + "/";
             if (responseURL.startsWith(sourceLocation)) {
@@ -52,12 +52,12 @@
         };
 
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             if (capture.snapshots().length === 9)
-                Composite.render(document.body);
+                Composer.render(document.body);
             if (capture.snapshots().length === 10)
-                Composite.render(document.body);
+                Composer.render(document.body);
         });
 
         const timeout = window.setInterval(() => {
@@ -114,11 +114,11 @@
         }});
 
         Test.create({expected:/Invalid namespace at level 1: io\/moduleE/, test() {
-            Composite.include("io/moduleE");
+            Composer.include("io/moduleE");
         }});
 
         Test.create({expected:/Invalid namespace at level 1: io\/moduleY/, test() {
-            Composite.include("io/moduleY");
+            Composer.include("io/moduleY");
         }});
 
         Test.create({test() {

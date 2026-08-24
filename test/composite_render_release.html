@@ -25,14 +25,14 @@
             snapshots.push(snapshot);
             if (snapshots.length === 2) {
                 x = true;
-                Composite.asynchronous(Composite.render, document.body);
+                Composer.asynchronous(Composer.render, document.body);
             }
             if (snapshots.length === 4)
-                Composite.asynchronous(Test.start);
+                Composer.asynchronous(Test.start);
         };
 
-        Composite.listen(Composite.EVENT_RENDER_START, snapshot);
-        Composite.listen(Composite.EVENT_RENDER_END, snapshot);
+        Composer.listen(Composer.EVENT_RENDER_START, snapshot);
+        Composer.listen(Composer.EVENT_RENDER_END, snapshot);
         
         Test.create({test() {
             Assert.assertTrue(snapshots[0].indexOf(" release") > 0);

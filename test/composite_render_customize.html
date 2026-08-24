@@ -15,44 +15,44 @@
         Test.activate();
 
         Test.create({expected:/\bInvalid scope: undefined/i, test() {
-            Composite.customize();
+            Composer.customize();
         }});
         Test.create({expected:/\bInvalid scope: object/i, test() {
-            Composite.customize(null);
+            Composer.customize(null);
         }});
         Test.create({expected:/\bInvalid scope/i, test() {
-            Composite.customize("");
+            Composer.customize("");
         }});
         Test.create({expected:/\bInvalid callback: string/i, test() {
-            Composite.customize("", "");
+            Composer.customize("", "");
         }});
         Test.create({expected:/\bInvalid scope/i, test() {
-            Composite.customize("", null);
+            Composer.customize("", null);
         }});
         Test.create({expected:/\bInvalid scope: object/i, test() {
-            Composite.customize(new Object(), () => {});
+            Composer.customize(new Object(), () => {});
         }});
         Test.create({expected:/\bInvalid scope: object/i, test() {
-            Composite.customize({}, () => {});
+            Composer.customize({}, () => {});
         }});
         Test.create({expected:/\bInvalid scope: function/i, test() {
-            Composite.customize(() => {}, "");
+            Composer.customize(() => {}, "");
         }});
         Test.create({expected:/\bInvalid scope: function/i, test() {
-            Composite.customize(() => {}, null);
+            Composer.customize(() => {}, null);
         }});
         Test.create({expected:/\bInvalid scope/i, test() {
-            Composite.customize("", () => {});
+            Composer.customize("", () => {});
         }});
         
         Test.create({test() {
-            Composite.customize(() => {});
+            Composer.customize(() => {});
         }});
         Test.create({test() {
-            Composite.customize("abc", () => {});
+            Composer.customize("abc", () => {});
         }});
         Test.create({test() {
-            Composite.customize("abc > def", () => {});
+            Composer.customize("abc > def", () => {});
         }});
         
         Test.start({auto:true});

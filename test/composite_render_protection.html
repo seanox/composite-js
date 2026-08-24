@@ -29,7 +29,7 @@
         };
 
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             if (capture.length > 0)
                 return;
             capture.snap(document.body.innerHTML);
@@ -51,14 +51,14 @@
             document.querySelector("iframe[name='targetC']").setAttribute("x-id", "x4");
             document.querySelector("iframe[name='targetC']").setAttribute("x-title1", "x6");
 
-            Composite.asynchronous(() => {
+            Composer.asynchronous(() => {
 
                 capture.snap(document.body.innerHTML);
 
-                Composite.customize("@ATTRIBUTES-STATICS", "namE src Type");
-                Composite.customize("@Attributes-Statics", "requireD");
-                Composite.customize("@ATTRIBUTES-statics", "Method action");
-                Composite.customize("@ATTRIBUTES-statics", "title1");
+                Composer.customize("@ATTRIBUTES-STATICS", "namE src Type");
+                Composer.customize("@Attributes-Statics", "requireD");
+                Composer.customize("@ATTRIBUTES-statics", "Method action");
+                Composer.customize("@ATTRIBUTES-statics", "title1");
                 
                 document.querySelector("#loginA").setAttribute("method", "POST_AB");
                 document.querySelector("#loginA").setAttribute("action", "nix_AB");
@@ -76,7 +76,7 @@
                 document.querySelector("iframe[name='targetC']").setAttribute("x-id", "x4x");
                 document.querySelector("iframe[name='targetC']").setAttribute("x-title1", "x6x");
                 
-                Composite.asynchronous(() => {
+                Composer.asynchronous(() => {
 
                     capture.snap(document.body.innerHTML);
                     
@@ -97,7 +97,7 @@
                     document.querySelector("iframe[name='targetC']").setAttribute("x-id", "x4xx");
                     document.querySelector("iframe[name='targetC']").setAttribute("x-title1", "x6xx");
                     
-                    Composite.asynchronous(() => {
+                    Composer.asynchronous(() => {
                         capture.snap(document.body.innerHTML);
                         Test.start();
                     });

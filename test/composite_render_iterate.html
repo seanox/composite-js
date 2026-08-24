@@ -94,7 +94,7 @@
         }});
         Test.create({test() {
             Assert.assertEquals("161616", OutputS1.textContent);
-            Composite.render(document.body);
+            Composer.render(document.body);
         }});   
         Test.create({test() {
             Assert.assertEquals("", OutputC.textContent.trim());
@@ -128,12 +128,12 @@
         }});
 
         const capture = new Capture();
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             const count = capture.snapshots().length;
             if (count <= 5)
                 window.setTimeout(() => {
-                    Composite.render(document.body);
+                    Composer.render(document.body);
                 }, 250);
             if (count === 6)
                 Test.start();

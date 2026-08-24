@@ -98,7 +98,7 @@
         };        
         
         let count = 0;
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             if (Test.started !== undefined)
                 return;
             Test.started = true;
@@ -109,19 +109,19 @@
                     count++;
                     if (count === 25) {
                         conditionA = true; 
-                        Composite.asynchronous(Composite.render, document.body);
+                        Composer.asynchronous(Composer.render, document.body);
                     }
                     if (count === 50) {
                         conditionA = false; 
-                        Composite.render("#TestA");                       
+                        Composer.render("#TestA");
                     }
                     if (count === 75) {
                         conditionA = true; 
-                        Composite.asynchronous(Composite.render, document.body);
+                        Composer.asynchronous(Composer.render, document.body);
                     }
                     
                     if (count === 100)
-                        Composite.asynchronous(() => {
+                        Composer.asynchronous(() => {
                             document.body.textContent = "Please wait, test in progress...";
                             Test.start();
                         });

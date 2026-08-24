@@ -213,7 +213,7 @@ zu vervollständigen. Die Methode selbst darf nicht wiederholt werden.
 Format:
 
 ```js
-@param {string} event Event type (see Composite.EVENT____)
+@param {string} event Event type (see Composer.EVENT____)
 ```
 
 Nicht:

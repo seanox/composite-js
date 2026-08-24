@@ -17,7 +17,7 @@
 
         const capture = new Capture();
         const values = [];
-        Composite.listen(Composite.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
             capture.snap();
             values.push(document.querySelector("#valueA").value);
             const count = capture.patterns().length;

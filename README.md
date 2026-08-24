@@ -60,7 +60,7 @@ rendering, component lifecycle or application state.
 - __Architecture Neutrality__  
   The runtime provides the infrastructure for structuring and composing
   applications, without prescribing a specific application architecture such as
-  MVC, MVVM or MVCS.
+  MVC, MVCS or MVVM.
 - __DataSource__  
   Immutable XML data source for static application data, with locales, querying
   and transformation via XPath and XSLT.

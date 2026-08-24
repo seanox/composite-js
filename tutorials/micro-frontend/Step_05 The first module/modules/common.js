@@ -13,6 +13,6 @@ const error = Reactive({
 // global scope, for which the #export macro is used.
 #export error;
 
-Composite.listen(Composite.EVENT_ERROR, function(event, error) {
+Composer.listen(Composer.EVENT_ERROR, function(event, error) {
     window.error.message = error.message;
 });

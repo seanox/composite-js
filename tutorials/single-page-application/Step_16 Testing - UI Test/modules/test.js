@@ -111,7 +111,7 @@ Sequence.push(...[
 const _validationCollector = [];
 const _validateTest = (selector, text) => {
     document.querySelector(selector).typeValue(text);
-    Composite.asynchronous(() => {
+    Composer.asynchronous(() => {
         let result = "";
         const fields = ["#name", "#email", "#subject", "#comment", "form"];
         for (let selector of fields) {
@@ -124,7 +124,7 @@ const _validateTest = (selector, text) => {
 
 Sequence.push(...[
     () => DataSource.localize("en"),
-    () => Composite.render(document.body),
+    () => Composer.render(document.body),
     () => window.location.href = "#contact",
     () => _validateTest("#contact #name", " Simon Sommer "),
     () => _validateTest("#contact #name", "Simon Sommer"),
@@ -151,7 +151,7 @@ Sequence.push(...[
 ]);
 
 let _active;
-Composite.listen(Composite.EVENT_RENDER_END, () => {
+Composer.listen(Composer.EVENT_RENDER_END, () => {
     if (Routing.location === "#home")
         _active = true;
     if (!_active)

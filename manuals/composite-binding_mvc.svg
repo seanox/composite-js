@@ -6,7 +6,7 @@
   <path d="M138.18 77.6L131.18 79.93V75.27Z" fill="#000"/>
 
   <!-- arrow: runtime -> view -->
-  <path d="M99.3 27.6V59.48" fill="none" stroke="#000"/>
+  <path d="M99.3 27.6V59.48" fill="none" stroke="#000" stroke-dasharray="4 4"/>
   <path d="M99.3 66.48L96.97 59.48H101.63Z" fill="#000"/>
 
   <!-- down arrows -->

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script src="scripts/capture.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const capture = new Capture();
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            capture.snap();
+            const count = capture.patterns().length;
+            if (capture.size() === count)
+                Test.start();
+            if (capture.size() > count)
+                Assert.assertEquals("expected {1} steps but was {2}", count, capture.size());
+        });
+
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => {
+            capture.snap(error.message);
+        });
+
+        Test.create({test() {
+            capture.validate();
+        }});
+
+        const moduleI = {x: false}.reactive();
+        window.setTimeout(() => {moduleI.x = !moduleI.x;}, 1000);
+        window.setTimeout(() => {moduleI.x = !moduleI.x;}, 1250);
+        window.setTimeout(() => {moduleI.x = !moduleI.x;}, 1500);
+        window.setTimeout(() => {moduleI.x = !moduleI.x;}, 1750);
+    </script>
+    <script type="text/test">
+      Recursion detected for composite: compositeModuleA
+    </script>
+    <script type="text/test">
+      Recursion detected for composite: compositeModuleB
+    </script>
+    <script type="text/test">
+      Recursion detected for composite: compositeModuleC
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      ____
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      ____
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      ____
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      ____
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      __I__
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      ____
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      __I__
+    </script>
+    <script type="text/test">
+      hello
+      A-Error: Recursion detected for composite: compositeModuleA-A
+      B-Error: Recursion detected for composite: compositeModuleB-B
+      C-Error: Recursion detected for composite: compositeModuleC-C
+      D-D-D
+      hello
+      ____
+    </script>
+  <head>
+  <body>
+    {{'hello'}}
+    A-<div id="compositeModuleA" composite></div>-A
+    B-<div id="compositeModuleB" composite></div>-B
+    C-<div id="compositeModuleC" composite></div>-C
+    D-<div id="compositeModuleD" composite>D</div>-D
+    {{'hello'}}
+    __<div id="moduleI" composite condition="{{moduleI.x}}">
+    </div>__
+  </body>
+</html>

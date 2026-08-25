@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+        
+        const insertTestValue = (element, value) => {
+            if (element.textContent.match(new RegExp(value)))
+                return;
+            const text = document.createElement("span");
+            text.textContent = value;
+            element.appendChild(text);
+        };
+
+        let elementCount1 = 0;
+        let elementCount2 = 0;
+        let elementCount3 = 0;
+        
+        Composer.customize(() => {
+            elementCount1++;
+        });
+        Composer.customize((element) => {
+            elementCount2++;
+            if (element instanceof Element
+                    && element.hasAttribute("value")
+                    && element.getAttribute("value") === "xx3")
+                insertTestValue(element, 3);
+        });
+        Composer.customize(() => {
+            elementCount3++;
+        });
+        
+        Test.create({test() {
+            Assert.assertSameTo("script[type='text/test']", document.body.textContent);
+        }});
+        
+        Test.create({test() {
+            Assert.assertEquals(19, elementCount1);
+        }});
+        Test.create({test() {
+            Assert.assertEquals(19, elementCount2);
+        }});
+        Test.create({test() {
+            Assert.assertEquals(19, elementCount3);
+        }});
+        
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            Test.start();
+        });
+    </script>
+    <script type="text/test">
+      xa
+      xb
+      xc3
+      xd
+      xe 
+    </script>
+  </head>
+  <body>
+    <x value="xx1">xa</x>
+    <x value="xx2">xb</x>
+    <x value="xx3">xc</x>
+    <x value="xx4">xd</x>
+    <x value="xx5">xe</x>
+  </body>
+</html>

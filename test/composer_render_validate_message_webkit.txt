@@ -1,0 +1,4 @@
+<input id="text1" type="text" placeholder="e-mail address" pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$" events="input change">
+<input id="text1" type="text" placeholder="e-mail address" pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$" events="input change" new_attr="wrong email"> xxx
+<input id="text1" type="text" placeholder="e-mail address" pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$" events="input change" new_attr="wrong email"> xxx@
+<input id="text1" type="text" placeholder="e-mail address" pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$" events="input change"> xxx@xxx

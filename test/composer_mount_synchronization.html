@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+      input, span {
+        display: block;
+      }
+      input ~ * {
+        margin-top: 1em;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        const model = {
+            user: {
+                name: "",
+                address: {
+                    city: "",
+                    cityCode: "",
+                    street: "",
+                    number: ""
+                }
+            },
+            views: [
+                {textA: ""},
+                {textA: ""}    
+            ]
+        };
+        
+        Test.create({test() {
+            const assert = '{"user":{"name":"A","address":{"city":"B","cityCode":"C","street":"D","number":"E"}},"views":[{"textA":"F"},{"textA":"G"}]}';
+            Assert.assertEquals(assert, model.toPlainString());
+        }});  
+        
+        let count = 0;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            let nodes = document.querySelectorAll("input[type='text']");
+            nodes = Array.from(nodes);
+            if (count < nodes.length)
+                nodes[count++].typeValue(String.fromCharCode(65 +count -1));
+            else if (count++ === nodes.length)
+                Test.start();
+        });
+    </script>
+  </head>
+  <body>
+    <form id="model" composite>
+      <input type="text" id="user:name" placeholder="user:name"
+          events="input" render="body,#user\:name_text">
+      <span id="user:name_text">{{model.user.name}}</span>     
+      <input type="text" id="user:address:city" placeholder="user:address:city"
+          events="input" render="body,#user\:address\:city_text">
+      <span id="user:address:city_text">{{model.user.address.city}}</span>
+      <input type="text" id="user:address:cityCode" placeholder="user:address:cityCode"
+          events="input" render="#user\:address\:cityCode_text">
+      <span id="user:address:cityCode_text">{{model.user.address.cityCode}}</span>
+      <input type="text" id="user:address:street" placeholder="user:address:street"
+          events="input" render="#user\:address\:street_text">
+      <span id="user:address:street_text">{{model.user.address.street}}</span>
+      <input type="text" id="user:address:number" placeholder="user:address:number"
+          events="input" render="#user\:address\:number_text">
+      <span id="user:address:number_text">{{model.user.address.number}}</span>
+      <div id="views:0">
+        <input type="text" id="textA" placeholder="user:name"
+            events="input" render="body,#views_0_textA">
+        <span id="views_0_textA">{{model.views[0].textA}}</span>     
+      </div>
+      <div id="views:1">
+        <input type="text" id="textA" placeholder="user:name"
+            events="input" render="body,#views_1_textA">
+        <span id="views_1_textA">{{model.views[1].textA}}</span>     
+      </div>
+    </form>
+  </body>
+</html>

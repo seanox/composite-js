@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+        
+        const insertTestValue = (element, value) => {
+            if (element.textContent.match(new RegExp(value)))
+                return;
+            const text = document.createElement("span");
+            text.textContent = value;
+            element.appendChild(text);
+        };
+        Composer.customize("[value]", (element) => {
+            insertTestValue(element, 0);
+        });
+        Composer.customize("[value='xx3']", (element) => {
+            insertTestValue(element, 3);
+        });
+        Composer.customize("[value='xx3']", (element) => {
+            insertTestValue(element, 31);
+        });        
+        Composer.customize("[value='xx4']", (element) => {
+            insertTestValue(element, 4);
+            return false;
+        });
+        Composer.customize("[value='xx5']", (element) => {
+            insertTestValue(element, 5);
+        });
+        
+        Test.create({test() {
+            Assert.assertSameTo("script[type='text/test']", document.body.textContent);
+        }});
+        
+        let count = 0;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (++count === 3)
+                Test.start();
+        });
+    </script>
+    <script type="text/test">
+      xa0
+      xb0
+      xc031
+      xd04
+      xe05 
+    </script>
+  </head>
+  <body>
+    <x value="xx1">xa</x>
+    <x value="xx2">xb</x>
+    <x value="xx3">xc</x>
+    <x value="xx4">xd</x>
+    <x value="xx5">xe</x>    
+  </body>
+</html>

@@ -1,0 +1,10 @@
+importAv = 100;
+importAx++;
+<script type="text/javascript">
+  importBv = 200;
+  importBx++;
+</script>
+<script type="composite/javascript">
+  importCv = 300;
+  importCx++;
+</script>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script src="scripts/capture.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+        
+        const urlMap = new Map();
+        Composer.listen(Composer.EVENT_HTTP_END, (ignore, event) => {
+            let responseURL = event.target.responseURL;
+            let sourceLocation = window.location.protocol + "//" + window.location.host + "/";
+            if (responseURL.startsWith(sourceLocation)) {
+                const filter = new RegExp("^.*?" + RegExp.quote(window.location.contextPath));
+                responseURL = ("/" + responseURL.substring(sourceLocation.length -1).replace(filter, "")).replace(/^\/{2,}/, "/");
+            }
+            const key = responseURL + " " + event.target.status;
+            if (!urlMap.has(key)
+                    || !Array.isArray(urlMap.get(key)))
+                urlMap.set(key, []);
+            urlMap.get(key).push("X");
+        });
+
+        const aModel = {
+            publishForm() {
+                const form = document.createElement("form");
+                const label = document.createElement("label");
+                label.textContent = "Input";
+                form.appendChild(label);
+                const input = document.createElement("input");
+                input.value = "123";
+                input.type = "text";
+                form.appendChild(input);
+                const submit = document.createElement("input");
+                submit.type = "submit";
+                form.appendChild(submit);
+                return form;
+            },
+            publishImg() {
+                const img = document.createElement("img");
+                img.src = "https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/smile.png";
+                return img;
+            }
+        };
+
+        const capture = new Capture();
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            capture.snap();
+            if (capture.snapshots().length === 9)
+                Composer.render(document.body);
+            if (capture.snapshots().length === 10)
+                Composer.render(document.body);
+        });
+
+        const timeout = window.setInterval(() => {
+            if (capture.snapshots().length !== capture.snapshots().ticks) {
+              capture.snapshots().ticks = capture.snapshots().length;
+                return;
+            } else window.clearInterval(timeout);
+            Test.start();
+        }, 250);
+      
+        let xA = 5;
+        let xB = 5;
+        let xC = 5;
+        let xX = 5;
+        
+        Test.create({test() {
+            const text = document.body.textContent.replace(/^\s+/mg, "");
+            Assert.assertTrue(text.indexOf("Summer-A") >= 0);
+            Assert.assertTrue(text.indexOf("Summer-C") >= 0);
+            Assert.assertTrue(text.indexOf("Summer-X") >= 0);
+        }});
+        Test.create({test() {
+            Assert.assertNotNull(document.querySelector("img"));
+        }});
+        Test.create({test() {
+            Assert.assertNotNull(document.querySelector("form input[type='submit']"));
+        }});
+        
+        Test.create({test() {
+            Assert.assertEquals(1, moduleA$count);
+        }});
+        Test.create({test() {
+            Assert.assertEquals(1, moduleB$count);
+        }});
+        Test.create({test() {
+            Assert.assertEquals(1, moduleC$count);
+        }});
+        Test.create({test() {
+            Assert.assertEquals(1, moduleX$count);
+        }});
+        Test.create({test() {
+            let styles = document.querySelectorAll("html > head > style[type='text/css']");
+            styles = Array.from(styles);
+            let stylesA = styles.filter(entry => entry.textContent.includes("moduleA"));
+            Assert.assertEquals(1, stylesA.length);
+            // The following modules was loaded as a JavaScript import and
+            // therefore no CSS is included.
+            let stylesB = styles.filter(entry => entry.textContent.includes("moduleB"));
+            Assert.assertEquals(0, stylesB.length);
+            let stylesC = styles.filter(entry => entry.textContent.includes("moduleC"));
+            Assert.assertEquals(0, stylesC.length);
+            let stylesX = styles.filter(entry => entry.textContent.includes("moduleX"));
+            Assert.assertEquals(0, stylesX.length);
+        }});
+
+        Test.create({expected:/Invalid namespace at level 1: io\/moduleE/, test() {
+            Composer.include("io/moduleE");
+        }});
+
+        Test.create({expected:/Invalid namespace at level 1: io\/moduleY/, test() {
+            Composer.include("io/moduleY");
+        }});
+
+        Test.create({test() {
+            // To control the events, a resource is manually loaded multiple times.
+            // Modules should be loaded once.
+            const request = new XMLHttpRequest();
+            request.open("GET", "nix.xxx", false);
+            request.send();
+            request.open("GET", "nix.xxx", false);
+            request.send();
+            request.open("GET", "nix.xxx", false);
+            request.send();
+
+            let result = "";
+            for (const [key, value] of urlMap)
+                result += "\r\n" + key + " " + value.join("");
+
+            try {Assert.assertSameTo("script[type='text/test']", result);
+            } catch (error) {
+                console.log(result);
+                throw  error;
+            }
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("Error: Invalid macro: #import", document.getElementById("moduleF").innerText);
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals(2, _error_collector.length);
+            Assert.assertNotEquals(_error_collector[0], _error_collector[1]);
+            Assert.assertTrue(_error_collector[0].startsWith("Error: HTTP status 404"));
+            Assert.assertTrue(_error_collector[0].endsWith("/modules/io/moduleY.js"));
+            Assert.assertTrue(_error_collector[1].startsWith("Error: HTTP status 404"));
+            Assert.assertTrue(_error_collector[1].endsWith("/modules/nix/nix/nix.js"));
+        }});
+
+        const _error_collector = [];
+    </script>
+    <script type="text/test">
+      /modules/common.xml 404 X
+      /modules/common.js 200 X
+      /modules/common.css 404 X
+      /modules/moduleA.xml 404 X
+      /modules/moduleA.js 200 X
+      /modules/moduleB.js 200 X
+      /modules/moduleC.js 200 X
+      /modules/io/moduleX.js 200 X
+      /modules/io/moduleY.js 404 X
+      /modules/moduleA.css 200 X
+      /modules/moduleA.html 404 X
+      /modules/moduleE.xml 404 X
+      /modules/moduleE.js 404 X
+      /modules/moduleE.css 404 X
+      /modules/moduleE.html 404 X
+      /modules/moduleF.xml 404 X
+      /modules/moduleF.js 200 X
+      /modules/moduleG.xml 404 X
+      /modules/moduleG.js 404 X
+      /modules/moduleH.xml 404 X
+      /modules/moduleH.js 404 X
+      /modules/moduleH.css 404 X
+      /modules/moduleH.html 200 X
+      /modules/moduleJ.xml 404 X
+      /modules/moduleJ.js 200 X
+      /modules/nix/nix/nix.js 404 X
+      /modules/moduleJ.css 404 X
+      /modules/moduleJ.html 404 X
+      /resources/import_a.htmlx 200 X
+      /resources/import_b.htmlx 200 X
+      /resources/import_o.htmlx 404 XXX
+      https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_x.htmlx 200 X
+      /resources/import_c.htmlx 200 X
+      /nix.xxx 404 XXX
+    </script>
+  </head>
+  <body>
+    <div id="A" import="resources/import_a.htmlx"></div>
+    <div id="B" import="resources/import_b.htmlx"></div>
+    <div id="O" import="resources/import_o.htmlx"></div>
+    <article import="{{aModel.publishImg()}}">
+      loading image...  
+    </article>
+    <article import="{{aModel.publishForm()}}">
+      loading form...  
+    </article>
+    <article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_x.htmlx'}}">
+      loading resource...  
+    </article>
+    <section iterate="{{x:[1,2,3]}}">
+      <div id="moduleA" composite></div>
+      <div id="moduleE" composite></div>
+    </section>
+
+    very special case: moduleF.html is not loaded because an empty import runs
+    into an error at moduleF.js and the import is aborted at this point
+    -FA<div id="moduleF" composite></div>AF-
+
+    <div id="moduleG" composite>moduleG</div>
+    <div id="moduleG" composite>moduleG</div>
+    <div id="moduleH" composite></div>
+    <div id="moduleH" composite></div>
+    <div id="moduleJ" composite></div>
+
+    <br>
+    _error_collector:
+    <pre>{{_error_collector.join("\n")}}</pre>
+  </body>
+</html>

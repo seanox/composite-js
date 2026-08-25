@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+      body div {
+        margin: 1em;
+      }
+      input[type="text"] {
+        width: 2em;
+      }
+      input[type="button"] {
+        width: 3em;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        // The use of let is difficult and should be used with caution. Because
+        // let works exclusively in the current scope. Possible global variables
+        // can be overwritten in the validity area. In the example of
+        // countRender let would create the variable here. But the varibale
+        // expression uses the global scope. So changes in the expression would
+        // not reach the variable in this scope.
+        // It is easier if countRender is a field in an object created with const.
+
+        let countClick = 0
+        Namespace.create("countRender", 0);
+        const about = {
+            contact: {
+                onClick() {
+                    countClick++;
+                }    
+            },
+            refresh: {
+                onClick() {
+                    Composer.render(document.body);
+                }    
+            }
+        };
+        
+        Test.create({test() {
+            while (countRender < 9) {
+                document.querySelector("#contact").click();
+                document.querySelector("#refresh").click();
+            }
+            const result = document.body.textContent.replace(/\s+/g, " ").trim();
+            Assert.assertEquals("Render:9, Click:4 refresh contact", result);
+        }});
+        
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+    <!--
+      The rendering is indirectly triggered twice with the Refresh button.
+      First in the OnClick.method, then indirectly via the render attribute.
+      Due to an error in the mount method, the contact button was not mounted
+      correctly on the second pass.  error has been fixed, the test remains,
+      that it is difficult to adjust and would be annoying if the error is not
+      noticed later.
+    -->
+    {{countRender:countRender +1}}
+    Render:{{countRender}}, Click:{{countClick}}
+    <div id="about" composite condition="{{true}}">
+      <button id="refresh" events="click" render="body">refresh</button>
+      <div iterate="{{iterate:[1]}}">
+        <button id="contact">contact</button>
+      </div>
+    </div>
+  </body>
+</html>

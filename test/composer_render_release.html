@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+      input {
+        display: block;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        let x = false;
+
+        const snapshots = [];
+        const snapshot = () => {
+            let snapshot = document.body.innerHTML;
+            snapshot = snapshot.replace(/^\s+/mg, "");
+            snapshots.push(snapshot);
+            if (snapshots.length === 2) {
+                x = true;
+                Composer.asynchronous(Composer.render, document.body);
+            }
+            if (snapshots.length === 4)
+                Composer.asynchronous(Test.start);
+        };
+
+        Composer.listen(Composer.EVENT_RENDER_START, snapshot);
+        Composer.listen(Composer.EVENT_RENDER_END, snapshot);
+        
+        Test.create({test() {
+            Assert.assertTrue(snapshots[0].indexOf(" release") > 0);
+        }});
+        Test.create({test() {
+            Assert.assertFalse(snapshots[1].indexOf(" release") > 0);
+        }});        
+        Test.create({test() {
+            Assert.assertFalse(snapshots[2].indexOf(" release") > 0);
+        }});        
+        Test.create({test() {
+            Assert.assertFalse(snapshots[3].indexOf(" release") > 0);
+        }});        
+    </script>
+  </head>
+  <body>
+    <span release>{{'A1'}}</span>
+    <span release>{{'A2'}}</span>
+    <span release condition="{{x}}">
+      {{'A3'}} 
+      <span release>{{'A4'}}</span>
+    </span>    
+    <span>{{'B1'}}</span>
+    <span>{{'B2'}}</span>
+    <span condition="{{x}}">
+      {{'B3'}}
+      <span>{{'B4'}}</span>
+    </span>    
+  </body>
+</html>

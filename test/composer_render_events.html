@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        Namespace.create("model", {
+            _textA:[""],    
+            set textA(text) {
+                this._textA[0] = text;
+                this._textA.push(text);
+            },
+            get textA() {
+                return this._textA.join(" ").trim().replace(/\s+/g, " ");
+            },
+            _textB:[""],    
+            set textB(text) {
+                this._textB[0] = text;
+                this._textB.push(text);
+            },
+            get textB() {
+                return this._textB.join(" ").trim().replace(/\s+/g, " ");
+            },
+            _textC:[""],    
+            set textC(text) {
+                this._textC[0] = text;
+                this._textC.push(text);
+            },
+            get textC() {
+                return this._textC.join(" ").trim().replace(/\s+/g, " ");
+            },
+            _textD:[""],    
+            set textD(text) {
+                this._textD[0] = text;
+                this._textD.push(text);
+            },
+            get textD() {
+                return this._textD.join(" ").trim().replace(/\s+/g, " ");
+            },
+            _textE:[""],    
+            set textE(text) {
+                this._textE[0] = text;
+                this._textE.push(text);
+            },
+            get textE() {
+                return this._textE.join(" ").trim().replace(/\s+/g, " ");
+            },
+            _textF:[""],    
+            set textF(text) {
+                this._textF[0] = text;
+                this._textF.push(text);
+            },
+            get textF() {
+                return this._textF.join(" ").trim().replace(/\s+/g, " ");
+            }
+        });
+        
+        let count = 0;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            switch (++count) {
+                case 1:
+                    textA.value = "";
+                    textB.value = "";
+                    textC.value = "";
+                    textD.value = "";
+                    textE.value = "";
+                    textF.value = "";
+                    
+                    Composer.asynchronous(() => {
+                        textA.typeValue("HelloWorld");
+                    });                    
+                    return;
+                case 2:
+                    Composer.asynchronous(() => {
+                        textB.typeValue("HelloWorld");
+                    });                    
+                    return;
+                case 12:
+                    Composer.asynchronous(() => {
+                        textC.typeValue("HelloWorld");
+                    });                    
+                    return;  
+                case 22:
+                    Composer.asynchronous(() => {
+                        textD.typeValue("HelloWorld");
+                    });                    
+                    return;   
+                case 42:
+                    Composer.asynchronous(() => {
+                        textE.typeValue("HelloWorld");
+                    });  
+                    Composer.asynchronous(() => {
+                        textF.typeValue("HelloWorld");
+                    });                    
+                    Test.start();
+                    return;                      
+            }
+        }); 
+        
+        Test.create({test() {
+            Assert.assertSameTo("script[type='text/test']", document.body.textContent); 
+        }});        
+    </script>
+    <script type="text/test">
+A:HelloWorld HelloWorld
+B:HelloWorl H He Hel Hell Hello HelloW HelloWo HelloWor HelloWorl
+C:HelloWorld H He Hel Hell Hello HelloW HelloWo HelloWor HelloWorl HelloWorld
+D:HelloWorld H H He He Hel Hel Hell Hell Hello Hello HelloW HelloW HelloWo HelloWo HelloWor HelloWor HelloWorl HelloWorl HelloWorld
+E:
+F:
+    </script>    
+  </head>
+  <body>
+    <div id="model" composite>
+      <input id="textA" value="" events="{{'in' + 'put'}}"
+          render="#textA ~ span">
+      <span>A:{{model.textA}}</span>
+      
+      <input id="textB" value="" events="keydown"
+          render="#textB ~ span">
+      <span>B:{{model.textB}}</span>
+      
+      <input id="textC" value="" events="keyup keyup Keyup keyUp"
+          render="#textC ~ span">
+      <span>C:{{model.textC}}</span>
+      
+      <input id="textD" value="" events="keydown keyup"
+          render="#textD ~ span">
+      <span>D:{{model.textD}}</span>
+      
+      <input id="textE" value="" events="change"
+          render="#textE ~ span">
+      <span>E:{{model.textE}}</span>
+      
+      <input id="textF" value="" events="xxx"
+          render="#textF ~ span">
+      <span>F:{{model.textF}}</span>
+    </div>
+  </body>
+</html>

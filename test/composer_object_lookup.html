@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        Namespace.create("exampleA", {
+            a: null,
+            b: "",
+            c: 123,
+            d: new Date(),
+            e: {},
+            f() {},
+            g: {
+                g_a: null,
+                g_b: "",
+                g_c: 123,
+                g_d: new Date(),
+                g_e: {},
+                g_f() {},
+                g_g: {
+                    g_g_a: null,
+                    g_g_b: "",
+                    g_g_c: 123,
+                    g_g_d: new Date(),
+                    g_g_e: {},
+                    g_g_f() {},
+                    g_g_g: {
+                        g_g_g_a: null,
+                        g_g_g_b: "",
+                        g_g_g_c: 123,
+                        g_g_g_d: new Date(),
+                        g_g_g_e: {},
+                        g_g_g_f() {}
+                    }
+                }
+            },
+            h: {
+                h_a: [],
+                h_b: ['h_ba', 'h_bb', 'h_bc'],
+                h_c: [100, 200, 300],
+                h_d: [
+                    {value: "A"},
+                    {value: "B"},
+                    {value: "C"},
+                    {value: "D"}
+                ]
+            }
+        });
+        
+        Test.create({test() {
+            Assert.assertEquals("object", typeof Object.lookup("exampleA"));
+        }});
+
+        Test.create({test() {
+            Assert.assertNotNull(Object.lookup("exampleA"));
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.a"));
+            Assert.assertEquals("string", typeof Object.lookup("exampleA.b"));
+            Assert.assertEquals("number", typeof Object.lookup("exampleA.c"));
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.d"));
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.e"));
+            Assert.assertEquals("function", typeof Object.lookup("exampleA.f"));
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.g"));
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.h"));
+        }});
+
+        Test.create({test() {
+            Assert.assertNull(Object.lookup("exampleA.a"));
+            Assert.assertNotNull(Object.lookup("exampleA.b"));
+            Assert.assertNotNull(Object.lookup("exampleA.c"));
+            Assert.assertNotNull(Object.lookup("exampleA.d"));
+            Assert.assertNotNull(Object.lookup("exampleA.e"));
+            Assert.assertNotNull(Object.lookup("exampleA.f"));
+            Assert.assertNotNull(Object.lookup("exampleA.g"));
+            Assert.assertNotNull(Object.lookup("exampleA.h"));
+        }}); 
+
+        Test.create({test() {
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.g"));
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.g.g_g"));
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.g.g_g.g_g_g"));
+
+            Assert.assertNotNull(typeof Object.lookup("exampleA.g"));
+            Assert.assertNotNull(typeof Object.lookup("exampleA.g.g_g"));
+            Assert.assertNotNull(typeof Object.lookup("exampleA.g.g_g.g_g_g"));
+
+            Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g"));
+            Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g.g_g_g_g_g"));
+        }});
+        Test.create({expected:/Invalid namespace at level 1/, test() {
+            Assert.assertEquals("object", typeof Object.lookup("exampleA:g"));
+        }});
+        Test.create({expected:/Invalid namespace at level 2/, test() {
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.g:g_g"));
+        }});
+        Test.create({expected:/Invalid namespace at level 3/, test() {
+            Assert.assertEquals("object", typeof Object.lookup("exampleA.g.g_g:g_g_g"));
+        }});
+        Test.create({test() {
+            Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g"));
+            Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g.g_g_g_g_g"));
+        }});
+
+        Test.create({test() {
+             Assert.assertEquals("A", Object.lookup("exampleA.h.h_d.0").value);
+             Assert.assertEquals("B", Object.lookup("exampleA.h.h_d.1").value);
+             Assert.assertEquals("C", Object.lookup("exampleA.h.h_d.2").value);
+             Assert.assertEquals("D", Object.lookup("exampleA.h.h_d.3").value);
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

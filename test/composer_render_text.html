@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+    
+        Test.create({test() {
+            const content = document.body.textContent.replace(/\s+/g, " ").trim();
+            Assert.assertEquals("Text A: Text B: Text C: Text D: 0XXX 3", content);            
+        }});
+      
+        let count = 0;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (++count < 3)
+                Composer.render(document.body);
+            else if (count === 3)
+                Test.start();
+        });
+
+        Namespace.create("tempA", 0);
+        Namespace.create("tempD", 0);
+    </script>
+  </head>
+  <body>
+    Text A: {{}} {{}} {{}}
+    <br>
+    Text B: {{ }} {{}} {{}}
+    <br>
+    Text C: {{''}} {{}} {{}}
+    <br>
+    {{tempD:tempD + 'X'}}
+    Text D: {{tempD}} {{}} {{}}
+    <br>    
+    {{tempA:tempA +1}}
+    {{tempA}}
+  </body>
+</html>

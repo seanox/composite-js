@@ -1,0 +1,119 @@
+0
+true
+<input checked="true" type="checkbox">
+false
+<input checked="false" type="checkbox">
+true
+<input disabled="" type="text">
+false
+<input type="text">
+false
+<span></span>
+
+1
+undefined
+<input type="checkbox">
+undefined
+<input type="checkbox">
+undefined
+<input type="text">
+undefined
+<input type="text">
+undefined
+<span></span>
+
+2
+true
+<input checked="true" type="checkbox">
+false
+<input checked="false" type="checkbox">
+undefined
+<input type="text">
+undefined
+<input type="text">
+undefined
+<span></span>
+
+3
+undefined
+<input type="checkbox">
+undefined
+<input type="checkbox">
+true
+<input disabled="" type="text">
+false
+<input disabled="" type="text">
+undefined
+<span></span>
+
+4
+true
+<input checked="true" type="checkbox">
+false
+<input checked="false" type="checkbox">
+undefined
+<input type="text">
+undefined
+<input type="text">
+false
+<span xxx="false"></span>
+
+5
+undefined
+<input type="checkbox">
+undefined
+<input type="checkbox">
+undefined
+<input type="text">
+undefined
+<input type="text">
+undefined
+<span></span>
+
+6
+true
+<input checked="true" type="checkbox">
+false
+<input checked="false" type="checkbox">
+true
+<input disabled="" type="text">
+false
+<input disabled="" type="text">
+undefined
+<span></span>
+
+7
+undefined
+<input type="checkbox">
+undefined
+<input type="checkbox">
+undefined
+<input type="text">
+undefined
+<input type="text">
+undefined
+<span></span>
+
+8
+true
+<input checked="true" type="checkbox">
+false
+<input checked="false" type="checkbox">
+undefined
+<input type="text">
+undefined
+<input type="text">
+false
+<span xxx="false"></span>
+
+9
+undefined
+<input type="checkbox">
+undefined
+<input type="checkbox">
+true
+<input disabled="" type="text">
+false
+<input disabled="" type="text">
+undefined
+<span></span>

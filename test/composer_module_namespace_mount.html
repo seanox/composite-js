@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+      body div {
+        margin: 1em;
+      }
+      body * {
+        display: block;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script src="scripts/capture.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const capture = new Capture();
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            capture.snap();
+            const count = capture.patterns().length;
+            if (capture.size() === count)
+                Test.start();
+            if (capture.size() > count)
+                Assert.assertEquals("expected {1} steps but was {2}", count, capture.size());
+        });
+
+        Test.create({test() {
+            capture.validate();
+        }});
+
+        window.setTimeout(() => {
+            document.querySelector("#a\\@nsX #text").typeValue("-a-");
+            document.querySelector("#c\\@nsX #text").typeValue("-c-");
+            document.querySelector("#e\\@nsX\\:d #text").typeValue("-d-");
+        }, 250);
+
+        window.setTimeout(() => {document.querySelector("#a\\@nsX #text").typeValue("a-a")}, 1000);
+        window.setTimeout(() => {document.querySelector("#c\\@nsX #text").typeValue("c-c")}, 1250);
+        window.setTimeout(() => {document.querySelector("#e\\@nsX\\:d #text").typeValue("d-d")}, 1500);
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-e-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-e-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-e-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-e-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-e-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-e-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: -a-
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: a-a
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: a-a
+      nsX.c.text.value: -c-
+      nsX.d.e.text.value: -d-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: a-a
+      nsX.c.text.value: c-c
+      nsX.d.e.text.value: -d-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: a-a
+      nsX.c.text.value: c-c
+      nsX.d.e.text.value: -d-
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: a-a
+      nsX.c.text.value: c-c
+      nsX.d.e.text.value: d-d
+    </script>
+    <script type="text/test">
+      nsX.a.text.value: a-a
+      nsX.c.text.value: c-c
+      nsX.d.e.text.value: d-d
+    </script>
+  </head>
+  <body>
+    <form id="a@nsX" composite>
+      <input id="text" events="input change"/>
+    </form>
+    <div id="b@nsX" composite>
+      <form id="c@nsX" composite>
+        <input id="text" events="input change"/>
+      </form>
+    </div>
+    <div id="d@nsX" composite namespace>
+      <form id="e@nsX:d" composite namespace>
+        <input id="text" events="input change"/>
+      </form>
+    </div>
+    <pre>
+      nsX.a.text.value: {{nsX.a.text.value}}
+      nsX.c.text.value: {{nsX.c.text.value}}
+      nsX.d.e.text.value: {{nsX.d.e.text.value}}
+    </pre>
+  </body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      form {
+        white-space: pre;
+      }
+      form * + * {
+        margin-top: 1em;
+      }
+      iframe {
+        height: 4em;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+        
+        Composer.customize("@ATTRIBUTES-STATICS", "href name pattern placeholder target type required");
+
+        const EMAIL_PATTERN = "^[a-z0-9]+([\\w\\.\\-]*[a-z0-9])*@[a-z0-9]+([\\w\\.\\-]*[a-z0-9])*$";
+        const EMAIL_MESSAGE = "Mandatory with a valid e-mail address."
+
+        const PASSWORD_PATTERN = "\\w{6,}";
+        const PASSWORD_MESSAGE = "Mandatory with at least 6 characters.";
+
+        const validateValues = [];
+
+        Namespace.create("model", {
+            email: "",
+            password: "",
+            input_1: null,
+            input_2: null,
+            input_3: null,
+            input_4: null,
+            input_5: null,
+            input_6: null,
+            input_7: null,
+            input_8: null,
+            input_9: null,
+            validates: [],
+            validate(element, value) {
+                if (value !== undefined)
+                    validateValues.push(value);
+                if (!model.validates.includes(element.id))
+                    model.validates.push(element.id);
+                if (element === document.querySelector("#model #submit")
+                        || element === document.querySelector("#model #button")
+                        || element === document.querySelector("#model #link")) {
+                    return Composer.validate("#model #email, #model #password");
+                }
+                return Composer.validate(element);
+            },
+            submitClicks: 0,
+            submit: {
+                onClick() {
+                    model.submitClicks++;
+                }
+            },
+            buttonClicks: 0,
+            button: {
+                onClick() {
+                    model.buttonClicks++;
+                }
+            },
+            unsafeClicks: 0,
+            unsafe: {
+                onClick() {
+                    model.unsafeClicks++;
+                }
+            },
+            linkClicks: 0,
+            link: {
+                onClick() {
+                    model.linkClicks++;
+                }
+            }
+        });
+        
+        const snapshots = [];
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            let snapshot = () => {
+                const signature = (selector) => {
+                    const element = document.querySelector(selector);
+                    let result = "";
+                    if (element.validationMessage)
+                        result += "M";
+                    if (element.customError)
+                        result += "C";
+                    if (element.validity.valueMissing)
+                        result += "R";
+                    if (element.validity.patternMismatch)
+                        result += "P";
+                    if (element.validity.valid)
+                        result += "V";
+                    return result;
+                };
+
+                let snapshot = "E:" + signature("#model #email") + "|" + model.email
+                     + "\r\n" + "P:" + signature("#model #password") + "|" + model.password
+                     + "\r\n" + "V:" + model.validates.join("|")
+                     + "\r\n" + "S:" + "|S:" + model.submitClicks
+                         + "|B:" + model.buttonClicks
+                         + "|L:" + model.linkClicks
+                         + "|U:" + model.unsafeClicks;
+
+                snapshot += "\r\n" + "I:";
+                document.querySelectorAll("#model *[id^='input_']").forEach(element => {
+                    let message = element.validationMessage;
+                    if (message.includes(" "))
+                        message = "default";
+                    snapshot += "|" + message;
+                });
+
+                let iframe;
+                iframe = document.querySelector("iframe[name='targetA']");
+                iframe = iframe.contentDocument || iframe.contentWindow.document;
+                snapshot += "\r\n" + "A:" + iframe.body.textContent.trim();
+                
+                iframe = document.querySelector("iframe[name='targetB']");
+                iframe = iframe.contentDocument || iframe.contentWindow.document;
+                snapshot += "\r\n" + "B:" + iframe.body.textContent.trim();
+                
+                snapshots.push(snapshot);
+            };
+        
+            snapshot();
+
+            for (let index = 1; index <= 9; index++) {
+                document.querySelector("#model #input_" + index).typeValue("input_" + index, true);
+                document.querySelector("#model #input_" + index).typeValue("", true);
+                snapshot();
+                // Final must be set a value, otherwise the submit will be blocked
+                // and the test for the IFrames will not work, because TargetA waits for a submit.
+                document.querySelector("#model #input_" + index).typeValue("input_" + index + "_fill", true);
+            }
+
+            document.querySelector("#model #submit").click();
+            snapshot();
+            document.querySelector("#model #button").click();
+            snapshot();
+            document.querySelector("#model #unsafe").click();
+            snapshot();
+            document.querySelector("#model #link").click();
+            snapshot();
+            
+            document.querySelector("#model #email").typeValue("xxx", true);
+            snapshot();
+
+            document.querySelector("#model #submit").click();
+            snapshot();
+            document.querySelector("#model #button").click();
+            snapshot();
+            document.querySelector("#model #unsafe").click();
+            snapshot();
+            document.querySelector("#model #link").click();
+            snapshot();
+
+            document.querySelector("#model #email").typeValue("xxx@xxx", true);
+            snapshot();
+
+            document.querySelector("#model #submit").click();
+            snapshot();
+            document.querySelector("#model #button").click();
+            snapshot();
+            document.querySelector("#model #unsafe").click();
+            snapshot();
+            document.querySelector("#model #link").click();
+            snapshot();
+            
+            document.querySelector("#model #password").typeValue("xxx", true);
+            snapshot();
+
+            document.querySelector("#model #submit").click();
+            snapshot();
+            document.querySelector("#model #button").click();
+            snapshot();
+            document.querySelector("#model #unsafe").click();
+            snapshot();            
+            document.querySelector("#model #link").click();
+            snapshot();
+
+            document.querySelector("#model #password").typeValue("xxxxxx", true);
+            snapshot();
+
+            document.querySelector("#model #submit").click();
+            snapshot();
+            document.querySelector("#model #button").click();
+            snapshot();
+            document.querySelector("#model #unsafe").click();
+            snapshot();
+            document.querySelector("#model #link").click();
+            
+            window.setTimeout(() => {
+                snapshot();
+                Test.start();
+            }, 1000);
+        });
+
+        Test.create({test() {
+            document.body.innerHTML = "<pre>" + snapshots.join("\r\n") + "</pre>";
+            Assert.assertSameTo("script[type='text/test']", snapshots.join("\r\n"));
+        }});
+        Test.create({test() {
+            Assert.assertEquals("input_1|input_1_fill|input_2|input_2_fill|input_3|input_3_fill|input_4|input_4_fill"
+                    + "|input_5|input_5_fill|input_6|input_6_fill|input_7|input_7_fill|input_8|input_8_fill|input_9|input_9_fill"
+                    + "|Submit|Button|Submit|Button|xxx@xxx|Submit|Button|Submit|Button|xxxxxx|Submit|Button", validateValues.join("|"));
+        }});
+    </script>
+    <!-- RegEx to convert the test output: search \x20(\w:) and replace \r\n$1 -->
+    <script type="text/test">
+E:MR|
+P:MR|
+V:
+S:|S:0|B:0|L:0|U:0
+I:|default|default|default|default|default|default|default|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1
+S:|S:0|B:0|L:0|U:0
+I:|1|default|default|default|default|default|default|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2
+S:|S:0|B:0|L:0|U:0
+I:||0|default|default|default|default|default|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3
+S:|S:0|B:0|L:0|U:0
+I:|||-1|default|default|default|default|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4
+S:|S:0|B:0|L:0|U:0
+I:||||false|default|default|default|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5
+S:|S:0|B:0|L:0|U:0
+I:|||||null|default|default|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6
+S:|S:0|B:0|L:0|U:0
+I:||||||undefined|default|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7
+S:|S:0|B:0|L:0|U:0
+I:|||||||true|default|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8
+S:|S:0|B:0|L:0|U:0
+I:||||||||test|default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9
+S:|S:0|B:0|L:0|U:0
+I:|||||||||default
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit
+S:|S:0|B:0|L:0|U:0
+I:|||||||||
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button
+S:|S:0|B:0|L:0|U:0
+I:|||||||||
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button
+S:|S:0|B:0|L:0|U:1
+I:|||||||||
+A:
+B:
+E:MR|
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link
+S:|S:0|B:0|L:0|U:1
+I:|||||||||
+A:
+B:
+E:MP|xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link
+S:|S:0|B:0|L:0|U:1
+I:|||||||||
+A:
+B:
+E:MP|xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link
+S:|S:0|B:0|L:0|U:1
+I:|||||||||
+A:
+B:
+E:MP|xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link
+S:|S:0|B:0|L:0|U:1
+I:|||||||||
+A:
+B:
+E:MP|xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link
+S:|S:0|B:0|L:0|U:2
+I:|||||||||
+A:
+B:
+E:MP|xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link
+S:|S:0|B:0|L:0|U:2
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:2
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:2
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:2
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:3
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MR|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:3
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MP|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:3
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MP|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:3
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MP|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:3
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MP|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:4
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:MP|
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email
+S:|S:0|B:0|L:0|U:4
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:V|xxxxxx
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email|password
+S:|S:0|B:0|L:0|U:4
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:V|xxxxxx
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email|password
+S:|S:1|B:0|L:0|U:4
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:V|xxxxxx
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email|password
+S:|S:1|B:1|L:0|U:4
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:V|xxxxxx
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email|password
+S:|S:1|B:1|L:0|U:5
+I:|||||||||
+A:
+B:
+E:V|xxx@xxx
+P:V|xxxxxx
+V:input_1|input_2|input_3|input_4|input_5|input_6|input_7|input_8|input_9|submit|button|link|email|password
+S:|S:1|B:1|L:1|U:5
+I:|||||||||
+A:1
+B:2
+    </script>
+  </head>
+  <body>
+    <!--
+        invalid e-mail / password (HTML5 pattern):
+        - value should not be synchronized</li>
+        - link should not work</li>
+        - submit should not work</li>
+
+        valid e-mail / password (HTML5 pattern):
+        - value should be synchronized</li>
+        - link should work</li>
+        - submit should work</li>
+    --> 
+    <form id="model" composite
+        method="GET" action="composer_render_validate_1.html" target="targetA">
+      <input type="text" id="email" placeholder="email"
+          validate="optional" required pattern="{{EMAIL_PATTERN}}"
+          message="{{EMAIL_MESSAGE}}"
+          events="input">
+      <input type="text" id="password" placeholder="password"
+          validate required pattern="{{PASSWORD_PATTERN}}"
+          message="{{PASSWORD_MESSAGE}}"
+          events="input">
+
+      <!-- id with expression must work, but the id is only resolved initially -->
+      <input type="text" id="input_{{1+0}}" placeholder="message: 1"
+          validate required
+          message="1"
+          events="input">
+      <input type="text" id="input_{{1+1}}" placeholder="message: 0"
+          validate required
+          message="0"
+          events="input">
+      <input type="text" id="input_{{1+2}}" placeholder="message: -1"
+          validate required
+          message="-1"
+          events="input">
+      <input type="text" id="input_4" placeholder="message: false"
+          validate required
+          message="false"
+          events="input">
+      <input type="text" id="input_5" placeholder="message: null"
+          validate required
+          message="null"
+          events="input">
+      <input type="text" id="input_6" placeholder="message: undefined"
+          validate required
+          message="undefined"
+          events="input">
+      <input type="text" id="input_7" placeholder="message: true"
+          validate required
+          message="true"
+          events="input">
+      <input type="text" id="input_8" placeholder="message: test"
+          validate required
+          message="test"
+          events="input">
+      <input type="text" id="input_9" placeholder="message: test"
+          validate required
+          message=""
+          events="input">
+
+      <input type="submit" id="submit" value="Submit" validate>
+      <input type="button" id="button" value="Button" validate>
+      <a id="link" href="composer_render_validate_2.html" target="targetB"
+          validate events="click">Password forgotten?</a>
+      <input type="button" id="unsafe" value="Unsafe">
+      <iframe name="targetA" src="about:blank"></iframe>
+      <iframe name="targetB" src="about:blank"></iframe>
+    </form>
+  </body>
+</html>

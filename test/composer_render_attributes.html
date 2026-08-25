@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        Test.create({test() {
+            const text = snapshots.join("\r\n\r\n");
+            document.body.innerText = text;
+            const pattern = Test.read("composer_render_attributes_" + navigator.engine + ".txt");
+            Assert.assertSameText(pattern, text);
+        }});
+
+        const snapshots = [];
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+
+            if (snapshots.length === 0) {
+                document.querySelectorAll("input[type='checkbox']")[0].checked = true;
+                document.querySelectorAll("input[type='checkbox']")[1].checked = false;
+                document.querySelectorAll("input[type='text']")[0].disabled = true;
+                document.querySelectorAll("input[type='text']")[1].disabled = false;
+                document.querySelector("span").removeAttribute("xxx");
+            }
+
+            let snapshot = document.body.innerHTML;
+            snapshot = snapshot.replace(/^\s+/mg, "");
+            snapshot = snapshot.replace(/<\!--([\s\.r\n].*?)*-->/g, "");
+            snapshots.push(snapshot.trim());
+
+            if (snapshots.length < 10)
+                window.setTimeout(() =>
+                    Composer.render(document.body), 250);
+            else Test.start();
+        });
+    </script>
+    <script type="text/test1">
+      0
+      true
+      <input type="checkbox" checked="true">
+      false
+      <input type="checkbox" checked="false">
+      true
+      <input type="text" disabled="">
+      false
+      <input type="text">
+      false
+      <span></span>
+
+      1
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      2
+      true
+      <input type="checkbox" checked="true">
+      false
+      <input type="checkbox" checked="false">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      3
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      true
+      <input type="text" disabled="">
+      false
+      <input type="text" disabled="">
+      undefined
+      <span></span>
+
+      4
+      true
+      <input type="checkbox" checked="true">
+      false
+      <input type="checkbox" checked="false">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      false
+      <span xxx="false"></span>
+
+      5
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      6
+      true
+      <input type="checkbox" checked="true">
+      false
+      <input type="checkbox" checked="false">
+      true
+      <input type="text" disabled="">
+      false
+      <input type="text" disabled="">
+      undefined
+      <span></span>
+
+      7
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      8
+      true
+      <input type="checkbox" checked="true">
+      false
+      <input type="checkbox" checked="false">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      false
+      <span xxx="false"></span>
+
+      9
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      true
+      <input type="text" disabled="">
+      false
+      <input type="text" disabled="">
+      undefined
+      <span></span>
+    </script>
+    <script type="text/test2">
+      0
+      true
+      <input checked="true" type="checkbox">
+      false
+      <input checked="false" type="checkbox">
+      true
+      <input disabled="" type="text">
+      false
+      <input type="text">
+      false
+      <span></span>
+
+      1
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      2
+      true
+      <input checked="true" type="checkbox">
+      false
+      <input checked="false" type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      3
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      true
+      <input disabled="" type="text">
+      false
+      <input disabled="" type="text">
+      undefined
+      <span></span>
+
+      4
+      true
+      <input checked="true" type="checkbox">
+      false
+      <input checked="false" type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      false
+      <span xxx="false"></span>
+
+      5
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      6
+      true
+      <input checked="true" type="checkbox">
+      false
+      <input checked="false" type="checkbox">
+      true
+      <input disabled="" type="text">
+      false
+      <input disabled="" type="text">
+      undefined
+      <span></span>
+
+      7
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      undefined
+      <span></span>
+
+      8
+      true
+      <input checked="true" type="checkbox">
+      false
+      <input checked="false" type="checkbox">
+      undefined
+      <input type="text">
+      undefined
+      <input type="text">
+      false
+      <span xxx="false"></span>
+
+      9
+      undefined
+      <input type="checkbox">
+      undefined
+      <input type="checkbox">
+      true
+      <input disabled="" type="text">
+      false
+      <input disabled="" type="text">
+      undefined
+      <span></span>
+    </script>
+  </head>
+  <body>
+    <!--
+      The attributes use expressions whose return value can be undefined.
+      In these cases, the attribute must be temporarily removed and restored at
+      the next render cycle if the return value is not undefined.
+      The value false should not play a role!
+      But there are exceptions, such as: goanna.
+    -->
+    {{snapshots.length}}
+    {{snapshots.length % 2 === 0 ? true : 'undefined'}}
+    <input type="checkbox" checked="{{snapshots.length % 2 === 0 ? true : undefined}}"/>
+    {{snapshots.length % 2 === 0 ? false : 'undefined'}}
+    <input type="checkbox" checked="{{snapshots.length % 2 === 0 ? false : undefined}}"/>
+    {{snapshots.length % 3 === 0 ? true : 'undefined'}}
+    <input type="text" disabled="{{snapshots.length % 3 === 0 ? true : undefined}}"/>
+    {{snapshots.length % 3 === 0 ? false : 'undefined'}}
+    <input type="text" disabled="{{snapshots.length % 3 === 0 ? false : undefined}}"/>
+    {{snapshots.length % 4 === 0 ? false : 'undefined'}}
+    <span xxx="{{snapshots.length % 4 === 0 ? false : undefined}}"></span>
+  </body>
+</html>

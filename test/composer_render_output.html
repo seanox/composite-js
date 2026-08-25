@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+    
+        const TestModel = {
+            isVisibleA: true,
+            outputA() {
+                return "A1<span>A2<span>A3</span></span>";
+            },
+            isVisibleB: false,
+            outputB() {
+                return "B1<span>B2 B3:{{TestModel.isVisibleB3}}<span condition='{{TestModel.isVisibleB3}}'>B3</span></span>";
+            },
+            isVisibleB3: false,
+            outputB3() {
+                return "B3";
+            },
+            isVisibleC: false,
+            outputC() {
+            }
+        };
+
+        const results = [];
+        
+        Test.create({test() {
+            snapshots.forEach((snapshot, index) => {
+                console.log(`Test based on script #${index +1}`);
+                Assert.assertSameText(document.querySelectorAll("script[type='text/test']")[index].textContent, snapshot);
+            });
+        }});
+
+        const snapshots = [];
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            let snapshot = document.body.textContent;
+            snapshot = snapshot.replace(/^\s+/mg, "");
+            snapshots.push(snapshot);
+            const count = document.querySelectorAll("script[type=\"text/test\"]").length;
+            switch (snapshots.length) {
+                case 1:
+                    Composer.render(document.body);
+                    break;
+                case 2:
+                    TestModel.isVisibleB = true;
+                    Composer.render(document.body);
+                    break;   
+                case 3:
+                    TestModel.isVisibleB3 = true;
+                    Composer.render("#B0");
+                    break;
+                case 4:
+                    Test.start();
+                case 5:
+                    Assert.assertEquals("expected {1} steps but was {2}", count, snapshots.length);
+            }
+        }); 
+    </script>
+  </head>
+  <script type="text/test">
+    A:A1A2A3
+    B:
+    C:
+  </script>
+  <script type="text/test">
+    A:A1A2A3
+    B:
+    C:
+  </script>
+  <script type="text/test">
+    A:A1A2A3
+    B:B1B2 B3:false
+    C:
+  </script>
+  <script type="text/test">
+    A:A1A2A3
+    B:B1B2 B3:trueB3
+    C:
+  </script>
+  <body>
+    A:<span id="A0" output="{{TestModel.outputA()}}" condition="{{TestModel.isVisibleA}}"></span>
+    B:<span id="B0" output="{{TestModel.outputB()}}" condition="{{TestModel.isVisibleB}}"></span>
+    C:<span id="C0" output="{{TestModel.outputC()}}" condition="{{TestModel.isVisibleC}}"></span>
+  </body>
+</html>

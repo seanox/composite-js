@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      form {
+        white-space: pre;
+      }
+      form * + * {
+        margin-top: 1em;
+      }
+      iframe {
+        height: 4em;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+
+      Test.activate();
+
+      const snapshots = [];
+      Composer.listen(Composer.EVENT_RENDER_END, () => {
+          if (snapshots.length > 0)
+              return;
+          const snapshot = () => {
+              const content = document.querySelector("#text1").outerHTML
+                      + " " + Model.text1;
+              snapshots.push(content);
+          };
+          snapshot();
+          document.querySelector("#text1").typeValue("xxx", true);
+          snapshot();
+          document.querySelector("#text1").typeValue("@", false);
+          snapshot();
+          document.querySelector("#text1").typeValue("xxx", false);
+          snapshot();
+          document.body.innerHTML = "<pre>" + snapshots.join("\r\n").replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</pre>";
+          Test.start();
+      });
+
+      Test.create({test() {
+          document.body.innerHTML = "<pre>" + snapshots.join("\r\n")
+                  .replace(/</g, "&lt;")
+                  .replace(/>/g, "&gt;") + "</pre>";
+          const pattern = Test.read("composer_render_validate_message_" + navigator.engine + ".txt");
+          Assert.assertSameText(pattern, snapshots.join("\r\n"));
+      }});
+
+      const Model = {
+          text1: ""
+      }
+    </script>
+  </head>
+  <body>
+    <form id="Model" composite>
+      <input id="text1" type="text" placeholder="e-mail address"
+          pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$"
+          message="@new_attr:wrong email"
+          validate="optional" events="input change" render="#Model"/>
+      Model.text1: {{Model.text1}}
+      <input type="submit" value="submit" validate events="click"/>
+    </form>
+  </body>
+</html>

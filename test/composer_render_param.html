@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+    
+        const ModelA = {
+            list: ["a", "b", "c"]
+        }; 
+    
+        Test.create({test() {
+            const pattern = Test.read("composer_render_param_" + navigator.engine + ".txt");
+            try {Assert.assertSameText(pattern, document.body.innerHTML);
+            } catch (error) {
+                console.log(document.body.innerHTML);
+                throw error;
+            }
+        }});
+        
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (Test.status().queue != null)
+                return;    
+            let content = document.body.innerHTML;
+            content = content.replace(/([\r\n]+)\s*(?=\1)/g, "");
+            content = content.replace(/script/g, "x-script");
+            document.body.innerHTML = content;
+            Test.start();
+        });  
+    </script>
+  </head>
+  <body>
+    {{navigator.engine}}
+    ----
+
+    {{:}}
+    {{ :}}
+    {{ : }}
+    {{: }} 
+
+    {{n:}}
+    {{n}}
+    {{n :}}
+    {{n}}
+    {{n : }}
+    {{n}}
+    {{n: }}
+    {{n}}
+  
+    A:1: {{(?globalA) || ''}}
+    {{globalA:Hallo}}
+    A:2: {{globalA}}
+    {{globalA:'Hallo'}}
+    A:3: {{globalA}}
+    <article id="AB">
+      AA:1: {{globalA}}
+      AB:1: {{(?globalAB) || ''}}
+      {{globalAB:Hallo}}
+      AA:2: {{globalA}}
+      AB:2: {{globalAB}}
+      {{globalAB:'Welt'}}
+      AA:3: {{globalA}}
+      AB:3: {{globalAB}}
+      {{globalAB:globalAB}}
+      AA:4: {{globalA}}
+      AB:4: {{globalAB}}
+      {{globalAB:'Hallo ' + globalAB}}
+      AA:5: {{globalA}}
+      AB:5: {{globalAB}}
+      {{globalAB:globalAB + ' ' + globalAB}}
+      AA:5: {{globalA}}
+      AB:5: {{globalAB}}
+    </article>
+    {{x : '1'}}
+    X: {{x}}
+    {{x : '2'}}
+    X: {{x}}
+    {{x :'1'}}
+    X: {{x}}
+    
+    {{x:1}}
+    X: {{x}}
+    {{x:x+1}}
+    X: {{x}}
+    {{x:x+2}}
+    X: {{x}}
+    {{x:x+3}}
+    X: {{x}}
+    
+    <span id="outputA"></span>
+    {{tempA:10}}
+    <div iterate="{{tempB:ModelA.list}}">
+      {{tempA:tempA +tempB.index}} 
+      {{tempA +tempB.index}}
+      <script type="composite/javascript">
+        outputA.textContent += " " + tempB.index + ":" + tempA;
+      </script>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+      body div {
+        margin: 1em;
+      }
+      body * {
+        display: block;
+      }
+    </style>
+    <script src="composite-js.js"></script>
+    <script src="scripts/capture.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        const stack = ["Step:0"];
+
+        const modelA = {
+            status: true,
+            dock() {
+                stack.push("A:dock");
+            },
+            undock() {
+                stack.push("A:undock");
+            },
+            button: {
+                onClick() {
+                    stack.push("A:onClick");
+                    modelA.status = !modelA.status;
+                }
+            }
+        };
+
+        const modelB = {
+            status: true,
+            undock() {
+                stack.push("B:undock");
+            },
+            button: {
+                onClick() {
+                    stack.push("B:onClick");
+                    modelB.status = !modelB.status;
+                }
+            }
+        };
+
+        const modelC = {
+            status: true,
+            dock() {
+                stack.push("C:dock");
+            },
+            button: {
+                onClick() {
+                    stack.push("C:onClick");
+                    modelC.status = !modelC.status;
+                }
+            }
+        };
+
+        const modelD = {
+            status: true,
+            button: {
+                onClick() {
+                    stack.push("D:onClick");
+                    modelD.status = !modelD.status;
+                }
+            }
+        };
+
+        const page = {
+
+            //Test with the assignment via the qualifier.    
+            buttonA: {
+                modelA: {
+                    onClick(event) {
+                        modelA.button.onClick.call(event);
+                    }
+                },
+                modelB: {
+                    onClick(event) {
+                        modelB.button.onClick.call(event);
+                    }
+                },
+                modelC: {
+                    onClick(event) {
+                        modelC.button.onClick.call(event);
+                    }
+                },
+                modelD: {
+                    onClick(event) {
+                        modelD.button.onClick.call(event);
+                    }
+                }
+            },
+            
+            //Test with indirect/secondary assignment via the qualifier.
+            buttonB: {
+                onClick(event) {
+                    let target = String(event.target.id.match(/[^:]+$/));
+                    if (target)
+                        target = Object.lookup(target + ":button:onClick");
+                    if (target)
+                        target.call(event);
+                }
+            },
+            
+            //Test with the assignment via the qualifier as index for an array.
+            //The array is a set of anonymous object (references).
+            buttonC: [
+                modelA.button,
+                modelB.button,
+                modelC.button,
+                modelD.button
+            ],
+            
+            //Test similar to ModelA but with direct use of references.
+            buttonDA: modelA.button,
+            buttonDB: modelB.button,
+            buttonDC: modelC.button,
+            buttonDD: modelD.button,
+        };
+
+        Test.create({test() {
+            Assert.assertSameTo("script[type='text/test-docking']", stack.join("\n"));
+        }});
+
+        Test.create({test() {
+            //capture.validate();
+        }});
+        
+        let step = 0;
+        const capture = new Capture();
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            capture.snap();
+
+            ++step;
+            stack.push("Step:" + step);
+            switch (step) {
+                case 1:
+                case 2:
+                case 3:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonA\\:modelA").click();
+                    });
+                    return;
+                case 4:
+                case 5:
+                case 6:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonA\\:modelB").click();
+                    });
+                    return;
+                case 7:
+                case 8:
+                case 9:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonA\\:modelC").click();
+                    });
+                    return;
+                case 10:
+                case 11:
+                case 12:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonA\\:modelD").click();
+                    });
+                    return;
+                case 13: 
+                case 14: 
+                case 15:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonA\\:modelX").click();
+                    });
+                    return;
+                    
+                //----    
+                case 16:
+                    Composer.asynchronous(() => {
+                        modelA.status = true;
+                        modelB.status = true;
+                        modelC.status = true;
+                        modelD.status = true;
+                        Composer.render(document.body);
+                    });
+                    return;
+                case 17:
+                case 18:
+                case 19:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonB\\:modelA").click();
+                    });
+                    return;
+                case 20:
+                case 21:
+                case 22:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonB\\:modelB").click();
+                    });
+                    return;
+                case 23:
+                case 24:
+                case 25:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonB\\:modelC").click();
+                    });
+                    return;
+                case 26:
+                case 27: 
+                case 28: 
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonB\\:modelD").click();
+                    });
+                    return;
+                case 29:
+                case 30:
+                case 31:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonB\\:modelX").click();
+                    });
+                    return;
+                    
+                //----    
+                case 32:
+                    Composer.asynchronous(() => {
+                        modelA.status = true;
+                        modelB.status = true;
+                        modelC.status = true;
+                        modelD.status = true;
+                        Composer.render(document.body);
+                    });
+                    return;
+                case 33:
+                case 34:
+                case 35:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonC\\:0").click();
+                    });
+                    return;
+                case 36:
+                case 37:
+                case 38:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonC\\:1").click();
+                    });
+                    return;
+                case 39:
+                case 40:
+                case 41:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonC\\:2").click();
+                    });
+                    return;
+                case 42:
+                case 43: 
+                case 44: 
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonC\\:3").click();
+                    });
+                    return;
+                case 45:
+                case 46:
+                case 47:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonC\\:4").click();
+                    });
+                    return;
+                
+                //----    
+                case 48:
+                    Composer.asynchronous(() => {
+                        modelA.status = true;
+                        modelB.status = true;
+                        modelC.status = true;
+                        modelD.status = true;
+                        Composer.render(document.body);
+                    });
+                    return;
+                case 49:
+                case 50:
+                case 51:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonDA").click();
+                    });
+                    return;
+                case 52:
+                case 53:
+                case 54:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonDB").click();
+                    });
+                    return;
+                case 55:
+                case 56:
+                case 57:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonDC").click();
+                    });
+                    return;
+                case 58:
+                case 59: 
+                case 60: 
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonDD").click();
+                    });
+                    return;
+                case 61:
+                case 62:
+                case 63:
+                    Composer.asynchronous(() => {
+                        document.querySelector("#buttonDX").click();
+                    });
+                    return;
+                case 64:
+                    Test.start();
+                    return;
+            }
+        });
+    </script>
+    <script type="text/test-docking">
+      Step:0
+      A:dock
+      C:dock
+      Step:1
+      A:onClick
+      Step:2
+      A:undock
+      A:onClick
+      A:dock
+      Step:3
+      A:onClick
+      Step:4
+      A:undock
+      B:onClick
+      Step:5
+      B:undock
+      B:onClick
+      Step:6
+      B:onClick
+      Step:7
+      B:undock
+      C:onClick
+      Step:8
+      C:onClick
+      C:dock
+      Step:9
+      C:onClick
+      Step:10
+      D:onClick
+      Step:11
+      D:onClick
+      Step:12
+      D:onClick
+      Step:13
+      Step:14
+      Step:15
+      Step:16
+      A:dock
+      C:dock
+      Step:17
+      Step:18
+      Step:19
+      Step:20
+      Step:21
+      Step:22
+      Step:23
+      Step:24
+      Step:25
+      Step:26
+      Step:27
+      Step:28
+      Step:29
+      Step:30
+      Step:31
+      Step:32
+      Step:33
+      A:onClick
+      Step:34
+      A:undock
+      A:onClick
+      A:dock
+      Step:35
+      A:onClick
+      Step:36
+      A:undock
+      B:onClick
+      Step:37
+      B:undock
+      B:onClick
+      Step:38
+      B:onClick
+      Step:39
+      B:undock
+      C:onClick
+      Step:40
+      C:onClick
+      C:dock
+      Step:41
+      C:onClick
+      Step:42
+      D:onClick
+      Step:43
+      D:onClick
+      Step:44
+      D:onClick
+      Step:45
+      Step:46
+      Step:47
+      Step:48
+      A:dock
+      C:dock
+      Step:49
+      A:onClick
+      Step:50
+      A:undock
+      A:onClick
+      A:dock
+      Step:51
+      A:onClick
+      Step:52
+      A:undock
+      B:onClick
+      Step:53
+      B:undock
+      B:onClick
+      Step:54
+      B:onClick
+      Step:55
+      B:undock
+      C:onClick
+      Step:56
+      C:onClick
+      C:dock
+      Step:57
+      C:onClick
+      Step:58
+      D:onClick
+      Step:59
+      D:onClick
+      Step:60
+      D:onClick
+      Step:61
+      Step:62
+      Step:63
+      Step:64
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 1
+      Model-X:B 1
+      Model-X:C 1
+      Model-X:D 1
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 1
+      Model-A:B 1
+      Model-A:C 1
+      Model-A:D 1
+      Model-A
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 1
+      Model-B:B 1
+      Model-B:C 1
+      Model-B:D 1
+      Model-B
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 1
+      Model-C:B 1
+      Model-C:C 1
+      Model-C:D 1
+      Model-C
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 1
+      Model-D:B 1
+      Model-D:C 1
+      Model-D:D 1
+      Model-D
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+    <script type="text/test">
+      Model-A:A 0
+      Model-A:B 0
+      Model-A:C 0
+      Model-A:D 0
+      Model-B:A 0
+      Model-B:B 0
+      Model-B:C 0
+      Model-B:D 0
+      Model-C:A 0
+      Model-C:B 0
+      Model-C:C 0
+      Model-C:D 0
+      Model-D:A 0
+      Model-D:B 0
+      Model-D:C 0
+      Model-D:D 0
+      Model-X:A 0
+      Model-X:B 0
+      Model-X:C 0
+      Model-X:D 0
+    </script>
+  </head>
+  <body id="page" composite>
+    <!--
+      Combined test for mount, dock and undock.
+      
+      The buttons must be mounted correctly.
+      Because the models don't fit to all buttons, the buttonB don't work.
+      
+      The methods dock and undock are implemented differently in the models and
+      must apply differently.
+    --> 
+  
+    <button id="{{'buttonA'}}:{{'model' + 'A'}}" events="click" render="body" release>
+      Model-A:A {{modelA.status ? '1' : '0'}}</button>
+    <button id="buttonB:modelA" events="click" render="body" release>
+      Model-A:B {{modelA.status ? '1' : '0'}}</button>
+    <button id="buttonC:0" events="click" render="body" release>
+      Model-A:C {{modelA.status ? '1' : '0'}}</button>
+    <button id="buttonDA" events="click" render="body" release>
+      Model-A:D {{modelA.status ? '1' : '0'}}</button>
+    <section id="modelA" composite condition="{{modelA.status}}">
+      Model-A
+    </section>
+
+    <button id="buttonA:modelB" events="click" render="body" release>
+      Model-B:A {{modelB.status ? '1' : '0'}}</button>
+    <button id="buttonB:modelB" events="click" render="body" release>
+      Model-B:B {{modelB.status ? '1' : '0'}}</button>
+    <button id="buttonC:1" events="click" render="body" release>
+      Model-B:C {{modelB.status ? '1' : '0'}}</button>
+    <button id="buttonDB" events="click" render="body" release>
+      Model-B:D {{modelB.status ? '1' : '0'}}</button>
+    <section id="modelB" composite condition="{{modelB.status}}">
+      Model-B
+    </section>
+    
+    <button id="buttonA:modelC" events="click" render="body" release>
+      Model-C:A {{modelC.status ? '1' : '0'}}</button>
+    <button id="buttonB:modelC" events="click" render="body" release>
+      Model-C:B {{modelC.status ? '1' : '0'}}</button>
+    <button id="buttonC:2" events="click" render="body" release>
+      Model-C:C {{modelC.status ? '1' : '0'}}</button>
+    <button id="buttonDC" events="click" render="body" release>
+      Model-C:D {{modelC.status ? '1' : '0'}}</button>
+    <section id="modelC" composite condition="{{modelC.status}}">
+      Model-C
+    </section>
+    
+    <button id="buttonA:modelD" events="click" render="body" release>
+      Model-D:A {{modelD.status ? '1' : '0'}}</button>
+    <button id="buttonB:modelD" events="click" render="body" release>
+      Model-D:B {{modelD.status ? '1' : '0'}}</button>
+    <button id="buttonC:3" events="click" render="body" release>
+      Model-D:C {{modelD.status ? '1' : '0'}}</button>
+    <button id="buttonDD" events="click" render="body" release>
+      Model-D:D {{modelD.status ? '1' : '0'}}</button>
+    <section id="modelD" composite condition="{{modelD.status}}">
+      Model-D
+    </section>    
+            
+    <!-- ModelX does not exist,
+         but event + render must work regardless of this fact. -->        
+    <button id="buttonA:modelX" events="click" render="body" release>
+      Model-X:A {{(?modelX.status) ? '1' : '0'}}</button>
+    <button id="buttonB:modelX" events="click" render="body" release>
+      Model-X:B {{(?modelX.status) ? '1' : '0'}}</button>
+    <button id="buttonC:4" events="click" render="body" release>
+      Model-X:C {{(?modelX.status) ? '1' : '0'}}</button>
+    <button id="buttonDX" events="click" render="body" release>
+      Model-X:D {{(?modelX.status) ? '1' : '0'}}</button>
+    <section id="modelX" composite condition="{{(?modelX.status)}}">
+      Model-X
+    </section>
+  </body>
+</html>

@@ -4,7 +4,7 @@
 - - -
 
 # API Extensions
-The JavaScript API for Seanox aspect-js has been extended by some general
+The JavaScript API for _composite-js_ has been extended by some general
 functions.
 
 ## Contents Overview
@@ -157,40 +157,21 @@ const earth = {
     }
 }
 
-Object.lookup("earth");
-// returns object window["earth"] / {europe: {germany: {countPopulation() {return 83000000;}}}}
-
 Object.lookup("earth.europe.germany");
-// returns object window["earth.europe.germany"] / {countPopulation() {return 83000000;}}
+// returns object {countPopulation() {return 83000000;}}
 
 Object.lookup("earth.europe.germany.countPopulation");
-// returns function window["earth.europe.germany.countPopulation"] / () => {return 83000000;}
+// returns function () => {return 83000000;}
 
 Object.lookup("foo");
 // returns null
 ```
 
 ### Object.exists
-equivalent to [namespace.exists](#namespaceexists). Determines whether an object
-exists in a namespace. object exists in a namespace.
+Equivalent to [Namespace.exists](#namespaceexists). Determines whether an object
+exists in a namespace.
 
 ```javascript
-const earth = {
-    europe: {
-        germany: {
-            countPopulation() {
-                return 83000000;
-            }
-        }
-    }
-}
-
-Object.exists("earth");
-// returns booelan true
-
-Object.exists("earth.europe.germany");
-// returns booelan true
-
 Object.exists("earth.europe.germany.countPopulation");
 // returns booelan true
 
@@ -199,7 +180,7 @@ Object.exists("foo");
 ```
 
 ### Object.use
-Equivalent to [Namespace.use](#namespaceusing). Creates a namespace to the
+Equivalent to [Namespace.use](#namespaceuse). Creates a namespace to the
 passed string. Without argument, the method returns the global namespace window.
 
 ```javascript
@@ -316,7 +297,7 @@ Originally, the method was introduced as an internal helper to ensure that
 manipulations and extensions to the JavaScript API are compliant and that there
 are no collisions with existing API components. Since the method has proven to
 be generally helpful for developing modules, it has been officially added to the
-Seanox apect-js API.
+Seanox composite-js API.
 
 ```javascript
 window.compliant("example.variable", "...");
@@ -364,27 +345,27 @@ window.location.contextPath
 ```
 
 ## XMLHttpRequest
-XMLHttpRequest was indirectly extended by Composite HTTP events.
+XMLHttpRequest was indirectly extended by Composer HTTP events.
 
 ```javascript
-Composite.EVENT_HTTP_START
-Composite.EVENT_HTTP_PROGRESS
-Composite.EVENT_HTTP_RECEIVE
-Composite.EVENT_HTTP_LOAD
-Composite.EVENT_HTTP_ABORT
-Composite.EVENT_HTTP_TIMEOUT
-Composite.EVENT_HTTP_ERROR
-Composite.EVENT_HTTP_END
+Composer.EVENT_HTTP_START
+Composer.EVENT_HTTP_PROGRESS
+Composer.EVENT_HTTP_RECEIVE
+Composer.EVENT_HTTP_LOAD
+Composer.EVENT_HTTP_ABORT
+Composer.EVENT_HTTP_TIMEOUT
+Composer.EVENT_HTTP_ERROR
+Composer.EVENT_HTTP_END
 ```
 
 These can be used to react centrally and application-wide at HTTP events.
 
 ```javascript
-Composite.listen(Composite.EVENT_HTTP_START, function(event, ...varargs) {
+Composer.listen(Composer.EVENT_HTTP_START, function(event, ...varargs) {
     // show spinner
 });
 
-Composite.listen(Composite.EVENT_HTTP_END, function(event, ...varargs) {
+Composer.listen(Composer.EVENT_HTTP_END, function(event, ...varargs) {
     // hide spinner
 });
 ```

@@ -4,11 +4,10 @@
 - - -
 
 # Markup
-Seanox aspect-js extends the declarative approach of HTML. In addition to the
-expression language, HTML elements get attributes for runtime functions and
-View-Module Binding. The renderer is part of the composite implementation. It
-monitors the DOM from the BODY element with MutationObserver and reacts
-recursively to changes.
+Markup is the declarative layer of _composite-js_. Structure, runtime functions,
+and the binding to the application modules are declared in HTML instead of being
+programmed, based on attributes, the expression language, embedded scripting,
+and options for customization.
 
 ## Contents Overview
 - [Attributes](#attributes)
@@ -32,18 +31,21 @@ recursively to changes.
   - [Tag](#tag)
   - [Selector](#selector)
   - [Interceptor](#interceptor)
-- [Protection](#protection)
+  - [Parameters](#parameters)
+- [Runtime Hardening](#runtime-hardening)
 
 ## Attributes
-In Seanox aspect-js, the declarative approach is implemented with attributes.
-They can be used and combined in all HTML elements starting with the HTML
-element `BODY`. Attribute values can be static or dynamic through the expression
-language. If an attribute contains an expression, the renderer updates the value
-with each render cycle based on the initial expression.
+In _composite-js_, the declarative approach is implemented with attributes. They
+can be used and combined in all HTML elements starting with the HTML element
+`BODY`. Attribute values can be static or dynamic through the expression
+language. If an attribute contains an expression, the
+[composer](architecture.md#composer) updates the value with each render cycle
+based on the initial expression.
 
 ### composite
-Marks an element in the markup as a [Composite](composite.md). Composites are
-essential components that require an identifier (ID / Composite ID).
+Marks an element in the markup as a [composite](composite.md#composite). A
+composite requires an identifier, which together with the attribute forms the
+composite ID.
 
 ```html
 <article id="example" composite>
@@ -51,34 +53,22 @@ essential components that require an identifier (ID / Composite ID).
 </article>
 ```
 
-As a component, composites are composed of various [resources](
-    composite.md#resources) (markup, CSS, JS). They can be outsourced to the
-module directory based on the Composite ID and are loaded at runtime when used.
+The resources of a composite (markup, CSS, JS) can be [outsourced](
+    composite.md#resources) to the module directory based on the composite ID
+and are loaded at runtime when the composite is used.
 
-Composites are also the basis for [View-Module Binding](
-    view-module-binding.md#view-module-binding). It connects HTML elements in
-the markup (view) with corresponding JavaScript objects. The view as
+Composites are also the basis for [composite binding](
+    composite-binding.md#composite-binding). It connects HTML elements in the
+markup (view) with the corresponding application module. The view as
 presentation and user interface for interactions remains decoupled from the
 application module. Application modules provide the data, state and behavior
-that are exposed to the view through View-Module Binding. Binding links views
-and modules bidirectionally based on the Composite IDs, so manual declaration of
-events, interaction or synchronization is not required.
+that are exposed to the view through composite binding. Binding links views and
+application modules bidirectionally based on the composite IDs, so no manual
+wiring between HTML elements and application module is required.
 
-[Routing](routing.md#routing) uses composites as [views](routing.md#view). They
-can be path targets in the [view flow](routing.md#view-flow), which controls the
-visibility of composites. When routing is active, composites can be marked with
-attribute [route](#route) so that routing controls their visibility through
-paths and the permission concept.
-
-```html
-<article id="example" composite route>
-  ...
-</article>
-```
-
-Details on the use of composites / modular components are described in chapter
-[Composites](composite.md) and [View-Module Binding](
-    view-module-binding.md#view-module-binding).
+Details on the use of composites are described in the chapters
+[Composite](composite.md#composite) and [Composite Binding](
+    composite-binding.md#composite-binding).
 
 ### condition
 As a condition, the attribute specifies whether an element remains contained in
@@ -88,7 +78,7 @@ removed from the DOM and can be reinserted later by refreshing the __parent
 element__ if the expression returns `true`.
 
 ```html
-<article condition="{{model.visible}}">
+<article condition="{{example.visible}}">
   ...
 </article>
 ```
@@ -99,18 +89,18 @@ terminated. If the element is added back to the DOM with a later refresh, a new
 timer starts, so it is not continued.
 
 ```html
-<article interval="{{1000}}" condition="{{model.visible}}">
+<article interval="{{1000}}" condition="{{example.visible}}">
   ...
 </article>
 ```
 
 The use of the condition attribute in combination with embedded JavaScript is
-possible as SCRIPT element with the type `composite/javascript` as Composite
-JavaScript, because here the renderer has control over the script execution and
-not the browser.
+possible as SCRIPT element with the type `composite/javascript` as composite
+script, because here the composer has control over the script execution and not
+the browser.
 
 ```html
-<script type="composite/javascript" condition="{{model.visible}}">
+<script type="composite/javascript" condition="{{example.visible}}">
     ...
 </script>
 ```
@@ -120,14 +110,15 @@ Details about using embedded JavaScript are described in chapter [Scripting](
 
 ### events
 Binds one or more [events](https://www.w3.org/TR/DOM-Level-3-Events) to an HTML
-element. This allows for event-driven synchronization of HTML elements with
-corresponding JavaScript objects, validation of synchronized data (see
-[validate](#validate)) and event-driven control and refreshing of other HTML
-elements (see [render](#render)).
+element. This allows for event-driven synchronization of HTML elements with the
+corresponding properties of the application module, validation of synchronized
+data (see [validate](#validate)) and event-driven control and refreshing of
+other HTML elements (see [render](#render)).
 
-As with all attributes, the expression language can be used here. Runtime
-changes have no effect because the attribute value for View-Module Binding is
-processed only initially while the HTML element exists in the DOM.
+As with all attributes, the expression language can be used here. However, the
+value is read only once, when the HTML element is analysed for the first time,
+and is then cached for composite binding. Later changes at runtime have no
+effect.
 
 ```html
 <span id="output1">{{#text1.value}}</span>
@@ -140,7 +131,7 @@ _Input_ or _Change_ at the HTML element _text1_. The input value of _text1_ is
 output synchronously with _output1_.
 
 ```javascript
-const model = {
+const example = {
     validate(element, value) {
         return true;
     },
@@ -149,7 +140,7 @@ const model = {
 ```
 
 ```html
-<form id="model" composite>
+<form id="example" composite>
   <input id="text1" type="text"
       validate events="input change"/>
   <input type="submit" value="submit"
@@ -158,18 +149,19 @@ const model = {
 ```
 
 The example combines the attributes `events` and `validate`. The input value
-from the composite field _text1_ is transferred to the field of the same name in
-the JavaScript object only if the event _Input_ or _Change_ occurs.
+from the composite field _text1_ is transferred to the property of the same name
+in the application module only if the event _Input_ or _Change_ occurs.
 
 ### id
-The ID (identifier) has a central role in Seanox aspect-js. It is the basis for
-[View-Module Binding](view-module-binding.md#view-module-binding) and is used by
-[Routing](routing.md#routing) for [views](routing.md#view) in the [view flow](
+The ID (identifier) has a central role in _composite-js_. It is the basis for
+[composite binding](composite-binding.md#composite-binding) and is used by
+[routing](routing.md#routing) for [views](routing.md#view) in the [view flow](
     routing.md#view-flow) and as a destination for paths.
 
-As with all attributes, the expression language can be used. The attribute is
-only read at the beginning. Due to View-Module Binding, changes to an existing
-element at runtime have no effect while it exists in the DOM.
+As with all attributes, the expression language can be used. However, due to
+composite binding, the value is read only once, when the HTML element is
+analysed for the first time, and is then cached. Later changes at runtime have
+no effect.
 
 ### import
 Loads the content for the HTML element at runtime and inserts it as inner HTML.
@@ -184,7 +176,7 @@ The import attribute can be combined with the condition attribute and will then
 only be executed if the condition is `true`.
 
 ```javascript
-const model = {
+const example = {
     publishForm() {
         const form = document.createElement("form");
         const label = document.createElement("label");
@@ -201,17 +193,17 @@ const model = {
     },
     publishImg() {
         const img = document.createElement("img");
-        img.src = "https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/smile.png";
+        img.src = "https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/smile.png";
         return img;
     }
 };
 ```
 
 ```html
-<article import="{{model.publishImg()}}">
+<article import="{{example.publishImg()}}">
   loading image...
 </article>
-<article import="{{model.publishForm()}}">
+<article import="{{example.publishForm()}}">
   loading form...
 </article>
 ```
@@ -219,11 +211,11 @@ const model = {
 Example of importing a remote resource using the HTTP method GET.
 
 ```html
-<article import="{{'https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/import_c.htmlx'}}">
+<article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx'}}">
   loading resource...
 </article>
 
-<article import="https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/import_c.htmlx">
+<article import="https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx">
   loading resource...
 </article>
 ```
@@ -269,7 +261,7 @@ the same name is derived from the XML locator.
 
 When inserting content from the DataSource, the type of JavaScript blocks is
 automatically changed to `composite/javascript` and only executed by the
-renderer. This results in JavaScript being executed depending on the enclosing
+composite. This results in JavaScript being executed depending on the enclosing
 condition attribute.
 
 ### interval
@@ -277,8 +269,8 @@ Activates an interval-controlled refresh of the HTML element without the need to
 actively trigger the refresh. The interval uses the inner HTML as a template
 from which updated content is generated and inserted with each interval cycle.
 The attribute expects milliseconds as value, which can also be formulated as
-expression, where invalid values cause console output. Processing is concurrent
-or asynchronous but not parallel. Processing will start after the specified time
+expression, where invalid values cause console output. Processing is
+asynchronous but not parallel. Processing will start after the specified time
 when a previously started JavaScript procedure has finished. Therefore, the
 interval should be understood as timely but not exact. The interval starts
 refreshing automatically and ends when:
@@ -303,7 +295,7 @@ makes the interval attribute controllable in combination with the condition
 attribute.
 
 ```html
-<span interval="1000" condition="{{model.isVisible()}}">
+<span interval="1000" condition="{{example.isVisible()}}">
   ...
 </span>
 ```
@@ -320,7 +312,7 @@ counter.
 ```
 
 It is also possible to use the interval attribute in combination with embedded
-JavaScript as a composite JavaScript.
+JavaScript as a composite script.
 
 ```html
 <script type="composite/javascript" interval="1000">
@@ -335,17 +327,17 @@ updated content is generated and inserted as inner HTML with each render cycle.
 The attribute value expects a [variable expression](
     expression.md#variable-expression). It creates a meta-object that allows
 access to the iteration in the template. The variable expression
-`iterate={{tempA:model.list}}` creates the meta-object
+`iterate={{tempA:example.list}}` creates the meta-object
 `tempA = {item, index, data}`.
 
 ```javascript
-const model = {
+const example = {
     months: ["Spring", "Summer", "Autumn", "Winter"]
 };
 ```
 
 ```html
-<select iterate={{months:model.months}}>
+<select iterate={{months:example.months}}>
   <option value="{{months.index}}">
     {{months.item}}
   </option>
@@ -366,9 +358,9 @@ const model = {
 > array.
 
 ```html
-<select iterate={{months:model.months.length}}>
+<select iterate={{months:example.months.length}}>
   <option value="{{months.index}}">
-    {{model.months[months.index]}}
+    {{example.months[months.index]}}
   </option>
 </select>
 ```
@@ -383,21 +375,21 @@ error output in case of an unconfirmed validation. This requires a combination
 with the attributes [validate](#validate) and [events](#events). 
 
 ```html
-<form id="model" composite>
+<form id="example" composite>
   <input id="email" type="text" placeholder="email address"
       pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$"
       validate message="Valid e-mail address required"
-      events="input change" render="#model"/>
+      events="input change" render="#example"/>
   <input type="submit" value="submit" validate events="click"/>
 </form>
 ```
 
 ```html
-<form id="model" composite>
+<form id="example" composite>
   <input id="email" type="text" placeholder="email address"
       pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$"
-      validate message="{{Messages['model.email.validation.message']}}"
-      events="input change" render="#model"/>
+      validate message="{{Messages['example.email.validation.message']}}"
+      events="input change" render="#example"/>
   <input type="submit" value="submit" validate events="click"/>
 </form>
 ```
@@ -405,43 +397,16 @@ with the attributes [validate](#validate) and [events](#events).
 ### output
 Sets for the HTML element the value or result of its expression as inner HTML.
 The behavior is similar to the [import](#import) attribute, except that the
-output is updated with each render cycle. Supported values are text, one or more
-elements as NodeList or Array, as well as absolute or relative URLs to a remote
-resource and also the [DataSource-URL (locator)](datasource.md#locator) for
-transformed content from the [DataSource](datasource.md).
+output is updated with each render cycle. It supports the same values and the
+same combination with the condition attribute.
 
-The output attribute can be combined with the condition attribute and will then
-only be executed if the condition is `true`.
-
-```javascript
-const model = {
-    publishForm() {
-        const form = document.createElement("form");
-        const label = document.createElement("label");
-        label.textContent = "Input";
-        form.appendChild(label);
-        const input = document.createElement("input");
-        input.value = "123";
-        input.type = "text";
-        form.appendChild(input);
-        const submit = document.createElement("input");
-        submit.type = "submit";
-        form.appendChild(submit);
-        return form;
-    },
-    publishImg() {
-        const img = document.createElement("img");
-        img.src = "https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/smile.png";
-        return img;
-    }
-};
-```
+The following examples use the application module from [import](#import).
 
 ```html
-<article output="{{model.publishImg()}}">
+<article output="{{example.publishImg()}}">
   loading image...
 </article>
-<article output="{{model.publishForm()}}">
+<article output="{{example.publishForm()}}">
   loading form...
 </article>
 ```
@@ -449,11 +414,11 @@ const model = {
 Example of outputting a remote resource using the HTTP method GET.
 
 ```html
-<article import="{{'https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/import_c.htmlx'}}">
+<article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx'}}">
   loading resource...
 </article>
 
-<article import="https://raw.githubusercontent.com/seanox/aspect-js/master/test/resources/import_c.htmlx">
+<article import="https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx">
   loading resource...
 </article>
 ```
@@ -476,9 +441,7 @@ for data and transformation are derived from it.
 ```
 
 Example of outputting a DataSource-URL with a specific data URL (locator) and
-transformation URL. As a value, the data URL (locator of the XML file) and the
-transformation URL (locator of the XSLT template) are is specified, separated by
-a blank character.
+transformation URL, as described for [import](#import).
 
 ```html
 <article output="{{'xml://example/data + xslt://example/style'}}">
@@ -494,16 +457,11 @@ a blank character.
 </article>
 ```
 
-If only _xslt_ is specified without a locator, a corresponding XSLT locator with
-the same name is derived from the XML locator.
-
-When inserting content from the DataSource, the type of JavaScript blocks is
-automatically changed to `composite/javascript` and only executed by the
-renderer. This results in JavaScript being only executed depending on the
-enclosing condition attribute.
+The derivation of the XSLT locator and the handling of JavaScript blocks are the
+same as for [import](#import).
 
 ### release
-Inverse indicator that an HTML element was rendered. The renderer removes this
+Inverse indicator that an HTML element was rendered. The composer removes this
 attribute when an HTML element is rendered. This effect can be used for CSS to
 show elements only in rendered state. A corresponding CSS rule is automatically
 added to the HEAD when the page is loaded. 
@@ -514,44 +472,44 @@ added to the HEAD when the page is loaded.
 
 ### render
 The attribute requires the combination with the [events](#events) attribute.
-Together they define which targets are refreshed by the renderer with which
+Together they define which targets are refreshed by the composer with which
 occurring events. The expected value is one or more space-separated CSS or Query
 selectors that define the targets.
 
 ```javascript
-const model = {
+const example = {
     _status1: 0,
     getStatus1() {
-        return ++model._status1;
+        return ++example._status1;
     },
     _status2: 0,
     getStatus2() {
-        return ++model._status2;
+        return ++example._status2;
     },
     _status3: 0,
     getStatus3() {
-        return ++model._status3;
+        return ++example._status3;
     }
 };
 ```
 
 ```html
 Target #1:
-<span id="outputText1">{{model.status1}}</span>
+<span id="outputText1">{{example.status1}}</span>
 Events: Wheel
 <input id="text1" type="text"
     events="wheel"
     render="#outputText1, #outputText2, #outputText3"/>
 
 Target #2:
-<span id="outputText2">{{model.status2}}</span>
+<span id="outputText2">{{example.status2}}</span>
 Events: MouseDown KeyDown
 <input id="text1" type="text"
     events="mousedown keydown"
     render="#outputText2, #outputText3"/>
 
 Target #3:
-<span id="outputText3">{{model.status3}}</span>
+<span id="outputText3">{{example.status3}}</span>
 Events: MouseUp KeyUp
 <input id="text1" type="text"
     events="mouseup keyup"
@@ -567,14 +525,22 @@ __Alternatively, [reactive rendering](reactive.md) can be used, where changes in
 the data objects trigger a partial update of the view.__
 
 ### route
-The route attribute marks a composite as a path-addressable destination and
-includes it in path-based control and the internal permission concept of
-routing. The attribute can be used in the BODY tag and otherwise only in
-combination with the attribute composite.
+The route attribute marks a composite as a path-addressable destination in the
+[view flow](routing.md#view-flow) and includes it in the path-based control of
+visibility and in the internal permission concept of [routing](
+    routing.md#routing), which uses such composites as [views](routing.md#view).
+The attribute can be used in the BODY tag and otherwise only in combination with
+the attribute composite.
+
+```html
+<article id="example" composite route>
+  ...
+</article>
+```
 
 > [!NOTE]
-> The attribute route is not a core attribute of the renderer. It is added as a
-> custom attribute by the [Routing](routing.md#view) and is listed here for
+> The attribute route is not a core attribute of the composite. It is added as a
+> custom attribute by the [routing](routing.md#view) and is listed here for
 > completeness.
 
 [Learn more](routing.md#view)
@@ -582,12 +548,12 @@ combination with the attribute composite.
 ### validate
 The attribute `validate` requires the attribute `events`. Together they define
 and control synchronization between the markup of a composite and the
-corresponding JavaScript object. A property with the same name must exist as the
-synchronization target.
+corresponding application module. A property with the same name must exist in
+the application module as the synchronization target.
 
 Validation works in two steps and starts with standard HTML5 validation. If this
 does not detect deviations from the expected result or no HTML5 validation is
-specified, the JavaScript object validation is used. This requires a
+specified, the validation of the application module is used. This requires a
 corresponding validate method `boolean validate(element, value)` and an element
 embedded in a composite.
 
@@ -601,35 +567,31 @@ used. If possible, the value is synchronized.
 #### not true and not undefined/void
 The validation failed and an error is shown. The return value indicates that the
 default behavior (action) should not be executed by the browser and is thus
-blocked. With the strict default behaviour of Seanox aspect-js, the invalid
-value is not synchronized with the model.
+blocked.
 
 #### text
 The validation has failed with an error message. If the error message is empty,
-the message from the message attribute is used as an alternative. With the
-strict default behaviour of Seanox aspect-js, the invalid value is not
-synchronized with the model.
+the message from the message attribute is used as an alternative.
 
 #### undefined/void
 Validation failed and an error is shown. Without a return value, the default
 behavior (action) is executed by the browser. This behavior is important for
 validating input fields, for example, so that the input reaches the user
-interface. With the strict default behaviour of Seanox aspect-js, the invalid
-value is not synchronized with the model.
+interface.
 
 __Validation works strictly by default. This means that the validation must
 explicitly be `true` and only then is the input data of the HTML elements
-synchronized with the model. This protects against invalid data in the models
-which may then be reflected in the view. If attribute `validate` is declared as
-`optional`, this behaviour can be specifically deactivated and the input data is
-then always synchronized with the model. The effects of validation are then only
-optional.__
+synchronized with the application module. This protects against invalid data in
+the application module which may then be reflected in the view. If attribute
+`validate` is declared as `optional`, this behaviour can be specifically
+deactivated and the input data is then always synchronized with the application
+module. The effects of validation are then only optional.__
 
 ```html
-<form id="model" composite>
+<form id="example" composite>
   <input id="text1" type="text" placeholder="e-mail address"
-      validate="optional" events="input change" render="#model"/>
-  model.text1: {{model.text1}}
+      validate="optional" events="input change" render="#example"/>
+  example.text1: {{example.text1}}
   <input type="submit" value="submit" validate events="click"/>
 </form>
 ```
@@ -661,7 +623,7 @@ input[type='text'][fault]:not([fault='']) {
 ```
 
 ```javascript
-const model = {
+const example = {
     validate(element, value) {
         const PATTERN_EMAIL_SIMPLE = /^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$/;
         const test = PATTERN_EMAIL_SIMPLE.test(value);
@@ -672,11 +634,11 @@ const model = {
 ```
 
 ```html
-<form id="model" composite>
+<form id="example" composite>
   <input id="text1" type="text" placeholder="e-mail address"
       validate message="@fault:Wrong e-mail address"
-      events="input change" render="#model"/>
-  model.text1: {{model.text1}}
+      events="input change" render="#example"/>
+  example.text1: {{example.text1}}
   <input type="submit" value="submit" validate events="click"/>
 </form>
 ```
@@ -685,17 +647,18 @@ In this example, the input field expects an e-mail address. The value is checked
 continuously during the input and in case of an invalid value an error message
 is written into the attribute `fault`, or in case of a valid value the content
 is deleted from the attribute `fault`. Below the input field is the control
-output of the corresponding field in the JavaScript object (model). This field
-is only synchronized if the validate method return the value `true`.
+output of the corresponding property in the application module. This property is
+only synchronized if the validate method returns the value `true`.
 
 ## @-Attributes
-Expressions are resolved only after the page is loaded by the renderer. For some
-HTML elements, this can be annoying if the attributes are already interpreted by
-the browser. For example, the src attribute for resources such as the img tag.
-For these cases @-attributes can be used. These work like templates for
-attributes. The renderer will resolve their value and then add the attributes of
-the same name to the element. After that, they behave like all other attributes,
-including being updated by the renderer if the attributes contain expressions.
+Expressions are resolved by the composer only during rendering, after the page
+has been loaded and initially displayed by the browser. This is a problem for
+HTML elements whose attributes the browser already interprets before rendering
+-- for example the src attribute of the img tag. For these cases @-attributes
+can be used. These work like templates for attributes. The composer will resolve
+their value and then add the attributes of the same name to the element. After
+that, they behave like all other attributes, including being updated by the
+composer during rendering if the attributes contain expressions.
 
 ```html
 <img @src="{{...}}"/>
@@ -710,7 +673,7 @@ HTML code, is not possible and is only supported with the attributes `output`
 and `import`.
 
 ```html
-<article title="{{model.title}}">
+<article title="{{example.title}}">
   {{'Hello World!'}}
   ...
 </article>
@@ -720,13 +683,10 @@ Details about syntax and usage are described in chapter [Expression Language](
     expression.md).
 
 ## Scripting
-Embedded scripting has specific runtime behavior. Standard scripts are executed
-automatically by the browser and independently of rendering. Markup for
-rendering therefore supports the additional script type `composite/javascript`.
-It uses normal JavaScript, but the browser does not recognize it as
-`text/javascript` and does not execute it directly. The renderer recognizes the
-JavaScript code and executes it in every relevant render cycle. This allows
-SCRIPT execution to be combined with the `condition` attribute.
+Markup for rendering supports the additional script type `composite/javascript`.
+The browser does not recognize it as `text/javascript` and does not execute it
+directly, so the composer controls the execution and can combine it with
+declarative attributes such as `condition` and `interval`.
 
 ```html
 <script type="composite/javascript">
@@ -734,20 +694,21 @@ SCRIPT execution to be combined with the `condition` attribute.
 </script>
 ```
 
-Details about using composite JavaScript including modules are described in
-chapter [Scripting](scripting.md).
+Details about the runtime behavior and about composite script including modules
+are described in chapter [Scripting](scripting.md#scripting).
 
 ## Customizing
 
 ### Tag
-Custom HTML elements (tags) take over the complete rendering on their own
-responsibility. The return value determines whether the standard functions of
-the renderer are used or not. Only the return value `false` (not void, not
-empty) terminates the rendering for a custom HTML elements without using the
-standard functions of the renderer.
+Custom HTML elements (tags) can take over the complete rendering on their own
+responsibility. They are implemented as a callback that is executed before the
+standard rendering, and its return value decides who remains responsible for the
+element: only the return value `false` (not void, not empty) ends the rendering,
+so that the callback alone is responsible. With any other return value, the
+composer continues with its standard functions.
 
 ```javascript
-Composite.customize("foo", function(element) {
+Composer.customize("foo", function(element) {
     ...
 });
 ```
@@ -764,18 +725,20 @@ selector to recognize elements. This selector must address the element from the
 parent element. Different selectors with different functions can affect one
 element.
 
-Selectors are iterated in order of registration and then their callback methods
-are executed. The return value of the callback method determines whether the
-iteration is terminated or not. Only the return value `false` (not void, not
-empty) terminates the iteration over other selectors and the rendering for the
-selector is terminated without using the standard functions.
+Selectors are iterated in order of registration and their callback methods are
+executed before the standard rendering. As with custom tags, the return value
+decides who remains responsible for the element: only the return value `false`
+(not void, not empty) ends the iteration over the remaining selectors and the
+rendering, so that the callback alone is responsible. With any other return
+value, the iteration continues and the composer finally applies its standard
+functions.
 
 ```javascript
-Composite.customize("a:not([href])", function(element) {
+Composer.customize("a:not([href])", function(element) {
     ...
 });
 
-Composite.customize("a.foo", function(element) {
+Composer.customize("a.foo", function(element) {
     ...
 });
 ```
@@ -788,32 +751,54 @@ Composite.customize("a.foo", function(element) {
 
 ### Interceptor
 Interceptors customize rendering by manipulating elements before rendering. They
-can change attributes and/or markup before the renderer processes them. An
+can change attributes and/or markup before the composer processes them. An
 interceptor has no effect on the rendering implementation.
 
 ```javascript
-Composite.customize(function(element) {
+Composer.customize(function(element) {
     ...
 });
 ```
 
-## Protection
-Seanox aspect-js provides markup protection that makes runtime manipulation of
-the markup more difficult. On the one hand, hidden markup with a condition is
-physically removed from the DOM and on the other hand, the renderer observes
-manipulations of attributes at runtime. This observation is based on a filter
-with static attributes. Static attributes are read when an element is created in
-the DOM and restored when manipulated (deleted/changed).
-
-To configure static attributes, use the method `Composite.customize(...)` and
-using the parameter `@ATTRIBUTES-STATICS`. The configuration can be done several
-times. The individual static attributes are then merged. All @ parameters are
-case insensitive.
+### Parameters
+`Composer.customize(...)` also accepts configuration parameters instead of a
+tag or a selector. Parameters begin with the character `@` and are case
+insensitive. The configuration can be done several times, the values are then
+merged.
 
 ```javascript
-Composite.customize("@ATTRIBUTES-STATICS", "action name src type");
-Composite.customize("@Attributes-Statics", "required");
-Composite.customize("@attributes-statics", "method action");
+Composer.customize("@ATTRIBUTES-STATICS", "action name src type");
+```
+
+The following parameters are supported:
+
+| Parameter             | Function                                       |
+|-----------------------|------------------------------------------------|
+| `@ATTRIBUTES-STATICS` | List of static attributes, see [Runtime Hardening](#runtime-hardening) |
+
+## Runtime Hardening
+Seanox composite-js hardens the markup against manipulation at runtime. On the
+one hand, hidden markup with a condition is physically removed from the DOM and
+on the other hand, the composer observes manipulations of attributes at runtime.
+This observation is based on a filter with static attributes. Static attributes
+are read when an element is created in the DOM and restored when manipulated
+(deleted/changed).
+
+> [!NOTE]
+> Runtime hardening is not a security feature. Manipulations are reverted
+> afterwards and only for composite-internal and static attributes. It does not
+> protect against manipulation with full access to the runtime.
+
+Static attributes are configured with the
+[parameter](#parameters) `@ATTRIBUTES-STATICS`. The configuration can be done
+several times, the values are then merged, but they cannot be removed. If static
+attributes are declared later at runtime, their current values must be captured
+for all elements with a complete scan of the DOM.
+
+```javascript
+Composer.customize("@ATTRIBUTES-STATICS", "action name src type");
+Composer.customize("@Attributes-Statics", "required");
+Composer.customize("@attributes-statics", "method action");
 ...
 ```
 

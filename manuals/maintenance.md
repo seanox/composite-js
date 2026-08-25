@@ -2,11 +2,12 @@
 &nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#development)
 - - -
 
-# Development
+# Maintenance
 
 ## Contents Overview
+- [Automation and Build](#automation-and-build)
 - [Server](#server)
-- [Build](#build)
+- [Playground](#playground)
 - [Test](#test)
   - [Firewall](#firewall)
   - [Browsers for Testing](#browsers-for-testing)
@@ -15,7 +16,23 @@
   - [GitHub](#github)
   - [npmjs.com](#npmjscom)
   - [cdn.jsdelivr.net](#cdnjsdelivrnet)
-- [Playground](#playground)
+
+## Automation and Build
+For automation and build processes, the project uses [Apache Ant](
+    https://ant.apache.org/) as its automation tool. The build script
+`build.xml` is located in `./development` and is designed to be executed from
+the project root directory.
+
+```bash
+ant -f ./development/build.xml
+```
+
+The script can also be executed from the `./development` directory by
+referencing the script directly:
+
+```bash
+ant -f build.xml
+```
 
 ## Server
 The project contains a completely preconfigured web server, which can be started
@@ -24,37 +41,22 @@ the included Ant script.
 
 ```
 ant -f ./development/build.xml start
-```
-```
 ant -f ./development/build.xml stop
 ```
 
 The following important addresses are configured:
 
-| Adresse                          | Usage                              |
-|----------------------------------|------------------------------------|
-| http://127.0.0.1:8000/           | Test environment                   |
-| http://127.0.0.1:8000/test       | Test environment with context path |
-| http://127.0.0.1:8000/playground | Playground                         |
-| http://127.0.0.1:8000/tutorials  | Tutorials                          |
+| Adresse                          | Usage                           |
+|----------------------------------|---------------------------------|
+| http://127.0.0.1:8000/playground | Playground                      |
+| http://127.0.0.1:8000/           | Test environment                |
+| http://127.0.0.1:8000/benchmarks | Test environment for benchmarks |
+| http://127.0.0.1:8000/tutorials  | Tutorials                       |
 
 Logging is configured to use the command line for output.
 
 The web server is configured via `./server/devwex.ini`. Changes take effect
 immediately and the web server restarts automatically.
-
-## Build
-The release is created by Ant script directly from the root directory of the
-project.
-
-```
-ant -f ./development/build.xml compile
-ant -f ./development/build.xml compile-max
-```
-
-## Test
-Before a release, all tests in all relevant browser engines must run
-successfully.
 
 ### Firewall
 - Windows Defender Firewall (add a rule)
@@ -81,6 +83,32 @@ For more details see here:
 netsh advfirewall firewall delete rule -?
 ```
 
+## Playground
+Playground is used for quick testing and bug analysis with the current sources,
+even without creating a build, because the components are used individually as a
+link.
+
+http://127.0.0.1:8000/playground
+
+To use it, the [server](#server) must be started.
+
+## Test
+Before a release, all tests in all relevant browser engines must run
+successfully.
+
+The test environment can be prepared in two variants:
+
+```bash
+ant -f ./development/build.xml compile
+ant -f ./development/build.xml compile-max
+```
+
+- __compile__ prepares the environment for testing with the standard build
+- __compile-max__ prepares the environment for testing with an unminified build
+  including comments
+
+Both tasks can be combined with the task _start_.
+
 ### Browsers for Testing
 | Engine | Download                                                            |
 | ------ |---------------------------------------------------------------------| 
@@ -92,17 +120,17 @@ netsh advfirewall firewall delete rule -?
 Overview of engines  
 https://en.wikipedia.org/wiki/Comparison_of_browser_engines
 
+For testing, the latest stable releases of the relevant browser engines
+available at the time of the release must be used.
+
 ### Procedure
 - Create a release and start the server
   `ant -f ./development/build.xml compile start`
 - URLs to be tested
-  http://127.0.0.1:8000  
-  http://127.0.0.1:8000/index.html    
-  http://127.0.0.1:8000/test  
-  http://127.0.0.1:8000/test/index.html  
-  http://127.0.0.1:8000/tutorials
-- Broweser to be tested  
-  MS Edge, Google Chrome, Firefox, Palemoon, Safari iOS, Safari MacOS
+  http://127.0.0.1:8000/  
+  http://127.0.0.1:8000/benchmarks
+- Broweser to be tested, based on prevalence  
+  MS Edge, Google Chrome, Firefox, Pale Moon, Safari, Safari iOS
 
 ## Release
 
@@ -125,15 +153,6 @@ https://en.wikipedia.org/wiki/Comparison_of_browser_engines
 
 ### cdn.jsdelivr.net
 Nothing needs to be changed here, the content is synchronized with npmjs.com.
-
-## Playground
-Playground is used for quick testing and bug analysis with the current sources,
-even without creating a build, because the components are used individually as a
-link.
-
-http://127.0.0.1:8000/playground
-
-To use it, the [server](#server) must be started.
 
 
 

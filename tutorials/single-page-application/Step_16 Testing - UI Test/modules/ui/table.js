@@ -1,7 +1,7 @@
 #import ui/io
 
 /**
- * Abstract Table for UI components.
+ * Abstract Table for composites.
  * The namespace ui.Table is created at the end with the macro #export.
  */
 const Table = class {
@@ -84,7 +84,7 @@ const Table = class {
         })(this);
     }
 
-    /** Pseudo abstract method for docking the component. */
+    /** Pseudo abstract method for docking the composite. */
     dock() {
         return;
     }

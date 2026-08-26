@@ -2,7 +2,7 @@
 #import ui/table
 
 /**
- * Abstract Table base on XML for UI components.
+ * Abstract Table based on XML for composites.
  * The namespace ui.xml.Table is created at the end with the macro #export.
  */
 const Table = class extends ui.Table {
@@ -16,7 +16,7 @@ const Table = class extends ui.Table {
     }
     
     /**
-     * Preparing the table component when docking in the DOM.
+     * Preparing the table when the composite is docked in the DOM.
      * The data is loaded initially. A spinner is displayed when loading.
      * The data is then rendered by XML transformation and inserted into the DOM.
      * The events for the sort function are registered with the insert.

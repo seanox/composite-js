@@ -10,7 +10,7 @@
   JavaScript and the markup functions.
   Particularly the use of temporary variables is interesting.
 
-  Normally, the logic is moved to the JavaScript model and can use additional
+  Normally, the logic is moved to the application module and can use additional
   data access layers there. 
 
 -->
@@ -18,14 +18,14 @@
 <div class="w3-row-padding w3-grayscale" iterate="{{team:team}}">
   {{person:Object.parse(team.item)}}
   <div class="w3-col l3 m6 w3-margin-bottom">
-    <!-- Link with path to the person-face -->
+    <!-- Link with path to the person view -->
     <a href="#person">
       <!--
         Resources with expressions in the src attribute are loaded immediately
         by the browser, which usually leads to an error output in the browser
         console by the server status 404. It is similar with read-only
         attributes in HTML elements (readonly, checked, disabled, ...). In these
-        cases @-attributes can be used. These are interpreted by the renderer as
+        cases @-attributes can be used. These are interpreted by the composer as
         attribute templates, from which the final attribute is created only
         during rendering. This prevents the browser from misinterpreting the
         expression in the attributes.

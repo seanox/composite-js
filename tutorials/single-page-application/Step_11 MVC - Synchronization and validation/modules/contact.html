@@ -4,8 +4,8 @@
   <form autocomplete="off">
     <!--
       
-        A temporary output of the values in the JavaScript model was added below
-        the input fields. During the input you can see how the values are
+        A temporary output of the values in the application module was added
+        below the input fields. During the input you can see how the values are
         synchronized.
 
         The synchronization is based on the events defined with the event
@@ -16,20 +16,21 @@
         elements addressed with the CSS selectors are then updated.
 
         More convenient is the use of reactive rendering. To do this, a reactive
-        proxy is created to the models in the JavaScript code by calling the
-        method reactive, which all objects have. This proxy then knows the
+        proxy is created to the data objects in the JavaScript code by calling
+        the method reactive, which all objects have. This proxy then knows the
         consumers of the data in the view and will automatically update them in
-        case of changes in the model.
+        case of changes in the data object.
 
         If validation has been declared, it is always applied. The default
         behavior can be declared by combining it with the strict resoluter
-        attribute. With the default behavior, the data between the view and the
-        model is always synchronized and only the failed validation can be used
-        in the view and the business logic. In the strict behavior, data is
-        transferred from the view to the model only if the validation is
-        successful, which brings some peculiarities, for example, if mandatory
-        fields are deleted character by character by the back tab. Then the last
-        character will remain in model as valid input.
+        attribute. With the default behavior, the data between view and
+        application module is always synchronized and only the failed validation
+        can be used in the view and the business logic. In the strict behavior,
+        data is transferred from the view to the application module only if the
+        validation is successful, which brings some peculiarities, for example,
+        if mandatory fields are deleted character by character by the back tab.
+        Then the last character will remain in the application module as valid
+        input.
 
     -->
 
@@ -68,7 +69,7 @@
     Value of variable contact.subject: {{contact.subject}}
     <!--
         Validation:
-        - via model validate methode
+        - via the validate method of the application module
         - default browser error output
         - error message as mouse-over title
         - error message as notification

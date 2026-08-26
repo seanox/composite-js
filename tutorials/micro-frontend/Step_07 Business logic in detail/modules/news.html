@@ -15,7 +15,7 @@
       <!--
         disabled is one of numerous attributes whose presence already has an
         effect. The expression language cannot remove attributes, but the
-        renderer can if the value is undefined.
+        composer's renderer can if the value is undefined.
       -->
       <option value="{{markets.item.id}}" disabled="{{markets.item.news ? undefined : true}}">
         {{markets.item.text}}</option>
@@ -52,8 +52,8 @@
 
 <!--
   A good approach is to move the business logic into modules for clean markup.
-  In the markup, a lot is then queried and fetched from the model, but nothing
-  is decided or assembled.
+  In the markup, a lot is then queried and fetched from the application module,
+  but nothing is decided or assembled.
 -->
 <h2 output="{{messages.news.list.empty}}"
     condition="{{news.list.exists and news.list.empty}}"></h2>
@@ -69,7 +69,7 @@
     <tr>
       <th>
         <!--
-          Selection is a central part of the news component and accepts, among
+          Selection is a central part of the news composite and accepts, among
           other things, all clicks to select records, which is used by toggle
           and also the records. Thus in the view all these elements use the same
           element ID, which points to news.selection. In order for the labels to
@@ -103,7 +103,7 @@
         <!--
           In HTML, there are boolean attributes whose pure presences have an
           effect (autofocus, disabled, hidden, multiple, readonly, required, ...).
-          To control these attributes with the expression language, the renderer
+          To control these attributes with the expression language, the composer
           uses the return value undefined of an expression to remove these
           attributes.
         -->
@@ -124,12 +124,12 @@
         <p iterate="{{image:record.item.images}}">
           <!--
             The src attribute at the img tag will be interpreted by the browser
-            before the renderer, which will temporarily lead to an error output
-            because of the expression used, but this will not disturb the
-            rendering. This behavior can be prevented with the @-attribute,
-            because @-attributes are used as attribute templates by the renderer,
-            which creates corresponding attributes and thus the expression is
-            not misinterpreted by the browser.
+            before the composer's renderer, which will temporarily lead to an
+            error output because of the expression used, but this will not
+            disturb the rendering. This behavior can be prevented with the
+            @-attribute, because @-attributes are used as attribute templates by
+            the composer's renderer, which creates corresponding attributes and
+            thus the expression is not misinterpreted by the browser.
           -->
           <img @src="{{image.item}}"/>
         </p>
@@ -167,10 +167,10 @@
             <!--
               For validation, the default implementation in composite-js is used.
               This is primarily focused on the view and does not set any error
-              information in the model. With strict separation of view and
-              model/business logic, model/business logic will not access the
-              view. But the view may and so here we set the error information in
-              the model.
+              information in the application module. With strict separation of
+              view and application module/business logic, the business logic
+              will not access the view. But the view may and so here we set the
+              error information in the application module.
             -->
             {{(()=>{news.function.recipients.error=#[recipients@news:function].validationMessage;})()}}
             <!--
@@ -180,11 +180,13 @@
             -->
           </label>
           <!--
-            The validation can be implemented in the model itself. However, the
-            default validation can also be used, but it is not reactive and so
-            the rendering must be declared from the label to the error output.
+            The validation can be implemented in the application module itself.
+            However, the default validation can also be used, but it is not
+            reactive and so the rendering must be declared from the label to the
+            error output.
 
-            Another effect: the value in the model is not set until it is valid.
+            Another effect: the value in the application module is not set until
+            it is valid.
 
             Since the value belongs to new.function, new.function.recipients is
             to be used explicitly as the target. For this purpose, the target is
@@ -204,7 +206,8 @@
       which the selection status is used inverted. If FUNCTION_PREVIEW_EMAIL is
       used, at least one valid e-mail must be entered as recipient.
 
-      Because of the complex conditions a function from the model is used.
+      Because of the complex conditions a function from the application module
+      is used.
     -->
     <button type="button" id="apply@news:function" disabled="{{news.function.apply.disabled}}" events="click">
       <span>&#10095;</span>
@@ -214,10 +217,10 @@
 </form>
 
 <!--
-  The subcomponents search, list, function and recipients could also have been
+  The nested objects search, list, function and recipients could also have been
   enclosed by corresponding HTML elements, which then reflect a clean namespace
-  on object level in the model -- but this way you can show more logic as an
-  example :-)
+  on object level in the application module -- but this way you can show more
+  logic as an example :-)
 -->
 <h2 output="{{messages.news.recipients.empty}}"
     condition="{{news.recipients.exists and news.recipients.empty}}"></h2>

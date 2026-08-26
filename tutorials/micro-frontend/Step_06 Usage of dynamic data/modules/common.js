@@ -8,9 +8,9 @@ const error = Reactive({
     }
 });
 
-// Modules use their own scope. Variables and constants that are created and
-// used here are not accessible outside and must be exported for use in the
-// global scope, for which the #export macro is used.
+// Composite scripts use their own isolated module scope. Variables and
+// constants that are created and used here are not accessible outside and must
+// be exported for use in the global scope, using the #export macro.
 #export error;
 
 Composer.listen(Composer.EVENT_ERROR, function(event, error) {

@@ -46,7 +46,7 @@
               The a-tag and the functional path (###) are only used to make the headers accessible via tab.
               It can also be removed.
               The assignment of Java-Script is not necessary.
-              The events are taken over by the abstract table component. 
+              The events are taken over by the abstract table class.
             
             -->
             <a tabindex="0" id="id" class="sortable sortable-default">

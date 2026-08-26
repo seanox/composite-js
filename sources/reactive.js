@@ -17,30 +17,24 @@
  *
  *     DESCRIPTION
  *     ----
- * A reactivity system or here called reactivity rendering is a mechanism which
- * automatically keeps in sync a data source (model) with a data representation
- * (view) layer. Every time the model changes, the view is partially
- * re-rendered to reflect the changes.
+ * Reactivity rendering automatically keeps a data source (model) in sync with
+ * its representation (view). Changes to the model trigger a partial re-render
+ * of the consumers in the view.
  *
- * The mechanism is based on notifications that arise from setting and getting
- * from the model as a data source. Which is supported by the proxy object in
- * JavaScript and its events can then be used to determine which elements/nodes
- * in the DOM consume what data from the model and need to be updated when
- * changes are made.
+ * The mechanism is based on notifications from getting and setting on the
+ * model, supported by the JavaScript proxy object. The resulting events
+ * determine which elements/nodes in the DOM consume which data and must be
+ * updated on changes.
  *
- * Reactivity rendering is implemented as an optional module and uses the
- * available API.
+ * Reactive is an optional module and uses the available API. It works
+ * permanently recursively on all levels of a model and also on objects added
+ * later as values, even if those do not explicitly use Reactive.
  *
- * Reactive works permanently recursively on all objects, in all levels of a
- * model and also on the objects that are added later as values, even if these
- * objects do not explicitly use the Reactive.
- *
- * Object and model are decoupled by Reactive. The implementation uses free
- * (unbound) proxies for this purpose. These proxies reference an object but are
- * not bound to an object level in the object tree and they synchronize the data
- * bidirectionally. Managed these proxies are managed with a weak map where the
- * object is the key and the garbage collection can dispose of this objects with
- * associated proxies when not in use.
+ * Object and model are decoupled by free (unbound) proxies: they reference an
+ * object but are not bound to a level in the object tree and synchronize the
+ * data bidirectionally. They are managed in a weak map with the object as key,
+ * so garbage collection can dispose of objects and proxies when not in use.
+ *     see: https://seanox.github.io/composite-js/manuals/reactive.html
  */
 (() => {
 

@@ -1,5 +1,5 @@
 /**
- * Text functions for UI components.
+ * Text functions for composites.
  * The namespace ui.text is created at the end with the macro #export.
  */
 const text = {

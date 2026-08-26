@@ -4,6 +4,8 @@ BF: Composite: Correction of the registration of the HTTP events
     registered more than once and the events Composite.EVENT_HTTP_* were fired
     more than once.
 BF: Documentation: Update of content
+BF: DataSource: Correction when fetch text nodes
+    Incorrect return values in XPath queries that return text nodes.
 BF: Build: Optimizing npm access
 BF: Build: Correction of the missing jsdelivr default
 CR: Test: Expansion of benchmarks/tests

@@ -1,5 +1,5 @@
 /**
- * Seanox aspect-js, application runtime for single-page applications
+ * Seanox composite-js, application runtime for single-page applications
  * Copyright (C) 2025 Seanox Software Solutions
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
@@ -337,7 +337,7 @@
                         return attribute;
                     case Node.TEXT_NODE:
                         const text = xml.createElement("text");
-                        text.textContent = text.textContent;
+                        text.textContent = node.textContent;
                         return text;
                     default:
                         return node;

@@ -34,7 +34,8 @@
  * object but are not bound to a level in the object tree and synchronize the
  * data bidirectionally. They are managed in a weak map with the object as key,
  * so garbage collection can dispose of objects and proxies when not in use.
- *     see: https://seanox.github.io/composite-js/manuals/reactive.html
+ *
+ * see also: https://seanox.github.io/composite-js/manuals/reactive.html
  */
 (() => {
 

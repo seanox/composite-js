@@ -18,64 +18,13 @@
  *     DESCRIPTION
  *     ----
  * (Resource)Messages is a static DataSource extension for internationalization
- * and localization. The implementation is based on a set of key-value or
- * label-value data which is stored in the locales.xml of the DataSource.
- * 
- *     + data
- *       + de
- *       + en
- *       - locales.xml
- *     + modules
- *     + resources
- *     - index.html
- * 
- * The elements for the supported languages are organized in locales in this
- * file. Locales is a set of supported country codes. In each country code, the
- * key values are recorded as label entries.  
- *   
- *     <?xml version="1.0"?>
- *     <locales>
- *       <de>
- *         <label key="contact.title" value="Kontakt"/>
- *         <label key="contact.development.title">Entwicklung</label>
- *         ...
- *       </de>
- *       <en default="true">
- *         <label key="contact.title" value="Contact"/>
- *         <label key="contact.development.title">Development</label>
- *         ...
- *       </en>
- *     </locales>
- * 
- * The language is selected automatically on the basis of the language setting
- * of the browser. If the language set there is not supported, the language
- * declared as 'default' is used.
+ * and localization, based on key-value/label-value data in the locales.xml of
+ * the DataSource. After loading, the labels are available as associative array
+ * Messages and as object tree messages (the dot in the keys is the indicator of
+ * the levels in the tree). Messages is always available; messages exists when
+ * labels are loaded.
  *
- * If the locales contain a key more than once, the first one is used. Messages
- * principally cannot be overwritten. What should be noted in the following
- * description also for the modules.
- *
- * After loading the application, Messages are available as an associative
- * array and can be used directly in JavaScript and Markup via Expression
- * Language.
- * 
- *     Messages["contact.title"];
- *     
- *     <h1 output="{{Messages['contact.title']}}"/>
- *
- * In addition, the object message is also provided. Unlike Messages, message is
- * an object tree analogous to the keys from Messages. The dot in the keys is
- * the indicator of the levels in the tree.
- *
- *     messages.contact.title;
- *
- *     <h1 output="{{messages.contact.title}}"/>
- *
- * Messages is always available; messages exists when labels are loaded.
- *
- * Extension for modules: These can also provide locales/messages in the module
- * directory, which are loaded in addition to the locales/messages from the data
- * directory -- even at runtime. Again, existing keys cannot be overwritten.
+ * see also: https://seanox.github.io/composite-js/manuals/message.html
  */
 (() => {
 

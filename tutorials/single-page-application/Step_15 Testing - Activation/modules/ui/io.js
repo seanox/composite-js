@@ -1,5 +1,5 @@
 /**
- * I/O interfaces and functions for UI components.
+ * I/O interfaces and functions for composites.
  * The namespace ui.io is created at the end with the macro #export.
  */
 const io = {

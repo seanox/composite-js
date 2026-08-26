@@ -86,7 +86,13 @@
         replace="\1${changes}${line.separator}${line.separator}\2"/>
     <tstamp>
       <format property="now.year" pattern="yyyy"/>
-    </tstamp>    
+    </tstamp>
+    <replaceregexp match="(\(C\)\s)\d{4}" flags="g" byline="false"
+        replace="\1${release.year}">
+      <fileset dir="${workspace.sources}">
+        <include name="**/*.js"/>
+      </fileset>
+    </replaceregexp>
     <replaceregexp file="${workspace}/README.md"
         match="(?si)(?&lt;=\(C\)\s)\d{4}\b" flags="g" byline="true"
         replace="${now.year}"/>

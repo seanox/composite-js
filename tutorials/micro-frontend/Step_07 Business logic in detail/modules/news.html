@@ -15,7 +15,7 @@
       <!--
         disabled is one of numerous attributes whose presence already has an
         effect. The expression language cannot remove attributes, but the
-        composer's renderer can if the value is undefined.
+        composer can if the value is undefined.
       -->
       <option value="{{markets.item.id}}" disabled="{{markets.item.news ? undefined : true}}">
         {{markets.item.text}}</option>
@@ -124,12 +124,12 @@
         <p iterate="{{image:record.item.images}}">
           <!--
             The src attribute at the img tag will be interpreted by the browser
-            before the composer's renderer, which will temporarily lead to an
-            error output because of the expression used, but this will not
-            disturb the rendering. This behavior can be prevented with the
-            @-attribute, because @-attributes are used as attribute templates by
-            the composer's renderer, which creates corresponding attributes and
-            thus the expression is not misinterpreted by the browser.
+            before the composer, which will temporarily lead to an error output
+            because of the expression used, but this will not disturb the
+            rendering. This behavior can be prevented with the @-attribute,
+            because @-attributes are used as attribute templates by the
+            composer, which creates corresponding attributes and thus the
+            expression is not misinterpreted by the browser.
           -->
           <img @src="{{image.item}}"/>
         </p>

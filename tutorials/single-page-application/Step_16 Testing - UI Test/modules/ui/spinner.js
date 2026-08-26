@@ -1,5 +1,5 @@
 /**
- * Spinner functions for UI components.
+ * Spinner functions for composites.
  * The namespace ui.spinner is created at the end with the macro #export.
  */
 const spinner = {
@@ -15,7 +15,7 @@ const spinner = {
 }
 
 // The spinner is registered for the change from the URL hash.
-//     see also https://github.com/seanox/composite-js/blob/master/manual/events.md#events
+//     see also https://seanox.github.io/aspect-js/manuals/events.html#events
 // As modules are only loaded once, we do not need to check anything else.
 
 // Due to the reflow and repaint of the browser, a very early event such as

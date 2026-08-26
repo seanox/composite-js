@@ -1,11 +1,11 @@
-// Modules (Composite-JavaScript) use their own scope. Variables and constants
-// created and used here are not accessible outside and must be exported for use
-// in the global scope, for which the macro #export is used.
+// Composite scripts are executed in an isolated module scope. Variables and
+// constants created and used here are not accessible outside and must be
+// exported for use in the global scope, for which the macro #export is used.
 //
-// The model contact is used reactively. Thus, elements consuming in the view
-// are automatically updated with changes to the values of the contact model and
-// the deliberate call from the renderer, e.g. with the attribute render is not
-// necessary.
+// The application module contact is used reactively. Thus, elements consuming
+// in the view are automatically updated with changes to the values of the
+// contact object and the deliberate call from the composer, e.g. with the
+// attribute render is not necessary.
 const contact = ({
 
     // Mandatory field with 1 to 48 characters without spaces at the beginning and end.
@@ -42,14 +42,14 @@ const contact = ({
     //     ----
     // The validation was successful.
     // No error is displayed and the default action of the browser is used.
-    // If possible the value is synchronized with the model.
+    // If possible the value is synchronized with the application module.
     // 
     //     not true and not undefined/void
     //     ----
     // The validation failed; an error is displayed.
     // A return value indicates that the default action of the browser should
     // not be executed and so it is blocked. In this case, a possible value is
-    // not synchronized with the model.
+    // not synchronized with the application module.
     // 
     //     text
     //     ----
@@ -64,15 +64,15 @@ const contact = ({
     // nevertheless be executed. This behavior is important e.g. for the
     // validation of input fields, so that the input reaches the user
     // interface. In this case, a possible value is not synchronized with the
-    // model.
+    // application module.
     //
-    //    see https://github.com/seanox/composite-js/blob/master/manual/markup.md#validate
+    //    see https://seanox.github.io/aspect-js/manuals/markup.html#validate
     validate(element, value) {
         
         // Determine whether a single field should be validated during input
-        // or the complete form/model.
+        // or the complete form / application module.
         //     The idea:
-        // The element must have an ID and a corresponding property must exist in the model.
+        // The element must have an ID and a matching property in the application module.
         let field = null;
         if (element instanceof Element)
             field = element.getAttribute("id");

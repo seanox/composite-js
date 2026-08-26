@@ -20,7 +20,7 @@
               <div class="w3-col l3 m6 w3-margin-bottom">
                 <div class="w3-display-container">
                   <div class="w3-display-topleft w3-black w3-padding"><xsl:value-of select="title"/></div>
-                  <!-- Link with path to the project-face -->
+                  <!-- Link with path to the project view -->
                   <a href="#project">
                     <img src="./assets/images/house{id}.jpg" alt="{title}"/>
                   </a>

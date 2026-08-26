@@ -46,7 +46,7 @@
       Integration of Seanox composite-js
       Seanox composite-js is pure JavaScript and consists of a file.
       The library can be downloaded and integrated standalone or a release channel can be used.
-          see also https://github.com/seanox/composite-js/blob/master/manual/introduction.md#getting-started
+          see also https://seanox.github.io/aspect-js/manuals/introduction.html#getting-started
 
           404 Resource Not Found is shown in the console:      
       http://127.0.0.1/.../data/locales.xml
@@ -59,10 +59,10 @@
       http://127.0.0.1/.../modules/common.css
       http://127.0.0.1/.../modules/common.js
       composite-js supports a module concept.
-      Because the framework can not know the structure of the modules, it is helpful in some cases,
-      if already when initializing the application general is done, there is the module "common",
-      which is searched automatically with the program start.
-      If these are missing, this is okay.
+      Since the framework cannot know the structure of individual modules,
+      some common initialization tasks may be useful. To support this,
+      composite-js automatically looks for a module called common when the application starts.
+      The common module is optional, so its absence is perfectly fine.
       The explanation will follow a later in step 03.
 
     -->

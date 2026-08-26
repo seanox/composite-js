@@ -11,7 +11,7 @@
       Integration of Seanox composite-js
       Seanox composite-js is pure JavaScript and consists of a file.
       The library can be downloaded and integrated standalone or a release channel can be used.
-          see also https://github.com/seanox/composite-js/blob/master/manual/introduction.md#getting-started
+          see also https://seanox.github.io/aspect-js/manuals/introduction.html#getting-started
 
           404 Resource Not Found is shown in the console:      
       http://127.0.0.1/.../data/locales.xml
@@ -24,10 +24,10 @@
       http://127.0.0.1/.../modules/common.css
       http://127.0.0.1/.../modules/common.js
       composite-js supports a module concept.
-      Because the framework can not know the structure of the modules, it is helpful in some cases,
-      if already when initializing the application general is done, there is the module "common",
-      which is searched automatically with the program start.
-      If these are missing, this is okay.
+      Since the framework cannot know the structure of individual modules,
+      some common initialization tasks may be useful. To support this,
+      composite-js automatically looks for a module called common when the application starts.
+      The common module is optional, so its absence is perfectly fine.
       The explanation will follow a later in step 03.
 
     -->
@@ -39,14 +39,14 @@
   </head>
   <body>
     <!--
-    
-      composite-js supports a module concept where the modules are called composites.
+
+      The supported module concept groups the resources of a composite into a composite module.
       Composites are declared with an ID and the attribute composite.
-      Composites can consist of markup (HTML), CSS and JavaScript.
-      All these components are optional and can be moved to the module directory.
-      The renderer automatically searches for corresponding components in the module directory.
+      A composite module can consist of markup (HTML), CSS and JavaScript.
+      All these resources are optional and can be moved to the module directory.
+      The runtime automatically searches for the corresponding resources in the module directory.
       Markup is only searched for if the composite has no inner HTML.
-          see also: https://github.com/seanox/composite-js/blob/master/manual/composite.md#components
+          see also: https://seanox.github.io/aspect-js/manuals/composite.html#components
 
           attribute release
       The optional attribute does not display the elements until they have been rendered.
@@ -59,13 +59,13 @@
       The language is automatically determined by the language support of the browser
       or can be set explicitly using the DataSource on which the resource bundle is based.
       In addition, a default language can be set in the XML file locales.xml if an unsupported language is requested.
-          see also https://github.com/seanox/composite-js/blob/master/manual/message.md#resource-bundle-messages
+          see also https://seanox.github.io/aspect-js/manuals/message.html#resource-bundle-messages
 
       In this example, the language setting is used by the browser.
-      In the next step we build the first module to change the language via the menu.
+      In the next step we build the first composite script to change the language via the menu.
       
       The expression language of Seanox composite-js is used for the output of the texts.
-          see also https://github.com/seanox/composite-js/blob/master/manual/expression.md#expression-language
+          see also https://seanox.github.io/aspect-js/manuals/expression.html#expression-language
       This has full JavaScript support and provides the additional object Messages for the resource bundle.
 
     -->

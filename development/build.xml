@@ -13,10 +13,10 @@
     <echo>                 Publishes the version to the npm repository     </echo>
     <echo>                                                                 </echo>
     <echo>  compile        Prepare the environment for testing             </echo>
-    <echo>                 Combinable with my task start.                  </echo>
+    <echo>                 Combinable with the task start.                 </echo>
     <echo>                                                                 </echo>
     <echo>  compile-max    Prepare the environment for testing with max    </echo>
-    <echo>                 Combinable with my task start.                  </echo>
+    <echo>                 Combinable with the task start.                 </echo>
     <echo>                                                                 </echo>
     <echo>  start          Starts the included development server          </echo>
     <echo>                 Console output of the access log                </echo>
@@ -271,30 +271,31 @@
         <include name="**/${ant.project.name}*.js"/>
       </fileset>
     </delete>
-    
+
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_02 Integration of Seanox ${ant.project.name}/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_03 Prototype - Splitting into components/assets"/>  
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_03 Prototype - Splitting into components/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_03 Prototype - Splitting into composites/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_04 Internationalization (i18n)/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_05 The first module/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_05 The first composite script/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_06 Usage of dynamic data/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/micro-frontend/Step_07 Business logic in detail/assets"/>
+
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_02 Integration of Seanox ${ant.project.name}/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_03 Prototype - Splitting into components/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_03 Prototype - Splitting into composites/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_04 Internationalization (i18n)/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_05 The first module/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_05 The first composite script/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_06 DataSource - Usage of dynamic data/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_07 Routing - Controlling components and views/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_07 Routing - Controlling composites and views/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_08 Routing - Variable paths/assets"/>
     <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_09 Routing - Interceptors/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_10 MVC - Synchronization/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_11 MVC - Synchronization and validation/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_12 Components - Macros and modules/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_13 Components - Example for a spinner/assets"/>
-    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_14 Components - Example for dynamic table with CSV download/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_10 Composite Binding - Synchronization/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_11 Composite Binding - Synchronization and validation/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_12 Composites - Macros and modules/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_13 Composites - Example for a spinner/assets"/>
+    <copy file="${release.file.max}" todir="${workspace.tutorials}/single-page-application/Step_14 Composites - Example for dynamic table with CSV download/assets"/>
 
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_08 Testing - Activation/assets"/>
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/micro-frontend/Step_09 Testing - UI Test/assets"/>
+
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_15 Testing - Activation/assets"/>
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_16 Testing - UI Test/assets"/>
 

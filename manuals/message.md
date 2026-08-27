@@ -45,6 +45,13 @@ that language is not supported, the language declared as `default` is used.
 JavaScript can change the language and locale at runtime with
 `DataSource.localize()` — see [Locales](datasource.md#locales).
 
+If a key occurs more than once within the locales, the first occurrence is used.
+Therefore, messages cannot be overwritten.
+
+Modules can also provide locales/messages in their module directory. These are
+loaded in addition to the locales/messages from the data directory, including at
+runtime.
+
 After loading the application, Messages are available as an associative array.
 They can be used directly in JavaScript and in markup expressions.
 

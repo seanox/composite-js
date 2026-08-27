@@ -55,7 +55,7 @@ rendering, component lifecycle or application state.
 - __Reactive Rendering__  
   Updates the affected parts of the view when reactive application data changes.
 - __Routing__  
-  Declarative routing through paths (view flow), based on nested Composites,
+  Declarative routing through paths (view flow), based on nested composites,
   with navigation, permission checks and interceptors.
 - __Architecture Neutrality__  
   The runtime provides the infrastructure for structuring and composing

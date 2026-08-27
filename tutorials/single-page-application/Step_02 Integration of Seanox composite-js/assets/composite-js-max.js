@@ -14,10 +14,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  *
- *
  *     DESCRIPTION
  *     ----
  * General extension of the JavaScript API.
+ *
+ * see also: https://seanox.github.io/composite-js/manuals/extension.html
  */
 (() => {
 
@@ -28,12 +29,13 @@
 	 * manipulated in a controlled way. Controlled means that errors occur when
 	 * trying to overwrite existing objects and functions. Originally, the
 	 * mechanism was removed after loading the page, but the feature has proven
-	 * to be convenient for other modules and therefore remains.
+	 * to be convenient for the other components of composite-js and therefore
+	 * remains.
 	 *
 	 * In the code, the method is used in an unconventional form.
 	 *
-	 *     compliant("Composite");
-	 *     compliant(null, window.Composite = {...});
+	 *     compliant("Composer");
+	 *     compliant(null, window.Composer = {...});
 	 *     compliant("Object.prototype.ordinal");
 	 *     compliant(null, Object.prototype.ordinal = function() {...}
 	 *
@@ -126,7 +128,7 @@
 
 				// Composites use IDs which causes corresponding DOM objects
 				// (Element) in the global namespace if there are no
-				// corresponding data objects (models). Because namespaces are
+				// corresponding application modules. Because namespaces are
 				// based on data objects, if an element appears, we assume that
 				// a data object does not exist and the recursive search is
 				// aborted as unsuccessful.
@@ -231,7 +233,7 @@
 
 				// Composites use IDs which causes corresponding DOM objects
 				// (Element) in the global namespace if there are no
-				// corresponding data objects (models). Because namespaces are
+				// corresponding application modules. Because namespaces are
 				// based on data objects, if an element appears, we assume that
 				// a data object does not exist and the recursive search is
 				// aborted as unsuccessful.
@@ -570,20 +572,10 @@
  * targeting application-provided data that is accessed primarily through
  * queries and transformations.
  *
- * Data are addressed via a locator, which is a URL (xml://... or xslt://...),
- * where both single and double slashes are supported. It is used as an absolute
- * path without a file extension relative to the DataSource directory and does
- * not contain a locale (language specification) in the path. The locale would
- * be the first element in the path that the locator addresses. However, a
- * locator can also be a fully qualified URL, which typically ends with a file
- * extension (xml://....xml or xslt://....xslt). This kind of locator addresses
- * an absolute path based on the current URL and does not include a locale.
+ * Because DataSource is based on static data, the implementation uses a cache
+ * to minimize network access.
  *
- * DataSource is based on static data. Therefore, the implementation uses a
- * cache to minimize network access.
- *
- * The data is queried with XPath, the result can be concatenated and
- * aggregated and the result can be transformed with XSLT.
+ * see also: https://seanox.github.io/composite-js/manuals/datasource.html
  */
 (() => {
 
@@ -804,7 +796,6 @@
 		 * @param {string} locator Locator to fetch data for as XMLDocument.
 		 *     Optionally, an XPath query is also supported. The XPath is
 		 *     appended to the locator separated by a question mark.
-		 *
 		 *
 		 * @returns {XMLDocument|string|boolean|number|NodeList|null}
 		 *     The fetched data as an XMLDocument. When using XPath, it can be
@@ -1034,74 +1025,43 @@
 /**
  * Expression language and composite script are two important components. Both
  * are based on ECMAScript/JavaScript enriched with macros. In addition,
- * composite scriot can be loaded at runtime and can itself load other composite
+ * composite script can be loaded at runtime and can itself load other composite
  * scripts. Because in the end everything is based on a simple eval command, it
  * was important to isolate the execution of the scripts so that internal
  * methods and constants cannot be accessed unintentionally.
+ *
+ * see also: https://seanox.github.io/composite-js/manuals/scripting.html
+ *           https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {
 
 	compliant("Scripting", {
 
 		/**
-		 * As a special feature, composite script supports macros.
+		 * Executes a composite script. As a special feature, composite script
+		 * supports macros.
 		 *
 		 * Macros are based on a keyword starting with a hash symbol followed by
 		 * arguments separated by spaces. Macros end with the next line break, a
 		 * semicolon or with the end of the file.
 		 *
-		 *
-		 *     #import
-		 *     ----
-		 * Expects a space-separated list of composite modules whose paths must
-		 * be relative to the URL.
-		 *
-		 *     #import io/api/connector and/much more
-		 *
-		 * Composite modules consist of the optional resources CSS, JS and HTML.
-		 * The #import macro can only load CSS and JavaScript. The behavior is
-		 * the same as when loading composites in the markup. Server status 404
-		 * does not cause an error because all resources of a composite are
-		 * optional including JavaScript. Server states other than 200 and 404
-		 * cause an error. CSS resources are added to the HEAD and cause an
-		 * error if no HEAD element exists in the DOM. Markup (HTML) is not
-		 * loaded because no target can be set for the output. The macro can be
-		 * used multiple times in composite script.
-		 *
-		 *
-		 *     #export
-		 *     ----
-		 * Expects a space-separated list of exports. Exports are variables or
-		 * constants in a module that are made usable in the global scope.
-		 *
-		 *     #export connector and much more
-		 *
-		 * Primarily, an export argument is the name of the variable or constant
-		 * in the module. Optionally, the name can be extended by an @ symbol to
-		 * include the destination in the global scope.
-		 *
-		 *     #export connector@io.example
-		 *
-		 *
-		 *     #use
-		 *     ----
-		 * Expects a space-separated list of namespaces to create if they do not
-		 * already exist.
-		 *
-		 *     #use namespaces to be created
-		 *
-		 *
-		 *     (?...)
-		 *     ----
-		 * Tolerant expressions are also a macro, although with different
-		 * syntax. The logic enclosed in the parenthesis with question marks is
-		 * executed fault-tolerantly. In case of an error the logic corresponds
-		 * to the value false without causing an error itself, except for syntax
-		 * errors.
+		 * #import    loads modules as composite script resources from the
+		 *            module directory
+		 * #export    makes variables, constants and functions of the isolated
+		 *            module scope usable in the global scope, optionally in a
+		 *            namespace declared with an @ symbol
+		 * #use       creates the passed namespaces if they do not already exist
+		 * (?...)     tolerant expression, a macro with a different syntax, the
+		 *            enclosed logic is executed fault-tolerantly and
+		 *            corresponds to the value false in case of an error, except
+		 *            for syntax errors
 		 *
 		 * @param {string} script
 		 * @param {string} [url] Optional sourceURL
-		 * @returns {*} the return value from the script         *
+		 * @returns {*} the return value from the script
+		 *
+		 * see also: https://seanox.github.io/composite-js/manuals/scripting.html#macros
+		 *           https://seanox.github.io/composite-js/manuals/expression.html
 		 */
 		eval(...variants) {
 
@@ -1121,7 +1081,7 @@
 			// - ignore: '...'
 			// - ignore: "..."
 			// - ignore: `...`
-			// - detect: (^|\W)#(import|export|module|use)\s+...(\W|$)
+			// - detect: (^|\W)#(import|export|use)\s+...(\W|$)
 			// - detect: \(\s*\?...\)
 
 			let pattern;
@@ -1309,16 +1269,10 @@
 })();
 
 /**
- * Expressions or the Expression Language (EL) is a simple access to the
- * client-side JavaScript and thus to the models and components. In the
- * expressions the complete JavaScript API is supported, which is enhanced with
- * additional keywords, so that also the numerous arithmetic and logical
- * operators can be used.
+ * The Expression Language (EL) provides access to the client-side JavaScript
+ * API, enhanced with additional keywords for arithmetic and logical operators.
  *
- * The expression language can be used from the HTML element BODY on in the
- * complete markup as free text, as well as in all attributes. Exceptions are
- * the HTML elements STYLE and SCRIPT whose content is not supported by the
- * expression language.
+ * see also: https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {
 
@@ -1564,90 +1518,23 @@
 /**
  * With composite-js, the declarative approach of HTML is adopted and extended.
  * In addition to the expression language, HTML elements are enhanced with
- * attributes for functions and view-module binding. The corresponding renderer
+ * attributes for functions and composite binding. The corresponding renderer
  * is integrated into the composite implementation, actively observes the DOM
  * using MutationObserver, and recursively reacts to DOM changes.
  *
- * This is the static component for rendering and the view-module binding.
+ * This is the static component for rendering and the composite binding.
  * Processing runs in the background and starts automatically when the page is
  * loaded.
  *
- *
- *     TERMS
- *     ----
- *
- *         namespace
- *         ----
- * Comparable to packages in other programming languages, namespaces can be used
- * for hierarchical structuring of components, resources and business logic.
- * Although packages are not a feature of JavaScript, they can be mapped at the
- * object level by concatenating objects into an object tree. Here, each level
- * of the object tree forms a namespace, which can also be considered a domain.
- *
- * As is typical for the identifiers of objects, namespaces also use letters,
- * numbers and underscores separated by a dot. As a special feature, arrays are
- * also supported. If a layer in the namespace uses an integer, this layer is
- * used as an array.
- *
- *         model
- *         ----
- * Models are representable/projectable static JavaScript objects that can
- * provide and receive data, states and interactions for views, comparable to
- * managed beans and DTOs (Data Transfer Objects). As singleton/facade/delegate,
- * they can use other components and abstractions, contain business logic
- * themselves, and be a link between the user interface (view) and middleware
- * (backend).
- *
- * The required view-module binding is part of the Model View Controller and the
- * Composite API.
- *
- *         property
- *         ----
- * Is a property in a static model (model component / component). It
- * corresponds to an HTML element with the same ID in the same namespace. The
- * ID of the property can be relative or use an absolute namespace. If the ID
- * is relative, the namespace is defined by the parent composite element.
- *
- *         qualifier
- *         ----
- * In some cases, the identifier (ID) may not be unique. For example, in cases
- * where properties are arrays or an iteration is used. In these cases the
- * identifier can be extended by an additional unique qualifier separated by a
- * colon. Qualifiers behave like properties during view-module binding and extend
- * the namespace.
- *
- *         unique
- *         ----
- * In some cases it is necessary that different things in the view refer to a
- * target in the corresponding model. However, if these things must still be
- * unique in the view, a unique identifier can be used in addition to the
- * qualifier, separated by a hash. This identifier then has no influence on the
- * composite logic and is used exclusively for the view.
- *
- *         composite
- *         ----
- * Composite describes a construct of markup (view), JavaScript object (model),
- * CSS and possibly other resources. It describes a component/module without
- * direct relation to the representation.
- *
- *         composite-id
- *         ----
- * It is a character sequence consisting of letters, numbers and underscores
- * and optionally supports the minus sign if it is not used at the beginning or
- * end. A composite ID is at least one character long and is composed by
- * combining the attributes ID and COMPOSITE.
- *
- *
  *     PRINCIPLES
  *     ----
- *
  * The world is static. So also composite-js and all components. This avoids the
  * management and establishment of instances.
  *
- * Attributes ID and COMPOSITE are elementary and immutable.
- * They are read the first time an element occurs and stored in the object
- * cache. Therefore, these attributes cannot be changed later because they are
- * then used from the object cache.
+ * Attributes ID and COMPOSITE are elementary and immutable. They are read the
+ * first time an element occurs and stored in the object cache. Therefore, these
+ * attributes cannot be changed later because they are then used from the object
+ * cache.
  *
  * Attributes of elements are elementary and immutable even if they contain an
  * expression.
@@ -1655,7 +1542,11 @@
  * Clean Code Rendering - The composite-js relevant attributes are stored in
  * meta-objects to each element and are removed in the markup. The following
  * attributes are essential: COMPOSITE, ID -- they are cached and remain at the
- * markup, these cannot be changed. the MutationObserver will restore them.
+ * markup, these cannot be changed. The MutationObserver will restore them.
+ *
+ * see also: https://seanox.github.io/composite-js/manuals/architecture.html
+ *           https://seanox.github.io/composite-js/manuals/composite-binding.html
+ *           https://seanox.github.io/composite-js/manuals/markup.html
  */
 (() => {
 
@@ -1709,14 +1600,14 @@
 
 	/** Pattern for DataSource locator XML with transformation */
 	const PATTERN_DATASOURCE_LOCATOR_XML_XSLT = new RegExp(PATTERN_DATASOURCE_LOCATOR_XML.source.slice(0, -1)
-		+ "\\s+\\+\\s+" + "(xslt|" + PATTERN_DATASOURCE_LOCATOR_XSLT.source.substring(1).slice(0, -1).replace("\\2", "\\8") + ")$");
+			+ "\\s+\\+\\s+" + "(xslt|" + PATTERN_DATASOURCE_LOCATOR_XSLT.source.substring(1).slice(0, -1).replace("\\2", "\\8") + ")$");
 
-	compliant("Composite", {
+	compliant("Composer", {
 
 		// Against the trend, the constants of the composite are public so that
 		// they can be used by extensions.
 
-		/** Path of the Composite for: modules (sub-directory of work path) */
+		/** Composite-modules directory (subdirectory of the working directory) */
 		get MODULES() {return window.location.combine(window.location.contextPath, "/modules");},
 
 		/** Constant for attribute composite */
@@ -1829,11 +1720,11 @@
 		get PATTERN_COMPOSITE_ID() {return /^([_a-z]\w*)(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;},
 
 		/**
-		 * Pattern for an element id (e.g. name:qualifier...@model:...)
+		 * Pattern for an element id (e.g. name:qualifier...@namespace:...)
 		 * - group 1: name
 		 * - group 2: qualifier(s) (optional)
 		 * - group 3: unique identifier (optional)
-		 * - group 4: (namespace+)model (optional)
+		 * - group 4: (namespace+)application module (optional)
 		 */
 		get PATTERN_ELEMENT_ID() {return /^([_a-z]\w*)(?::(\w+(?::\w+)*))?(?:#(\w+))?(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;},
 
@@ -2007,9 +1898,9 @@
 
 		/**
 		 * Determines the corresponding meta-object for the passed selector.
-		 * @param   {Element|string} selector, as DOM element or a string
+		 * @param {Element|string} selector DOM element or a string
 		 * @returns {object|null} the determined meta-object or null
-		 * @throws  {Error} If the selector is not unique (several nodes found).
+		 * @throws {Error} If the selector is not unique (several nodes found).
 		 */
 		lookup(selector) {
 
@@ -2038,43 +1929,37 @@
 		 * Validates the as selector passed element(s), if the element(s) are
 		 * marked with ATTRIBUTE_VALIDATE, a two-step validation is performed.
 		 * In the first step, the HTML5 validation is checked if it exists. If
-		 * this validation is valid or does not exist, the model based
-		 * validation is executed if it exists. For this purpose, the static
-		 * method validate is expected in the model. The current element and the
-		 * current value (if available) are passed as arguments.
+		 * this validation is valid or does not exist, the application module
+		 * based validation is executed if it exists. For this purpose, the
+		 * static method validate is expected in the application module. The
+		 * current element and the current value (if available) are passed as
+		 * arguments.
 		 *
 		 * The validation can have four states:
 		 *
 		 *     true, not true, text, undefined/void
 		 *
-		 *         true
-		 *         ----
-		 * The validation was successful. No error is shown and the default
-		 * action of the browser is used. If possible the value is synchronized
-		 * with the model.
+		 * true       The validation was successful. No error is shown and the
+		 *            default action of the browser is used. If possible the
+		 *            value is synchronized with the application module.
+		 * not true   The validation failed; an error is shown. An existing
+		 *            return value indicates that the default action of the
+		 *            browser should not be executed and so it is blocked.
+		 * text       Corresponds to: Invalid + error message. If the error
+		 *            message is empty, the message from ATTRIBUTE_MESSAGE is
+		 *            used alternatively.
+		 * undefined  The validation failed; an error is shown. No return value
+		 * / void     indicates that the default action of the browser should
+		 *            nevertheless be executed. This behavior is important e.g.
+		 *            for the validation of input fields, so that the input
+		 *            reaches the user interface.
 		 *
-		 *         not true and not undefined/void
-		 *         ----
-		 * The validation failed; an error is shown. An existing return value
-		 * indicates that the default action of the browser should not be
-		 * executed and so it is blocked. In this case, a possible value is not
-		 * synchronized with the model.
-		 *
-		 *         text
-		 *         ----
-		 * Text corresponds to: Invalid + error message. If the error message is
-		 * empty, the message from ATTRIBUTE_MESSAGE is used alternatively.
-		 *
-		 *         undefined/void
-		 *         ----
-		 * The validation failed; an error is shown. No return value indicates
-		 * that the default action of the browser should nevertheless be
-		 * executed. This behavior is important e.g. for the validation of input
-		 * fields, so that the input reaches the user interface. In this case, a
-		 * possible value is not synchronized with the model.
+		 * In all states except true, a possible value is not synchronized with
+		 * the application module.
 		 *
 		 * @param {Element|string} selector DOM element or a string
-		 * @param {boolean} [lock=true] Unlocking of the model validation
+		 * @param {boolean} [lock=true] Unlocking of the application module
+		 *     validation
 		 * @returns {boolean|undefined} Validation result
 		 *     true, false, undefined/void
 		 * @throws {Error} In case of a non-unique selector
@@ -2117,23 +2002,24 @@
 			if (typeof selector.setCustomValidity === "function")
 				selector.setCustomValidity("");
 
-			// Explicit validation via HTML5. If the validation fails, model
-			// validation and synchronization is not and rendering always
-			// performed. In this case the event and thus the default action of
-			// the browser is cancelled.
+			// Explicit validation via HTML5. If the validation fails,
+			// application module validation and synchronization is not and
+			// rendering always performed. In this case the event and thus the
+			// default action of the browser is cancelled.
 			if (typeof selector.checkValidity === "function")
 				valid = selector.checkValidity();
 
-			// There can be a corresponding model.
+			// There can be a corresponding application module.
 			const meta = _mount_lookup(selector);
 			if (meta instanceof Object) {
 
-				// Validation is a function at the model level. If a composite
-				// consists of several model levels, the validation may have to
-				// be organized accordingly if necessary. Interactive composite
-				// elements are a property object. Therefore, they are primarily
-				// a property and the validation is located in the surrounding
-				// model and not in the property object itself.
+				// Validation is a function at the application module level. If
+				// a composite consists of several object levels, the validation
+				// may have to be organized accordingly if necessary.
+				// Interactive composite elements are a property object.
+				// Therefore, they are primarily a property and the validation
+				// is located in the surrounding application module and not in
+				// the property object itself.
 
 				let value;
 				if (selector instanceof Element) {
@@ -2147,10 +2033,10 @@
 						value = selector[Composer.ATTRIBUTE_VALUE];
 				}
 
-				// Implicit validation via the model, if a corresponding
-				// validate method is implemented. The validation through the
-				// model only works if the corresponding composite is
-				// active/present in the DOM!
+				// Implicit validation via the application module, if a
+				// corresponding validate method is implemented. The validation
+				// through the application module only works if the
+				// corresponding composite is active/present in the DOM!
 				if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_VALIDATE)
 						&& valid === true
 						&& lock !== true
@@ -2167,7 +2053,7 @@
 			// ATTRIBUTE_VALIDATE. The value of ATTRIBUTE_MESSAGE is used as an
 			// error message if the validation was not successful. For this
 			// purpose, the browser function of HTML5 form validation is used,
-			// which shows  the message as a browser validation tooltip/message.
+			// which shows the message as a browser validation tooltip/message.
 			//
 			// The browser validation tooltip/message can be redirected to an
 			// attribute of the validated element if the message begins with the
@@ -2219,52 +2105,47 @@
 
 		/**
 		 * Mounts the as selector passed element(s) with all its children where
-		 * a view-module binding is possible. Mount is possible for all elements
+		 * a composite binding is possible. Mount is possible for all elements
 		 * with ATTRIBUTE_ID, not only for composite objects and their children.
 		 *
-		 * View-model binding is about linking of HTML elements in markup (view)
-		 * with corresponding JavaScript objects (models).
+		 * Composite binding is about linking of HTML elements in markup (view)
+		 * with the corresponding application module.
 		 *
-		 * Models are representable/projectable static JavaScript objects that
-		 * can provide and receive data, states and interactions for views,
-		 * comparable to managed beans and DTOs. As singleton/facade/delegate,
-		 * they can use other components and abstractions, contain business
-		 * logic themselves, and be a link between the user interface (view) and
-		 * middleware (backend).
+		 * Application modules are representable/projectable static JavaScript
+		 * objects that can provide and receive data, states and interactions
+		 * for views, comparable to managed beans and DTOs. As
+		 * singleton/facade/delegate, they can use other abstractions, contain
+		 * business logic themselves, and be a link between the user interface
+		 * (view) and middleware (backend).
 		 *
-		 * The required view-module binding is part of the Model View Controller
-		 * and the Composite API.
-		 *
-		 * The view as presentation and user interface for interactions and the
-		 * model are primarily decoupled. For the MVVM approach as an extension
-		 * of the MVC, the controller establishes the bidirectional connection
-		 * between view and model, which means that no manual implementation and
-		 * declaration of events, interaction or synchronization is required.
+		 * View and application module are primarily decoupled. For the MVVM
+		 * approach as an extension of the MVC, the controller establishes the
+		 * bidirectional connection between view and application module, which
+		 * means that no manual implementation and declaration of events,
+		 * interaction or synchronization is required.
 		 *
 		 *     Principles
 		 *     ----
-		 * Components are a static JavaScript objects (models). Namespaces are
+		 * Application modules are static JavaScript objects. Namespaces are
 		 * supported, but they must be syntactically valid. Objects in objects
 		 * is possible through the namespaces (as static inner class).
 		 *
 		 *     Binding
 		 *     ----
 		 * The object constraint only includes what has been implemented in the
-		 * model (snapshot). An automatic extension of the models at runtime by
-		 * the renderer is not detected/supported, but can be implemented in the
-		 * application logic - this is a conscious decision!
+		 * application module (snapshot). An automatic extension of the
+		 * application modules at runtime by the renderer is not
+		 * detected/supported, but can be implemented in the application logic -
+		 * this is a conscious decision!
 		 *     Case study:
-		 * In the markup there is a composite with a property x. There is a
-		 * corresponding JavaScript object (model) for the composite but without
-		 * the property x. The renderer will mount the composite with the
-		 * JavaScript model, the property x will not be found in the model and
-		 * will be ignored. At runtime, the model is modified later and the
-		 * property x is added. The renderer will not detect the change in the
-		 * model and the property x will not be mounted during re-rendering.
-		 * Only when the composite is completely removed from the DOM (e.g. by a
-		 * condition) and then newly added to the DOM, the property x is also
-		 * mounted, because the renderer then uses the current snapshot of the
-		 * model and the property x also exists in the model.
+		 * A composite in the markup uses the property x, the corresponding
+		 * application module does not implement it. The renderer mounts the
+		 * composite, x is not found in the application module and is ignored.
+		 * If x is added to the application module later at runtime, the change
+		 * is not detected and x is not mounted during re-rendering. Only when
+		 * the composite is completely removed from the DOM (e.g. by a
+		 * condition) and is then newly added, x is also mounted, because the
+		 * renderer then uses the current snapshot of the application module.
 		 *
 		 *     Validation
 		 *     ----
@@ -2272,23 +2153,24 @@
 		 *
 		 *     Synchronization
 		 *     ----
-		 * View model binding and synchronization assume that a corresponding
-		 * static JavaScript object/model exists in the same namespace for the
-		 * composite. During synchronization, the element must also exist as a
-		 * property in the model. Accepted are properties with a primitive data
-		 * type and objects with a property value. The synchronization expects a
-		 * positive validation, otherwise it will not be executed.
+		 * Composite binding and synchronization assume that a corresponding
+		 * static JavaScript object (application module) exists in the same
+		 * namespace for the composite. During synchronization, the element must
+		 * also exist as a property in the application module. Accepted are
+		 * properties with a primitive data type and objects with a property
+		 * value. The synchronization expects a positive validation, otherwise
+		 * it will not be executed.
 		 *
 		 *     Invocation
 		 *     ---
-		 * For events, actions can be implemented in the model. Actions are
-		 * static methods in the model whose name begins with 'on' and is
-		 * followed by the name (camel case) of the event. As an argument, the
-		 * occurring event is passed. The action methods can have a return
-		 * value, but do not have to. If their return value is false, the event
-		 * and thus the default action of the browser is cancelled. The
-		 * invocation expects a positive validation, otherwise it will not be
-		 * executed.
+		 * For events, actions can be implemented in the application module.
+		 * Actions are static methods in the application module whose name
+		 * begins with 'on' and is followed by the name (camel case) of the
+		 * event. As an argument, the occurring event is passed. The action
+		 * methods can have a return value, but do not have to. If their return
+		 * value is false, the event and thus the default action of the browser
+		 * is cancelled. The invocation expects a positive validation, otherwise
+		 * it will not be executed.
 		 *
 		 *     Events
 		 *     ----
@@ -2303,7 +2185,7 @@
 		 * the method call.
 		 *
 		 * @param {Element|string} selector DOM element or a string
-		 * @param {boolean} lock Unlocking of the model validation
+		 * @param {boolean} lock Unlocking of the application module validation
 		 * @throws {Error} In the following cases:
 		 *     - namespace is not valid or is not supported
 		 *     - namespace cannot be created if it already exists as a method
@@ -2360,9 +2242,10 @@
 				const identifier = object.attributes[Composer.ATTRIBUTE_ID];
 
 				// The explicit events are declared by ATTRIBUTE_EVENTS. The
-				// model can, but does not have to, implement the corresponding
-				// method. Explicit events are mainly used to synchronize view
-				// and model and to trigger targets of ATTRIBUTE_RENDER.
+				// application module can, but does not have to, implement the
+				// corresponding method. Explicit events are mainly used to
+				// synchronize view and application module and to trigger
+				// targets of ATTRIBUTE_RENDER.
 				let events = object.attributes.hasOwnProperty(Composer.ATTRIBUTE_EVENTS)
 						? object.attributes[Composer.ATTRIBUTE_EVENTS] : "";
 				events = String(events || "");
@@ -2370,27 +2253,29 @@
 				events = events.filter((event, index, array) => Composer.PATTERN_EVENT_FILTER.includes(event)
 						&& array.indexOf(event) === index);
 
-				// There must be a corresponding model.
+				// There must be a corresponding application module.
 				const meta = _mount_lookup(selector);
 				if (meta instanceof Object
 						&& identifier) {
 
 					// The implicit assignment is based on the on-event-methods
-					// implemented in the model. These are determined and added
-					// to the list of events if the events have not yet been
-					// explicitly declared. But this is only useful for elements
-					// with an ID. Since mounting is performed recursively on
-					// the child nodes, it should be prevented that child nodes
-					// are assigned the events of the parents.
+					// implemented in the application module. These are
+					// determined and added to the list of events if the events
+					// have not yet been explicitly declared. But this is only
+					// useful for elements with an ID. Since mounting is
+					// performed recursively on the child nodes, it should be
+					// prevented that child nodes are assigned the events of the
+					// parents.
 
 					// Events are possible for composites and their interactive
 					// elements. For this purpose, composites define the scope
-					// with their model. Interactive composite elements are an
-					// object in the model that contains the interaction methods
-					// corresponding to the events. Therefore, the scope of
-					// interactive composite elements shifts from the model to
-					// the according object. In all cases, a name-based
-					// alignment in the model and thus ATTRIBUTE_ID is required
+					// with their application module. Interactive composite
+					// elements are an object in the application module that
+					// contains the interaction methods corresponding to the
+					// events. Therefore, the scope of interactive composite
+					// elements shifts from the application module to the
+					// according object. In all cases, a name-based alignment in
+					// the application module and thus ATTRIBUTE_ID is required.
 					// Anonymous interaction elements do not have this alignment
 					// and no scope can be determined.
 
@@ -2443,7 +2328,7 @@
 
 						let valid = Composer.validate(target, false);
 
-						// There must be a corresponding model.
+						// There must be a corresponding application module.
 						const meta = _mount_lookup(target);
 						if (meta instanceof Object) {
 
@@ -2462,13 +2347,14 @@
 						    // Validation works strictly by default. This means
 						    // that the value must explicitly be true and only
 						    // then is the input data synchronized with the
-						    // model via the HTML elements. This protects
-						    // against invalid data in the models which may then
-						    // be reflected in the view. If ATTRIBUTE_VALIDATE
-						    // is declared as optional, this behaviour can be
-						    // specifically deactivated and the input data is
-						    // then always synchronized with the model. The
-						    // effects of validation are then only optional.
+						    // application module via the HTML elements. This
+						    // protects against invalid data in the application
+						    // modules which may then be reflected in the view.
+						    // If ATTRIBUTE_VALIDATE is declared as optional,
+						    // this behaviour can be specifically deactivated
+						    // and the input data is then always synchronized
+						    // with the application module. The effects of
+						    // validation are then only optional.
 						    if (String(object.attributes[Composer.ATTRIBUTE_VALIDATE]).toLowerCase() === "optional"
 						            || valid === true) {
 
@@ -2493,9 +2379,10 @@
 
 						        // A composite is planned as a container for
 						        // sub-elements. Theoretically, an input element
-						        // can also be a composite and thus both model
-						        // and input element / data field. In this case,
-						        // a composite can assign a value to itself.
+						        // can also be a composite and thus both
+						        // application module and input element / data
+						        // field. In this case, a composite can assign a
+						        // value to itself.
 						        if (accept(meta.target)) {
 						            meta.target = value;
 						        } else if (typeof meta.target === "object") {
@@ -2508,19 +2395,8 @@
 
 						        // Step 3: Invocation
 
-						        // Events are possible for composites and their
-						        // interactive elements. For this purpose,
-						        // composites define the scope with their model.
-						        // Interactive composite elements are an object
-						        // in the model that contains the interaction
-						        // methods corresponding to the events.
-						        // Therefore, the scope of interactive composite
-						        // elements shifts from the model to the
-						        // according object. In all cases, a name-based
-						        // alignment in the model and thus ATTRIBUTE_ID
-						        // is required. Anonymous interaction elements
-						        // do not have this alignment and no scope can
-						        // be determined.
+						        // The scope is determined as when the events
+						        // were registered, see Composer.mount(selector).
 
 						        let model = meta.model;
 						        if (meta.target !== undefined)
@@ -2530,11 +2406,12 @@
 						            else model = null;
 
 						        // For the event, a corresponding method is
-						        // searched in the model that can be called. If
-						        // their return value is false, the event and
-						        // thus the default action of the browser is
-						        // cancelled. The invocation expects a positive
-						        // validation, otherwise it will not be executed.
+						        // searched in the application module that can
+						        // be called. If their return value is false,
+						        // the event and thus the default action of the
+						        // browser is cancelled. The invocation expects
+						        // a positive validation, otherwise it will not
+						        // be executed.
 						        if (model && typeof model["on" + action] === "function")
 						            result = model["on" + action].call(model, event);
 						    }
@@ -2568,9 +2445,10 @@
 					});
 				});
 
-				// The current value in the model must be set in the HTML
-				// element if the element has a corresponding value property.
-				//     model -> view
+				// The current value in the application module must be set in
+				// the HTML element if the element has a corresponding value
+				// property.
+				//     application module -> view
 				// This is only useful for elements with an ID. Because mounting
 				// is performed recursively on the child nodes, it should be
 				// prevented that child nodes are assigned.
@@ -2664,7 +2542,7 @@
 				scope = variants[0];
 
 			// STATIC is used to define protected attributes in the markup.
-			// Markup protection makes attribute manipulation ast the runtime
+			// Markup protection makes attribute manipulation at the runtime
 			// more difficult. At runtime, additional attributes can be declared
 			// as static. However, this function is not cheap, since the values
 			// of the attributes used at that time must be determined for all
@@ -2753,9 +2631,9 @@
 		 *
 		 *     Queue and Lock:
 		 *     ----
-		 * The method used a simple queue and transaction management so that the
-		 * concurrent execution of rendering works sequentially in the order of
-		 * the method call.
+		 * Simple queue and transaction management, as for Composer.mount, so
+		 * that the concurrent execution works sequentially in the order of the
+		 * method call.
 		 *
 		 *     Element meta-object
 		 *     ----
@@ -2789,7 +2667,8 @@
 		 * https://seanox.github.io/composite-js/manuals/markup.html
 		 *
 		 * @param {Element|string} selector DOM element or a string
-		 * @param {boolean} [lock] Unlocking of the model validation
+		 * @param {boolean} [lock] Unlocking of the application module
+		 *     validation
 		 * @throws {Error} In case of errors occurring
 		 */
 		render(selector, lock) {
@@ -2890,7 +2769,7 @@
 						if (_render_attribute_condition_initialize(selector, object, serial, lock))
 						    return;
 
-						// Load modules/components/composite resources.
+						// Load the composite module resources.
 						if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
 						    Composer.include(selector);
 					}
@@ -2911,7 +2790,7 @@
 
 				// The attributes ATTRIBUTE_EVENTS, ATTRIBUTE_VALIDATE and
 				// ATTRIBUTE_RENDER are processed in Composer.mount(selector)
-				// the view-module binding and are only mentioned here for
+				// the composite binding and are only mentioned here for
 				// completeness.
 
 				// The attribute ATTRIBUTE_RELEASE has no functional
@@ -3042,14 +2921,14 @@
 		},
 
 		/**
-		 * Loads modules/components/composite resources. The assumption is, for
-		 * components/composites, the resources are outsourced. JS and HTML are
-		 * supported. Resources are stored in the module directory (./modules by
-		 * default is relative to the page URL). The resources (response) are
-		 * stored in the render cache, but only to detect and prevent repeated
-		 * loading. The resources will only be requested once. If they do not
-		 * exist (status 404), it is not tried again. Otherwise, an error is
-		 * thrown if the request is not answered with status 200.
+		 * Loads the resources of a composite module. The assumption is, for
+		 * composites, the resources are outsourced. JS and HTML are supported.
+		 * Resources are stored in the module directory (./modules by default is
+		 * relative to the page URL). The resources (response) are stored in the
+		 * render cache, but only to detect and prevent repeated loading. The
+		 * resources will only be requested once. If they do not exist (status
+		 * 404), it is not tried again. Otherwise, an error is thrown if the
+		 * request is not answered with status 200.
 		 *
 		 * The method also supports string arrays for resources with path. Then
 		 * each path element is an array entry.
@@ -3058,7 +2937,7 @@
 		 * - Composite ID / namespace / path must have a valid syntax
 		 * - HTML is loaded only for elements when the elements have no content
 		 * - CSS is only loaded when HTML is also loaded
-		 * - JavaScript is loaded only if no corresponding JavaScript model
+		 * - JavaScript is loaded only if no corresponding application module
 		 *   exists
 		 *
 		 * @param {Element|string} composite DOM element or a string
@@ -3068,12 +2947,12 @@
 		 */
 		include(...composite) {
 
-			if (Composer.length <= 0
-					|| (Composer.length === 1
+			if (composite.length <= 0
+					|| (composite.length === 1
 						    && !(composite[0] instanceof Element)
 						    && typeof composite[0] !== "string"))
 				throw new TypeError("Invalid composite for include");
-			if (Composer.length === 1
+			if (composite.length === 1
 					&& composite[0] instanceof Element)
 				composite = composite[0];
 
@@ -3081,9 +2960,9 @@
 
 			let object = null;
 			if (composite instanceof Element) {
-				if (!Composer.hasAttribute(Composer.ATTRIBUTE_ID))
+				if (!composite.hasAttribute(Composer.ATTRIBUTE_ID))
 					throw new Error("Unknown composite without id");
-				object = _render_meta[Composer.ordinal()];
+				object = _render_meta[composite.ordinal()];
 				if (!object)
 					throw new Error("Unknown composite");
 				const meta = _mount_locate(composite);
@@ -3095,24 +2974,19 @@
 
 			const context = Composer.MODULES + "/" + resource.join("/");
 
-			// Based on namespace and resource a corresponding JavaScript object
-			// is searched for. Therefore, here with invalid namespace/composite
-			// IDs an error occurs, which must be noticed however already
-			// before, it is to be ensured that only modules are loaded to valid
-			// composites (namespace + composite ID). Later, it is also decided
-			// whether JavaScript must be loaded. This is only necessary if
-			// lookup cannot determine a JavaScript model (undefined or
-			// element).
-
-			// Theoretically an error can occur during the lookup if namespace
-			// or composite ID are invalid, but this should already run on error
-			// before, so it is not done here -- otherwise this is a bug!
+			// Based on namespace and resource a corresponding JavaScript
+			// object is searched for. Later, it is also decided whether
+			// JavaScript must be loaded. This is only necessary if lookup
+			// cannot determine an application module (undefined or element).
+			// Theoretically an error can occur here with invalid
+			// namespace/composite IDs, but this must already have been noticed
+			// before -- otherwise this is a bug!
 
 			const lookup = Object.lookup(resource.join("."));
 
 			resource = resource.join("/");
 
-			// Was the module already loaded?
+			// Was the composite module already loaded?
 			// Initially EVENT_MODULE_LOAD is triggered.
 			if (_render_cache[context + ".composite"] === undefined)
 				Composer.fire(Composer.EVENT_MODULE_LOAD, composite, resource);
@@ -3128,24 +3002,21 @@
 					|| resource === "common")
 				this.load(context + ".js");
 
-			// CSS and HTML are loaded once and only if they are resources to an
-			// element and the element is empty, excludes CSS for common.
+			// CSS for common is loaded once and independent of an element.
 			if (resource === "common")
 				this.load(context + ".css");
 
-			// CSS and HTML/markup is only loaded if it is a known composite
-			// object and the element does not contain a markup (inner HTML).
-			// For inserting HTML/markup ATTRIBUTE_IMPORT and ATTRIBUTE_OUTPUT
-			// must not be set. It is assumed that an empty component/elements
-			// outsourced markup exists.
+			// CSS for a composite is only loaded if the element does not
+			// contain a markup (inner HTML). It is assumed that an empty
+			// composite element has outsourced markup.
 			if (composite instanceof Element
-					&& !Composer.innerHTML.trim())
+					&& !composite.innerHTML.trim())
 				this.load(context + ".css");
 
-			// Is only required if the composite has no content and will not be
-			// filled with the attributes ATTRIBUTE_IMPORT and ATTRIBUTE_OUTPUT.
+			// HTML/markup is only required if the composite has no content and
+			// will not be filled with ATTRIBUTE_IMPORT or ATTRIBUTE_OUTPUT.
 			if (composite instanceof Element
-					&& !Composer.innerHTML.trim()
+					&& !composite.innerHTML.trim()
 					&& !object.attributes.hasOwnProperty(Composer.ATTRIBUTE_IMPORT)
 					&& !object.attributes.hasOwnProperty(Composer.ATTRIBUTE_OUTPUT)) {
 				const content = this.load(context + ".html");
@@ -3153,15 +3024,14 @@
 					return;
 				_recursion_detection(composite);
 				if (composite instanceof Element)
-					Composer.innerHTML = content;
+					composite.innerHTML = content;
 			}
 		}
 	});
 
 	/**
-	 * The render function gets a getter for the context, which returns all
-	 * variables for the page scope. The return value is an object that contains
-	 * the persistent and dynamic/temporary variables for the scope page.
+	 * The render function gets a getter for the context, which returns the
+	 * persistent and the dynamic/temporary variables of the page scope.
 	 */
 	Object.defineProperty(Composer.render, "context", {
 		get: () => {
@@ -3219,16 +3089,16 @@
 	const _listeners = new Map();
 
 	/**
-	 * Set with docked models.
+	 * Set with docked application modules.
 	 * The set is used for the logic to call the dock and undock methods,
-	 * because the static models themselves have no status and the decision
-	 * about the current existence in the DOM is not stable.
-	 * All docked models are included in the set.
+	 * because the static application modules themselves have no status and the
+	 * decision about the current existence in the DOM is not stable.
+	 * All docked application modules are included in the set.
 	 */
 	const _models = new Set();
 
 	/**
-	 * Lock mechanism for methods: render, mound and scan. The lock controls
+	 * Lock mechanism for the methods: render and mount. The lock controls
 	 * that the methods are not used concurrently and/or asynchronously. Each
 	 * method opens its own transaction (lock). During a transaction, the method
 	 * call requires a lock. If this lock does not exist or differs from the
@@ -3236,7 +3106,7 @@
 	 * current lock is released. The methods themselves can call themselves
 	 * recursively and do so with the lock they know. In addition to the lock
 	 * mechanism, the methods also control the START, NEXT, and END events.
-	 * @param {Object} context Context (render, mound or scan)
+	 * @param {Object} context Context (render or mount)
 	 * @param {string|Element} selector Selector to identify elements
 	 * @returns {Object} The created lock as a meta-object
 	 * @throws {Error} In case of an invalid context
@@ -3343,8 +3213,8 @@
 
 	/**
 	 * Determines the metadata for an element based on its position in the DOM
-	 * with the corresponding model, the referenced route and target. The
-	 * metadata is only determined as text information.
+	 * with the corresponding application module, the referenced route and
+	 * target. The metadata is only determined as text information.
 	 *
 	 * Composite:
 	 *     {namespace, model}
@@ -3353,21 +3223,22 @@
 	 *     {namespace, model, route, target}
 	 *     {namespace, model, route, unique, target}
 	 *
-	 * namespace: namespace of the composite/model
-	 *            chain as array without the model or undefined if no chain
-	 * model:     corresponds to the enclosing composite
+	 * namespace: namespace of the composite / application module
+	 *            chain as array without the application module or undefined if
+	 *            no chain
+	 * model:     application module, corresponds to the enclosing composite
 	 * route:     fully qualified route to the target,
-	 *            starting with the module, ends with the target
+	 *            starting with the application module, ends with the target
 	 * unique:    unique identifier
 	 *            not part of the route and without effect on the logic
 	 * target:    final target in the chain
 	 *
-	 * A validation at object or JavaScript model level does not take place
+	 * A validation at object or application module level does not take place
 	 * here. The fill levels of the meta-object can be different, depending on
 	 * the collected data and the resulting derivation. Thus, it is possible to
 	 * make the theoretical assumptions here by deriving them from the DOM.
-	 * Especially the namespace of the model is based on these theoretical
-	 * assumptions.
+	 * Especially the namespace of the application module is based on these
+	 * theoretical assumptions.
 	 *
 	 * If no meta information can be determined, e.g. because no IDs were found
 	 * or no enclosing composite was used, null is returned.
@@ -3383,9 +3254,10 @@
 			return null;
 
 		// A composite stops the determination. Composites are static
-		// components, comparable to managed beans or named beans, and therefore
-		// normally have no superordinate object levels. But the Composite-ID
-		// can contain a namespace, which is then taken into consideration.
+		// application units, comparable to managed beans or named beans, and
+		// therefore normally have no superordinate object levels. But the
+		// Composite-ID can contain a namespace, which is then taken into
+		// consideration.
 
 		let serial = (element.getAttribute(Composer.ATTRIBUTE_ID) || "").trim();
 		if (element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)) {
@@ -3430,14 +3302,14 @@
 		if (meta.namespace.length <= 0)
 			delete meta.namespace;
 
-		// a model is always required
+		// an application module is always required
 		return meta.model ? meta : null;
 	};
 
 	/**
 	 * Determines the meta-object for an element based on its position in the
-	 * DOM, so the surrounding composite and model, the referenced route and
-	 * target in the model.
+	 * DOM, so the surrounding composite and application module, the referenced
+	 * route and target in the application module.
 	 *
 	 * Composite:
 	 *     {meta:{namespace, model}, namespace, model}
@@ -3445,9 +3317,9 @@
 	 * Composite Element:
 	 *     {meta:{namespace, model, route, target}, namespace, model, route, target}
 	 *
-	 * The method always requires a corresponding JavaScript object (model) and
-	 * an element with a valid element ID in a valid enclosing composite,
-	 * otherwise the method will return null.
+	 * The method always requires a corresponding application module and an
+	 * element with a valid element ID in a valid enclosing composite, otherwise
+	 * the method will return null.
 	 *
 	 * @param {Element} element DOM element to determine metadata for
 	 * @returns {object|null} Determined meta-object for the passed element,
@@ -3514,11 +3386,8 @@
 					|| _render_element_ignore(node.parentNode) : false;
 
 	/**
-	 * Executes the custom tag for a node, if one exists. Custom tags are
-	 * completely user-specific. The return value determines whether the
-	 * standard functions are used or not. Only the return value false (not
-	 * void, not empty) terminates the rendering for the macro without using
-	 * the standard functions.
+	 * Executes the custom tag (macro) for a node, if one exists.
+	 * Details are described to Composer.customize(...).
 	 * @param {Node} selector Node to be rendered
 	 * @returns {boolean} true if the rendering has to be terminated
 	 */
@@ -3528,15 +3397,10 @@
 	};
 
 	/**
-	 * Executes the custom selectors for a node, if they exist. Selectors work
-	 * similar to macros. Unlike macros, selectors use a CSS selector to detect
-	 * elements. This selector must match the current element from the point of
-	 * view of the parent. Selectors are more flexible and multifunctional.
-	 * Therefore, different selectors and thus different functions can match one
-	 * element. In this case, all implemented callback methods are performed.
-	 * The return value determines whether the loop is aborted or not. Only the
-	 * return value false (not void, not empty) terminates the loop and the
-	 * rendering for the selector without using the standard functions.
+	 * Executes the custom selectors for a node, if they exist. Different
+	 * selectors can match one element, in this case all implemented callback
+	 * methods are performed until one of them returns false.
+	 * Details are described to Composer.customize(...).
 	 * @param {Node} selector Node to be rendered
 	 * @returns {boolean} true if the rendering has to be terminated
 	 */
@@ -3555,14 +3419,9 @@
 
 	/**
 	 * Creates the meta-object for a node. Before that, the interceptors are
-	 * executed. Interceptors are a very special way to customize. Unlike the
-	 * other ways, here the rendering is not shifted into own implementations.
-	 * With an interceptor, an element is manipulated before rendering and only
-	 * if the renderer processes the element initially. This makes it possible
-	 * to make individual changes to the attributes or the markup before the
-	 * renderer processes them. This does not affect the implementation of the
-	 * rendering.
-	 *     e.g. Composer.customize(function(element) {...});
+	 * executed, which can manipulate the attributes and the markup of the
+	 * element, but only when it is processed initially.
+	 * Details are described to Composer.customize(...).
 	 * @param {Node} selector Node to be rendered
 	 * @param {number} serial Serial of the node
 	 * @returns {object} The created meta-object
@@ -3600,15 +3459,11 @@
 
 				object.attributes[attribute.name] = attribute.value;
 
-				// Special case: ATTRIBUTE_ID/ATTRIBUTE_EVENTS
-				// Both attributes are used initially for the object and event
-				// binding. Expressions are supported for the attributes, but
-				// these are only initially resolved during the first rendering.
-
-				// Special case: static attributes
-				// These attributes are used initially markup harding.
-				// Expressions are supported for the attributes, but these are
-				// only initially resolved during the first rendering.
+				// Special case: ATTRIBUTE_ID, ATTRIBUTE_EVENTS and the static
+				// attributes. The first two are used initially for the object
+				// and event binding, the static attributes for markup
+				// hardening. Expressions are supported for these attributes,
+				// but are only resolved initially during the first rendering.
 
 				if (attribute.value.match(Composer.PATTERN_EXPRESSION_CONTAINS)
 						&& (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
@@ -3617,9 +3472,9 @@
 						        || _statics.has(attribute.name)))
 					attribute.value = Expression.eval(selector.ordinal() + ":" + attribute.name, attribute.value);
 
-				// The initial value of the static attribute is registered for
-				// the restore. This is a part of the markup protection of the
-				// MutationObserver.
+				// The resolved value is written back to the meta-object, so
+				// that the object and event binding use the value of the
+				// expression and not the expression itself.
 				if (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
 						|| attribute.name === Composer.ATTRIBUTE_ID
 						|| attribute.name === Composer.ATTRIBUTE_EVENTS)
@@ -3757,17 +3612,13 @@
 				serial:element.ordinal(), element, attributes, condition,
 				context:[..._render_context_workspace]};
 
-			// Load modules/components/composite resources.
+			// Load the composite module resources.
 			// That no resources are loaded more than once is taken care of by
-			// the include method ot Composite.
+			// the include method of Composer.
 			if (attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
 				Composer.include(element);
 
 			selector.parentNode.insertBefore(element, selector);
-
-			// The rendering of the marker continues recursively, so that objects
-			// do not have to be switched/rewritten and the rendering can be
-			// finished here.
 
 			Composer.render(condition.element, lock.share());
 			return true;
@@ -3916,12 +3767,9 @@
 				if (selector.parentNode === null)
 					return;
 
-				// The new text nodes are inserted before the current element
-				// one.
 				words.forEach((node) =>
 					selector.parentNode.insertBefore(node, selector));
 
-				// The current element will be removed.
 				selector.parentNode.removeChild(selector);
 
 				return;
@@ -3936,8 +3784,8 @@
 	};
 
 	/**
-	 * ATTRIBUTE_COMPOSITE: Only composites are mounted based on their model.
-	 * This excludes markers of conditions as text nodes.
+	 * ATTRIBUTE_COMPOSITE: Only composites are mounted based on their
+	 * application module. This excludes markers of conditions as text nodes.
 	 * @param {Element} selector Element to be rendered
 	 * @param {object} object Meta-object of the element
 	 */
@@ -3989,8 +3837,8 @@
 	 * 1. Node and NodeList as the result of an expression.
 	 * 2. URL (relative or absolute) loads markup/content from a remote data
 	 *    source via the HTTP method GET
-	 * 2. DataSource-URL loads and transforms DataSource data.
-	 * 3. Everything else is output directly as string/text.
+	 * 3. DataSource-URL loads and transforms DataSource data.
+	 * 4. Everything else is output directly as string/text.
 	 * The import is exclusive, similar to ATTRIBUTE_OUTPUT, thus overwriting any
 	 * existing content. The recursive (re)rendering is initiated via the
 	 * MutationObserver. If the content can be loaded successfully,
@@ -4127,13 +3975,13 @@
 	 * 2. A global variable is required for the iteration. If this variable
 	 *    already exists, the existing variable is saved and restored at the end
 	 *    of the iteration.
-	 * 3. The variable with the partial meta-object is added at th beginning of
+	 * 3. The variable with the partial meta-object is added at the beginning of
 	 *    each iteration block as a value expression, so that no problems with
 	 *    the temporary variable occur later during partial rendering. This way
-	 *    the block keeps th meta information it is built on.
+	 *    the block keeps the meta information it is built on.
 	 * 4. Variable with meta information about the iteration is used within the
 	 *    iteration:
-	 *    e.g iterate={{tempA:Model.list}}
+	 *    e.g iterate={{tempA:example.list}}
 	 *            -> tempA = {item, index, data}
 	 * @param {Element} selector Element to be rendered
 	 * @param {object} object Meta-object of the element
@@ -4278,9 +4126,9 @@
 				}
 				selector.setAttribute(attribute, value);
 			} else selector.removeAttribute(attribute);
-			selector[attribute] = value;
 			// Attribute values must also be set in the JavaScript so that it
 			// remains synchronized with the DOM!
+			selector[attribute] = value;
 		});
 	};
 
@@ -4478,7 +4326,7 @@
 		Composer.fire(Composer.EVENT_ERROR, event));
 
 	// MutationObserver detects changes at the DOM and triggers (re)rendering
-	// and (re)scanning and prevents manipulation of ATTRIBUTE_COMPOSITE.
+	// and cleanup and prevents manipulation of ATTRIBUTE_COMPOSITE.
 	// - Text-Nodes: The TextContent of text nodes with an expression is
 	//   protected by the MutationObserver and cannot be manipulated.
 	// - The attributes of the renderer (Composer.PATTERN_ATTRIBUTE_ACCEPT)
@@ -4498,9 +4346,9 @@
 			document.querySelector("html head").appendChild(style);
 		}
 
-		// Initially the common-module is loaded.
-		// The common-module is similar to an autostart, it is used to
-		// initialize the single page application. It consists of common.js and
+		// Initially the common resources are loaded.
+		// The common resources are similar to an autostart, they are used to
+		// initialize the single page application. They consist of common.js and
 		// common.css. The configuration of the Routing and essential styles
 		// can/should be stored here.
 		Composer.include("common");
@@ -4511,16 +4359,16 @@
 				Array.from(node.childNodes).forEach((node) =>
 					_cleanup(node));
 
-			// Composites and models must be undocked when they are removed from
-			// the DOM independent of whether a condition exists. For composites
-			// with condition, it must be noted that the composite is initially
-			// replaced by a marker. During replacement, the initial composite
-			// is removed, which can cause an unwanted undocking. The logic is
-			// based on the assumption that each composite has a meta-object.
-			// When replacing a composite, the corresponding meta-object is also
-			// deleted, so that the MutationObserver detects the composite to be
-			// removed in the DOM, but undocking is not performed without the
-			// matching meta-object.
+			// Composites and application modules must be undocked when they are
+			// removed from the DOM independent of whether a condition exists.
+			// For composites with condition, it must be noted that the
+			// composite is initially replaced by a marker. During replacement,
+			// the initial composite is removed, which can cause an unwanted
+			// undocking. The logic is based on the assumption that each
+			// composite has a meta-object. When replacing a composite, the
+			// corresponding meta-object is also deleted, so that the
+			// MutationObserver detects the composite to be removed in the DOM,
+			// but undocking is not performed without the matching meta-object.
 
 			const serial = node.ordinal();
 			const object = _render_meta[serial];
@@ -4539,7 +4387,8 @@
 			}
 
 			// meta-object assigned to the element must be deleted, because it
-			// is an indicator for existence and presence of composites/models
+			// is an indicator for existence and presence of composites and
+			// their application modules
 			delete _render_meta[node.ordinal()];
 		};
 
@@ -4597,32 +4446,26 @@
 						if (record.target.hasAttribute(attribute))
 						    record.target.removeAttribute(attribute);
 					} else if (attribute.match(Composer.PATTERN_ATTRIBUTE_STATIC)) {
+						// Without an initial value registered by the renderer,
+						// the assumption is that the attribute was subsequently
+						// added and it is removed. Otherwise, a removed or
+						// changed attribute is restored with the initial value.
 						if (!object.attributes.hasOwnProperty(attribute)) {
-						    // If the renderer has not registered an initial
-						    // value, the assumption is that the attribute was
-						    // subsequently added and is therefore removed.
 						    if (record.target.hasAttribute(attribute))
 						        record.target.removeAttribute(attribute);
 						} else {
-						    // If the attribute was removed or the value was
-						    // changed, the initial value is restored that was
-						    // previously determined by the renderer.
 						    if (!record.target.hasAttribute(attribute)
 						            || object.attributes[attribute] !== record.target.getAttribute(attribute))
 						        record.target.setAttribute(attribute, object.attributes[attribute]);
 						}
 					} else if (_statics.has(attribute)) {
+						// Same restore logic, but for the attributes that were
+						// declared as static at runtime.
 						object.statics = object.statics || {};
 						if (!object.statics.hasOwnProperty(attribute)) {
-						    // If the renderer has not registered an initial
-						    // value, the assumption is that the attribute was
-						    // subsequently added and is therefore removed.
 						    if (record.target.hasAttribute(attribute))
 						        record.target.removeAttribute(attribute);
 						} else {
-						    // If the attribute was removed or the value was
-						    // changed, the initial value is restored that was
-						    // previously determined by the renderer.
 						    if (!record.target.hasAttribute(attribute)
 						            || object.statics[attribute] !== record.target.getAttribute(attribute))
 						        record.target.setAttribute(attribute, object.statics[attribute]);
@@ -4653,7 +4496,7 @@
 				});
 
 				// All removed elements are cleaned and if necessary the undock
-				// method is called if a view-module binding exists.
+				// method is called if a composite binding exists.
 				(record.removedNodes || []).forEach((node) =>
 					_cleanup(node));
 			});
@@ -4665,64 +4508,13 @@
 
 /**
  * (Resource)Messages is a static DataSource extension for internationalization
- * and localization. The implementation is based on a set of key-value or
- * label-value data which is stored in the locales.xml of the DataSource.
+ * and localization, based on key-value/label-value data in the locales.xml of
+ * the DataSource. After loading, the labels are available as associative array
+ * Messages and as object tree messages (the dot in the keys is the indicator of
+ * the levels in the tree). Messages is always available; messages exists when
+ * labels are loaded.
  *
- *     + data
- *       + de
- *       + en
- *       - locales.xml
- *     + modules
- *     + resources
- *     - index.html
- *
- * The elements for the supported languages are organized in locales in this
- * file. Locales is a set of supported country codes. In each country code, the
- * key values are recorded as label entries.
- *
- *     <?xml version="1.0"?>
- *     <locales>
- *       <de>
- *         <label key="contact.title" value="Kontakt"/>
- *         <label key="contact.development.title">Entwicklung</label>
- *         ...
- *       </de>
- *       <en default="true">
- *         <label key="contact.title" value="Contact"/>
- *         <label key="contact.development.title">Development</label>
- *         ...
- *       </en>
- *     </locales>
- *
- * The language is selected automatically on the basis of the language setting
- * of the browser. If the language set there is not supported, the language
- * declared as 'default' is used.
- *
- * If the locales contain a key more than once, the first one is used. Messages
- * principally cannot be overwritten. What should be noted in the following
- * description also for the modules.
- *
- * After loading the application, Messages are available as an associative
- * array and can be used directly in JavaScript and Markup via Expression
- * Language.
- *
- *     Messages["contact.title"];
- *
- *     <h1 output="{{Messages['contact.title']}}"/>
- *
- * In addition, the object message is also provided. Unlike Messages, message is
- * an object tree analogous to the keys from Messages. The dot in the keys is
- * the indicator of the levels in the tree.
- *
- *     messages.contact.title;
- *
- *     <h1 output="{{messages.contact.title}}"/>
- *
- * Messages is always available; messages exists when labels are loaded.
- *
- * Extension for modules: These can also provide locales/messages in the module
- * directory, which are loaded in addition to the locales/messages from the data
- * directory -- even at runtime. Again, existing keys cannot be overwritten.
+ * see also: https://seanox.github.io/composite-js/manuals/message.html
  */
 (() => {
 
@@ -4807,30 +4599,26 @@
 })();
 
 /**
- * A reactivity system or here called reactivity rendering is a mechanism which
- * automatically keeps in sync a data source (model) with a data representation
- * (view) layer. Every time the model changes, the view is partially
- * re-rendered to reflect the changes.
+ * Reactivity rendering automatically keeps a data object in sync with its
+ * representation (view). Changes to the data object trigger a partial
+ * re-render of the consumers in the view.
  *
- * The mechanism is based on notifications that arise from setting and getting
- * from the model as a data source. Which is supported by the proxy object in
- * JavaScript and its events can then be used to determine which elements/nodes
- * in the DOM consume what data from the model and need to be updated when
- * changes are made.
+ * The mechanism is based on notifications from getting and setting on the
+ * data object, supported by the JavaScript proxy object. The resulting events
+ * determine which elements/nodes in the DOM consume which data and must be
+ * updated on changes.
  *
- * Reactivity rendering is implemented as an optional module and uses the
- * available API.
+ * Reactive is an optional part of composite-js and uses the available API. It
+ * works permanently recursively on all levels of a data object and also on
+ * objects added later as values, even if those do not explicitly use Reactive.
  *
- * Reactive works permanently recursively on all objects, in all levels of a
- * model and also on the objects that are added later as values, even if these
- * objects do not explicitly use the Reactive.
+ * Object and data object are decoupled by free (unbound) proxies: they
+ * reference an object but are not bound to a level in the object tree and
+ * synchronize the data bidirectionally. They are managed in a weak map with the
+ * object as key, so garbage collection can dispose of objects and proxies when
+ * not in use.
  *
- * Object and model are decoupled by Reactive. The implementation uses free
- * (unbound) proxies for this purpose. These proxies reference an object but are
- * not bound to an object level in the object tree and they synchronize the data
- * bidirectionally. Managed these proxies are managed with a weak map where the
- * object is the key and the garbage collection can dispose of this objects with
- * associated proxies when not in use.
+ * see also: https://seanox.github.io/composite-js/manuals/reactive.html
  */
 (() => {
 
@@ -5075,52 +4863,20 @@
 })();
 
 /**
- * The presentation of the page can be organized in Seanox composite-js in
- * views, which are addressed via paths (routes). For this purpose, the routing
- * supports a hierarchical directory structure based on the IDs of the nested
- * composites in the markup. The routing then controls the visibility and
- * permission for accessing the views via paths - the so-called view flow. For
- * the view flow and the permission, the routing actively uses the DOM to insert
- * and remove the views depending on the situation.
+ * The presentation of the page can be organized in views, which are addressed
+ * via paths (routes). For this purpose, the routing supports a hierarchical
+ * directory structure based on the IDs of the nested composites in the markup.
+ * The routing then controls the visibility and permission for accessing the
+ * views via paths - the so-called view flow. For the view flow and the
+ * permission, the routing actively uses the DOM to insert and remove the views
+ * depending on the situation.
  *
+ * Paths are similar to a file system and support absolute and relative
+ * notation. The words are case-sensitive, use 7-bit ASCII above the space
+ * character and are separated by the hash character (#). Repeated use of the
+ * separator maps jumps back in the direction of the root.
  *
- *     TERMS
- *     ----
- *
- *         Page
- *         ----
- * In a single page application, the page is the elementary framework and
- * runtime environment of the entire application.
- *
- *         View
- *         ----
- * A view is the primary projection of modules/components/content. This
- * projection can contain additional substructures in the form of views and
- * sub-views. Views can be static, always shown, or controlled by path and
- * permissions. Paths address the complete chain of nested views and shows the
- * parent views in addition to the target view.
- *
- *         View Flow
- *         ----
- * View flow describes the access control and the sequence of views. The routing
- * provides interfaces, events, permission concepts and interceptors with which
- * the view flow can be controlled and influenced.
- *
- *         Paths
- *         ----
- * Paths are used for navigation, routing and controlling the view flow. The
- * target can be a view or a function if using interceptors. For SPAs
- * (single-page applications), the anchor part of the URL is used for navigation
- * and routes.
- *
- * Similar to a file system, absolute and relative paths are also supported
- * here. Paths consist of case-sensitive words that only use 7-bit ASCII
- * characters above the space character. Characters outside this range are URL
- * encoded. The words are separated by the hash character (#).
- *
- * Repeated use of the separator (#) allows jumps back in the path to be mapped.
- * The number of repetitions indicates the number of returns in the direction of
- * the root.
+ * see also: https://seanox.github.io/composite-js/manuals/routing.html
  */
 (() => {
 
@@ -5249,12 +5005,12 @@
 
 		/**
 		 * Checks whether routing keeps or removes the composite in the DOM.
-		 * A matching module can implement permit() and return undefined, true
-		 * or false.
+		 * A matching application module can implement permit() and return
+		 * undefined, true or false.
 		 *
 		 * true and false decide directly. If permit() is missing or returns
-		 * undefined, routing falls back to checking Path.covers(path). Covered means
-		 * that the specified path must be contained from the root of the
+		 * undefined, routing falls back to checking Path.covers(path). Covered
+		 * means that the specified path must be contained from the root of the
 		 * current working path.
 		 *
 		 * @param {string} path path of the composite
@@ -5274,7 +5030,7 @@
 					|| path === "#")
 				return false;
 
-			composite = Composer.match(Composer.PATTERN_COMPOSITE_ID);
+			composite = composite.match(Composer.PATTERN_COMPOSITE_ID);
 			if (!composite)
 				return false;
 
@@ -5373,7 +5129,7 @@
 						|| !element.hasAttribute(Routing.ATTRIBUTE_ROUTE))
 					continue;
 				const composite = element.getAttribute(Composer.ATTRIBUTE_ID);
-				const match = Composer.match(Composer.PATTERN_COMPOSITE_ID);
+				const match = composite.match(Composer.PATTERN_COMPOSITE_ID);
 				if (!match)
 					throw new Error(`Invalid composite id${composite ? ": " + composite : ""}`);
 				path = "#" + match[1] + path;

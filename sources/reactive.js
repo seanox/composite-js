@@ -16,23 +16,24 @@
  *
  *     DESCRIPTION
  *     ----
- * Reactivity rendering automatically keeps a data source (model) in sync with
- * its representation (view). Changes to the model trigger a partial re-render
- * of the consumers in the view.
+ * Reactivity rendering automatically keeps a data object in sync with its
+ * representation (view). Changes to the data object trigger a partial
+ * re-render of the consumers in the view.
  *
  * The mechanism is based on notifications from getting and setting on the
- * model, supported by the JavaScript proxy object. The resulting events
+ * data object, supported by the JavaScript proxy object. The resulting events
  * determine which elements/nodes in the DOM consume which data and must be
  * updated on changes.
  *
- * Reactive is an optional module and uses the available API. It works
- * permanently recursively on all levels of a model and also on objects added
- * later as values, even if those do not explicitly use Reactive.
+ * Reactive is an optional part of composite-js and uses the available API. It
+ * works permanently recursively on all levels of a data object and also on
+ * objects added later as values, even if those do not explicitly use Reactive.
  *
- * Object and model are decoupled by free (unbound) proxies: they reference an
- * object but are not bound to a level in the object tree and synchronize the
- * data bidirectionally. They are managed in a weak map with the object as key,
- * so garbage collection can dispose of objects and proxies when not in use.
+ * Object and data object are decoupled by free (unbound) proxies: they
+ * reference an object but are not bound to a level in the object tree and
+ * synchronize the data bidirectionally. They are managed in a weak map with the
+ * object as key, so garbage collection can dispose of objects and proxies when
+ * not in use.
  *
  * see also: https://seanox.github.io/composite-js/manuals/reactive.html
  */

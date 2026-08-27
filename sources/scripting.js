@@ -18,7 +18,7 @@
  *     ----
  * Expression language and composite script are two important components. Both
  * are based on ECMAScript/JavaScript enriched with macros. In addition,
- * composite scriot can be loaded at runtime and can itself load other composite
+ * composite script can be loaded at runtime and can itself load other composite
  * scripts. Because in the end everything is based on a simple eval command, it
  * was important to isolate the execution of the scripts so that internal
  * methods and constants cannot be accessed unintentionally.
@@ -75,7 +75,7 @@
             // - ignore: '...'
             // - ignore: "..."
             // - ignore: `...`
-            // - detect: (^|\W)#(import|export|module|use)\s+...(\W|$)
+            // - detect: (^|\W)#(import|export|use)\s+...(\W|$)
             // - detect: \(\s*\?...\)
 
             let pattern;

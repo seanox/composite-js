@@ -29,12 +29,13 @@
      * manipulated in a controlled way. Controlled means that errors occur when
      * trying to overwrite existing objects and functions. Originally, the
      * mechanism was removed after loading the page, but the feature has proven
-     * to be convenient for other modules and therefore remains.
+     * to be convenient for the other components of composite-js and therefore
+     * remains.
      *
      * In the code, the method is used in an unconventional form.
      *
-     *     compliant("Composite");
-     *     compliant(null, window.Composite = {...});
+     *     compliant("Composer");
+     *     compliant(null, window.Composer = {...});
      *     compliant("Object.prototype.ordinal");
      *     compliant(null, Object.prototype.ordinal = function() {...}
      *
@@ -128,7 +129,7 @@
 
                 // Composites use IDs which causes corresponding DOM objects
                 // (Element) in the global namespace if there are no
-                // corresponding data objects (models). Because namespaces are
+                // corresponding application modules. Because namespaces are
                 // based on data objects, if an element appears, we assume that
                 // a data object does not exist and the recursive search is
                 // aborted as unsuccessful.
@@ -233,7 +234,7 @@
 
                 // Composites use IDs which causes corresponding DOM objects
                 // (Element) in the global namespace if there are no
-                // corresponding data objects (models). Because namespaces are
+                // corresponding application modules. Because namespaces are
                 // based on data objects, if an element appears, we assume that
                 // a data object does not exist and the recursive search is
                 // aborted as unsuccessful.

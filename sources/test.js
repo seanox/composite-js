@@ -16,13 +16,14 @@
  *
  *     DESCRIPTION
  *     ----
- * Test is an API and module for implementing and executing integration tests.
- * Tests can be organized as tasks, scenarios and suites. The smallest
- * component is called task because `case` is a JavaScript keyword.
+ * Test is an API and a modular part of composite-js for implementing and
+ * executing integration tests. Tests can be organized as tasks, scenarios and
+ * suites. The smallest component is called task because `case` is a JavaScript
+ * keyword.
  *
- * The Test API is part of composite-js but must be activated explicitly,
- * because it changes error handling and console output and extends parts of
- * the JavaScript API for testing.
+ * The Test API is optional part of composite-js but must be activated
+ * explicitly, because it changes error handling and console output and extends
+ * parts of the JavaScript API for testing.
  *
  *     Test.activate();
  *

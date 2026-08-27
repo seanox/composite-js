@@ -159,12 +159,12 @@
            
         /**
          * Checks whether routing keeps or removes the composite in the DOM.
-         * A matching module can implement permit() and return undefined, true
-         * or false.
+         * A matching application module can implement permit() and return
+         * undefined, true or false.
          *
          * true and false decide directly. If permit() is missing or returns
-         * undefined, routing falls back to checking Path.covers(path). Covered means
-         * that the specified path must be contained from the root of the
+         * undefined, routing falls back to checking Path.covers(path). Covered
+         * means that the specified path must be contained from the root of the
          * current working path.
          *
          * @param {string} path path of the composite

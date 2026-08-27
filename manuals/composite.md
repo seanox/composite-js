@@ -138,14 +138,15 @@ the following order:
 3. HTML/Markup
 
 ### CSS
-The runtime inserts the CSS as a ```style``` element in the ```HEAD``` element.
-Without a ```HEAD``` element, the insertion causes an error.
+The runtime inserts the CSS into a ```style``` element in the ```HEAD``` if the
+markup (HTML) has been loaded beforehand.
 
 ### JavaScript
 The runtime executes the JavaScript provided by a Composite script in an
-isolated runtime scope. Declarations remain local unless explicitly exported,
-for example with the macro [#export](scripting.md#export) -- this is required
-for any object participating in Composite binding.
+isolated runtime scope. JavaScript is only loaded if no corresponding
+application module already exists. Declarations remain local unless explicitly
+exported, for example with the macro [#export](scripting.md#export) -- this is
+required for any object participating in Composite binding.
 
 ```javascript
 const login = {

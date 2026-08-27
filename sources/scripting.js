@@ -22,6 +22,9 @@
  * scripts. Because in the end everything is based on a simple eval command, it
  * was important to isolate the execution of the scripts so that internal
  * methods and constants cannot be accessed unintentionally.
+ *
+ * see also: https://seanox.github.io/composite-js/manuals/scripting.html
+ *           https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {
 
@@ -29,60 +32,30 @@
     compliant(null, window.Scripting = {
 
         /**
-         * As a special feature, composite script supports macros.
+         * Executes a composite script. As a special feature, composite script
+         * supports macros.
          *
          * Macros are based on a keyword starting with a hash symbol followed by
          * arguments separated by spaces. Macros end with the next line break, a
          * semicolon or with the end of the file.
          *
-         *     #import
-         *     ----
-         * Expects a space-separated list of composite modules whose paths must
-         * be relative to the URL.
-         *
-         *     #import io/api/connector and/much more
-         *
-         * Composite modules consist of the optional resources CSS, JS and HTML.
-         * The #import macro can only load CSS and JavaScript. The behavior is
-         * the same as when loading composites in the markup. Server status 404
-         * does not cause an error because all resources of a composite are
-         * optional including JavaScript. Server states other than 200 and 404
-         * cause an error. CSS resources are added to the HEAD and cause an
-         * error if no HEAD element exists in the DOM. Markup (HTML) is not
-         * loaded because no target can be set for the output. The macro can be
-         * used multiple times in composite script.
-         *
-         *     #export
-         *     ----
-         * Expects a space-separated list of exports. Exports are variables or
-         * constants in a module that are made usable in the global scope.
-         *
-         *     #export connector and much more
-         *
-         * Primarily, an export argument is the name of the variable or constant
-         * in the module. Optionally, the name can be extended by an @ symbol to
-         * include the destination in the global scope.
-         *
-         *     #export connector@io.example
-         *
-         *     #use
-         *     ----
-         * Expects a space-separated list of namespaces to create if they do not
-         * already exist.
-         *
-         *     #use namespaces to be created
-         *
-         *     (?...)
-         *     ----
-         * Tolerant expressions are also a macro, although with different
-         * syntax. The logic enclosed in the parenthesis with question marks is
-         * executed fault-tolerantly. In case of an error the logic corresponds
-         * to the value false without causing an error itself, except for syntax
-         * errors.
+         * #import    loads modules as composite script resources from the
+         *            module directory
+         * #export    makes variables, constants and functions of the isolated
+         *            module scope usable in the global scope, optionally in a
+         *            namespace declared with an @ symbol
+         * #use       creates the passed namespaces if they do not already exist
+         * (?...)     tolerant expression, a macro with a different syntax, the
+         *            enclosed logic is executed fault-tolerantly and
+         *            corresponds to the value false in case of an error, except
+         *            for syntax errors
          *
          * @param {string} script
          * @param {string} [url] Optional sourceURL
-         * @returns {*} the return value from the script         *
+         * @returns {*} the return value from the script
+         *
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#macros
+         *           https://seanox.github.io/composite-js/manuals/expression.html
          */
         eval(...variants) {
 
@@ -244,7 +217,7 @@
                 throw new TypeError("Invalid data type");
             if (!script.trim())
                 return;
-            with (Composite.render.context)
+            with (Composer.render.context)
                 return eval(script);
         }
     });
@@ -253,7 +226,7 @@
         // Because it is an internal method, an additional validation of the
         // imports as data structure was omitted.
         imports.forEach(include =>
-            Composite.load(Composite.MODULES + "/" + include + ".js", true));
+            Composer.load(Composer.MODULES + "/" + include + ".js", true));
     };
 
     const _export = (...exports) => {

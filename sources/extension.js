@@ -17,6 +17,8 @@
  *     DESCRIPTION
  *     ----
  * General extension of the JavaScript API.
+ *
+ * see also: https://seanox.github.io/composite-js/manuals/extension.html
  */
 (() => {
 

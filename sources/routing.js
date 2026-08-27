@@ -16,51 +16,20 @@
  *
  *     DESCRIPTION
  *     ----
- * The presentation of the page can be organized in Seanox composite-js in
- * views, which are addressed via paths (routes). For this purpose, the routing
- * supports a hierarchical directory structure based on the IDs of the nested
- * composites in the markup. The routing then controls the visibility and
- * permission for accessing the views via paths - the so-called view flow. For
- * the view flow and the permission, the routing actively uses the DOM to insert
- * and remove the views depending on the situation.
+ * The presentation of the page can be organized in views, which are addressed
+ * via paths (routes). For this purpose, the routing supports a hierarchical
+ * directory structure based on the IDs of the nested composites in the markup.
+ * The routing then controls the visibility and permission for accessing the
+ * views via paths - the so-called view flow. For the view flow and the
+ * permission, the routing actively uses the DOM to insert and remove the views
+ * depending on the situation.
  *
- *     TERMS
- *     ----
+ * Paths are similar to a file system and support absolute and relative
+ * notation. The words are case-sensitive, use 7-bit ASCII above the space
+ * character and are separated by the hash character (#). Repeated use of the
+ * separator maps jumps back in the direction of the root.
  *
- *         Page
- *         ----
- * In a single page application, the page is the elementary framework and
- * runtime environment of the entire application.
- *
- *         View
- *         ----
- * A view is the primary projection of modules/components/content. This
- * projection can contain additional substructures in the form of views and
- * sub-views. Views can be static, always shown, or controlled by path and
- * permissions. Paths address the complete chain of nested views and shows the
- * parent views in addition to the target view.
- *
- *         View Flow
- *         ----
- * View flow describes the access control and the sequence of views. The routing
- * provides interfaces, events, permission concepts and interceptors with which
- * the view flow can be controlled and influenced.
- *
- *         Paths
- *         ----
- * Paths are used for navigation, routing and controlling the view flow. The
- * target can be a view or a function if using interceptors. For SPAs
- * (single-page applications), the anchor part of the URL is used for navigation
- * and routes.
- *
- * Similar to a file system, absolute and relative paths are also supported
- * here. Paths consist of case-sensitive words that only use 7-bit ASCII
- * characters above the space character. Characters outside this range are URL
- * encoded. The words are separated by the hash character (#).
- *
- * Repeated use of the separator (#) allows jumps back in the path to be mapped.
- * The number of repetitions indicates the number of returns in the direction of
- * the root.
+ * see also: https://seanox.github.io/composite-js/manuals/routing.html
  */
 (() => {
 
@@ -153,14 +122,14 @@
             if (path === null
                     || path === Browser.location)
                 return;
-            Composite.asynchronous(path => {
+            Composer.asynchronous(path => {
                 const event = new Event("hashchange",{bubbles:false, cancelable:true});
                 event.oldURL = Browser.location;
                 event.newURL = path;
                 if (path.startsWith("#"))
                     window.location.hash = path.substring(1);
                 else window.location.href = path;
-                _routing_interrupt = Composite.asynchronous(event => {
+                _routing_interrupt = Composer.asynchronous(event => {
                     if (event.newURL !== Browser.location)
                         window.dispatchEvent(event);
                 }, event);
@@ -215,7 +184,7 @@
                     || path === "#")
                 return false;
 
-            composite = composite.match(Composite.PATTERN_COMPOSITE_ID);
+            composite = composite.match(Composer.PATTERN_COMPOSITE_ID);
             if (!composite)
                 return false;
 
@@ -309,12 +278,12 @@
         if (lookup instanceof Element) {
             let path = "";
             for (let element = lookup; element; element = element.parentElement) {
-                if (!element.hasAttribute(Composite.ATTRIBUTE_COMPOSITE)
-                        || !element.hasAttribute(Composite.ATTRIBUTE_ID)
+                if (!element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
+                        || !element.hasAttribute(Composer.ATTRIBUTE_ID)
                         || !element.hasAttribute(Routing.ATTRIBUTE_ROUTE))
                     continue;
-                const composite = element.getAttribute(Composite.ATTRIBUTE_ID);
-                const match = composite.match(Composite.PATTERN_COMPOSITE_ID);
+                const composite = element.getAttribute(Composer.ATTRIBUTE_ID);
+                const match = composite.match(Composer.PATTERN_COMPOSITE_ID);
                 if (!match)
                     throw new Error(`Invalid composite id${composite ? ": " + composite : ""}`);
                 path = "#" + match[1] + path;
@@ -322,7 +291,7 @@
             return path || "#";
         }
 
-        const marker = `[${Composite.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}]`;
+        const marker = `[${Composer.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}]`;
         const path = lookup.split("#").slice(1).map(entry =>
             `[id="${entry}"]${marker},[id^="${entry}@"]${marker}`);
         while (path.length > 0) {
@@ -335,9 +304,9 @@
     };
 
     const _render = (element, focus = false) => {
-        Composite.render(element);
+        Composer.render(element);
         if (focus) {
-            Composite.asynchronous((element) => {
+            Composer.asynchronous((element) => {
                 if (typeof element.focus === "function")
                     element.focus();
             }, element);
@@ -429,7 +398,7 @@
         if (locationOldElement === document.body
                 || locationNewElement === document.body) {
             _render(document.body);
-            Composite.asynchronous((element) => {
+            Composer.asynchronous((element) => {
                 if (typeof element.focus === "function")
                     element.focus();
             }, locationNewElement);
@@ -437,7 +406,7 @@
         }
         if (locationOldElement.contains(locationNewElement)) {
             _render(locationOldElement);
-            Composite.asynchronous((element) => {
+            Composer.asynchronous((element) => {
                 if (typeof element.focus === "function")
                     element.focus();
             }, locationNewElement);
@@ -458,7 +427,7 @@
      * hide the composite elements in the DOM. What happens by physically adding
      * and removing. The elements are identified by the composite ID.
      */
-    Composite.customize((element) => {
+    Composer.customize((element) => {
 
         if (element instanceof Element
                 && element.hasAttribute("route")
@@ -493,25 +462,25 @@
 
         if (!_routing_active
                 || !(element instanceof Element)
-                || !element.hasAttribute(Composite.ATTRIBUTE_COMPOSITE)
+                || !element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
                 || !element.hasAttribute(Routing.ATTRIBUTE_ROUTE))
             return;
 
-        const composite = (element.getAttribute(Composite.ATTRIBUTE_ID) || '').trim();
+        const composite = (element.getAttribute(Composer.ATTRIBUTE_ID) || '').trim();
         const path = _lookup(element);
 
         let script = null;
-        if (element.hasAttribute(Composite.ATTRIBUTE_CONDITION)) {
-            script = element.getAttribute(Composite.ATTRIBUTE_CONDITION).trim();
-            if (script.match(Composite.PATTERN_EXPRESSION_CONTAINS))
-                script = script.replace(Composite.PATTERN_EXPRESSION_CONTAINS, (match) => {
+        if (element.hasAttribute(Composer.ATTRIBUTE_CONDITION)) {
+            script = element.getAttribute(Composer.ATTRIBUTE_CONDITION).trim();
+            if (script.match(Composer.PATTERN_EXPRESSION_CONTAINS))
+                script = script.replace(Composer.PATTERN_EXPRESSION_CONTAINS, (match) => {
                     match = match.substring(2, match.length -2).trim();
                     return `{{Routing.approve("${path}", ${composite}") and (${match})}}`;
                 });
         }
         if (!script)
             script = `{{Routing.approve("${path}", "${composite}")}}`;
-        element.setAttribute(Composite.ATTRIBUTE_CONDITION, script);
+        element.setAttribute(Composer.ATTRIBUTE_CONDITION, script);
     });
 
     /**

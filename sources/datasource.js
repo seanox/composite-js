@@ -16,7 +16,6 @@
  *
  *     DESCRIPTION
  *     ----
- *
  * Immutable XML data source for static application data, combining structured
  * XML storage with multilingual data separation, optional aggregation, and
  * transformation capabilities via XPath and XSLT. The concept combines the
@@ -24,20 +23,10 @@
  * targeting application-provided data that is accessed primarily through
  * queries and transformations.
  *
- * Data are addressed via a locator, which is a URL (xml://... or xslt://...),
- * where both single and double slashes are supported. It is used as an absolute
- * path without a file extension relative to the DataSource directory and does
- * not contain a locale (language specification) in the path. The locale would
- * be the first element in the path that the locator addresses. However, a
- * locator can also be a fully qualified URL, which typically ends with a file
- * extension (xml://....xml or xslt://....xslt). This kind of locator addresses
- * an absolute path based on the current URL and does not include a locale.
+ * Because DataSource is based on static data, the implementation uses a cache
+ * to minimize network access.
  *
- * DataSource is based on static data. Therefore, the implementation uses a
- * cache to minimize network access.
- * 
- * The data is queried with XPath, the result can be concatenated and
- * aggregated and the result can be transformed with XSLT. 
+ * see also: https://seanox.github.io/composite-js/manuals/datasource.html
  */
 (() => {
 

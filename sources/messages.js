@@ -97,9 +97,9 @@
             && DataSource.locales.includes(DataSource.locale))
         DataSource.localize(DataSource.locale);
 
-    Composite.listen(Composite.EVENT_MODULE_LOAD, (event, context, module) => {
+    Composer.listen(Composer.EVENT_MODULE_LOAD, (event, context, module) => {
         const request = new XMLHttpRequest();
-        request.open("GET", Composite.MODULES + "/" + module + ".xml", false);
+        request.open("GET", Composer.MODULES + "/" + module + ".xml", false);
         request.send();
         if (request.status !== 200)
             return;

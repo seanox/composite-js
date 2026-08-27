@@ -26,79 +26,15 @@
  * Processing runs in the background and starts automatically when the page is
  * loaded.
  *
- *     TERMS
- *     ----
- *
- *         namespace
- *         ----
- * Comparable to packages in other programming languages, namespaces can be used
- * for hierarchical structuring of components, resources and business logic.
- * Although packages are not a feature of JavaScript, they can be mapped at the
- * object level by concatenating objects into an object tree. Here, each level
- * of the object tree forms a namespace, which can also be considered a domain.
- *
- * As is typical for the identifiers of objects, namespaces also use letters,
- * numbers and underscores separated by a dot. As a special feature, arrays are
- * also supported. If a layer in the namespace uses an integer, this layer is
- * used as an array.
- *
- *         model
- *         ----
- * Models are representable/projectable static JavaScript objects that can
- * provide and receive data, states and interactions for views, comparable to
- * managed beans and DTOs (Data Transfer Objects). As singleton/facade/delegate,
- * they can use other components and abstractions, contain business logic
- * themselves, and be a link between the user interface (view) and middleware
- * (backend).
- *
- * The required view-module binding is part of the Model View Controller and the
- * Composite API.
- *
- *         property
- *         ----
- * Is a property in a static model (model component / component). It
- * corresponds to an HTML element with the same ID in the same namespace. The
- * ID of the property can be relative or use an absolute namespace. If the ID
- * is relative, the namespace is defined by the parent composite element.
- *
- *         qualifier
- *         ----
- * In some cases, the identifier (ID) may not be unique. For example, in cases
- * where properties are arrays or an iteration is used. In these cases the
- * identifier can be extended by an additional unique qualifier separated by a
- * colon. Qualifiers behave like properties during view-module binding and extend
- * the namespace.
- *
- *         unique
- *         ----
- * In some cases it is necessary that different things in the view refer to a
- * target in the corresponding model. However, if these things must still be
- * unique in the view, a unique identifier can be used in addition to the
- * qualifier, separated by a hash. This identifier then has no influence on the
- * composite logic and is used exclusively for the view.
- *
- *         composite
- *         ----
- * Composite describes a construct of markup (view), JavaScript object (model),
- * CSS and possibly other resources. It describes a component/module without
- * direct relation to the representation.
- *
- *         composite-id
- *         ----
- * It is a character sequence consisting of letters, numbers and underscores
- * and optionally supports the minus sign if it is not used at the beginning or
- * end. A composite ID is at least one character long and is composed by
- * combining the attributes ID and COMPOSITE.
- *
  *     PRINCIPLES
  *     ----
  * The world is static. So also composite-js and all components. This avoids the
  * management and establishment of instances.
  *
- * Attributes ID and COMPOSITE are elementary and immutable.
- * They are read the first time an element occurs and stored in the object
- * cache. Therefore, these attributes cannot be changed later because they are
- * then used from the object cache.
+ * Attributes ID and COMPOSITE are elementary and immutable. They are read the
+ * first time an element occurs and stored in the object cache. Therefore, these
+ * attributes cannot be changed later because they are then used from the object
+ * cache.
  *
  * Attributes of elements are elementary and immutable even if they contain an
  * expression.
@@ -106,7 +42,11 @@
  * Clean Code Rendering - The composite-js relevant attributes are stored in
  * meta-objects to each element and are removed in the markup. The following
  * attributes are essential: COMPOSITE, ID -- they are cached and remain at the
- * markup, these cannot be changed. the MutationObserver will restore them.
+ * markup, these cannot be changed. The MutationObserver will restore them.
+ *
+ * see also: https://seanox.github.io/composite-js/manuals/architecture.html
+ *           https://seanox.github.io/composite-js/manuals/composite-binding.html
+ *           https://seanox.github.io/composite-js/manuals/markup.html
  */
 (() => {
 
@@ -160,15 +100,15 @@
 
     /** Pattern for DataSource locator XML with transformation */
     const PATTERN_DATASOURCE_LOCATOR_XML_XSLT = new RegExp(PATTERN_DATASOURCE_LOCATOR_XML.source.slice(0, -1)
-        + "\\s+\\+\\s+" + "(xslt|" + PATTERN_DATASOURCE_LOCATOR_XSLT.source.substring(1).slice(0, -1).replace("\\2", "\\8") + ")$");
+            + "\\s+\\+\\s+" + "(xslt|" + PATTERN_DATASOURCE_LOCATOR_XSLT.source.substring(1).slice(0, -1).replace("\\2", "\\8") + ")$");
 
-    compliant("Composite");
-    compliant(null, window.Composite = {
+    compliant("Composer");
+    compliant(null, window.Composer = {
 
         // Against the trend, the constants of the composite are public so that
         // they can be used by extensions.
             
-        /** Path of the Composite for: modules (sub-directory of work path) */
+        /** Composite-modules directory (subdirectory of the working directory) */
         get MODULES() {return window.location.combine(window.location.contextPath, "/modules");},
 
         /** Constant for attribute composite */
@@ -350,20 +290,20 @@
         
         /** Patterns with the supported events */
         get PATTERN_EVENT_FUNCTIONS() {return (() => {
-            const pattern = Composite.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
+            const pattern = Composer.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
                letter.toUpperCase());
             return new RegExp("^on(" + pattern.replace(/\s+/g, "|") + ")");
         })();},
         
         /** Patterns with the supported events as plain array */
         get PATTERN_EVENT_NAMES() {return (() => {
-            return Composite.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
+            return Composer.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
                 letter.toUpperCase()).split(/\s+/);
         })();},
         
         /** Patterns with the supported events as plain array (lower case) */
         get PATTERN_EVENT_FILTER() {return (() => {
-            return Composite.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
+            return Composer.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
                 letter.toUpperCase()).toLowerCase().split(/\s+/);
         })();},
 
@@ -385,7 +325,7 @@
                     && callback !== null
                     && callback !== undefined)
                 throw new TypeError("Invalid callback: " + typeof callback);        
-            if (!event.match(Composite.PATTERN_EVENT))
+            if (!event.match(Composer.PATTERN_EVENT))
                 throw new Error(`Invalid event${event.trim() ? ": " + event : ""}`);
             
             event = event.toLowerCase();
@@ -459,9 +399,9 @@
 
         /**
          * Determines the corresponding meta-object for the passed selector.
-         * @param   {Element|string} selector, as DOM element or a string
+         * @param {Element|string} selector DOM element or a string
          * @returns {object|null} the determined meta-object or null
-         * @throws  {Error} If the selector is not unique (several nodes found).
+         * @throws {Error} If the selector is not unique (several nodes found).
          */
         lookup(selector) {
 
@@ -474,7 +414,7 @@
                     return null;
                 if (nodes.length > 1)
                     throw new Error("Selector is not unique");
-                return Composite.lookup(nodes[0]);
+                return Composer.lookup(nodes[0]);
             }
 
             if (!(selector instanceof Element))
@@ -496,34 +436,26 @@
          * current value (if available) are passed as arguments.
          * 
          * The validation can have four states:
-         * 
+         *
          *     true, not true, text, undefined/void
-         *     
-         *         true
-         *         ----
-         * The validation was successful. No error is shown and the default
-         * action of the browser is used. If possible the value is synchronized
-         * with the model.
-         * 
-         *         not true and not undefined/void
-         *         ----
-         * The validation failed; an error is shown. An existing return value
-         * indicates that the default action of the browser should not be
-         * executed and so it is blocked. In this case, a possible value is not
-         * synchronized with the model.
-         * 
-         *         text
-         *         ----
-         * Text corresponds to: Invalid + error message. If the error message is
-         * empty, the message from ATTRIBUTE_MESSAGE is used alternatively.
-         * 
-         *         undefined/void
-         *         ----
-         * The validation failed; an error is shown. No return value indicates
-         * that the default action of the browser should nevertheless be
-         * executed. This behavior is important e.g. for the validation of input
-         * fields, so that the input reaches the user interface. In this case, a
-         * possible value is not synchronized with the model.
+         *
+         * true       The validation was successful. No error is shown and the
+         *            default action of the browser is used. If possible the
+         *            value is synchronized with the model.
+         * not true   The validation failed; an error is shown. An existing
+         *            return value indicates that the default action of the
+         *            browser should not be executed and so it is blocked.
+         * text       Corresponds to: Invalid + error message. If the error
+         *            message is empty, the message from ATTRIBUTE_MESSAGE is
+         *            used alternatively.
+         * undefined  The validation failed; an error is shown. No return value
+         * / void     indicates that the default action of the browser should
+         *            nevertheless be executed. This behavior is important e.g.
+         *            for the validation of input fields, so that the input
+         *            reaches the user interface.
+         *
+         * In all states except true, a possible value is not synchronized with
+         * the model.
          *
          * @param {Element|string} selector DOM element or a string
          * @param {boolean} [lock=true] Unlocking of the model validation
@@ -543,7 +475,7 @@
                     return;
                 let validate = Array.from(document.querySelectorAll(selector));
                 validate.forEach((node, index) => {
-                    validate[index] = Composite.validate(node, lock);
+                    validate[index] = Composer.validate(node, lock);
                     if (validate[index] === undefined)
                         validate[index] = 0;
                     else validate[index] = validate[index] === true ? 1 : 2; 
@@ -595,19 +527,19 @@
                     else if (selector.tagName.match(/^select/i)
                             && "selectedIndex" in selector)
                         value = selector.options[selector.selectedIndex].value;
-                    else if (Composite.ATTRIBUTE_VALUE in selector)
-                        value = selector[Composite.ATTRIBUTE_VALUE];
+                    else if (Composer.ATTRIBUTE_VALUE in selector)
+                        value = selector[Composer.ATTRIBUTE_VALUE];
                 }        
                 
                 // Implicit validation via the model, if a corresponding
                 // validate method is implemented. The validation through the
                 // model only works if the corresponding composite is
                 // active/present in the DOM!
-                if (object.attributes.hasOwnProperty(Composite.ATTRIBUTE_VALIDATE)
+                if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_VALIDATE)
                         && valid === true
                         && lock !== true
-                        && typeof meta.model[Composite.ATTRIBUTE_VALIDATE] === "function") {
-                    const validate = meta.model[Composite.ATTRIBUTE_VALIDATE];
+                        && typeof meta.model[Composer.ATTRIBUTE_VALIDATE] === "function") {
+                    const validate = meta.model[Composer.ATTRIBUTE_VALIDATE];
                     if (value !== undefined)
                         valid = validate.call(meta.model, selector, value);
                     else valid = validate.call(meta.model, selector);
@@ -619,7 +551,7 @@
             // ATTRIBUTE_VALIDATE. The value of ATTRIBUTE_MESSAGE is used as an
             // error message if the validation was not successful. For this
             // purpose, the browser function of HTML5 form validation is used,
-            // which shows  the message as a browser validation tooltip/message.
+            // which shows the message as a browser validation tooltip/message.
             //
             // The browser validation tooltip/message can be redirected to an
             // attribute of the validated element if the message begins with the
@@ -642,10 +574,10 @@
                             && valid.trim())
                         message = valid.trim();
                     if (typeof message !== "string") {
-                        if (object.attributes.hasOwnProperty(Composite.ATTRIBUTE_MESSAGE))
-                            message = String(object.attributes[Composite.ATTRIBUTE_MESSAGE] || "");
-                        if ((message || "").match(Composite.PATTERN_EXPRESSION_CONTAINS))
-                            message = String(Expression.eval(serial + ":" + Composite.ATTRIBUTE_MESSAGE, message));
+                        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_MESSAGE))
+                            message = String(object.attributes[Composer.ATTRIBUTE_MESSAGE] || "");
+                        if ((message || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
+                            message = String(Expression.eval(serial + ":" + Composer.ATTRIBUTE_MESSAGE, message));
                     }
 
                     if (Object.usable(message)) {
@@ -654,7 +586,7 @@
                         if (redirect) {
                             const attribute = redirect[1];
                             if (!(object.statics || {}).hasOwnProperty(attribute.toLowerCase())
-                                    && !Composite.PATTERN_ATTRIBUTE_STATIC.test(attribute)) {
+                                    && !Composer.PATTERN_ATTRIBUTE_STATIC.test(attribute)) {
                                 object.message = {attribute:attribute};
                                 selector.setAttribute(attribute, redirect[2]);
                             }
@@ -684,21 +616,18 @@
          * logic themselves, and be a link between the user interface (view) and
          * middleware (backend).
          *
-         * The required view-module binding is part of the Model View Controller
-         * and the Composite API.
-         *
-         * The view as presentation and user interface for interactions and the
-         * model are primarily decoupled. For the MVVM approach as an extension
-         * of the MVC, the controller establishes the bidirectional connection
-         * between view and model, which means that no manual implementation and
-         * declaration of events, interaction or synchronization is required.
+         * View and model are primarily decoupled. For the MVVM approach as an
+         * extension of the MVC, the controller establishes the bidirectional
+         * connection between view and model, which means that no manual
+         * implementation and declaration of events, interaction or
+         * synchronization is required.
          *
          *     Principles
          *     ----
          * Components are a static JavaScript objects (models). Namespaces are
          * supported, but they must be syntactically valid. Objects in objects
          * is possible through the namespaces (as static inner class).
-         * 
+         *
          *     Binding
          *     ----
          * The object constraint only includes what has been implemented in the
@@ -706,18 +635,15 @@
          * the renderer is not detected/supported, but can be implemented in the
          * application logic - this is a conscious decision!
          *     Case study:
-         * In the markup there is a composite with a property x. There is a
-         * corresponding JavaScript object (model) for the composite but without
-         * the property x. The renderer will mount the composite with the
-         * JavaScript model, the property x will not be found in the model and
-         * will be ignored. At runtime, the model is modified later and the
-         * property x is added. The renderer will not detect the change in the
-         * model and the property x will not be mounted during re-rendering.
-         * Only when the composite is completely removed from the DOM (e.g. by a
-         * condition) and then newly added to the DOM, the property x is also
+         * A composite in the markup uses the property x, the corresponding
+         * model does not implement it. The renderer mounts the composite, x is
+         * not found in the model and is ignored. If x is added to the model
+         * later at runtime, the change is not detected and x is not mounted
+         * during re-rendering. Only when the composite is completely removed
+         * from the DOM (e.g. by a condition) and is then newly added, x is also
          * mounted, because the renderer then uses the current snapshot of the
-         * model and the property x also exists in the model.
-         * 
+         * model.
+         *
          *     Validation
          *     ----
          * Details are described to Composer.validate(selector, lock)
@@ -753,7 +679,7 @@
          * The method used a simple queue and transaction management so that the
          * concurrent execution of rendering works sequentially in the order of
          * the method call.
-         * 
+         *
          * @param {Element|string} selector DOM element or a string
          * @param {boolean} lock Unlocking of the model validation
          * @throws {Error} In the following cases:
@@ -762,18 +688,18 @@
          */
         mount(selector, lock) {
             
-            Composite.mount.queue = Composite.mount.queue || [];
+            Composer.mount.queue = Composer.mount.queue || [];
 
             // The lock locks concurrent mount requests.
             // Concurrent mounting causes unexpected effects.
-            if (Composite.mount.lock
-                    && Composite.mount.lock !== lock) {
-                if (!Composite.mount.queue.includes(selector))
-                    Composite.mount.queue.push(selector);
+            if (Composer.mount.lock
+                    && Composer.mount.lock !== lock) {
+                if (!Composer.mount.queue.includes(selector))
+                    Composer.mount.queue.push(selector);
                 return;
             }
 
-            lock = _lock(Composite.mount, selector);
+            lock = _lock(Composer.mount, selector);
                 
             try {
                 
@@ -783,7 +709,7 @@
                         return;
                     const nodes = document.querySelectorAll(selector);
                     nodes.forEach((node) =>
-                        Composite.mount(node, lock.share()));
+                        Composer.mount(node, lock.share()));
                     return; 
                 }
 
@@ -791,13 +717,13 @@
                 // and without multiple object binding
                 // and script and style elements are not supported 
                 if (!(selector instanceof Element)
-                        || Composite.mount.queue.includes(selector)
-                        || selector.nodeName.match(Composite.PATTERN_ELEMENT_IGNORE))
+                        || Composer.mount.queue.includes(selector)
+                        || selector.nodeName.match(Composer.PATTERN_ELEMENT_IGNORE))
                     return;
 
                 // An element/selector should only be mounted once.
-                Composite.mount.stack = Composite.mount.stack || [];
-                if (Composite.mount.stack.includes(selector))
+                Composer.mount.stack = Composer.mount.stack || [];
+                if (Composer.mount.stack.includes(selector))
                     return;
 
                 const serial = selector.ordinal();
@@ -809,17 +735,17 @@
                 if (!(object instanceof Object))
                     return;
 
-                const identifier = object.attributes[Composite.ATTRIBUTE_ID];
+                const identifier = object.attributes[Composer.ATTRIBUTE_ID];
                 
                 // The explicit events are declared by ATTRIBUTE_EVENTS. The
                 // model can, but does not have to, implement the corresponding
                 // method. Explicit events are mainly used to synchronize view
                 // and model and to trigger targets of ATTRIBUTE_RENDER.
-                let events = object.attributes.hasOwnProperty(Composite.ATTRIBUTE_EVENTS)
-                        ? object.attributes[Composite.ATTRIBUTE_EVENTS] : "";
+                let events = object.attributes.hasOwnProperty(Composer.ATTRIBUTE_EVENTS)
+                        ? object.attributes[Composer.ATTRIBUTE_EVENTS] : "";
                 events = String(events || "");
                 events = events.toLowerCase().split(/\s+/);
-                events = events.filter((event, index, array) => Composite.PATTERN_EVENT_FILTER.includes(event)
+                events = events.filter((event, index, array) => Composer.PATTERN_EVENT_FILTER.includes(event)
                         && array.indexOf(event) === index);
                 
                 // There must be a corresponding model.
@@ -842,7 +768,7 @@
                     // corresponding to the events. Therefore, the scope of
                     // interactive composite elements shifts from the model to
                     // the according object. In all cases, a name-based
-                    // alignment in the model and thus ATTRIBUTE_ID is required
+                    // alignment in the model and thus ATTRIBUTE_ID is required.
                     // Anonymous interaction elements do not have this alignment
                     // and no scope can be determined.
 
@@ -854,7 +780,7 @@
 
                     for (let entry in model)
                         if (typeof model[entry] === "function"
-                                && entry.match(Composite.PATTERN_EVENT_FUNCTIONS)) {
+                                && entry.match(Composer.PATTERN_EVENT_FUNCTIONS)) {
                             entry = entry.substring(2).toLowerCase();
                             if (!events.includes(entry))
                                 events.push(entry);
@@ -864,7 +790,7 @@
                     while (prototype) {
                         Object.getOwnPropertyNames(prototype).forEach(entry => {
                             if (typeof model[entry] === "function"
-                                    && entry.match(Composite.PATTERN_EVENT_FUNCTIONS)) {
+                                    && entry.match(Composer.PATTERN_EVENT_FUNCTIONS)) {
                                 entry = entry.substring(2).toLowerCase();
                                 if (!events.includes(entry))
                                     events.push(entry);
@@ -875,7 +801,7 @@
                 }
 
                 // The determined events are registered.
-                Composite.mount.stack.push(selector);
+                Composer.mount.stack.push(selector);
                 events.forEach((event) => {
                     selector.addEventListener(event.toLowerCase(), (event) => {
 
@@ -884,16 +810,16 @@
                         const object = _render_meta[serial];
 
                         let action = event.type.toLowerCase();
-                        if (!Composite.PATTERN_EVENT_FILTER.includes(action))
+                        if (!Composer.PATTERN_EVENT_FILTER.includes(action))
                             return;
-                        action = Composite.PATTERN_EVENT_FILTER.indexOf(action);
-                        action = Composite.PATTERN_EVENT_NAMES[action];
+                        action = Composer.PATTERN_EVENT_FILTER.indexOf(action);
+                        action = Composer.PATTERN_EVENT_NAMES[action];
                         
                         let result;
                         
                         // Step 1: Validation
 
-                        let valid = Composite.validate(target, false);
+                        let valid = Composer.validate(target, false);
 
                         // There must be a corresponding model.
                         const meta = _mount_lookup(target);
@@ -907,8 +833,8 @@
                                 else if (target.tagName.match(/^select/i)
                                         && "selectedIndex" in target)
                                     value = target.options[target.selectedIndex].value;
-                                else if (Composite.ATTRIBUTE_VALUE in target)
-                                    value = target[Composite.ATTRIBUTE_VALUE];
+                                else if (Composer.ATTRIBUTE_VALUE in target)
+                                    value = target[Composer.ATTRIBUTE_VALUE];
                             }
 
                             // Validation works strictly by default. This means
@@ -921,7 +847,7 @@
                             // specifically deactivated and the input data is
                             // then always synchronized with the model. The
                             // effects of validation are then only optional.
-                            if (String(object.attributes[Composite.ATTRIBUTE_VALIDATE]).toLowerCase() === "optional"
+                            if (String(object.attributes[Composer.ATTRIBUTE_VALIDATE]).toLowerCase() === "optional"
                                     || valid === true) {
         
                                 // Step 2: Synchronisation
@@ -951,28 +877,17 @@
                                 if (accept(meta.target)) {
                                     meta.target = value;
                                 } else if (typeof meta.target === "object") {
-                                    if (accept(meta.target[Composite.ATTRIBUTE_VALUE]))
-                                        meta.target[Composite.ATTRIBUTE_VALUE] = value;
+                                    if (accept(meta.target[Composer.ATTRIBUTE_VALUE]))
+                                        meta.target[Composer.ATTRIBUTE_VALUE] = value;
                                 } else if (meta.target === undefined) {
-                                    if (accept(meta.model[Composite.ATTRIBUTE_VALUE]))
-                                        meta.model[Composite.ATTRIBUTE_VALUE] = value;
+                                    if (accept(meta.model[Composer.ATTRIBUTE_VALUE]))
+                                        meta.model[Composer.ATTRIBUTE_VALUE] = value;
                                 }
                                 
                                 // Step 3: Invocation
 
-                                // Events are possible for composites and their
-                                // interactive elements. For this purpose,
-                                // composites define the scope with their model.
-                                // Interactive composite elements are an object
-                                // in the model that contains the interaction
-                                // methods corresponding to the events.
-                                // Therefore, the scope of interactive composite
-                                // elements shifts from the model to the
-                                // according object. In all cases, a name-based
-                                // alignment in the model and thus ATTRIBUTE_ID
-                                // is required. Anonymous interaction elements
-                                // do not have this alignment and no scope can
-                                // be determined.
+                                // The scope is determined as when the events
+                                // were registered, see Composer.mount(selector).
                                 
                                 let model = meta.model;
                                 if (meta.target !== undefined)
@@ -997,17 +912,17 @@
                         // Rendering is performed in all cases. When an event
                         // occurs, all elements that correspond to the query
                         // selector rendering are updated. 
-                        let events = object.attributes.hasOwnProperty(Composite.ATTRIBUTE_EVENTS)
-                                ? object.attributes[Composite.ATTRIBUTE_EVENTS] : "";
+                        let events = object.attributes.hasOwnProperty(Composer.ATTRIBUTE_EVENTS)
+                                ? object.attributes[Composer.ATTRIBUTE_EVENTS] : "";
                         events = String(events || "");
                         events = events.toLowerCase().split(/\s+/);
                         if (events.includes(action.toLowerCase())) {
-                            let render = object.attributes.hasOwnProperty(Composite.ATTRIBUTE_RENDER)
-                                    ? object.attributes[Composite.ATTRIBUTE_RENDER] : "";
+                            let render = object.attributes.hasOwnProperty(Composer.ATTRIBUTE_RENDER)
+                                    ? object.attributes[Composer.ATTRIBUTE_RENDER] : "";
                             render = String(render || "");
-                            if ((render || "").match(Composite.PATTERN_EXPRESSION_CONTAINS))
-                                render = Expression.eval(serial + ":" + Composite.ATTRIBUTE_RENDER, render);
-                            Composite.render(render);
+                            if ((render || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
+                                render = Expression.eval(serial + ":" + Composer.ATTRIBUTE_RENDER, render);
+                            Composer.render(render);
                         }
                         
                         if (meta instanceof Object) {
@@ -1029,13 +944,13 @@
                 if (meta && meta.target && identifier) {
                     let value = meta.target;
                     if (meta.target instanceof Object)
-                        value = Composite.ATTRIBUTE_VALUE in meta.target ? meta.target.value : undefined;
+                        value = Composer.ATTRIBUTE_VALUE in meta.target ? meta.target.value : undefined;
                     if (value !== undefined) {
                         if (selector.tagName.match(/^input$/i)
                                 && selector.type.match(/^radio|checkbox/i))
                             selector.checked = value;
-                        else if (Composite.ATTRIBUTE_VALUE in selector)
-                            selector[Composite.ATTRIBUTE_VALUE] = value;
+                        else if (Composer.ATTRIBUTE_VALUE in selector)
+                            selector[Composer.ATTRIBUTE_VALUE] = value;
                     }
                 }
             } finally {
@@ -1116,7 +1031,7 @@
                 scope = variants[0];
 
             // STATIC is used to define protected attributes in the markup.
-            // Markup protection makes attribute manipulation ast the runtime
+            // Markup protection makes attribute manipulation at the runtime
             // more difficult. At runtime, additional attributes can be declared
             // as static. However, this function is not cheap, since the values
             // of the attributes used at that time must be determined for all
@@ -1134,7 +1049,7 @@
                 statics.forEach((entry) => {
                     entry = entry.toLowerCase();
                     if (!_statics.has(entry)
-                            && !entry.match(Composite.PATTERN_ATTRIBUTE_ACCEPT)) {
+                            && !entry.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)) {
                         _statics.add(entry);
                         changes.push(entry); 
                     }
@@ -1186,7 +1101,7 @@
             if (scope.length <= 0)
                 throw new Error("Invalid scope");
                 
-            if (scope.match(Composite.PATTERN_CUSTOMIZE_SCOPE)) {
+            if (scope.match(Composer.PATTERN_CUSTOMIZE_SCOPE)) {
                 if (callback === null)
                     _macros.delete(scope.toLowerCase());
                 else _macros.set(scope.toLowerCase(), callback);
@@ -1205,10 +1120,10 @@
          *
          *     Queue and Lock:
          *     ----
-         * The method used a simple queue and transaction management so that the
-         * concurrent execution of rendering works sequentially in the order of
-         * the method call.
-         * 
+         * Simple queue and transaction management, as for Composer.mount, so
+         * that the concurrent execution works sequentially in the order of the
+         * method call.
+         *
          *     Element meta-object
          *     ---- 
          * With the processed HTML elements and text nodes, simplified
@@ -1246,9 +1161,9 @@
          */
         render(selector, lock) {
 
-            Composite.render.queue = Composite.render.queue || [];
+            Composer.render.queue = Composer.render.queue || [];
             if (!selector
-                    && Composite.render.queue.length <= 0)
+                    && Composer.render.queue.length <= 0)
                 return;
 
             // The lock locks concurrent render requests. Concurrent rendering
@@ -1256,16 +1171,16 @@
             // elements that are currently being processed can be omitted or
             // replaced from the DOM. Access to parent and child elements may
             // then no longer be possible.
-            if (Composite.render.lock
-                    && Composite.render.lock !== lock) {
-                if (!Composite.render.queue.includes(selector))
-                    Composite.render.queue.push(selector);
-                Composite.asynchronous(Composite.render);
+            if (Composer.render.lock
+                    && Composer.render.lock !== lock) {
+                if (!Composer.render.queue.includes(selector))
+                    Composer.render.queue.push(selector);
+                Composer.asynchronous(Composer.render);
                 return;
             }
 
             if (!selector)
-                selector = Composite.render.queue[0];
+                selector = Composer.render.queue[0];
 
             // Even before rendering, possible expressions in the initial ID
             // should be resolved. As the expression can refer to temporary
@@ -1276,15 +1191,15 @@
             if (selector instanceof Element
                     && !_render_meta[selector.ordinal()]) {
                 _render_context_workspace.push(..._render_context_stack);
-                let id = selector.getAttribute(Composite.ATTRIBUTE_ID) || "";
-                if (id.match(Composite.PATTERN_EXPRESSION_CONTAINS)) {
-                    id = Expression.eval(selector.ordinal() + ":" + Composite.ATTRIBUTE_ID, id);
-                    selector.setAttribute(Composite.ATTRIBUTE_ID, id);
+                let id = selector.getAttribute(Composer.ATTRIBUTE_ID) || "";
+                if (id.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
+                    id = Expression.eval(selector.ordinal() + ":" + Composer.ATTRIBUTE_ID, id);
+                    selector.setAttribute(Composer.ATTRIBUTE_ID, id);
                 }
                 _render_context_workspace.length = 0;
             }
 
-            lock = _lock(Composite.render, selector);
+            lock = _lock(Composer.render, selector);
 
             const origin = selector;
             
@@ -1296,7 +1211,7 @@
                         return;
                     const nodes = document.querySelectorAll(selector);
                     nodes.forEach((node) =>
-                        Composite.render(node, lock.share()));
+                        Composer.render(node, lock.share()));
                     return;
                 }
 
@@ -1343,8 +1258,8 @@
                             return;
 
                         // Load modules/components/composite resources.
-                        if (object.attributes.hasOwnProperty(Composite.ATTRIBUTE_COMPOSITE))
-                            Composite.include(selector);
+                        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
+                            Composer.include(selector);
                     }
                 }
 
@@ -1380,13 +1295,13 @@
                 _render_element_script(selector);
                 _render_element_children(selector, object, lock);
 
-                if (selector.hasAttribute(Composite.ATTRIBUTE_RELEASE))
-                    selector.removeAttribute(Composite.ATTRIBUTE_RELEASE);
+                if (selector.hasAttribute(Composer.ATTRIBUTE_RELEASE))
+                    selector.removeAttribute(Composer.ATTRIBUTE_RELEASE);
 
             } catch (error) {
 
                 console.error(error);
-                Composite.fire(Composite.EVENT_ERROR, error);
+                Composer.fire(Composer.EVENT_ERROR, error);
                 if (origin instanceof Element)
                     origin.innerText = "Error: " + (error.message.match(/(\{\{|\}\})/)
                         ? "Invalid expression" : error.message);
@@ -1401,7 +1316,7 @@
                 // for update multiple times during a render cycle when a lock
                 // exists. When the selector is rendered, any queued jobs are
                 // removed.
-                Composite.render.queue = Composite.render.queue.filter(entry => entry !== origin);
+                Composer.render.queue = Composer.render.queue.filter(entry => entry !== origin);
 
                 lock.release();
             }
@@ -1430,7 +1345,7 @@
 
             // JS and CSS are loaded only once
             resource = normalize(resource);
-            if (!resource.startsWith(Composite.MODULES + "/"))
+            if (!resource.startsWith(Composer.MODULES + "/"))
                 throw new Error("Resource not supported: " + resource);
             if (resource in _render_cache
                     && resource.match(/\.(js|css)(\?.*)?$/i))
@@ -1533,7 +1448,7 @@
 
             let object = null;
             if (composite instanceof Element) {
-                if (!composite.hasAttribute(Composite.ATTRIBUTE_ID))
+                if (!composite.hasAttribute(Composer.ATTRIBUTE_ID))
                     throw new Error("Unknown composite without id");
                 object = _render_meta[composite.ordinal()];
                 if (!object)
@@ -1545,20 +1460,14 @@
                 resource = meta.namespace;
             }
 
-            const context = Composite.MODULES + "/" + resource.join("/");
+            const context = Composer.MODULES + "/" + resource.join("/");
 
-            // Based on namespace and resource a corresponding JavaScript object
-            // is searched for. Therefore, here with invalid namespace/composite
-            // IDs an error occurs, which must be noticed however already
-            // before, it is to be ensured that only modules are loaded to valid
-            // composites (namespace + composite ID). Later, it is also decided
-            // whether JavaScript must be loaded. This is only necessary if
-            // lookup cannot determine a JavaScript model (undefined or
-            // element).
-
-            // Theoretically an error can occur during the lookup if namespace
-            // or composite ID are invalid, but this should already run on error
-            // before, so it is not done here -- otherwise this is a bug!
+            // Based on namespace and resource a corresponding JavaScript object is
+            // searched for. Later, it is also decided whether JavaScript must be
+            // loaded. This is only necessary if lookup cannot determine a
+            // JavaScript model (undefined or element). Theoretically an error can
+            // occur here with invalid namespace/composite IDs, but this must
+            // already have been noticed before -- otherwise this is a bug!
 
             const lookup = Object.lookup(resource.join("."));
 
@@ -1567,7 +1476,7 @@
             // Was the module already loaded?
             // Initially EVENT_MODULE_LOAD is triggered.
             if (_render_cache[context + ".composite"] === undefined)
-                Composite.fire(Composite.EVENT_MODULE_LOAD, composite, resource);
+                Composer.fire(Composer.EVENT_MODULE_LOAD, composite, resource);
             _render_cache[context + ".composite"] = null;
 
             // The sequence of loading is strictly defined: JS, CSS, HTML
@@ -1580,26 +1489,23 @@
                     || resource === "common")
                 this.load(context + ".js");
 
-            // CSS and HTML are loaded once and only if they are resources to an
-            // element and the element is empty, excludes CSS for common.
+            // CSS for common is loaded once and independent of an element.
             if (resource === "common")
                 this.load(context + ".css");
 
-            // CSS and HTML/markup is only loaded if it is a known composite
-            // object and the element does not contain a markup (inner HTML).
-            // For inserting HTML/markup ATTRIBUTE_IMPORT and ATTRIBUTE_OUTPUT
-            // must not be set. It is assumed that an empty component/elements
-            // outsourced markup exists.
+            // CSS for a composite is only loaded if the element does not
+            // contain a markup (inner HTML). It is assumed that an empty
+            // component/element has outsourced markup.
             if (composite instanceof Element
                     && !composite.innerHTML.trim())
                 this.load(context + ".css");
 
-            // Is only required if the composite has no content and will not be
-            // filled with the attributes ATTRIBUTE_IMPORT and ATTRIBUTE_OUTPUT.
+            // HTML/markup is only required if the composite has no content and
+            // will not be filled with ATTRIBUTE_IMPORT or ATTRIBUTE_OUTPUT.
             if (composite instanceof Element
                     && !composite.innerHTML.trim()
-                    && !object.attributes.hasOwnProperty(Composite.ATTRIBUTE_IMPORT)
-                    && !object.attributes.hasOwnProperty(Composite.ATTRIBUTE_OUTPUT)) {
+                    && !object.attributes.hasOwnProperty(Composer.ATTRIBUTE_IMPORT)
+                    && !object.attributes.hasOwnProperty(Composer.ATTRIBUTE_OUTPUT)) {
                 const content = this.load(context + ".html");
                 if (content === undefined)
                     return;
@@ -1611,11 +1517,10 @@
     });
 
     /**
-     * The render function gets a getter for the context, which returns all
-     * variables for the page scope. The return value is an object that contains
-     * the persistent and dynamic/temporary variables for the scope page.
+     * The render function gets a getter for the context, which returns the
+     * persistent and the dynamic/temporary variables of the page scope.
      */
-    Object.defineProperty(Composite.render, "context", {
+    Object.defineProperty(Composer.render, "context", {
         get: () => {
             const scope = Array.from(_render_context_scope);
             _render_context_workspace.forEach(object => {
@@ -1680,7 +1585,7 @@
     const _models = new Set();
 
     /**
-     * Lock mechanism for methods: render, mound and scan. The lock controls
+     * Lock mechanism for the methods: render and mount. The lock controls
      * that the methods are not used concurrently and/or asynchronously. Each
      * method opens its own transaction (lock). During a transaction, the method
      * call requires a lock. If this lock does not exist or differs from the
@@ -1688,7 +1593,7 @@
      * current lock is released. The methods themselves can call themselves
      * recursively and do so with the lock they know. In addition to the lock
      * mechanism, the methods also control the START, NEXT, and END events.
-     * @param {Object} context Context (render, mound or scan)
+     * @param {Object} context Context (render or mount)
      * @param {string|Element} selector Selector to identify elements
      * @returns {Object} The created lock as a meta-object
      * @throws {Error} In case of an invalid context
@@ -1709,7 +1614,7 @@
                     this.ticks--;
                     if (this.ticks > 0)
                         return;
-                    if (context === Composite.render) {
+                    if (context === Composer.render) {
 
                         // To ensure that on conditions when the lock is created
                         // for the marker, the children are also mounted, the
@@ -1752,28 +1657,28 @@
                         // Mount all elements in a composite, including the
                         // composite element itself
                         nodes.forEach((node) =>
-                            Composite.mount(node));
+                            Composer.mount(node));
 
-                        Composite.fire(Composite.EVENT_RENDER_END, this.selector);
-                    } else if (context === Composite.mount) {
-                        Composite.fire(Composite.EVENT_MOUNT_END, this.selector);
+                        Composer.fire(Composer.EVENT_RENDER_END, this.selector);
+                    } else if (context === Composer.mount) {
+                        Composer.fire(Composer.EVENT_MOUNT_END, this.selector);
                     } else throw new Error("Invalid context: " + context);
                     const selector = context.queue.shift();
                     if (selector)
-                        Composite.asynchronous(context, selector);
+                        Composer.asynchronous(context, selector);
                     context.lock = false;
                 }};
 
-            if (context === Composite.render)
-                Composite.fire(Composite.EVENT_RENDER_START, selector);
-            else if (context === Composite.mount)
-                Composite.fire(Composite.EVENT_MOUNT_START, selector);
+            if (context === Composer.render)
+                Composer.fire(Composer.EVENT_RENDER_START, selector);
+            else if (context === Composer.mount)
+                Composer.fire(Composer.EVENT_MOUNT_START, selector);
             else throw new Error("Invalid context: " + context);
         } else {
-            if (context === Composite.render)
-                Composite.fire(Composite.EVENT_RENDER_NEXT, selector);
-            else if (context === Composite.mount)
-                Composite.fire(Composite.EVENT_MOUNT_NEXT, selector);
+            if (context === Composer.render)
+                Composer.fire(Composer.EVENT_RENDER_NEXT, selector);
+            else if (context === Composer.mount)
+                Composer.fire(Composer.EVENT_MOUNT_NEXT, selector);
             else throw new Error("Invalid context: " + context);
         }
 
@@ -1786,8 +1691,8 @@
         while (pattern && element instanceof Element) {
             element = element.parentNode;
             if (element instanceof Element
-                    && element.hasAttribute(Composite.ATTRIBUTE_COMPOSITE)
-                    && element.hasAttribute(Composite.ATTRIBUTE_ID)
+                    && element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
+                    && element.hasAttribute(Composer.ATTRIBUTE_ID)
                     && (element.id || "").toLowerCase().trim() === pattern)
                 throw new Error("Recursion detected for composite: " + id);
         }
@@ -1839,9 +1744,9 @@
         // normally have no superordinate object levels. But the Composite-ID
         // can contain a namespace, which is then taken into consideration.
 
-        let serial = (element.getAttribute(Composite.ATTRIBUTE_ID) || "").trim();
-        if (element.hasAttribute(Composite.ATTRIBUTE_COMPOSITE)) {
-            const composite = serial.match(Composite.PATTERN_COMPOSITE_ID);
+        let serial = (element.getAttribute(Composer.ATTRIBUTE_ID) || "").trim();
+        if (element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)) {
+            const composite = serial.match(Composer.PATTERN_COMPOSITE_ID);
             if (!composite)
                 throw new Error(`Invalid composite id${serial ? ": " + serial : ""}`);
             if (!composite[2])
@@ -1850,10 +1755,10 @@
         }
 
         const locate = _mount_locate(element.parentNode);
-        if (!element.hasAttribute(Composite.ATTRIBUTE_ID))
+        if (!element.hasAttribute(Composer.ATTRIBUTE_ID))
             return locate;
 
-        if (!serial.match(Composite.PATTERN_ELEMENT_ID))
+        if (!serial.match(Composer.PATTERN_ELEMENT_ID))
             throw new Error(`Invalid element id${serial ? ": " + serial : ""}`);
 
         const meta = {namespace:[], model:null, route:[], target:null};
@@ -1867,7 +1772,7 @@
             else meta.route.push(locate.model);
         }
 
-        serial = serial.match(Composite.PATTERN_ELEMENT_ID);
+        serial = serial.match(Composer.PATTERN_ELEMENT_ID);
         if (serial[4]) {
             meta.namespace = serial[4].split(/:/);
             meta.route = [meta.namespace[meta.namespace.length -1]];
@@ -1949,7 +1854,7 @@
      * created during rendering: (key:serial, value:meta)
      */
     const _render_meta = [];
-    Object.defineProperty(Composite.render, "meta", {
+    Object.defineProperty(Composer.render, "meta", {
         value: _render_meta
     });
 
@@ -1962,15 +1867,12 @@
      */
     const _render_element_ignore = (node) =>
         node && node.parentNode
-            ? Composite.PATTERN_ELEMENT_IGNORE.test(node.parentNode.nodeName)
+            ? Composer.PATTERN_ELEMENT_IGNORE.test(node.parentNode.nodeName)
                     || _render_element_ignore(node.parentNode) : false;
 
     /**
-     * Executes the custom tag for a node, if one exists. Custom tags are
-     * completely user-specific. The return value determines whether the
-     * standard functions are used or not. Only the return value false (not
-     * void, not empty) terminates the rendering for the macro without using
-     * the standard functions.
+     * Executes the custom tag (macro) for a node, if one exists.
+     * Details are described to Composer.customize(...).
      * @param {Node} selector Node to be rendered
      * @returns {boolean} true if the rendering has to be terminated
      */
@@ -1980,15 +1882,10 @@
     };
 
     /**
-     * Executes the custom selectors for a node, if they exist. Selectors work
-     * similar to macros. Unlike macros, selectors use a CSS selector to detect
-     * elements. This selector must match the current element from the point of
-     * view of the parent. Selectors are more flexible and multifunctional.
-     * Therefore, different selectors and thus different functions can match one
-     * element. In this case, all implemented callback methods are performed.
-     * The return value determines whether the loop is aborted or not. Only the
-     * return value false (not void, not empty) terminates the loop and the
-     * rendering for the selector without using the standard functions.
+     * Executes the custom selectors for a node, if they exist. Different
+     * selectors can match one element, in this case all implemented callback
+     * methods are performed until one of them returns false.
+     * Details are described to Composer.customize(...).
      * @param {Node} selector Node to be rendered
      * @returns {boolean} true if the rendering has to be terminated
      */
@@ -2007,14 +1904,9 @@
 
     /**
      * Creates the meta-object for a node. Before that, the interceptors are
-     * executed. Interceptors are a very special way to customize. Unlike the
-     * other ways, here the rendering is not shifted into own implementations.
-     * With an interceptor, an element is manipulated before rendering and only
-     * if the renderer processes the element initially. This makes it possible
-     * to make individual changes to the attributes or the markup before the
-     * renderer processes them. This does not affect the implementation of the
-     * rendering.
-     *     e.g. Composer.customize(function(element) {...});
+     * executed, which can manipulate the attributes and the markup of the
+     * element, but only when it is processed initially.
+     * Details are described to Composer.customize(...).
      * @param {Node} selector Node to be rendered
      * @param {number} serial Serial of the node
      * @returns {object} The created meta-object
@@ -2038,43 +1930,39 @@
     const _render_attributes_initialize = (selector, object) => {
         Array.from(selector.attributes).forEach((attribute) => {
             attribute = {name:attribute.name.toLowerCase(), value:(attribute.value || "").trim()};
-            if (attribute.value.match(Composite.PATTERN_EXPRESSION_CONTAINS)
-                    || attribute.name.match(Composite.PATTERN_ATTRIBUTE_ACCEPT)
+            if (attribute.value.match(Composer.PATTERN_EXPRESSION_CONTAINS)
+                    || attribute.name.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
                     || _statics.has(attribute.name)) {
 
                 // Remove all internal attributes but not the statics. Static
                 // attributes are still used in the markup or for the rendering.
-                if (attribute.name.match(Composite.PATTERN_ATTRIBUTE_ACCEPT)
-                        && !attribute.name.match(Composite.PATTERN_ATTRIBUTE_STATIC)
+                if (attribute.name.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
+                        && !attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
                         && !_statics.has(attribute.name)
-                        && attribute.name !== Composite.ATTRIBUTE_RELEASE)
+                        && attribute.name !== Composer.ATTRIBUTE_RELEASE)
                     selector.removeAttribute(attribute.name);
 
                 object.attributes[attribute.name] = attribute.value;
 
-                // Special case: ATTRIBUTE_ID/ATTRIBUTE_EVENTS
-                // Both attributes are used initially for the object and event
-                // binding. Expressions are supported for the attributes, but
-                // these are only initially resolved during the first rendering.
+                // Special case: ATTRIBUTE_ID, ATTRIBUTE_EVENTS and the static
+                // attributes. The first two are used initially for the object
+                // and event binding, the static attributes for markup
+                // hardening. Expressions are supported for these attributes,
+                // but are only resolved initially during the first rendering.
 
-                // Special case: static attributes
-                // These attributes are used initially markup harding.
-                // Expressions are supported for the attributes, but these are
-                // only initially resolved during the first rendering.
-
-                if (attribute.value.match(Composite.PATTERN_EXPRESSION_CONTAINS)
-                        && (attribute.name.match(Composite.PATTERN_ATTRIBUTE_STATIC)
-                                || attribute.name === Composite.ATTRIBUTE_ID
-                                || attribute.name === Composite.ATTRIBUTE_EVENTS
+                if (attribute.value.match(Composer.PATTERN_EXPRESSION_CONTAINS)
+                        && (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
+                                || attribute.name === Composer.ATTRIBUTE_ID
+                                || attribute.name === Composer.ATTRIBUTE_EVENTS
                                 || _statics.has(attribute.name)))
                     attribute.value = Expression.eval(selector.ordinal() + ":" + attribute.name, attribute.value);
 
-                // The initial value of the static attribute is registered for
-                // the restore. This is a part of the markup protection of the
-                // MutationObserver.
-                if (attribute.name.match(Composite.PATTERN_ATTRIBUTE_STATIC)
-                        || attribute.name === Composite.ATTRIBUTE_ID
-                        || attribute.name === Composite.ATTRIBUTE_EVENTS)
+                // The resolved value is written back to the meta-object, so
+                // that the object and event binding use the value of the
+                // expression and not the expression itself.
+                if (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
+                        || attribute.name === Composer.ATTRIBUTE_ID
+                        || attribute.name === Composer.ATTRIBUTE_EVENTS)
                     object.attributes[attribute.name] = attribute.value;
 
                 // The initial value of the static attribute is registered for
@@ -2086,9 +1974,9 @@
 
                 // The result of the expression must be written back to the
                 // static attributes.
-                if (attribute.name.match(Composite.PATTERN_ATTRIBUTE_STATIC)
-                        || attribute.name === Composite.ATTRIBUTE_ID
-                        || attribute.name === Composite.ATTRIBUTE_EVENTS
+                if (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
+                        || attribute.name === Composer.ATTRIBUTE_ID
+                        || attribute.name === Composer.ATTRIBUTE_EVENTS
                         || _statics.has(attribute.name))
                     selector.setAttribute(attribute.name, attribute.value);
             }
@@ -2111,11 +1999,11 @@
      */
     const _render_attribute_condition_initialize = (selector, object, serial, lock) => {
 
-        if (!object.attributes.hasOwnProperty(Composite.ATTRIBUTE_CONDITION))
+        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_CONDITION))
             return false;
 
-        const expression = (object.attributes[Composite.ATTRIBUTE_CONDITION] || "").trim();
-        if (!expression.match(Composite.PATTERN_EXPRESSION_CONDITION))
+        const expression = (object.attributes[Composer.ATTRIBUTE_CONDITION] || "").trim();
+        if (!expression.match(Composer.PATTERN_EXPRESSION_CONDITION))
             throw new Error(`Invalid condition${expression ? ": " + expression : ""}`);
 
         // The marker and its meta-object are created. This prevents the
@@ -2139,7 +2027,7 @@
         // The rendering of the marker continues recursively, so that objects do
         // not have to be switched/rewritten and the rendering can be finished
         // here.
-        Composite.render(marker, lock.share());
+        Composer.render(marker, lock.share());
         return true;
     };
 
@@ -2177,7 +2065,7 @@
             // The condition must be explicitly true, otherwise the output is
             // removed from the DOM and the rendering ends. The cleanup will be
             // done by the MutationObserver.
-            const expression = Expression.eval(serial + ":" + Composite.ATTRIBUTE_CONDITION, condition.expression);
+            const expression = Expression.eval(serial + ":" + Composer.ATTRIBUTE_CONDITION, condition.expression);
             selector.nodeValue = expression instanceof Error ? expression : "";
             if (expression !== true) {
                 // Because a condition can consist of two elements (marker and
@@ -2198,7 +2086,7 @@
             // recursively, so that objects do not have to be switched and the
             // rendering can be finished here.
             if (condition.element) {
-                Composite.render(condition.element, lock.share());
+                Composer.render(condition.element, lock.share());
                 return true;
             }
 
@@ -2211,17 +2099,13 @@
 
             // Load modules/components/composite resources.
             // That no resources are loaded more than once is taken care of by
-            // the include method ot Composite.
-            if (attributes.hasOwnProperty(Composite.ATTRIBUTE_COMPOSITE))
-                Composite.include(element);
+            // the include method of Composite.
+            if (attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
+                Composer.include(element);
 
             selector.parentNode.insertBefore(element, selector);
 
-            // The rendering of the marker continues recursively, so that objects
-            // do not have to be switched/rewritten and the rendering can be
-            // finished here.
-
-            Composite.render(condition.element, lock.share());
+            Composer.render(condition.element, lock.share());
             return true;
         }
 
@@ -2268,13 +2152,13 @@
 
         // Text nodes are only analyzed once. Pure text is completely ignored,
         // only text nodes with an expression as value are updated.
-        if (object.attributes.hasOwnProperty(Composite.ATTRIBUTE_TEXT))
+        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_TEXT))
             return;
 
         // New/unknown text nodes must be analyzed and prepared. If the
         // meta-object for text nodes Composer.ATTRIBUTE_TEXT and
         // Composer.ATTRIBUTE_VALUE are not contained, it must be new.
-        if (object.attributes.hasOwnProperty(Composite.ATTRIBUTE_VALUE)) {
+        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_VALUE)) {
             object.render();
             return;
         }
@@ -2285,7 +2169,7 @@
         // Composer.ATTRIBUTE_TEXT.
 
         let content = selector.textContent;
-        if (content.match(Composite.PATTERN_EXPRESSION_CONTAINS)) {
+        if (content.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
 
             // Step 2:
             // All expressions are determined. A meta-object is created for all
@@ -2302,7 +2186,7 @@
             // with the name of the parameter and are interpreted later, but do
             // not generate any output.
 
-            content = content.replace(Composite.PATTERN_EXPRESSION_CONTAINS, (match) => {
+            content = content.replace(Composer.PATTERN_EXPRESSION_CONTAINS, (match) => {
                 if (!match.substring(2, match.length -2).trim())
                     return "";
                 const node = document.createTextNode("");
@@ -2311,22 +2195,22 @@
                     context:[..._render_context_workspace],
                     render() {
                         let word = "";
-                        if (this.attributes.hasOwnProperty(Composite.ATTRIBUTE_NAME)) {
-                            const name = String(this.attributes[Composite.ATTRIBUTE_NAME] || "").trim();
-                            const value = String(this.attributes[Composite.ATTRIBUTE_VALUE] || "").trim();
-                            window[name] = Expression.eval(this.serial + ":" + Composite.ATTRIBUTE_VALUE, value);
+                        if (this.attributes.hasOwnProperty(Composer.ATTRIBUTE_NAME)) {
+                            const name = String(this.attributes[Composer.ATTRIBUTE_NAME] || "").trim();
+                            const value = String(this.attributes[Composer.ATTRIBUTE_VALUE] || "").trim();
+                            window[name] = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE, value);
                         } else {
-                            word = String(this.attributes[Composite.ATTRIBUTE_VALUE] || "");
-                            word = Expression.eval(this.serial + ":" + Composite.ATTRIBUTE_VALUE, word);
+                            word = String(this.attributes[Composer.ATTRIBUTE_VALUE] || "");
+                            word = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE, word);
                         }
                         this.value = word;
                         this.element.textContent = word !== undefined ? word : "";
                     }};
-                const param = match.match(Composite.PATTERN_EXPRESSION_VARIABLE);
+                const param = match.match(Composer.PATTERN_EXPRESSION_VARIABLE);
                 if (param) {
-                    object.attributes[Composite.ATTRIBUTE_NAME] = param[1];
-                    object.attributes[Composite.ATTRIBUTE_VALUE] = "{{" + param[2] + "}}";
-                } else object.attributes[Composite.ATTRIBUTE_VALUE] = match;
+                    object.attributes[Composer.ATTRIBUTE_NAME] = param[1];
+                    object.attributes[Composer.ATTRIBUTE_VALUE] = "{{" + param[2] + "}}";
+                } else object.attributes[Composer.ATTRIBUTE_VALUE] = match;
                 _render_meta[serial] = object;
                 return "{{" + serial + "}}";
             });
@@ -2337,13 +2221,13 @@
             // placeholders. The result is an array of words. Each word is a new
             // text nodes with static text or dynamic content.
 
-            if (content.match(Composite.PATTERN_EXPRESSION_CONTAINS)) {
+            if (content.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
                 const words = content.split(/(\{\{\d+\}\})/);
                 words.forEach((word, index, array) => {
                     if (word.match(/^\{\{\d+\}\}$/)) {
                         const serial = parseInt(word.substring(2, word.length -2).trim());
                         const object = _render_meta[serial];
-                        Composite.fire(Composite.EVENT_RENDER_NEXT, object.element);
+                        Composer.fire(Composer.EVENT_RENDER_NEXT, object.element);
                         object.render();
                         array[index] = object.element;
                     } else {
@@ -2351,9 +2235,9 @@
                         const serial = node.ordinal();
                         const object = {serial, element:node, attributes:{},
                             context:[..._render_context_workspace]};
-                        Composite.fire(Composite.EVENT_RENDER_NEXT, object.element);
+                        Composer.fire(Composer.EVENT_RENDER_NEXT, object.element);
                         object.element.textContent = word;
-                        object.attributes[Composite.ATTRIBUTE_TEXT] = word;
+                        object.attributes[Composer.ATTRIBUTE_TEXT] = word;
                         _render_meta[serial] = object;
                         array[index] = object.element;
                     }
@@ -2368,12 +2252,9 @@
                 if (selector.parentNode === null)
                     return;
 
-                // The new text nodes are inserted before the current element
-                // one.
                 words.forEach((node) =>
                     selector.parentNode.insertBefore(node, selector));
 
-                // The current element will be removed.
                 selector.parentNode.removeChild(selector);
 
                 return;
@@ -2384,7 +2265,7 @@
             selector.nodeValue = content;
         }
 
-        object.attributes[Composite.ATTRIBUTE_TEXT] = content;
+        object.attributes[Composer.ATTRIBUTE_TEXT] = content;
     };
 
     /**
@@ -2394,7 +2275,7 @@
      * @param {object} object Meta-object of the element
      */
     const _render_attribute_composite = (selector, object) => {
-        if (!object.attributes.hasOwnProperty(Composite.ATTRIBUTE_COMPOSITE))
+        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
             return;
         const locate = _mount_locate(selector);
         let model = (locate.namespace || []).concat(locate.model).join(".");
@@ -2404,9 +2285,9 @@
         model = Object.lookup(model);
         if (model && typeof model.dock === "function") {
             const meta = _mount_lookup(selector);
-            Composite.fire(Composite.EVENT_MODULE_DOCK, meta);
+            Composer.fire(Composer.EVENT_MODULE_DOCK, meta);
             model.dock.call(model);
-            Composite.fire(Composite.EVENT_MODULE_READY, meta);
+            Composer.fire(Composer.EVENT_MODULE_READY, meta);
         }
     };
 
@@ -2441,8 +2322,8 @@
      * 1. Node and NodeList as the result of an expression.
      * 2. URL (relative or absolute) loads markup/content from a remote data
      *    source via the HTTP method GET
-     * 2. DataSource-URL loads and transforms DataSource data.
-     * 3. Everything else is output directly as string/text.
+     * 3. DataSource-URL loads and transforms DataSource data.
+     * 4. Everything else is output directly as string/text.
      * The import is exclusive, similar to ATTRIBUTE_OUTPUT, thus overwriting any
      * existing content. The recursive (re)rendering is initiated via the
      * MutationObserver. If the content can be loaded successfully,
@@ -2454,32 +2335,32 @@
      */
     const _render_attribute_import = (selector, object, serial, lock) => {
 
-        if (!object.attributes.hasOwnProperty(Composite.ATTRIBUTE_IMPORT))
+        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_IMPORT))
             return;
 
         selector.innerHTML = "";
-        let value = object.attributes[Composite.ATTRIBUTE_IMPORT];
-        if ((value || "").match(Composite.PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + Composite.ATTRIBUTE_IMPORT, String(value));
+        let value = object.attributes[Composer.ATTRIBUTE_IMPORT];
+        if ((value || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
+            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_IMPORT, String(value));
         if (!value) {
-            delete object.attributes[Composite.ATTRIBUTE_IMPORT];
+            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else if (value instanceof Element
                 || value instanceof NodeList) {
             selector.appendChild(value, true);
-            delete object.attributes[Composite.ATTRIBUTE_IMPORT];
+            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
                 || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
             selector.appendChild(_render_datasource_collect(value), true);
             const serial = selector.ordinal();
             const object = _render_meta[serial];
-            delete object.attributes[Composite.ATTRIBUTE_IMPORT];
+            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else if (_render_cache[value] !== undefined) {
             selector.innerHTML = _render_cache[value];
             const serial = selector.ordinal();
             const object = _render_meta[serial];
-            delete object.attributes[Composite.ATTRIBUTE_IMPORT];
+            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else {
-            Composite.asynchronous((selector, lock, url) => {
+            Composer.asynchronous((selector, lock, url) => {
                 try {
                     const request = new XMLHttpRequest();
                     request.overrideMimeType("text/plain");
@@ -2492,9 +2373,9 @@
                     selector.innerHTML = content;
                     const serial = selector.ordinal();
                     const object = _render_meta[serial];
-                    delete object.attributes[Composite.ATTRIBUTE_IMPORT];
+                    delete object.attributes[Composer.ATTRIBUTE_IMPORT];
                 } catch (error) {
-                    Composite.fire(Composite.EVENT_HTTP_ERROR, error);
+                    Composer.fire(Composer.EVENT_HTTP_ERROR, error);
                     throw error;
                 } finally {
                     lock.release();
@@ -2518,13 +2399,13 @@
      */
     const _render_attribute_output = (selector, object, serial) => {
 
-        if (!object.attributes.hasOwnProperty(Composite.ATTRIBUTE_OUTPUT))
+        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_OUTPUT))
             return;
 
         selector.innerHTML = "";
-        let value = object.attributes[Composite.ATTRIBUTE_OUTPUT];
-        if ((value || "").match(Composite.PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + Composite.ATTRIBUTE_OUTPUT, String(value));
+        let value = object.attributes[Composer.ATTRIBUTE_OUTPUT];
+        if ((value || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
+            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_OUTPUT, String(value));
         if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
                 || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
             selector.appendChild(_render_datasource_collect(value), true);
@@ -2552,10 +2433,10 @@
      * @throws {Error} In case of an invalid interval
      */
     const _render_attribute_interval = (selector, object, serial) => {
-        let interval = String(object.attributes[Composite.ATTRIBUTE_INTERVAL] || "").trim();
+        let interval = String(object.attributes[Composer.ATTRIBUTE_INTERVAL] || "").trim();
         if (!interval || object.interval)
             return;
-        const context = serial + ":" + Composite.ATTRIBUTE_INTERVAL;
+        const context = serial + ":" + Composer.ATTRIBUTE_INTERVAL;
         interval = String(Expression.eval(context, interval));
         if (!interval.match(/^\d*$/))
             throw new Error("Invalid interval: " + interval);
@@ -2564,7 +2445,7 @@
             if (!document.body.contains(selector)) {
                 window.clearInterval(object.interval);
                 delete object.interval;
-            } else Composite.render(selector);
+            } else Composer.render(selector);
         }, interval);
     };
 
@@ -2579,10 +2460,10 @@
      * 2. A global variable is required for the iteration. If this variable
      *    already exists, the existing variable is saved and restored at the end
      *    of the iteration.
-     * 3. The variable with the partial meta-object is added at th beginning of
+     * 3. The variable with the partial meta-object is added at the beginning of
      *    each iteration block as a value expression, so that no problems with
      *    the temporary variable occur later during partial rendering. This way
-     *    the block keeps th meta information it is built on.
+     *    the block keeps the meta information it is built on.
      * 4. Variable with meta information about the iteration is used within the
      *    iteration:
      *    e.g iterate={{tempA:Model.list}}
@@ -2595,12 +2476,12 @@
      */
     const _render_attribute_iterate = (selector, object, serial, lock) => {
 
-        if (!object.attributes.hasOwnProperty(Composite.ATTRIBUTE_ITERATE))
+        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_ITERATE))
             return;
 
         if (!object.iterate) {
-            const iterate = String(object.attributes[Composite.ATTRIBUTE_ITERATE] || "").trim();
-            const match = iterate.match(Composite.PATTERN_EXPRESSION_VARIABLE);
+            const iterate = String(object.attributes[Composer.ATTRIBUTE_ITERATE] || "").trim();
+            const match = iterate.match(Composer.PATTERN_EXPRESSION_VARIABLE);
             if (!match)
                 throw new Error(`Invalid iterate${iterate ? ": " + iterate : ""}`);
             object.iterate = {name:match[1].trim(), expression:"{{" + match[2].trim() + "}}"};
@@ -2608,7 +2489,7 @@
             selector.innerHTML = "";
         }
 
-        const context = serial + ":" + Composite.ATTRIBUTE_ITERATE;
+        const context = serial + ":" + Composer.ATTRIBUTE_ITERATE;
         let iterate = Expression.eval(context, object.iterate.expression);
         if (iterate instanceof Error)
             throw iterate;
@@ -2655,7 +2536,7 @@
                 // the NodeList piece by piece.
                 Array.from(object.template.cloneNode(true).childNodes).forEach(node => {
                     selector.appendChild(node);
-                    Composite.render(node, lock.share());
+                    Composer.render(node, lock.share());
                 });
 
                 // Clean up of the stack with the temporary variables for the
@@ -2681,24 +2562,24 @@
      */
     const _render_attributes_update = (selector, object, serial) => {
 
-        if (selector.nodeName.match(Composite.PATTERN_ELEMENT_IGNORE))
+        if (selector.nodeName.match(Composer.PATTERN_ELEMENT_IGNORE))
             return;
 
         const attributes = [];
         for (const key in object.attributes)
             if (object.attributes.hasOwnProperty(key))
                 attributes.push(key);
-        if (Composite.ATTRIBUTE_VALUE in selector
-                && object.attributes.hasOwnProperty(Composite.ATTRIBUTE_VALUE)
-                && !attributes.includes(Composite.ATTRIBUTE_VALUE))
-            attributes.push(Composite.ATTRIBUTE_VALUE);
+        if (Composer.ATTRIBUTE_VALUE in selector
+                && object.attributes.hasOwnProperty(Composer.ATTRIBUTE_VALUE)
+                && !attributes.includes(Composer.ATTRIBUTE_VALUE))
+            attributes.push(Composer.ATTRIBUTE_VALUE);
         attributes.forEach((attribute) => {
             // Ignore all internal attributes
-            if (attribute.match(Composite.PATTERN_ATTRIBUTE_ACCEPT)
-                    && !attribute.match(Composite.PATTERN_ATTRIBUTE_STATIC))
+            if (attribute.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
+                    && !attribute.match(Composer.PATTERN_ATTRIBUTE_STATIC))
                 return;
             let value = String(object.attributes[attribute] || "");
-            if (!value.match(Composite.PATTERN_EXPRESSION_CONTAINS))
+            if (!value.match(Composer.PATTERN_EXPRESSION_CONTAINS))
                 return;
             const context = serial + ":" + attribute;
             value = Expression.eval(context, value);
@@ -2713,8 +2594,8 @@
                 // property must be set, the value of the attribute is optional.
                 // Changing the value does not trigger an event, so no unwanted
                 // recursions occur.
-                if (attribute.toLowerCase() === Composite.ATTRIBUTE_VALUE
-                        && Composite.ATTRIBUTE_VALUE in selector)
+                if (attribute.toLowerCase() === Composer.ATTRIBUTE_VALUE
+                        && Composer.ATTRIBUTE_VALUE in selector)
                     selector.value = value;
                 // @-ATTRIBUTE: These are attribute templates for the renderer,
                 // which inserts attributes of the same name to them without @.
@@ -2730,9 +2611,9 @@
                 }
                 selector.setAttribute(attribute, value);
             } else selector.removeAttribute(attribute);
-            selector[attribute] = value;
             // Attribute values must also be set in the JavaScript so that it
             // remains synchronized with the DOM!
+            selector[attribute] = value;
         });
     };
 
@@ -2750,10 +2631,10 @@
      * @throws {Error} In case of errors in the composite JavaScript
      */
     const _render_element_script = (selector) => {
-        if (!selector.nodeName.match(Composite.PATTERN_SCRIPT))
+        if (!selector.nodeName.match(Composer.PATTERN_SCRIPT))
             return;
-        const type = (selector.getAttribute(Composite.ATTRIBUTE_TYPE) || "").trim();
-        if (!type.match(Composite.PATTERN_COMPOSITE_SCRIPT))
+        const type = (selector.getAttribute(Composer.ATTRIBUTE_TYPE) || "").trim();
+        if (!type.match(Composer.PATTERN_COMPOSITE_SCRIPT))
             return;
         try {Scripting.eval(selector.textContent);
         } catch (error) {
@@ -2775,8 +2656,8 @@
      */
     const _render_element_children = (selector, object, lock) => {
         if (!selector.childNodes
-                || selector.nodeName.match(Composite.PATTERN_ELEMENT_IGNORE)
-                || object.attributes.hasOwnProperty(Composite.ATTRIBUTE_ITERATE))
+                || selector.nodeName.match(Composer.PATTERN_ELEMENT_IGNORE)
+                || object.attributes.hasOwnProperty(Composer.ATTRIBUTE_ITERATE))
             return;
         Array.from(selector.childNodes).forEach((node) => {
             // The rendering is recursive, if necessary the node is then no
@@ -2784,7 +2665,7 @@
             // marker.
             if (!selector.contains(node))
                 return;
-            Composite.render(node, lock.share());
+            Composer.render(node, lock.share());
         });
     };
 
@@ -2898,23 +2779,23 @@
                 if (!event)
                     return;
                 if (event.type === "loadstart")
-                    event = [Composite.EVENT_HTTP_START, event];
+                    event = [Composer.EVENT_HTTP_START, event];
                 else if (event.type === "progress")
-                    event = [Composite.EVENT_HTTP_PROGRESS, event];
+                    event = [Composer.EVENT_HTTP_PROGRESS, event];
                 else if (event.type === "readystatechange")
-                    event = [Composite.EVENT_HTTP_RECEIVE, event];
+                    event = [Composer.EVENT_HTTP_RECEIVE, event];
                 else if (event.type === "load")
-                    event = [Composite.EVENT_HTTP_LOAD, event];
+                    event = [Composer.EVENT_HTTP_LOAD, event];
                 else if (event.type === "abort")
-                    event = [Composite.EVENT_HTTP_ABORT, event];
+                    event = [Composer.EVENT_HTTP_ABORT, event];
                 else if (event.type === "error")
-                    event = [Composite.EVENT_HTTP_ERROR, event];
+                    event = [Composer.EVENT_HTTP_ERROR, event];
                 else if (event.type === "timeout")
-                    event = [Composite.EVENT_HTTP_TIMEOUT, event];
+                    event = [Composer.EVENT_HTTP_TIMEOUT, event];
                 else if (event.type === "loadend")
-                    event = [Composite.EVENT_HTTP_END, event];
+                    event = [Composer.EVENT_HTTP_END, event];
                 else return;
-                Composite.fire(...event);
+                Composer.fire(...event);
             };
 
             this.addEventListener("loadstart", callback);
@@ -2932,10 +2813,10 @@
 
     // Listener when an error occurs and triggers a matching composite-event.
     window.addEventListener("error", (event) =>
-        Composite.fire(Composite.EVENT_ERROR, event));
+        Composer.fire(Composer.EVENT_ERROR, event));
     
     // MutationObserver detects changes at the DOM and triggers (re)rendering
-    // and (re)scanning and prevents manipulation of ATTRIBUTE_COMPOSITE.
+    // and cleanup and prevents manipulation of ATTRIBUTE_COMPOSITE.
     // - Text-Nodes: The TextContent of text nodes with an expression is
     //   protected by the MutationObserver and cannot be manipulated.
     // - The attributes of the renderer (Composer.PATTERN_ATTRIBUTE_ACCEPT)
@@ -2960,7 +2841,7 @@
         // initialize the single page application. It consists of common.js and
         // common.css. The configuration of the Routing and essential styles
         // can/should be stored here.
-        Composite.include("common");
+        Composer.include("common");
 
         const _cleanup = (node) => {
             // Clean up all the child elements first.
@@ -2981,7 +2862,7 @@
 
             const serial = node.ordinal();
             const object = _render_meta[serial];
-            if (object && object.attributes.hasOwnProperty(Composite.ATTRIBUTE_COMPOSITE)) {
+            if (object && object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE)) {
                 const meta = _mount_lookup(node);
                 if (meta && meta.meta && meta.meta.model && meta.model) {
                     const model = (meta.meta.namespace || []).concat(meta.meta.model).join(".");
@@ -2989,7 +2870,7 @@
                         _models.delete(model);
                         if (typeof meta.model.undock === "function") {
                             meta.model.undock.call(meta.model);
-                            Composite.fire(Composite.EVENT_MODULE_UNDOCK, meta);
+                            Composer.fire(Composer.EVENT_MODULE_UNDOCK, meta);
                         }
                     }
                 }
@@ -3035,7 +2916,7 @@
                 // Manipulations are corrected/restored.
                 if (record.type === "characterData"
                         && record.target.nodeType === Node.TEXT_NODE) {
-                    if (object && object.hasOwnProperty(Composite.ATTRIBUTE_VALUE)) {
+                    if (object && object.hasOwnProperty(Composer.ATTRIBUTE_VALUE)) {
                         const value = object.value === undefined ? "" : String(object.value);
                         if (value !== record.target.textContent)
                             record.target.textContent = value;
@@ -3047,39 +2928,33 @@
                 // monitored. Manipulations are corrected/restored.
                 if (object && record.type === "attributes") {
                     const attribute = (record.attributeName || "").toLowerCase().trim();
-                    if (attribute.match(Composite.PATTERN_ATTRIBUTE_ACCEPT)
-                            && !attribute.match(Composite.PATTERN_ATTRIBUTE_STATIC)) {
+                    if (attribute.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
+                            && !attribute.match(Composer.PATTERN_ATTRIBUTE_STATIC)) {
                         // Composite internal non-static attributes are managed
                         // by the renderer and are removed.
                         if (record.target.hasAttribute(attribute))
                             record.target.removeAttribute(attribute);
-                    } else if (attribute.match(Composite.PATTERN_ATTRIBUTE_STATIC)) {
+                    } else if (attribute.match(Composer.PATTERN_ATTRIBUTE_STATIC)) {
+                        // Without an initial value registered by the renderer,
+                        // the assumption is that the attribute was subsequently
+                        // added and it is removed. Otherwise, a removed or
+                        // changed attribute is restored with the initial value.
                         if (!object.attributes.hasOwnProperty(attribute)) {
-                            // If the renderer has not registered an initial
-                            // value, the assumption is that the attribute was
-                            // subsequently added and is therefore removed.
                             if (record.target.hasAttribute(attribute))
                                 record.target.removeAttribute(attribute);
                         } else {
-                            // If the attribute was removed or the value was
-                            // changed, the initial value is restored that was
-                            // previously determined by the renderer.
                             if (!record.target.hasAttribute(attribute)
                                     || object.attributes[attribute] !== record.target.getAttribute(attribute))
                                 record.target.setAttribute(attribute, object.attributes[attribute]);
                         }
                     } else if (_statics.has(attribute)) {
+                        // Same restore logic, but for the attributes that were
+                        // declared as static at runtime.
                         object.statics = object.statics || {};
                         if (!object.statics.hasOwnProperty(attribute)) {
-                            // If the renderer has not registered an initial
-                            // value, the assumption is that the attribute was
-                            // subsequently added and is therefore removed.
                             if (record.target.hasAttribute(attribute))
                                 record.target.removeAttribute(attribute);
                         } else {
-                            // If the attribute was removed or the value was
-                            // changed, the initial value is restored that was
-                            // previously determined by the renderer.
                             if (!record.target.hasAttribute(attribute)
                                     || object.statics[attribute] !== record.target.getAttribute(attribute))
                                 record.target.setAttribute(attribute, object.statics[attribute]);
@@ -3106,7 +2981,7 @@
                                     && node.nodeType === Node.TEXT_NODE))
                             && !_render_meta[node.ordinal()]
                             && document.body.contains(node))
-                        Composite.render(node);
+                        Composer.render(node);
                 });
 
                 // All removed elements are cleaned and if necessary the undock
@@ -3116,6 +2991,6 @@
             });
         })).observe(document.body, {childList:true, subtree:true, attributes:true, attributeOldValue:true, characterData:true});
 
-        Composite.render(document.body);
+        Composer.render(document.body);
     });
 })();

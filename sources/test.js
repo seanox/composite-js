@@ -17,66 +17,16 @@
  *     DESCRIPTION
  *     ----
  * Test is an API and module for implementing and executing integration tests.
- * Tests can be organized as tasks, scenarios and suites.
+ * Tests can be organized as tasks, scenarios and suites. The smallest
+ * component is called task because `case` is a JavaScript keyword.
  *
- *     Task
- *     ----
- * The smallest component in an integration test is called task because `case`
- * is a JavaScript keyword. A task can be implemented alone, but is always used
- * in a scenario.
- *
- *     Test.create({test() {
- *         Assert.assertTrue(true);
- *     }});
- *
- *     Test.start();
- *
- *     Scenario
- *     ----
- * A scenario is a sequence of test tasks.
- *
- *     Test.create({test() {
- *         Assert.assertTrue(true);
- *     }});
- *
- *     Test.create({name:"example", timeout:1000, test() {
- *         Assert.assertTrue(true);
- *     }});
- *
- *     Test.create({expected: Error, test() {
- *         throw new Error();
- *     }});
- *
- *     Test.create({expected: /^My Error/i, test() {
- *         throw new Error("My Error");
- *     }});
- *
- *     Test.create({ignore:true, test() {
- *         Assert.assertTrue(true);
- *     }});
- *
- *     Test.start();
- *
- *     Suite
- *     ----
- * A suite is a bundle of test tasks, scenarios and other suites. A suite often
- * consists of different files that represent a complex test. A cascade of files
- * allows the test to start in any file and place. This supports integration
- * tests on different levels and with different complexity.
- *
- *     Assert
- *     ----
- * Test tasks are implemented with assertions. The Test API provides elementary
- * assertions, and additional assertions can be implemented. If an assertion is
- * not true, an error is thrown.
- *
- * The Test API is part of composite-js but must be activated explicitly.
+ * The Test API is part of composite-js but must be activated explicitly,
+ * because it changes error handling and console output and extends parts of
+ * the JavaScript API for testing.
  *
  *     Test.activate();
  *
- * Activation is required because the Test API changes error handling and
- * console output and extends parts of the JavaScript API for testing. For
- * example, console output is forwarded and buffered.
+ * see also: https://seanox.github.io/composite-js/manuals/test.html
  */
 (() => {
 
@@ -191,41 +141,22 @@
              * 
              *     structure of meta: {name:..., test:..., timeout:..., expected:..., ignore:...}
              *     
-             * name       optional name of the test task
-             * test       an implemented method to be executed as a test
-             * timeout    maximum runtime of the test task in milliseconds
-             *            Exceeding this limit will cause the test to fail.
-             *            A value greater than 0 is expected, otherwise the
-             *            timeout is ignored.
-             * expected   if you want to test for the occurrence of an error
-             *            The error must occur if the test is successful.
-             *            An error constructor/function or a RegExp is expected
-             *            as value.
-             * ignore     true, if the test is to be ignored
-             * 
-             * Implementation of test:
-             *     
-             *     Test.create({test() {
-             *         Assert.assertTrue(true);
-             *     }});
-             * 
-             *     Test.create({name:"example", timeout:1000, test() {
-             *         Assert.assertTrue(true);
-             *     }});
-             * 
-             *     Test.create({expected:Error test() {
-             *         throw new Error();
-             *     }});
-             * 
-             *     Test.create({expected:/^My Error/i, test() {
-             *         throw new Error("My Error");
-             *     }});
-             * 
-             *     Test.create({ignore:true, test() {
-             *         Assert.assertTrue(true);
-             *     }});
-             * 
+             * name        optional name of the test task
+             * test        an implemented method to be executed as a test
+             * timeout     maximum runtime of the test task in milliseconds
+             *             Exceeding this limit will cause the test to fail.
+             *             A value greater than 0 is expected, otherwise the
+             *             timeout is ignored.
+             * expected    if you want to test for the occurrence of an error
+             *             The error must occur if the test is successful.
+             *             An error constructor/function or a RegExp is expected
+             *             as value.
+             * ignore      true, if the test is to be ignored
+             *
              * @param {Object} meta
+             *
+             * Details are described in the documentation:
+             * https://seanox.github.io/composite-js/manuals/test.html#task
              */
             create(meta) {
                 
@@ -256,111 +187,27 @@
              * parameters in the meta-object are optional and cannot be changed
              * when the test are running. Only with the next start can new
              * parameters be passed as meta-objects.
-             * 
-             *     Test.start({auto: boolean, output: {...}, monitor: {...}});
-             *     
-             *     auto
-             *     ----
-             * true, the start is triggered when the page is loaded     
-             * If the page is already loaded, the parameter auto is ignored and
-             * the start is executed immediately.
-             * 
-             *     output
-             *     ----
-             * Simple function or object for outputting messages and errors.
-             * If not specified, console object is used.    
-             * 
-             * Implementation of an output (as function or object):
-             *     
-             *     var output = {
-             * 
-             *         log(message) {
-             *             ...
-             *         },
-             *     
-             *         error(message) {
-             *             ...
-             *         }
-             *     };
-             * 
-             *     monitor
-             *     ----
-             * Monitors the test procedure and is informed about the various
-             * cycles during execution. The monitor also controls the data
-             * output. For example, the output can be redirected to DOM
-             * elements. Without a monitor the tests will also be performed, but
-             * there will be an output about success and failure. If no monitor
-             * is specified, the internal monitor is used with a simple console
-             * output.
-             * 
-             * Implementation of a monitor (as function or object):
-             *     
-             *     var monitor = {
-             * 
-             *         start(status) {
-             *             The method is called with the start.
-             *         },
-             *     
-             *         suspend(status) {
-             *             The method is called with suspension.
-             *         },
-             *     
-             *         resume(status) {
-             *             The method is called if the test run is stopped and
-             *             is to be continued later.
-             *         },
-             *     
-             *         interrupt(status) {
-             *             The method is called if you want to abort the test
-             *             run. The test run cannot then be resumed.
-             *         },
-             *     
-             *         perform(status) {
-             *             The method is called before a test task is performed.
-             *         },
-             *     
-             *         response(status) {
-             *             The method is called when a test task has been
-             *             performed. Here you can find the result of the test
-             *             task.
-             *         },
-             *     
-             *         finish(status) {
-             *             The method is called when all test tasks have been
-             *             completed.
-             *         }
-             *     };
-             * 
-             * The current status is passed to all monitor methods as an object.
-             * The status is a snapshot of the current test run with details of
-             * the current task and the queue. The details are read-only and
-             * cannot be changed.
-             *  
-             *     structure of status: {task:..., queue:...}
-             *     
-             * task.title      title of the test task    
-             * task.meta       meta information about the test itself name,
-             *                 test, timeout, expected, serial
-             * task.running    indicator when the test task is in progress
-             * task.timing     start time from the test task in milliseconds
-             * task.timeout    optional, the time in milliseconds when a timeout
-             *                 is expected
-             * task.duration   total execution time of the test task in
-             *                 milliseconds, is set with the end of the test
-             *                 task
-             * task.error      optional, if an unexpected error (also assert
-             *                 error) has occurred, which terminated the test
-             *                 task
-             * 
-             * queue.timing    start time in milliseconds 
-             * queue.size      original queue length
-             * queue.length    number of outstanding tests
-             * queue.progress  number of tests performed     
-             * queue.lock      indicator when a test is performed and the queue
-             *                 is waiting
-             * queue.faults    number of detected faults
-             * 
+             *
+             *     structure of meta: {auto:..., output:..., monitor:...}
+             *
+             * auto       true, the start is triggered when the page is loaded
+             *            If the page is already loaded, the parameter auto is
+             *            ignored and the start is executed immediately.
+             * output     object for outputting messages and errors, with the
+             *            methods log and error
+             *            If not specified, the console object is used.
+             * monitor    object that monitors the test procedure and is
+             *            informed about the various cycles during execution,
+             *            with the methods start, suspend, resume, interrupt,
+             *            perform, response and finish, each called with the
+             *            current status
+             *            If not specified, the internal monitor is used with a
+             *            simple console output.
+             *
              * @param {Object} [meta]
+             *
+             * Details are described in the documentation:
+             * https://seanox.github.io/composite-js/manuals/test.html#configuration
              */
             start(meta) {
                 
@@ -487,7 +334,7 @@
                                 && meta.name.trim().length > 0)
                             Test.worker.task.title += " " + meta.name.replace(/[\x00-\x20]+/g, " ").trim();
                         Test.fire(Test.EVENT_PERFORM, Test.status());
-                        Composite.asynchronous(() => {
+                        Composer.asynchronous(() => {
                             const task = Test.worker.task;
                             try {task.meta.test();
                             } catch (error) {

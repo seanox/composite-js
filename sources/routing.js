@@ -14,10 +14,8 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  *
- *
  *     DESCRIPTION
  *     ----
- *
  * The presentation of the page can be organized in Seanox composite-js in
  * views, which are addressed via paths (routes). For this purpose, the routing
  * supports a hierarchical directory structure based on the IDs of the nested
@@ -25,7 +23,6 @@
  * permission for accessing the views via paths - the so-called view flow. For
  * the view flow and the permission, the routing actively uses the DOM to insert
  * and remove the views depending on the situation.
- *
  *
  *     TERMS
  *     ----
@@ -156,14 +153,14 @@
             if (path === null
                     || path === Browser.location)
                 return;
-            Composer.asynchronous(path => {
+            Composite.asynchronous(path => {
                 const event = new Event("hashchange",{bubbles:false, cancelable:true});
                 event.oldURL = Browser.location;
                 event.newURL = path;
                 if (path.startsWith("#"))
                     window.location.hash = path.substring(1);
                 else window.location.href = path;
-                _routing_interrupt = Composer.asynchronous(event => {
+                _routing_interrupt = Composite.asynchronous(event => {
                     if (event.newURL !== Browser.location)
                         window.dispatchEvent(event);
                 }, event);
@@ -218,7 +215,7 @@
                     || path === "#")
                 return false;
 
-            composite = Composer.match(Composer.PATTERN_COMPOSITE_ID);
+            composite = composite.match(Composite.PATTERN_COMPOSITE_ID);
             if (!composite)
                 return false;
 
@@ -312,12 +309,12 @@
         if (lookup instanceof Element) {
             let path = "";
             for (let element = lookup; element; element = element.parentElement) {
-                if (!element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
-                        || !element.hasAttribute(Composer.ATTRIBUTE_ID)
+                if (!element.hasAttribute(Composite.ATTRIBUTE_COMPOSITE)
+                        || !element.hasAttribute(Composite.ATTRIBUTE_ID)
                         || !element.hasAttribute(Routing.ATTRIBUTE_ROUTE))
                     continue;
-                const composite = element.getAttribute(Composer.ATTRIBUTE_ID);
-                const match = Composer.match(Composer.PATTERN_COMPOSITE_ID);
+                const composite = element.getAttribute(Composite.ATTRIBUTE_ID);
+                const match = composite.match(Composite.PATTERN_COMPOSITE_ID);
                 if (!match)
                     throw new Error(`Invalid composite id${composite ? ": " + composite : ""}`);
                 path = "#" + match[1] + path;
@@ -325,7 +322,7 @@
             return path || "#";
         }
 
-        const marker = `[${Composer.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}]`;
+        const marker = `[${Composite.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}]`;
         const path = lookup.split("#").slice(1).map(entry =>
             `[id="${entry}"]${marker},[id^="${entry}@"]${marker}`);
         while (path.length > 0) {
@@ -338,9 +335,9 @@
     };
 
     const _render = (element, focus = false) => {
-        Composer.render(element);
+        Composite.render(element);
         if (focus) {
-            Composer.asynchronous((element) => {
+            Composite.asynchronous((element) => {
                 if (typeof element.focus === "function")
                     element.focus();
             }, element);
@@ -432,7 +429,7 @@
         if (locationOldElement === document.body
                 || locationNewElement === document.body) {
             _render(document.body);
-            Composer.asynchronous((element) => {
+            Composite.asynchronous((element) => {
                 if (typeof element.focus === "function")
                     element.focus();
             }, locationNewElement);
@@ -440,7 +437,7 @@
         }
         if (locationOldElement.contains(locationNewElement)) {
             _render(locationOldElement);
-            Composer.asynchronous((element) => {
+            Composite.asynchronous((element) => {
                 if (typeof element.focus === "function")
                     element.focus();
             }, locationNewElement);
@@ -461,7 +458,7 @@
      * hide the composite elements in the DOM. What happens by physically adding
      * and removing. The elements are identified by the composite ID.
      */
-    Composer.customize((element) => {
+    Composite.customize((element) => {
 
         if (element instanceof Element
                 && element.hasAttribute("route")
@@ -496,25 +493,25 @@
 
         if (!_routing_active
                 || !(element instanceof Element)
-                || !element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
+                || !element.hasAttribute(Composite.ATTRIBUTE_COMPOSITE)
                 || !element.hasAttribute(Routing.ATTRIBUTE_ROUTE))
             return;
 
-        const composite = (element.getAttribute(Composer.ATTRIBUTE_ID) || '').trim();
+        const composite = (element.getAttribute(Composite.ATTRIBUTE_ID) || '').trim();
         const path = _lookup(element);
 
         let script = null;
-        if (element.hasAttribute(Composer.ATTRIBUTE_CONDITION)) {
-            script = element.getAttribute(Composer.ATTRIBUTE_CONDITION).trim();
-            if (script.match(Composer.PATTERN_EXPRESSION_CONTAINS))
-                script = script.replace(Composer.PATTERN_EXPRESSION_CONTAINS, (match) => {
+        if (element.hasAttribute(Composite.ATTRIBUTE_CONDITION)) {
+            script = element.getAttribute(Composite.ATTRIBUTE_CONDITION).trim();
+            if (script.match(Composite.PATTERN_EXPRESSION_CONTAINS))
+                script = script.replace(Composite.PATTERN_EXPRESSION_CONTAINS, (match) => {
                     match = match.substring(2, match.length -2).trim();
                     return `{{Routing.approve("${path}", ${composite}") and (${match})}}`;
                 });
         }
         if (!script)
             script = `{{Routing.approve("${path}", "${composite}")}}`;
-        element.setAttribute(Composer.ATTRIBUTE_CONDITION, script);
+        element.setAttribute(Composite.ATTRIBUTE_CONDITION, script);
     });
 
     /**

@@ -14,7 +14,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  *
- *
  *     DESCRIPTION
  *     ----
  * Expression language and composite script are two important components. Both
@@ -36,7 +35,6 @@
          * arguments separated by spaces. Macros end with the next line break, a
          * semicolon or with the end of the file.
          *
-         *
          *     #import
          *     ----
          * Expects a space-separated list of composite modules whose paths must
@@ -54,7 +52,6 @@
          * loaded because no target can be set for the output. The macro can be
          * used multiple times in composite script.
          *
-         *
          *     #export
          *     ----
          * Expects a space-separated list of exports. Exports are variables or
@@ -68,14 +65,12 @@
          *
          *     #export connector@io.example
          *
-         *
          *     #use
          *     ----
          * Expects a space-separated list of namespaces to create if they do not
          * already exist.
          *
          *     #use namespaces to be created
-         *
          *
          *     (?...)
          *     ----
@@ -249,7 +244,7 @@
                 throw new TypeError("Invalid data type");
             if (!script.trim())
                 return;
-            with (Composer.render.context)
+            with (Composite.render.context)
                 return eval(script);
         }
     });
@@ -258,7 +253,7 @@
         // Because it is an internal method, an additional validation of the
         // imports as data structure was omitted.
         imports.forEach(include =>
-            Composer.load(Composer.MODULES + "/" + include + ".js", true));
+            Composite.load(Composite.MODULES + "/" + include + ".js", true));
     };
 
     const _export = (...exports) => {

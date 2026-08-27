@@ -14,12 +14,10 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  *
- *
  *     DESCRIPTION
  *     ----
  * Test is an API and module for implementing and executing integration tests.
  * Tests can be organized as tasks, scenarios and suites.
- *
  *
  *     Task
  *     ----
@@ -32,7 +30,6 @@
  *     }});
  *
  *     Test.start();
- *
  *
  *     Scenario
  *     ----
@@ -60,7 +57,6 @@
  *
  *     Test.start();
  *
- *
  *     Suite
  *     ----
  * A suite is a bundle of test tasks, scenarios and other suites. A suite often
@@ -68,13 +64,11 @@
  * allows the test to start in any file and place. This supports integration
  * tests on different levels and with different complexity.
  *
- *
  *     Assert
  *     ----
  * Test tasks are implemented with assertions. The Test API provides elementary
  * assertions, and additional assertions can be implemented. If an assertion is
  * not true, an error is thrown.
- *
  *
  * The Test API is part of composite-js but must be activated explicitly.
  *
@@ -205,7 +199,8 @@
              *            timeout is ignored.
              * expected   if you want to test for the occurrence of an error
              *            The error must occur if the test is successful.
-             *            An error constructor/function or a RegExp is expected as value.
+             *            An error constructor/function or a RegExp is expected
+             *            as value.
              * ignore     true, if the test is to be ignored
              * 
              * Implementation of test:
@@ -492,7 +487,7 @@
                                 && meta.name.trim().length > 0)
                             Test.worker.task.title += " " + meta.name.replace(/[\x00-\x20]+/g, " ").trim();
                         Test.fire(Test.EVENT_PERFORM, Test.status());
-                        Composer.asynchronous(() => {
+                        Composite.asynchronous(() => {
                             const task = Test.worker.task;
                             try {task.meta.test();
                             } catch (error) {
@@ -968,7 +963,7 @@
     
             /**
              * Asserts that two values are equals.
-             * Current implementation uses strict comparison: === / !==
+             * Difference between equals and same: === / == or !== / !=
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:
@@ -989,7 +984,7 @@
 
             /**
              * Asserts that two values are not equals.
-             * Current implementation uses strict comparison: === / !==
+             * Difference between equals and same: === / == or !== / !=
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:
@@ -1010,7 +1005,7 @@
     
             /**
              * Asserts that two values are the same.
-             * Current implementation uses strict comparison: === / !==
+             * Difference between equals and same: === / == or !== / !=
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:
@@ -1031,7 +1026,7 @@
             
             /**
              * Asserts two values are not the same.
-             * Current implementation uses strict comparison: === / !==
+             * Difference between equals and same: === / == or !== / !=
              * If the assertion is false, an error with message is thrown.
              *
              * The method has the following various signatures:

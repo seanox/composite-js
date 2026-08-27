@@ -13,11 +13,10 @@
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
- * 
- * 
+ *
  *     DESCRIPTION
  *     ----
- * 
+ *
  * Immutable XML data source for static application data, combining structured
  * XML storage with multilingual data separation, optional aggregation, and
  * transformation capabilities via XPath and XSLT. The concept combines the
@@ -260,7 +259,6 @@
          * @param {string} locator Locator to fetch data for as XMLDocument.
          *     Optionally, an XPath query is also supported. The XPath is
          *     appended to the locator separated by a question mark.
-         *
          *
          * @returns {XMLDocument|string|boolean|number|NodeList|null}
          *     The fetched data as an XMLDocument. When using XPath, it can be

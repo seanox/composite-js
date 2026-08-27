@@ -14,7 +14,6 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  *
- *
  *     DESCRIPTION
  *     ----
  * The Expression Language (EL) provides access to the client-side JavaScript

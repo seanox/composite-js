@@ -27,8 +27,8 @@ These references are available when comparing the individual steps.
 - [Step_05 The first composite script](micro-frontend/Step_05%20The%20first%20composite%20script)
 - [Step_06 Usage of dynamic data](micro-frontend/Step_06%20Usage%20of%20dynamic%20data)
 - [Step_07 Business logic in detail](micro-frontend/Step_07%20Business%20logic%20in%20detail)
-- [Step_08 Testing - Activation](micro-frontend/Step_08%20Testing%20-%20Activation)
-- [Step_09 Testing - UI Test](micro-frontend/Step_09%20Testing%20-%20UI%20Test)
+- [Step_08 Testing - Activation](micro-frontend/Step_08%20Testing%20-%20Activation) not yet implemented
+- [Step_09 Testing - UI Test](micro-frontend/Step_09%20Testing%20-%20UI%20Test) not yet implemented
 
 ## SPA (Single Page Application)
 - [Step_01 Prototype as framework](single-page-application/Step_01%20Prototype%20as%20framework)

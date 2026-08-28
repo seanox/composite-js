@@ -186,7 +186,8 @@
                     else outputMessage("info", "All tests were successful.");
                     if (benchmarks.length)
                         outputMessage("info", "Benchmark summary\r\n\t"
-                                + benchmarks.map(value => value.padStart(7)).join("\r\n\t"));
+                                + benchmarks.map(value => value.padStart(7)).join("\r\n\t")
+                                + "\r\n\r\n---");
                   } else loadTest(queue.shift());
 
                   window.focus();

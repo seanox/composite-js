@@ -365,13 +365,18 @@
   </target>
 
   <target name="compile" depends="release">
-    <copy file="${release.file.testing}" todir="${workspace.test}" overwrite="true"/>
     <copy file="${release.file.testing}" todir="${workspace.benchmarks}" overwrite="true"/>
+    <copy file="${release.file.testing}" todir="${workspace.test}" overwrite="true"/>
+    <copy file="${release.file.debug.testing}" todir="${workspace.test}" overwrite="true"/>
   </target>
 
   <target name="compile-max" depends="release">
-    <copy file="${release.file.testing.max}" todir="${workspace.test}" overwrite="true"/>
-    <copy file="${release.file.testing.max}" todir="${workspace.benchmarks}" overwrite="true"/>
+    <copy file="${release.file.testing.max}"
+        tofile="${workspace.benchmarks}/${ant.project.name}-testing.js" overwrite="true"/>
+    <copy file="${release.file.testing.max}"
+        tofile="${workspace.test}/${ant.project.name}-testing.js" overwrite="true"/>
+    <copy file="${release.file.debug.testing.max}"
+        tofile="${workspace.test}/${ant.project.name}-debug-testing.js" overwrite="true"/>
   </target>
 
   <target name="start">

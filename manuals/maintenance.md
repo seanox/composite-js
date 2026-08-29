@@ -134,6 +134,9 @@ available at the time of the release must be used.
 
 ## Release
 
+> > [!IMPORTANT]
+> __Check the validity/expiration date of the NPM_AUTOMATION_TOKEN__
+
 ### GitHub
 - Check that all ToDo's are done
 - Run all tests in all Engines (Blink, Gecko, Goanna, WebKit)

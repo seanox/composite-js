@@ -1022,7 +1022,7 @@
          * Parameters start with @ in difference to Interceptor/Selector/Tag.
          *
          *     @ATTRIBUTES-STATICS
-         * Static attributes are a component of the markup protection.
+         * Static attributes are a component of the markup hardening.
          * These attributes are observed by the renderer and manipulation is
          * made more difficult by restoring the original value. As value one or
          * more attributes separated by spaces are expected. The method can be
@@ -1043,10 +1043,10 @@
                 scope = variants[0];
 
             // STATIC is used to define protected attributes in the markup.
-            // Markup protection makes attribute manipulation at the runtime
-            // more difficult. At runtime, additional attributes can be declared
-            // as static. However, this function is not cheap, since the values
-            // of the attributes used at that time must be determined for all
+            // Markup hardening makes attribute manipulation at the runtime more
+            // difficult. At runtime, additional attributes can be declared as
+            // static. However, this function is not cheap, since the values of
+            // the attributes used at that time must be determined for all
             // elements to be restored, for which purpose the complete DOM is
             // analyzed (full DOM scan). The composite-specific static
             // attributes (PATTERN_ATTRIBUTE_ACCEPT) are excluded from this
@@ -1550,7 +1550,7 @@
 
     /**
      * Set of attributes to be hardened.
-     * Attribute protection is part of the security concept and is intended to
+     * Attribute hardening is part of the security concept and is intended to
      * make runtime manipulation of the markup more difficult. It monitors
      * attributes and reverts any changes. The list is initially empty because
      * the required policies and rules are highly application-specific. 
@@ -1982,7 +1982,7 @@
                     object.attributes[attribute.name] = attribute.value;
 
                 // The initial value of the static attribute is registered for
-                // the restore. This is a part of the markup protection of the
+                // the restore. This is a part of the markup hardening of the
                 // MutationObserver.
                 object.statics = object.statics || {};
                 if (_statics.has(attribute.name))

@@ -1,4 +1,6 @@
-2.0.0 2026xxxx
+2.0.0 20260829
+BF: Build: Optimizing npm access
+BF: Build: Correction of the missing jsdelivr default
 BF: Composite: Correction of the registration of the HTTP events
     With repeated calls of XMLHttpRequest.open for a request, the listeners were
     registered more than once and the events Composite.EVENT_HTTP_* were fired
@@ -6,14 +8,15 @@ BF: Composite: Correction of the registration of the HTTP events
 BF: Documentation: Update of content
 BF: DataSource: Correction when fetch text nodes
     Incorrect return values in XPath queries that return text nodes.
-BF: Build: Optimizing npm access
-BF: Build: Correction of the missing jsdelivr default
-CR: Test: Expansion of benchmarks/tests
-CR: Tutorials: Integration into the project
+CR: Composer: Refactoring the rendering
+    Allocation of responsibility according to the appropriate method, without
+    affecting runtime behavior.
 CR: Documentation: Using GitHub Pages
 CR: Scripting: Omission of macro #module
     This became obsolete with the automatic sourceURL directive in modules,
     making debugging more convenient.
+CR: Test: Expansion of benchmarks/tests
+CR: Tutorials: Integration into the project
 CR: Project: Renamed to composite-js
     - Name is meant to better convey the core concept
     - Terminology has been refined throughout -- composite is a concept,
@@ -21,9 +24,6 @@ CR: Project: Renamed to composite-js
 CR: Project: Refactoring after renaming to composite-js
     - composite.js and the Composite object become composer.js and the Composer
       object
-CR: Composer: Refactoring the rendering
-    Allocation of responsibility according to the appropriate method, without
-    affecting runtime behavior.
 
 1.9.0 20260717
 BF: Composite: Validation corrections and optimization

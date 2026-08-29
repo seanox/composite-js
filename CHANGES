@@ -45,7 +45,7 @@ CR: Composite: Switch to microtasks-based scheduling
     - Macrotask are not executed until the next event loop iteration and after
       all microtasks have been processed.
 CR: Composite: Renaming Composite.asynchron to Composite.asynchronous
-CR: Composite: Renaming Markup Hardening to Markup Protection
+CR: Composite: Renaming Markup Hardening to Markup Hardening
     Renamed the terminology to better describe the purpose of the feature.
 CR: DataSource: Optimization and extension
     - Added support for fully qualified locator/path

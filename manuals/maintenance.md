@@ -140,13 +140,21 @@ available at the time of the release must be used.
 ### GitHub
 - Check that all ToDo's are done
 - Run all tests in all Engines (Blink, Gecko, Goanna, WebKit)
+- Check the benchmarks and enter the values for the new version
 - Finalize `CHANGES` and `README.md`
-- Create a release
-- Publish the release with a tag
-- Create a release in GitHub for the tag
 - Update the tutorials and create a release there too
-
-### npmjs.com
+- Create a release
+  ```bash
+  ant -f ./development/build.xml release 
+  ```
+- Publish the release with a tag
+- Create a release in GitHub for the tag and add the assets
+- Publish the release in npmjs.com
+  ```bash
+  ant -f ./development/build.xml publish 
+  ```
+  
+### npmjs.com (manual execution is not required)
 - Go to the project directory
 - Update the file `package.json`
 - Log in with your credentials: `npm login`

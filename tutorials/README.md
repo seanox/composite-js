@@ -17,6 +17,9 @@ These references are available when comparing the individual steps.
   tested engines: Blink, Gecko, Goanna, WebKit
 - Program for comparing code
 
+# Download
+- [Sources](https://github.com/seanox/composite-js/archive/refs/heads/master.zip)
+
 # Tutorials
 
 ## Micro-Frontend

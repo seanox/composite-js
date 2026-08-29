@@ -333,6 +333,7 @@
     
     <zip destfile="${workspace.release}/${ant.project.name}-tutorials-${release.version}.zip">
       <fileset dir="${workspace.tutorials}" includes="**/*"/>
+      <fileset dir="${workspace}" includes="LICENSE"/>
     </zip>
     <touch datetime="${release.date}" pattern="yyyyMMdd" file="${workspace.release}/${ant.project.name}-tutorials-${release.version}.zip"/>
     

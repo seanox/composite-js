@@ -14,5 +14,5 @@
 /release/*.zip
 /release/*source*.js
 /release/*debug*.js
-/test/composite-js-testing.js
-/benchmarks/composite-js-testing.js
+/benchmarks/composite-js*.js
+/test/composite-js*.js

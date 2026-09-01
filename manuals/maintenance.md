@@ -7,9 +7,9 @@
 ## Contents Overview
 - [Automation and Build](#automation-and-build)
 - [Server](#server)
+  - [Firewall](#firewall)
 - [Playground](#playground)
 - [Test](#test)
-  - [Firewall](#firewall)
   - [Browsers for Testing](#browsers-for-testing)
   - [Procedure](#procedure)
 - [Release](#release)
@@ -154,7 +154,11 @@ available at the time of the release must be used.
   ant -f ./development/build.xml publish 
   ```
   
-### npmjs.com (manual execution is not required)
+### npmjs.com
+
+> [!NOTE]
+> Manual execution is not required.
+
 - Go to the project directory
 - Update the file `package.json`
 - Log in with your credentials: `npm login`

@@ -1,5 +1,5 @@
 &#9665; [Expression Language](expression.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#markup)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#language)
 &nbsp;&nbsp;&nbsp;&nbsp; [Scripting](scripting.md) &#9655;
 - - -
 
@@ -327,19 +327,19 @@ updated content is generated and inserted as inner HTML with each render cycle.
 The attribute value expects a [variable expression](
     expression.md#variable-expression). It creates a meta-object that allows
 access to the iteration in the template. The variable expression
-`iterate={{tempA:example.list}}` creates the meta-object
+`iterate="{{tempA:example.list}}"` creates the meta-object
 `tempA = {item, index, data}`.
 
 ```javascript
 const example = {
-    months: ["Spring", "Summer", "Autumn", "Winter"]
+    seasons: ["Spring", "Summer", "Autumn", "Winter"]
 };
 ```
 
 ```html
-<select iterate={{months:example.months}}>
-  <option value="{{months.index}}">
-    {{months.item}}
+<select iterate="{{seasons:example.seasons}}">
+  <option value="{{seasons.index}}">
+    {{seasons.item}}
   </option>
 </select>
 ```
@@ -358,9 +358,9 @@ const example = {
 > array.
 
 ```html
-<select iterate={{months:example.months.length}}>
-  <option value="{{months.index}}">
-    {{example.months[months.index]}}
+<select iterate="{{seasons:example.seasons.length}}">
+  <option value="{{seasons.index}}">
+    {{example.seasons[seasons.index]}}
   </option>
 </select>
 ```
@@ -473,8 +473,8 @@ added to the HEAD when the page is loaded.
 ### render
 The attribute requires the combination with the [events](#events) attribute.
 Together they define which targets are refreshed by the composer with which
-occurring events. The expected value is one or more space-separated CSS or Query
-selectors that define the targets.
+occurring events. The expected value is a CSS or query selector. Several targets
+are declared as a comma-separated selector list.
 
 ```javascript
 const example = {
@@ -495,26 +495,25 @@ const example = {
 
 ```html
 Target #1:
-<span id="outputText1">{{example.status1}}</span>
+<span id="outputText1">{{example.getStatus1()}}</span>
 Events: Wheel
 <input id="text1" type="text"
     events="wheel"
     render="#outputText1, #outputText2, #outputText3"/>
 
 Target #2:
-<span id="outputText2">{{example.status2}}</span>
+<span id="outputText2">{{example.getStatus2()}}</span>
 Events: MouseDown KeyDown
-<input id="text1" type="text"
+<input id="text2" type="text"
     events="mousedown keydown"
     render="#outputText2, #outputText3"/>
 
 Target #3:
-<span id="outputText3">{{example.status3}}</span>
+<span id="outputText3">{{example.getStatus3()}}</span>
 Events: MouseUp KeyUp
-<input id="text1" type="text"
+<input id="text3" type="text"
     events="mouseup keyup"
     render="#outputText3"/>
-
 ```
 
 The example contains 3 input fields with different events (`events`) and targets
@@ -814,5 +813,5 @@ Composer.customize("@attributes-statics", "method action");
 
 - - -
 &#9665; [Expression Language](expression.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#markup)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#language)
 &nbsp;&nbsp;&nbsp;&nbsp; [Scripting](scripting.md) &#9655;

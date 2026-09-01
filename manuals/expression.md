@@ -1,5 +1,5 @@
 &#9665; [Getting Started](getting-started.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#expression-language)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#language)
 &nbsp;&nbsp;&nbsp;&nbsp; [Markup](markup.md) &#9655;
 - - -
 
@@ -238,5 +238,5 @@ h1:after {
 
 - - -
 &#9665; [Getting Started](getting-started.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#expression-language)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#language)
 &nbsp;&nbsp;&nbsp;&nbsp; [Markup](markup.md) &#9655;

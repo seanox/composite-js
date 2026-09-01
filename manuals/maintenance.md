@@ -110,12 +110,12 @@ ant -f ./development/build.xml compile-max
 Both tasks can be combined with the task _start_.
 
 ### Browsers for Testing
-| Engine | Download                                                            |
-| ------ |---------------------------------------------------------------------| 
-| Blink  | https://portableapps.com/apps/internet/google_chrome_portable       |
-| Gecko  | https://portableapps.com/apps/internet/firefox_portable             |
-| Goanna | https://www.palemoon.org/download.shtml                             |
-| WebKit | not available, native integration required<br>e.g. Safari iOS/MacOS |
+| Engine | Download                                                         |
+| ------ |------------------------------------------------------------------| 
+| Blink  | https://portableapps.com/apps/internet/google_chrome_portable    |
+| Gecko  | https://portableapps.com/apps/internet/firefox_portable          |
+| Goanna | https://www.palemoon.org/download.shtml                          |
+| WebKit | not available, native integration required e.g. Safari iOS/MacOS |
 
 Overview of engines  
 https://en.wikipedia.org/wiki/Comparison_of_browser_engines

@@ -411,18 +411,6 @@ The following examples use the application module from [import](#import).
 </article>
 ```
 
-Example of outputting a remote resource using the HTTP method GET.
-
-```html
-<article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx'}}">
-  loading resource...
-</article>
-
-<article import="https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx">
-  loading resource...
-</article>
-```
-
 Example of outputting via DataSource-URL. If only one URL is specified, the URI
 for data and transformation are derived from it.
 

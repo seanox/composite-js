@@ -141,12 +141,16 @@
 ### Components
 - __[Composite](composite.md#composite)__
   - [Structure](composite.md#structure)
+  - [Composite and Composer](composite.md#composite-and-composer)
+  - [Resources](composite.md#resources)
   - [Loading](composite.md#loading)
     - [CSS](composite.md#css)
     - [JavaScript](composite.md#javascript)
     - [HTML](composite.md#html)
   - [Modules](composite.md#modules)
   - [Common Resources](composite.md#common-resources)
+  - [Namespace](composite.md#namespace)
+  - [Notes](composite.md#notes)
 - __[Reactivity Rendering](reactive.md#reactivity-rendering)__
   - [Creating Reactive Objects](reactive.md#creating-reactive-objects)
   - [Consumers](reactive.md#consumers)

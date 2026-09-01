@@ -99,7 +99,7 @@ Composite Module
 
 Consequently, a composite does not load its own resources, does not render 
 itself and does not establish its own binding. These actions are performed by
-the runtime and the composite.
+the runtime and the composer.
 
 ## Resources
 The resources associated with a composite can be stored externally. The default

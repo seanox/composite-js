@@ -53,7 +53,7 @@ or its presentation logic, while domain models represent domain-specific data
 and rules.
 
 ### View
-The HTML representation of a compcsite (see [View](architecture.md#view)). It
+The HTML representation of a composite (see [View](architecture.md#view)). It
 defines structure and presentation and can use expressions and declarative
 attributes to access application data, handle interactions and control rendering
 behavior, but does not define application-specific logic itself.

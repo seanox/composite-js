@@ -207,8 +207,12 @@
         },
 
         /**
-         * Executes a script isolated in this context, so that no unwanted
-         * access to internals is possible.
+         * Executes a script in a separate function scope with the selected
+         * context values and helper functions explicitly provided as arguments.
+         *
+         * Note: This provides neither a secure sandbox nor proper isolation,
+         * and it does not prevent access to global variables.
+         *
          * @param {string} script
          * @returns {*} return value of the script, if available
          */
@@ -217,8 +221,15 @@
                 throw new TypeError("Invalid data type");
             if (!script.trim())
                 return;
-            with (Composer.render.context)
-                return eval(script);
+            return Function(
+                ...Object.keys(Composer.render.context),
+                "_import", "_export", "_use", "_tolerate",
+                '"use strict"; return eval(arguments[arguments.length - 1]);'
+            )(
+                ...Object.values(Composer.render.context),
+                _import, _export, _use, _tolerate,
+                script
+            );
         }
     });
 

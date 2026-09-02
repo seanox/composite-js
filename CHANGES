@@ -1,6 +1,9 @@
 2.1.0 2026xxxx
 BF: Composer: Correcting the lock leak in the rendering
     The final lock release in the error case was faulty.
+CR: Scripting: Optimization of the separate function scope
+    Removes the use of with.
+    Correction of terminology: "separate function scope" instead of "isolated"
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

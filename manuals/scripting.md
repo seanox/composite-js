@@ -9,7 +9,7 @@ that provides a small set of [macros](#macros) for browser-based module
 execution.
 
 Composite script is used for the JavaScript resources in the module directory.
-It is executed directly in an isolated module scope rather than as a script
+It is executed directly in a separate function scope rather than as a script
 element. Variables, constants and functions declared in a module remain local to
 that module and are not automatically available in the global scope or in other
 modules. The [macros](#macros) provide language extensions for tasks such as
@@ -84,8 +84,8 @@ effective.
 
 ### #export
 The `#export` macro makes selected variables, constants and functions of the
-isolated module scope available in the global scope. Objects that participate in
-composite binding must be exported in this way. The macro expects a
+separate function scope available in the global scope. Objects that participate
+in composite binding must be exported in this way. The macro expects a
 space-separated list of names that extends to the end of the line or the next
 semicolon.
 

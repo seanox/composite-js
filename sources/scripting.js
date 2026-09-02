@@ -20,8 +20,8 @@
  * are based on ECMAScript/JavaScript enriched with macros. In addition,
  * composite script can be loaded at runtime and can itself load other composite
  * scripts. Because in the end everything is based on a simple eval command, it
- * was important to isolate the execution of the scripts so that internal
- * methods and constants cannot be accessed unintentionally.
+ * was important to execute the scripts in a separate function scope so that
+ * internal methods and constants cannot be accessed unintentionally.
  *
  * see also: https://seanox.github.io/composite-js/manuals/scripting.html
  *           https://seanox.github.io/composite-js/manuals/expression.html
@@ -41,8 +41,8 @@
          *
          * #import    loads modules as composite script resources from the
          *            module directory
-         * #export    makes variables, constants and functions of the isolated
-         *            module scope usable in the global scope, optionally in a
+         * #export    makes variables, constants and functions of the separate
+         *            function scope usable in the global scope, optionally in a
          *            namespace declared with an @ symbol
          * #use       creates the passed namespaces if they do not already exist
          * (?...)     tolerant expression, a macro with a different syntax, the

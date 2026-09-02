@@ -65,7 +65,7 @@ application logic, declarative presentation, and runtime mechanisms.
 >
 > __Composite Script__
 > - is ECMAScript extended by composite-specific macros
-> - is executed in an isolated module scope
+> - is executed in a separate function scope
 > - establishes the application module
 >
 > __View__
@@ -251,8 +251,8 @@ establish an application module.
 > - is processed and executed by the Runtime
 > - establishes the Application Module
 
-Composite scripts execute in an isolated module scope. This scope is specific to
-the execution of the Composite script and does not replace regular ECMAScript
+Composite scripts execute in a separate function scope. This scope is specific
+to the execution of the Composite script and does not replace regular ECMAScript
 mechanisms. Standard `import` and `export` mechanisms remain available for
 working with ECMAScript modules.
 

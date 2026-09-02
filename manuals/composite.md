@@ -45,7 +45,8 @@ associated resources. It is also used for resource resolution and composite
 binding.
 
 The composite script provides the JavaScript of the application module. Its
-declarations are isolated unless they are explicitly exported.
+declarations are local to the separate function scope unless they are explicitly
+exported.
 
 ```javascript
 const example = {
@@ -142,11 +143,11 @@ The runtime inserts the CSS into a ```style``` element in the ```HEAD``` if the
 markup (HTML) has been loaded beforehand.
 
 ### JavaScript
-The runtime executes the JavaScript provided by a Composite script in an
-isolated runtime scope. JavaScript is only loaded if no corresponding
-application module already exists. Declarations remain local unless explicitly
-exported, for example with the macro [#export](scripting.md#export) -- this is
-required for any object participating in Composite binding.
+The runtime executes the JavaScript provided by a Composite script in a separate
+function scope. JavaScript is only loaded if no corresponding application module
+already exists. Declarations remain local unless explicitly exported, for
+example with the macro [#export](scripting.md#export) -- this is required for
+any object participating in Composite binding.
 
 ```javascript
 const login = {

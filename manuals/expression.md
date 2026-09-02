@@ -177,9 +177,10 @@ The expression corresponds to the JavaScript syntax:
     `var foo = 1 +2 +3 + 'x hello';`
 
 > [!IMPORTANT]
-> __Page Scope:__ Variables can only be used in the markup and are isolated from
-> the rest of the JavaScript. They are intended for output and data processing
-> in HTML markup and are not accessible in general JavaScript code.
+> __Page Scope:__ Variables can only be used in the markup and are in a separate
+> function scope from the rest of the JavaScript. They are intended for output
+> and data processing in HTML markup and are not accessible in general
+> JavaScript code.
 
 ### Combination
 All types of expressions can be combined.

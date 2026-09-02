@@ -1,7 +1,11 @@
+2.1.0 2026xxxx
+BF: Composer: Correcting the lock leak in the rendering
+    The final lock release in the error case was faulty.
+
 2.0.0 20260829
 BF: Build: Optimizing npm access
 BF: Build: Correction of the missing jsdelivr default
-BF: Composite: Correction of the registration of the HTTP events
+BF: Composer: Correction of the registration of the HTTP events
     With repeated calls of XMLHttpRequest.open for a request, the listeners were
     registered more than once and the events Composite.EVENT_HTTP_* were fired
     more than once.

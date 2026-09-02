@@ -1628,59 +1628,62 @@
                     this.ticks--;
                     if (this.ticks > 0)
                         return;
-                    if (context === Composer.render) {
+                    try {
+                        if (context === Composer.render) {
 
-                        // To ensure that on conditions when the lock is created
-                        // for the marker, the children are also mounted, the
-                        // selector must be switched to the element, because the
-                        // marker is a text node without children.
+                            // To ensure that on conditions when the lock is created
+                            // for the marker, the children are also mounted, the
+                            // selector must be switched to the element, because the
+                            // marker is a text node without children.
 
-                        let selector = this.selector;
-                        if (selector instanceof Node
-                                && selector.nodeType === Node.TEXT_NODE) {
-                            let serial = selector.ordinal();
-                            let object = _render_meta[serial] || {};
-                            if (object.condition
-                                    && object.condition.element
-                                    && object.condition.marker === this.selector)
-                                selector = object.condition.element;
-                        }
+                            let selector = this.selector;
+                            if (selector instanceof Node
+                                    && selector.nodeType === Node.TEXT_NODE) {
+                                let serial = selector.ordinal();
+                                let object = _render_meta[serial] || {};
+                                if (object.condition
+                                        && object.condition.element
+                                        && object.condition.marker === this.selector)
+                                    selector = object.condition.element;
+                            }
 
-                        // If the selector is a string, several elements must be
-                        // assumed, which may or may not have a relation to the
-                        // DOM. Therefore, they are all considered and mounted
-                        // separately.
+                            // If the selector is a string, several elements must be
+                            // assumed, which may or may not have a relation to the
+                            // DOM. Therefore, they are all considered and mounted
+                            // separately.
 
-                        let nodes = [];
-                        if (typeof selector === "string") {
-                            const scope = document.querySelectorAll(selector);
-                            Array.from(scope).forEach((node) => {
-                                if (!nodes.includes(node))
-                                    nodes.push(node);
-                                const scope = node.querySelectorAll("*");
+                            let nodes = [];
+                            if (typeof selector === "string") {
+                                const scope = document.querySelectorAll(selector);
                                 Array.from(scope).forEach((node) => {
                                     if (!nodes.includes(node))
                                         nodes.push(node);
+                                    const scope = node.querySelectorAll("*");
+                                    Array.from(scope).forEach((node) => {
+                                        if (!nodes.includes(node))
+                                            nodes.push(node);
+                                    });
                                 });
-                            });
-                        } else if (selector instanceof Element) {
-                            nodes = selector.querySelectorAll("*");
-                            nodes = [selector].concat(Array.from(nodes));
-                        }
+                            } else if (selector instanceof Element) {
+                                nodes = selector.querySelectorAll("*");
+                                nodes = [selector].concat(Array.from(nodes));
+                            }
 
-                        // Mount all elements in a composite, including the
-                        // composite element itself
-                        nodes.forEach((node) =>
-                            Composer.mount(node));
+                            // Mount all elements in a composite, including the
+                            // composite element itself
+                            nodes.forEach((node) =>
+                                Composer.mount(node));
 
-                        Composer.fire(Composer.EVENT_RENDER_END, this.selector);
-                    } else if (context === Composer.mount) {
-                        Composer.fire(Composer.EVENT_MOUNT_END, this.selector);
-                    } else throw new Error("Invalid context: " + context);
-                    const selector = context.queue.shift();
-                    if (selector)
-                        Composer.asynchronous(context, selector);
-                    context.lock = false;
+                            Composer.fire(Composer.EVENT_RENDER_END, this.selector);
+                        } else if (context === Composer.mount) {
+                            Composer.fire(Composer.EVENT_MOUNT_END, this.selector);
+                        } else throw new Error("Invalid context: " + context);
+                        const selector = context.queue.shift();
+                        if (selector)
+                            Composer.asynchronous(context, selector);
+                    } finally {
+                        context.lock = false;
+                    }
                 }};
 
             if (context === Composer.render)
@@ -2993,12 +2996,15 @@
                 // MutationObserver does not run parallel, so it is called after
                 // the rendering with obsolete nodes.
                 (record.addedNodes || []).forEach((node) => {
-                    if ((node instanceof Element
+                    if (!(node instanceof Element
                             || (node instanceof Node
-                                    && node.nodeType === Node.TEXT_NODE))
-                            && !_render_meta[node.ordinal()]
-                            && document.body.contains(node))
-                        Composer.render(node);
+                                    && node.nodeType === Node.TEXT_NODE)))
+                        return;
+                    if (_render_meta[node.ordinal()])
+                        return;
+                    if (!document.body.contains(node))
+                        return;
+                    Composer.render(node);
                 });
 
                 // All removed elements are cleaned and if necessary the undock

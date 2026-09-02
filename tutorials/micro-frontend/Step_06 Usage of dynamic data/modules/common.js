@@ -8,7 +8,7 @@ const error = Reactive({
     }
 });
 
-// Composite scripts use their own isolated module scope. Variables and
+// Composite scripts use their own separate function scope. Variables and
 // constants that are created and used here are not accessible outside and must
 // be exported for use in the global scope, using the #export macro.
 #export error;

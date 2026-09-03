@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+      body div {
+        margin: 1em;
+      }
+      body * {
+        display: block;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const snapshots = [];
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            const snapshot = document.body.textContent.trim();
+            snapshots.push(snapshot);
+            if (snapshots.length === 1)
+                Test.start();
+            if (snapshots.length >= 1)
+                Assert.assertEquals("expected {1} steps but was {2}", 1, snapshots.length);
+        });
+
+        Test.create({test() {
+            Assert.assertTrue(document.body.innerText.includes("Error: Invalid composite id"));
+        }});
+    </script>
+  </head>
+  <body>
+    <div id="" composite/>
+  </body>
+</html>

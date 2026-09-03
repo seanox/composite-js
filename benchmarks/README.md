@@ -11,7 +11,7 @@ versions.
 | 1.8.0                                                               |            233 ms |            350 ms |            237 ms |            377 ms |            2386 ms | 
 | 1.9.0                                                               |            239 ms |            245 ms |            234 ms |            355 ms |            2186 ms | 
 | 2.0.0                                                               |            252 ms |            249 ms |            228 ms |            334 ms |            2184 ms | 
-| 2.1.0 (in development)                                              |            220 ms |            427 ms |            414 ms |            551 ms |            3116 ms | 
+| 2.1.0 (in development)                                              |            246 ms |            427 ms |            308 ms |            333 ms |            3116 ms | 
 | __[Expression Evaluation](#expression-evaluation)__                 |         __Blink__ |         __Gecko__ |        __WebKit__ |        __WebKit__ |         __goanna__ |
 | 1.7.0                                                               |             78 ms |             86 ms |            108 ms |            106 ms |             258 ms | 
 |                                                                     |             15 ms |             18 ms |             25 ms |             25 ms |              74 ms | 
@@ -25,45 +25,45 @@ versions.
 | 2.0.0                                                               |             71 ms |             74 ms |             96 ms |            106 ms |             250 ms | 
 |                                                                     |             17 ms |             20 ms |             23 ms |             33 ms |              90 ms | 
 |                                                                     |             27 ms |             36 ms |             19 ms |             32 ms |             282 ms | 
-| 2.1.0 (in development)                                              |             74 ms |             78 ms |             95 ms |            125 ms |             250 ms | 
-|                                                                     |             10 ms |             46 ms |             53 ms |             59 ms |             154 ms | 
-|                                                                     |             13 ms |            239 ms |            179 ms |            256 ms |             858 ms |
+| 2.1.0 (in development)                                              |             66 ms |             78 ms |             90 ms |            103 ms |             250 ms | 
+|                                                                     |             19 ms |             46 ms |             48 ms |             46 ms |             154 ms | 
+|                                                                     |             19 ms |            239 ms |            175 ms |            231 ms |             858 ms |
 | __[Reactive: Batching](#reactive-batching)__                        |         __Blink__ |         __Gecko__ |        __WebKit__ |        __WebKit__ |         __goanna__ |
 | 1.7.0                                                               |             18 ms |             13 ms |             15 ms |             18 ms |             116 ms | 
 | 1.8.0                                                               |             14 ms |             25 ms |             15 ms |             32 ms |             118 ms | 
 | 1.9.0                                                               |              4 ms |              5 ms |              5 ms |             18 ms |              40 ms | 
 | 2.0.0                                                               |              4 ms |              4 ms |              4 ms |              8 ms |              40 ms | 
-| 2.1.0 (in development)                                              |              3 ms |             10 ms |             13 ms |             34 ms |              64 ms | 
+| 2.1.0 (in development)                                              |              9 ms |             10 ms |             13 ms |             21 ms |              64 ms | 
 | __[Reactive: Granular Update](#reactive-granular-update)__          |         __Blink__ |         __Gecko__ |        __WebKit__ |        __WebKit__ |         __goanna__ |
 | 1.7.0                                                               |            199 ms |            282 ms |           4848 ms |           8161 ms |            2048 ms | 
 | 1.8.0                                                               |             78 ms |             75 ms |             68 ms |             91 ms |             650 ms |  
 | 1.9.0                                                               |             30 ms |             35 ms |             22 ms |             49 ms |             186 ms | 
 | 2.0.0                                                               |             30 ms |             23 ms |             22 ms |             47 ms |             182 ms | 
-| 2.1.0 (in development)                                              |             33 ms |             32 ms |             23 ms |             59 ms |             208 ms |
+| 2.1.0 (in development)                                              |             34 ms |             32 ms |             22 ms |             44 ms |             208 ms |
 | __[Reactive: Leaf Update](#reactive-leaf-update)__                  |         __Blink__ |         __Gecko__ |        __WebKit__ |        __WebKit__ |         __goanna__ |
 | 1.7.0                                                               |             81 ms |             62 ms |             57 ms |            133 ms |             508 ms | 
 | 1.8.0                                                               |             46 ms |             75 ms |             32 ms |             73 ms |             288 ms | 
 | 1.9.0                                                               |             46 ms |             42 ms |             31 ms |             93 ms |             244 ms | 
 | 2.0.0                                                               |             45 ms |             40 ms |             31 ms |             71 ms |             242 ms | 
-| 2.1.0 (in development)                                              |             46 ms |             39 ms |             34 ms |             76 ms |             274 ms |
+| 2.1.0 (in development)                                              |             49 ms |             39 ms |             33 ms |             79 ms |             274 ms |
 | __[Reactive: Root-Update](#reactive-root-update)__                  |         __Blink__ |         __Gecko__ |        __WebKit__ |        __WebKit__ |         __goanna__ |
 | 1.7.0                                                               |            587 ms |            734 ms |            623 ms |           1070 ms |            7002 ms | 
 | 1.8.0                                                               |            404 ms |            700 ms |            372 ms |            673 ms |            5276 ms | 
 | 1.9.0                                                               |            359 ms |            472 ms |            371 ms |            625 ms |            4852 ms | 
 | 2.0.0                                                               |            382 ms |            479 ms |            360 ms |            615 ms |            4720 ms | 
-| 2.1.0 (in development)                                              |            400 ms |            924 ms |            658 ms |           1140 ms |            7232 ms |
+| 2.1.0 (in development)                                              |            413 ms |            924 ms |            628 ms |           1080 ms |            7232 ms |
 | __[Reactive: Worst Case](#reactive-worst-case)__                    |         __Blink__ |         __Gecko__ |        __WebKit__ |        __WebKit__ |         __goanna__ |
 | 1.7.0                                                               |            123 ms |            282 ms |           5014 ms |           8550 ms |            1554 ms | 
 | 1.8.0                                                               |           1442 ms |           1350 ms |            515 ms |            658 ms |            4272 ms | 
 | 1.9.0                                                               |           1387 ms |           1005 ms |            485 ms |            593 ms |            2106 ms | 
 | 2.0.0                                                               |           1385 ms |           1000 ms |            489 ms |            588 ms |            2158 ms | 
-| 2.1.0 (in development)                                              |           1380 ms |           1011 ms |            520 ms |            932 ms |            2282 ms |
+| 2.1.0 (in development)                                              |           1399 ms |           1011 ms |            495 ms |            604 ms |            2282 ms |
 | __[Script Parsing and Evaluation](#script-parsing-and-evaluation)__ |         __Blink__ |         __Gecko__ |        __WebKit__ |        __WebKit__ |         __goanna__ |
 | 1.7.0                                                               |            190 ms |            364 ms |            170 ms |            231 ms |            2440 ms | 
 | 1.8.0                                                               |            186 ms |            425 ms |            170 ms |            267 ms |            2100 ms | 
 | 1.9.0                                                               |            190 ms |            349 ms |            185 ms |            233 ms |            2400 ms | 
 | 2.0.0                                                               |            195 ms |            345 ms |            186 ms |            224 ms |            2312 ms | 
-| 2.1.0 (in development)                                              |            188 ms |            352 ms |            266 ms |            335 ms |            2438 ms |
+| 2.1.0 (in development)                                              |            194 ms |            352 ms |            258 ms |            346 ms |            2438 ms |
 
 ## Deep Iteration Rendering
 Renders a four-level nested view with 10×10×10×10 iterations, producing 11,110

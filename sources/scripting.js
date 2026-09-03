@@ -221,14 +221,14 @@
                 throw new TypeError("Invalid data type");
             if (!script.trim())
                 return;
+            const context = Composer.render.context;
             return Function(
-                ...Object.keys(Composer.render.context),
-                "_import", "_export", "_use", "_tolerate",
-                '"use strict"; return eval(arguments[arguments.length - 1]);'
+                ...Object.keys(context),
+                "_import", "_export", "_use", "_tolerate", "script",
+                '"use strict"; return eval(script);'
             )(
-                ...Object.values(Composer.render.context),
-                _import, _export, _use, _tolerate,
-                script
+                ...Object.values(context),
+                _import, _export, _use, _tolerate, script
             );
         }
     });

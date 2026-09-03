@@ -1537,11 +1537,9 @@
     Object.defineProperty(Composer.render, "context", {
         get: () => {
             const scope = Array.from(_render_context_scope);
-            _render_context_workspace.forEach(object => {
-                Object.keys(object).forEach(key => {
+            for (const object of _render_context_workspace)
+                for (const key of Object.keys(object))
                     scope[key] = object[key];
-                });
-            });
             return scope;
         },
         configurable: false,

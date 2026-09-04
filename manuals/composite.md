@@ -139,8 +139,8 @@ the following order:
 3. HTML/Markup
 
 ### CSS
-The runtime inserts the CSS into a ```style``` element in the ```HEAD``` if the
-markup (HTML) has been loaded beforehand.
+The runtime inserts the CSS into a __&lt;style&gt;__ element in the
+__&lt;head&gt;__ if the markup (HTML) has been loaded beforehand.
 
 ### JavaScript
 The runtime executes the JavaScript provided by a Composite script in a separate

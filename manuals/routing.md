@@ -57,6 +57,9 @@ views and subviews. Views can be static and therefore always shown, or
 path-controlled with the attribute `route`. Paths address the complete chain of
 nested views and show the parent views in addition to the target view.
 
+__This behavior requires routing to be enabled by adding the __route__ attribute
+to the __&lt;body&gt;__ element.
+
 ```html
 <body route>
   <header id="header" composite>

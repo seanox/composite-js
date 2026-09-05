@@ -54,6 +54,14 @@ Test.start();
 - [Control](#control)
 - [Events](#events)
 - [Extension](#extension)
+  - [Element](#element)
+    - [Element.prototype.typeValue](#elementprototypetypevalue)
+    - [Element.prototype.toPlainString](#elementprototypetoplainstring)
+    - [Element.prototype.trigger](#elementprototypetrigger)
+  - [Node](#node)
+    - [Node.prototype.toPlainString](#nodeprototypetoplainstring)
+  - [Object](#object)
+    - [Object.prototype.toPlainString](#objectprototoplainstring)
 
 ## Task
 The smallest component in an integration test is called _task_ because _case_ is

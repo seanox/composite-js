@@ -187,14 +187,14 @@
             // Attribute escape converts text to HTML. Without, HTML tag symbols
             // < and > are masked and output as text.
             let escape = xml.evaluate("string(/*/@escape)", xml, null, XPathResult.ANY_TYPE, null).stringValue;
-            escape = !!escape.match(/^yes|on|true|1$/i);
+            escape = !!escape.match(/^(yes|on|true|1)$/i);
 
             // Workaround for some browsers, e.g. MS Edge, if they have problems
             // with !DOCTYPE + !ENTITY. Therefore the document is copied so that
             // the DOCTYPE declaration is omitted.
             let nodes = result.querySelectorAll(escape ? "*" : "*[escape]");
             nodes.forEach((node) => {
-                if (escape || (node.getAttribute("escape") || "on").match(/^yes|on|true|1$/i)) {
+                if (escape || (node.getAttribute("escape") || "on").match(/^(yes|on|true|1)$/i)) {
                     const content = node.innerHTML;
                     if (content.indexOf("<") < 0
                             && content.indexOf(">") < 0)

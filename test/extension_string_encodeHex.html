@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        Test.create({test() {
+            Assert.assertEquals("", ("").encodeHex());
+            Assert.assertEquals("0x41", ("A").encodeHex());
+            Assert.assertEquals("0x414243", ("ABC").encodeHex());
+            Assert.assertEquals("0xE4F6FC", ("\u00e4\u00f6\u00fc").encodeHex());
+            Assert.assertEquals("0x20AC", ("\u20ac").encodeHex());
+            Assert.assertEquals("0xD83DDE00", ("\ud83d\ude00").encodeHex());
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("", ("").decodeHex());
+            Assert.assertEquals("", ("0x").decodeHex());
+            Assert.assertEquals("A", ("0x41").decodeHex());
+            Assert.assertEquals("ABC", ("0x414243").decodeHex());
+            Assert.assertEquals("\u00C3\u00A4\u00C3\u00B6\u00C3\u00BC", ("0xC3A4C3B6C3BC").decodeHex());
+            Assert.assertEquals("\u00E2\u0082\u00AC", ("0xE282AC").decodeHex());
+            Assert.assertEquals("\u00F0\u009F\u0098\u0080", ("0xF09F9880").decodeHex());
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("", ("").encodeHex().decodeHex());
+            Assert.assertEquals("ABC", ("ABC").encodeHex().decodeHex());
+            Assert.assertEquals("\u00E4\u00F6\u00FC",
+                    ("\u00E4\u00F6\u00FC").encodeHex().decodeHex());
+            Assert.assertEquals("\u0020\u00AC",
+                    ("\u20AC").encodeHex().decodeHex());
+            Assert.assertEquals("\u00D8\u003D\u00DE\u0000",
+                    ("\ud83d\ude00").encodeHex().decodeHex());
+        }});
+
+        Test.create({expected: /\bmalformed hexadecimal character sequence/i, test() {
+            ("123").decodeHex();
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

@@ -2,6 +2,12 @@
 BF: Composer: Correcting the lock leak in the rendering
     The final lock release in the error case was faulty.
 BF: DataSource: Correction of regex precedence error for Booleans
+BF: Extension: Corrections and optimization
+    - String.prototype.encodeHex
+      - Empty string returns empty string, not 0x anymore
+    - String.prototype.decodeHex
+      - Empty string returns empty string, not 0x anymore
+      - Throws an error if the string does not start with 0x
 BF: Routing: Correction of route expression generation
     Incorrect generation of route expressions when a route was combined
     condition.

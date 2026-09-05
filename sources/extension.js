@@ -432,6 +432,8 @@
     compliant("String.prototype.encodeHex");
     compliant(null, String.prototype.encodeHex = function() {
         let result = "";
+        if (this.length <= 0)
+            return "";
         for (let loop = 0; loop < this.length; loop++) {
             let digit = Number(this.charCodeAt(loop)).toString(16).toUpperCase();
             while (digit.length < 2)
@@ -445,15 +447,19 @@
      * Enhancement of the JavaScript API
      * Adds a function that parses hexadecimal chunks from String values.
      * @returns {string} The decoded string
+     * @throws {Error} In case of a malformed hexadecimal character sequence.
      */
     compliant("String.prototype.decodeHex");
     compliant(null, String.prototype.decodeHex = function() {
         let text = this;
-        if (text.match(/^0x/))
-            text = text.substring(2);
+        if (this.length <= 0)
+            return "";
+        if (!text.match(/^0x/))
+            throw new Error("Malformed hexadecimal character sequence");
+        text = text.substring(2);
         let result = "";
         for (let loop = 0; loop < text.length; loop += 2)
-            result += String.fromCharCode(parseInt(text.substring(loop, 2), 16));
+            result += String.fromCharCode(parseInt(text.substring(loop, loop +2), 16));
         return result;
     });
 

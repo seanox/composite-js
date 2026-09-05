@@ -154,6 +154,9 @@
 
             case TYPE_TEXT:
 
+                expression = expression
+                    .replace(/\\/g, "\\\\")
+                    .replace(/"/g, "\\\"")
                 expression = "\"" + expression + "\"";
 
             case TYPE_LITERAL:

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+      Test.activate();
+
+      Test.create({test() {
+          Assert.assertEquals("Text \"double\" 2",
+                  Expression.eval("Text \"double\" {{1 + 1}}"));
+          Assert.assertEquals("Text \\\"double\\\" 2",
+                  Expression.eval("Text \\\"double\\\" {{1 + 1}}"));
+          Assert.assertEquals("Text 'single' 2",
+                  Expression.eval("Text 'single' {{1 + 1}}"));
+          Assert.assertEquals("Text `backtick` 2",
+                  Expression.eval("Text `backtick` {{1 + 1}}"));
+      }});
+
+      Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

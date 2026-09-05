@@ -89,7 +89,7 @@ mechanisms for:
 - evaluating expressions, and
 - integrating the application module into the composite lifecycle.
 
-Elements inside the composite participate in the binding through their
+HTML elements inside the composite participate in the binding through their
 attributes and identifiers. The binding behavior of an element is defined by the
 corresponding declarative markup. The object exported by the composite script is
 the application module used by the binding.

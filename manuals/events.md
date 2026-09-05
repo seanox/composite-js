@@ -36,7 +36,7 @@ application about runtime state changes during the composite lifecycle.
 ## Rendering
 The following events occur during rendering. The current selector is passed to
 the callback method, which can influence the selector and the corresponding
-element, but not the rendering.
+HTML element, but not the rendering.
 
 ```javascript
 Composer.listen(Composer.EVENT_RENDER_***, function(event, selector) {
@@ -48,7 +48,7 @@ Composer.listen(Composer.EVENT_RENDER_***, function(event, selector) {
 The event occurs when rendering starts. Processing starts after the event.
 
 ### Composer.EVENT_RENDER_NEXT
-The event occurs during recursive rendering iteration when another element
+The event occurs during recursive rendering iteration when another HTML element
 starts rendering during a render cycle. Processing starts after the event.
 
 ### Composer.EVENT_RENDER_END
@@ -57,7 +57,7 @@ The event occurs after rendering has ended. Processing ends before the event.
 ## Composite Binding
 The following events occur during composite binding. As with the rendering
 events, the current selector is passed to the callback method, which can
-influence the selector and the corresponding element, but not the binding.
+influence the selector and the corresponding HTML element, but not the binding.
 
 ```javascript
 Composer.listen(Composer.EVENT_MOUNT_***, function(event, selector) {
@@ -69,8 +69,8 @@ Composer.listen(Composer.EVENT_MOUNT_***, function(event, selector) {
 The event occurs when binding starts. Processing starts after the event.
 
 ### Composer.EVENT_MOUNT_NEXT
-The event occurs during recursive binding iteration when another element starts
-binding during a render cycle. Processing starts after the event.
+The event occurs during recursive binding iteration when another HTML element
+starts binding during a render cycle. Processing starts after the event.
 
 ### Composer.EVENT_MOUNT_END
 The event occurs after binding has ended. Processing ends before the event.

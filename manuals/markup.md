@@ -516,8 +516,8 @@ The route attribute marks a composite as a path-addressable destination in the
 [view flow](routing.md#view-flow) and includes it in the path-based control of
 visibility and in the internal permission concept of [routing](
     routing.md#routing), which uses such composites as [views](routing.md#view).
-The attribute can be used in the BODY tag and otherwise only in combination with
-the attribute composite.
+The attribute can be used in the &lt;body&gt; element and otherwise only in
+combination with the attribute composite.
 
 ```html
 <article id="example" composite route>
@@ -641,11 +641,11 @@ only synchronized if the validate method returns the value `true`.
 Expressions are resolved by the composer only during rendering, after the page
 has been loaded and initially displayed by the browser. This is a problem for
 HTML elements whose attributes the browser already interprets before rendering
--- for example the src attribute of the img tag. For these cases @-attributes
-can be used. These work like templates for attributes. The composer will resolve
-their value and then add the attributes of the same name to the element. After
-that, they behave like all other attributes, including being updated by the
-composer during rendering if the attributes contain expressions.
+-- for example the `src` attribute of the &lt;img&gt; element. For these cases
+@-attributes can be used. These work like templates for attributes. The composer
+will resolve their value and then add the attributes of the same name to the
+element. After that, they behave like all other attributes, including being
+updated by the composer during rendering if the attributes contain expressions.
 
 ```html
 <img @src="{{...}}"/>

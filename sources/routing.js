@@ -475,7 +475,7 @@
             if (script.match(Composer.PATTERN_EXPRESSION_CONTAINS))
                 script = script.replace(Composer.PATTERN_EXPRESSION_CONTAINS, (match) => {
                     match = match.substring(2, match.length -2).trim();
-                    return `{{Routing.approve("${path}", ${composite}") and (${match})}}`;
+                    return `{{Routing.approve("${path}", "${composite}") and (${match})}}`;
                 });
         }
         if (!script)

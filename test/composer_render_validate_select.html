@@ -22,30 +22,21 @@
 
         const modelA = {
             select: "",
-            test: false,
             dock() {
                 document.querySelector("#select").selectedIndex = -1;
-            },
-            button: {
-                onClick() {
-                    Composer.validate("#select");
-                    modelA.test = true;
-                }
             }
         }
 
         let counter = 0;
         Composer.listen(Composer.EVENT_RENDER_END, () => {
-            if (++counter == 1) {
-                document.querySelector("#button").trigger("click");
-                Composer.asynchronous(() => {
-                    Test.start();
-                });
-            } else Assert.assertEquals("expected {1} steps but was {2}", 1, counter);
+            if (++counter == 1)
+                Test.start();
+            else Assert.assertEquals("expected {1} steps but was {2}", 1, counter);
         });
 
         Test.create({test() {
-            Assert.assertTrue(modelA.test);
+            Assert.assertEquals(-1, select.selectedIndex);
+            Composer.validate("#select");
         }});
     </script>
   </head>
@@ -56,7 +47,6 @@
         <option value="b">b</option>
         <option value="c">c</option>
       </select>
-      <button id="button">button</button>
     </form>
   </body>
 </html>

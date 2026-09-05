@@ -99,8 +99,8 @@ Test.create({name:"example", timeout:1000, test() {
 Test.create({expected: Error, test() {
     throw new Error();
 }});
-Test.create({expected: /^My Error/i, test() {
-    throw new Error("My Error");
+Test.create({expected: /\bExample of an expected error/i, test() {
+    throw new Error("Example of an expected error");
 }});
 Test.create({ignore:true, test() {
     Assert.assertTrue(true);

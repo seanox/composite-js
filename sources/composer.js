@@ -492,10 +492,14 @@
 
             if (!(selector instanceof Element))
                 return;
-            
+
+            // Validation requires an active composite binding.
+            // Unbound elements are ignored.
             const serial = selector.ordinal();
             const object = _render_meta[serial];
-            
+            if (!object)
+                return;
+
             let valid = true;
 
             // Resets the customer-specific error.
@@ -529,7 +533,9 @@
                         value = selector.checked;
                     else if (selector.tagName.match(/^select/i)
                             && "selectedIndex" in selector)
-                        value = selector.options[selector.selectedIndex].value;
+                        value = selector.selectedIndex >= 0
+                            ? selector.options[selector.selectedIndex].value
+                            : value;
                     else if (Composer.ATTRIBUTE_VALUE in selector)
                         value = selector[Composer.ATTRIBUTE_VALUE];
                 }        
@@ -840,7 +846,9 @@
                                     value = target.checked;
                                 else if (target.tagName.match(/^select/i)
                                         && "selectedIndex" in target)
-                                    value = target.options[target.selectedIndex].value;
+                                    value = target.selectedIndex >= 0
+                                        ? target.options[target.selectedIndex].value
+                                        : value;
                                 else if (Composer.ATTRIBUTE_VALUE in target)
                                     value = target[Composer.ATTRIBUTE_VALUE];
                             }

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="ISO-8859-1">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      form {
+        white-space: pre;
+      }
+      form * + * {
+        margin-top: 1em;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        // Regression Test:
+        // Composer.validate (public API)
+        // select.options[selectedIndex].value` when `selectedIndex === -1` -> TypeError
+
+        const modelA = {
+            select: "",
+            test: false,
+            dock() {
+                document.querySelector("#select").selectedIndex = -1;
+            },
+            button: {
+                onClick() {
+                    Composer.validate("#select");
+                    modelA.test = true;
+                }
+            }
+        }
+
+        let counter = 0;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (++counter == 1) {
+                document.querySelector("#button").trigger("click");
+                Composer.asynchronous(() => {
+                    Test.start();
+                });
+            } else Assert.assertEquals("expected {1} steps but was {2}", 1, counter);
+        });
+
+        Test.create({test() {
+            Assert.assertTrue(modelA.test);
+        }});
+    </script>
+  </head>
+  <body>
+    <form id="modelA" composite>
+      <select id="select" validate events="change">
+        <option value="a">a</option>
+        <option value="b">b</option>
+        <option value="c">c</option>
+      </select>
+      <button id="button">button</button>
+    </form>
+  </body>
+</html>

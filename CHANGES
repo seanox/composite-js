@@ -1,6 +1,10 @@
 2.1.0 2026xxxx
-BF: Composer: Correcting the lock leak in the rendering
-    The final lock release in the error case was faulty.
+BF: Composer: Corrections and optimization
+    - Correcting the lock leak in the rendering
+      The final lock release in the error case was faulty.
+    - Validate ignores now unbound/unrendered elements
+    - Validate correction for select elements without a selection (selectedIndex < 0)
+    - Mount correction for select elements without a selection (selectedIndex < 0)
 BF: DataSource: Correction of regex precedence error for Booleans
 BF: Expression: Correction escaping of quotation marks in text expressions
     Escaped backslashes and quotation marks in text expressions / literal text.

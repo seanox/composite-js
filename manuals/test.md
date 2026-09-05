@@ -461,7 +461,7 @@ The Test API also activates extensions of the JavaScript API.
 ### Element
 
 #### Element.prototype.typeValue
-Method that simulates keyboard input for element objects.  
+Method that simulates keyboard input for HTML elements.  
 The following events are triggered during simulation: 
     focus, keydown, keyup, change
 
@@ -476,16 +476,16 @@ The following events are triggered during simulation:
 document.querySelector("#inputText").typeValue("Hello World!");
 ```
 
-The method will overwrite an existing value in the element by default. However,
-if the simulated input is to be added, overwriting can be deactivated with the
-`clear` parameter.
+The method will overwrite an existing value in the HTML element by default.
+However, if the simulated input is to be added, overwriting can be deactivated
+with the `clear` parameter.
 
 ```javascript
 document.querySelector("#inputText").typeValue("Hello World!", false);
 ```
 
 #### Element.prototype.toPlainString
-Method that creates a simple string for an element object.  
+Method that creates a simple string for an HTML element object.  
 The string is based on `Element.prototype.outerHTML`.
 
 ```html
@@ -509,8 +509,8 @@ Output:
 ```
 
 #### Element.prototype.trigger
-Method to trigger an event for an element with the optional parameters `bubbles`
-(default: `false`) and `cancelable` (default: `true`).
+Method to trigger an event for an HTML element with the optional parameters
+`bubbles` (default: `false`) and `cancelable` (default: `true`).
 
 ```javascript
 document.querySelector("#button").trigger("click");

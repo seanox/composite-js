@@ -36,11 +36,11 @@ and options for customization.
 
 ## Attributes
 In _composite-js_, the declarative approach is implemented with attributes. They
-can be used and combined in all HTML elements starting with the __&lt;body&gt;__
+can be used and combined in all HTML elements starting with the &lt;body&gt;
 element. Attribute values can be static or dynamic through the expression
-language. If an attribute contains an expression, the
-[composer](architecture.md#composer) updates the value with each render cycle
-based on the initial expression.
+language. If an attribute contains an expression, the [composer](
+    architecture.md#composer) updates the value with each render cycle based on
+the initial expression.
 
 ### composite
 Marks an element in the markup as a [composite](composite.md#composite). A
@@ -95,7 +95,7 @@ timer starts, so it is not continued.
 ```
 
 The use of the condition attribute in combination with embedded JavaScript is
-possible as __&lt;script&gt;__ element with the type `composite/javascript` as
+possible as &lt;script&gt; element with the type `composite/javascript` as
 composite script, because here the composer has control over the script
 execution and not the browser.
 
@@ -288,11 +288,11 @@ refreshing automatically and ends when:
 ```
 
 The interval attribute can be used for HTML elements and complex HTML
-constructs. For example, the __&lt;span&gt;__ element is updated every 1000ms.
-An active interval reacts dynamically to DOM changes. It starts automatically
-when the HTML element is added to the DOM and ends when it is removed from the
-DOM. This makes the interval attribute controllable in combination with the
-condition attribute.
+constructs. For example, the &lt;span&gt; element is updated every 1000ms. An
+active interval reacts dynamically to DOM changes. It starts automatically when
+the HTML element is added to the DOM and ends when it is removed from the DOM.
+This makes the interval attribute controllable in combination with the condition
+attribute.
 
 ```html
 <span interval="1000" condition="{{example.isVisible()}}">
@@ -584,12 +584,11 @@ module. The effects of validation are then only optional.__
 ```
 
 By default, validation message are shown as a native browser toolbox for the
-__&lt;input&gt;__ element. The corresponding message is set via the attribute of
-the same name. If custom validation and output need to be implemented, this
-behavior can be changed by redirecting the message to an attribute of the
-__&lt;input&gt;__ element. For this purpose, the message, which at this point
-also includes the return value of expressions, must begin as follows:
-`@<attribute>:`.
+&lt;input&gt; element. The corresponding message is set via the attribute of the
+same name. If custom validation and output need to be implemented, this behavior
+can be changed by redirecting the message to an attribute of the &lt;input&gt;
+element. For this purpose, the message, which at this point also includes the
+return value of expressions, must begin as follows: `@<attribute>:`.
 
 A general strategy or standard implementation for error output is deliberately
 not provided, as this is too strict in most cases and can be implemented
@@ -654,11 +653,11 @@ composer during rendering if the attributes contain expressions.
 
 ## Expression Language
 The expression language can be used in the markup as free text and in the
-attributes of the HTML elements. __&lt;script&gt;__ and __&lt;style&gt;__
-elements are excluded. The expression language is not supported here. When used
-as free text, pure text (plain text) is always generated as output. The addition
-of markup, especially HTML code, is not possible and is only supported with the
-attributes `output` and `import`.
+attributes of the HTML elements. &lt;script&gt; and &lt;style&gt; elements are
+excluded. The expression language is not supported here. When used as free text,
+pure text (plain text) is always generated as output. The addition of markup,
+especially HTML code, is not possible and is only supported with the attributes
+`output` and `import`.
 
 ```html
 <article title="{{example.title}}">

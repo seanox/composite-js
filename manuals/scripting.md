@@ -10,7 +10,7 @@ execution.
 
 Composite script is used for the JavaScript resources in the module directory.
 It is executed directly in a separate function scope rather than as a
-__&lt;script&gt;__ element. Variables, constants and functions declared in a
+&lt;script&gt; element. Variables, constants and functions declared in a
 module remain local to that module and are not automatically available in the
 global scope or in other modules. The [macros](#macros) provide language
 extensions for tasks such as loading further JavaScript resources, exporting
@@ -33,7 +33,7 @@ rendering therefore supports the additional script type `composite/javascript`.
 It uses normal JavaScript, but the browser does not recognize it as
 `text/javascript` and does not execute it directly. The composer recognizes the
 JavaScript code and executes it in every relevant render cycle. This allows
-__&lt;script&gt;__ elements to be combined with declarative attributes such as
+&lt;script&gt; elements to be combined with declarative attributes such as
 `condition` to control execution.
 
 ```html

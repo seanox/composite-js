@@ -12,9 +12,9 @@ and additional keywords for arithmetic and logical operators.
 {{'Hello World!'}}
 ```
 
-The expression language can be used in markup from the __&lt;body&gt;__ element.
-It can be used as free text and in attributes. The content of __&lt;style&gt;__
-and __&lt;script&gt;__ element is not supported.
+The expression language can be used in markup from the &lt;body&gt; element. It
+can be used as free text and in attributes. The content of &lt;style&gt; and
+&lt;script&gt; element is not supported.
 
 During rendering, the composer interprets the expression syntax `{{...}}`.
 Inside an expression, the character sequences `{{` and `}}` must be escaped as

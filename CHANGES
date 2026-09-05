@@ -1,6 +1,7 @@
 2.1.0 2026xxxx
 BF: Composer: Correcting the lock leak in the rendering
     The final lock release in the error case was faulty.
+BF: DataSource: Correction of regex precedence error for Booleans
 BF: Routing: Correction of route expression generation
     Incorrect generation of route expressions when a route was combined
     condition.

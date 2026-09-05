@@ -13,6 +13,7 @@ each concept, its responsibilities, and its relationships to the others.
 
 ## Contents Overview
 - [Architecture Model](#architecture-model)
+- [Trust Boundary](#trust-boundary)
 - [Composite](#composite)
   - [Composite Declaration](#composite-declaration)
   - [Composite Responsibilities](#composite-responsibilities)
@@ -94,6 +95,29 @@ application logic, declarative presentation, and runtime mechanisms.
 > - provides rendering
 > - manages bindings
 > - manages the composite lifecycle
+
+## Trust Boundary
+Seanox composite-js is an application runtime. Everything loaded and interpreted
+by the runtime is part of the application and is therefore trusted.
+
+This includes:
+- Application Modules
+- Composite Scripts
+- Expressions
+- executable markup
+
+These components execute within the same application context and are not
+sandboxed from each other.
+
+The trust boundary is the configured application context. Runtime resources are
+resolved within this context path. Content outside this context is not
+considered application code unless explicitly included by the application.
+
+The runtime is not a sandbox for untrusted content. External or user-provided
+data must be handled appropriately before being introduced as executable
+application content.
+
+Dynamic code execution is intentional and part of the runtime execution model.
 
 ## Composite
 A composite is an independently identified, domain-oriented application unit

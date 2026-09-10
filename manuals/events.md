@@ -8,6 +8,10 @@ Seanox composite-js provides events for extensions and for notifying the
 application about runtime state changes during the composite lifecycle.
 
 ## Contents Overview
+- [DOM](#dom)
+  - [Composer.EVENT_DOM_ADDED](#composerevent_dom_added)
+  - [Composer.EVENT_DOM_REMOVED](#composerevent_dom_removed)
+  - [Composer.EVENT_DOM_MOVED](#composerevent_dom_moved)
 - [Rendering](#rendering)
   - [Composer.EVENT_RENDER_START](#composerevent_render_start)
   - [Composer.EVENT_RENDER_NEXT](#composerevent_render_next)
@@ -32,6 +36,34 @@ application about runtime state changes during the composite lifecycle.
   - [Composer.EVENT_HTTP_END](#composerevent_http_end)
 - [Error](#error)
   - [Composer.EVENT_ERROR](#composerevent_error)
+
+## DOM
+The runtime monitors structural changes to the DOM. Changes are detected with a
+MutationObserver and reported once per mutation cycle. The callback receives the
+event and an array containing the affected root nodes.
+
+```javascript
+Composer.listen(Composer.EVENT_DOM_***, function(event, nodes) {
+    ...
+});
+```
+
+Events are fired after rendering and cleanup for the corresponding mutation
+cycle, so listeners observe a consistent state. The array passed with the event
+contains the root nodes reported by the MutationObserver, with their child nodes
+implied.
+
+__The observation is focused on the &lt;body&gt; element, because only there
+composites are composed, rendered and bound. Nodes that leave this scope, for
+example into the &lt;head&gt; element or into a detached fragment, are therefore
+regarded as removed.__
+
+### Composer.EVENT_DOM_ADDED
+Occurs when nodes are inserted into the DOM.
+
+### Composer.EVENT_DOM_MOVED
+Occurs when nodes are moved within the &lt;body&gt; element. Nodes moved outside
+the  &lt;body&gt; element are treated as removed.
 
 ## Rendering
 The following events occur during rendering. The current selector is passed to

@@ -209,6 +209,10 @@
   - [Notes](datasource.md#notes)
 - __[Resource Bundle (Messages/i18n/l10n)](message.md#resource-bundle-messagesi18nl10n)__
 - __[Events](events.md#events)__
+  - [DOM](events.md#dom)
+    - [Composer.EVENT_DOM_ADDED](events.md#composerevent_dom_added)
+    - [Composer.EVENT_DOM_REMOVED](events.md#composerevent_dom_removed)
+    - [Composer.EVENT_DOM_MOVED](events.md#composerevent_dom_moved)
   - [Rendering](events.md#rendering)
     - [Composer.EVENT_RENDER_START](events.md#composerevent_render_start)
     - [Composer.EVENT_RENDER_NEXT](events.md#composerevent_render_next)

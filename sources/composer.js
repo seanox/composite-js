@@ -232,37 +232,42 @@
         /** Pattern for a scope (custom tag, based on a word) */
         get PATTERN_CUSTOMIZE_SCOPE() {return /[_a-z]([\w-]*\w)?$/i;},
 
-        /** Pattern for all accepted events */
-        get PATTERN_EVENT() {return /^([A-Z][a-z]+)+$/;},
-        
+        /** Pattern for all accepted Composite events */
+        get PATTERN_EVENT() {return /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/;},
+
+        /** Constants of events for changes at the DOM */
+        get EVENT_DOM_ADDED() {return "EVENT_DOM_ADDED";},
+        get EVENT_DOM_REMOVED() {return "EVENT_DOM_REMOVED";},
+        get EVENT_DOM_MOVED() {return "EVENT_DOM_MOVED";},
+
         /** Constants of events during rendering */
-        get EVENT_RENDER_START() {return "RenderStart";},
-        get EVENT_RENDER_NEXT() {return "RenderNext";},
-        get EVENT_RENDER_END() {return "RenderEnd";},
+        get EVENT_RENDER_START() {return "EVENT_RENDER_START";},
+        get EVENT_RENDER_NEXT() {return "EVENT_RENDER_NEXT";},
+        get EVENT_RENDER_END() {return "EVENT_RENDER_END";},
 
         /** Constants of events during mounting */
-        get EVENT_MOUNT_START() {return "MountStart";},
-        get EVENT_MOUNT_NEXT() {return "MountNext";},
-        get EVENT_MOUNT_END() {return "MountEnd";},
+        get EVENT_MOUNT_START() {return "EVENT_MOUNT_START";},
+        get EVENT_MOUNT_NEXT() {return "EVENT_MOUNT_NEXT";},
+        get EVENT_MOUNT_END() {return "EVENT_MOUNT_END";},
 
         /** Constants of events when using modules */
-        get EVENT_MODULE_LOAD() {return "ModuleLoad";},
-        get EVENT_MODULE_DOCK() {return "ModuleDock";},
-        get EVENT_MODULE_READY() {return "ModuleReady";},
-        get EVENT_MODULE_UNDOCK() {return "ModuleUndock";},
+        get EVENT_MODULE_LOAD() {return "EVENT_MODULE_LOAD";},
+        get EVENT_MODULE_DOCK() {return "EVENT_MODULE_DOCK";},
+        get EVENT_MODULE_READY() {return "EVENT_MODULE_READY";},
+        get EVENT_MODULE_UNDOCK() {return "EVENT_MODULE_UNDOCK";},
 
         /** Constants of events when using HTTP */
-        get EVENT_HTTP_START() {return "HttpStart";},
-        get EVENT_HTTP_PROGRESS() {return "HttpProgress";},
-        get EVENT_HTTP_RECEIVE() {return "HttpReceive";},
-        get EVENT_HTTP_LOAD() {return "HttpLoad";},
-        get EVENT_HTTP_ABORT() {return "HttpAbort";},
-        get EVENT_HTTP_TIMEOUT() {return "HttpTimeout";},
-        get EVENT_HTTP_ERROR() {return "HttpError";},
-        get EVENT_HTTP_END() {return "HttpEnd";},
+        get EVENT_HTTP_START() {return "EVENT_HTTP_START";},
+        get EVENT_HTTP_PROGRESS() {return "EVENT_HTTP_PROGRESS";},
+        get EVENT_HTTP_RECEIVE() {return "EVENT_HTTP_RECEIVE";},
+        get EVENT_HTTP_LOAD() {return "EVENT_HTTP_LOAD";},
+        get EVENT_HTTP_ABORT() {return "EVENT_HTTP_ABORT";},
+        get EVENT_HTTP_TIMEOUT() {return "EVENT_HTTP_TIMEOUT";},
+        get EVENT_HTTP_ERROR() {return "EVENT_HTTP_ERROR";},
+        get EVENT_HTTP_END() {return "EVENT_HTTP_END";},
 
         /** Constants of events when errors occur */
-        get EVENT_ERROR() {return "Error";},
+        get EVENT_ERROR() {return "EVENT_ERROR";},
         
         /** 
          * List of possible DOM events
@@ -2868,6 +2873,15 @@
         Composer.include("common");
 
         const _cleanup = (node) => {
+            // The MutationObserver also maps the moving of nodes, which is
+            // reflected by remove- and add-entries in the mutation records.
+            // Because the MutationObserver is called asynchronously and the DOM
+            // is already in the final state, moved nodes can be recognized by
+            // the fact that they are still connected to the DOM. Such nodes
+            // must not be cleaned up, because they were not removed.
+            if (document.body.contains(node))
+                return;
+
             // Clean up all the child elements first.
             if (node.childNodes)
                 Array.from(node.childNodes).forEach((node) =>
@@ -2907,6 +2921,14 @@
         };
 
         (new MutationObserver((records) => {
+
+            // The nodes of all records are collected batched, because a single
+            // change can be distributed over several records. Moving a node is
+            // mapped by the MutationObserver as a combination of remove- and
+            // add-entries, which can only be recognized in the overall view of
+            // all records of a mutation cycle.
+            const collection = {added: new Set(), removed: new Set()};
+
             records.forEach((record) => {
 
                 // HTML uses attributes whose pure presences have effects:
@@ -2991,37 +3013,82 @@
                 // renderer, but normally the mutation observer reacts to the
                 // parent element when inserting new elements. Therefore, this
                 // case was not implemented.
-                
-                // All new inserted elements are rendered if they are unknown for
-                // the renderer. It is important that the new nodes are also
-                // contained in the body. This is not always the case, e.g. when
-                // recursive rendering replaces elements. So an include can load
-                // data with a condition. Nodes are created per include, which
-                // are then replaced by a marker in the case of a condition. The
-                // MutationObserver does not run parallel, so it is called after
-                // the rendering with obsolete nodes.
-                (record.addedNodes || []).forEach((node) => {
-                    if (!(node instanceof Element
-                            || (node instanceof Node
-                                    && node.nodeType === Node.TEXT_NODE)))
-                        return;
-                    if (_render_meta[node.ordinal()])
-                        return;
-                    if (!document.body.contains(node))
-                        return;
-                    Composer.render(node);
-                });
 
-                // All removed elements are cleaned and if necessary the undock
-                // method is called if a composite binding exists.
-                (record.removedNodes || []).forEach(_cleanup);
-
-                // Indirectly clear the Expressions script cache: Since serial
-                // is used only as a key prefix, an LRU cache can be truncated
-                // to the current cache size, effectively providing implicit
-                // cleanup without tracking serials.
-                Expression.prune(_render_meta.length);
+                // The nodes of the childList changes are only collected here.
+                // The evaluation is done batched after all records, because
+                // only then it can be decided whether a node was added, removed
+                // or moved.
+                (record.addedNodes || []).forEach((node) =>
+                    collection.added.add(node));
+                (record.removedNodes || []).forEach((node) =>
+                    collection.removed.add(node));
             });
+
+            // The collected nodes are classified. Decisive is whether a node is
+            // still part of the DOM in the observed scope (body), because the
+            // MutationObserver is called after the DOM has reached its final
+            // state:
+            // - not contained in the body: the node was finally removed
+            // - contained in the body and previously removed: the node was
+            //   moved, which the MutationObserver maps as a combination of
+            //   remove- and add-entries -- with an intermediate detached parent
+            //   only the remove-entry can be visible
+            // - contained in the body without remove-entry: the node is new
+            const added = new Set();
+            const removed = new Set();
+            const moved = new Set();
+            new Set([...collection.added, ...collection.removed]).forEach((node) => {
+                if (!document.body.contains(node)) {
+                    if (collection.removed.has(node))
+                        removed.add(node);
+                } else if (collection.removed.has(node))
+                    moved.add(node);
+                else added.add(node);
+            });
+
+            // All new inserted elements are rendered if they are unknown for
+            // the renderer. It is important that the new nodes are also
+            // contained in the body. This is not always the case, e.g. when
+            // recursive rendering replaces elements. So an include can load
+            // data with a condition. Nodes are created per include, which are
+            // then replaced by a marker in the case of a condition. The
+            // MutationObserver does not run parallel, so it is called after the
+            // rendering with obsolete nodes.
+            [...added, ...moved].forEach((node) => {
+                if (!(node instanceof Element
+                        || (node instanceof Node
+                                && node.nodeType === Node.TEXT_NODE)))
+                    return;
+                if (_render_meta[node.ordinal()])
+                    return;
+                if (!document.body.contains(node))
+                    return;
+                Composer.render(node);
+            });
+
+            // All removed elements are cleaned and if necessary the undock
+            // method is called if a composite binding exists. Moved nodes are
+            // not affected, because they were not removed from the DOM.
+            removed.forEach(_cleanup);
+
+            // Indirectly clear the Expressions script cache: Since serial is
+            // used only as a key prefix, an LRU cache can be truncated to the
+            // current cache size, effectively providing implicit cleanup
+            // without tracking serials.
+            Expression.prune(_render_meta.length);
+
+            // The events about the changes at the DOM are fired batched with
+            // an array of the affected nodes, after the renderer and the
+            // cleanup have finished, so that the listeners see a consistent
+            // state. Only the nodes from the mutation records are passed, the
+            // affected child nodes are implied and not resolved.
+            if (added.size > 0)
+                Composer.fire(Composer.EVENT_DOM_ADDED, Array.from(added));
+            if (removed.size > 0)
+                Composer.fire(Composer.EVENT_DOM_REMOVED, Array.from(removed));
+            if (moved.size > 0)
+                Composer.fire(Composer.EVENT_DOM_MOVED, Array.from(moved));
+
         })).observe(document.body, {childList:true, subtree:true, attributes:true, attributeOldValue:true, characterData:true});
 
         Composer.render(document.body);

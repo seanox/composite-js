@@ -1,30 +1,23 @@
 2.1.0 2026xxxx
 BF: Composer: Corrections and optimization
-    - Mount: Correction for select elements without a selection (selectedIndex < 0)
-    - Rendering: Correcting of the lock leak
-      The final lock release in the error case was faulty.
-    - Rendering: Correction of double encoding of attribute values
-    - Rendering: Correction of the assignment of undefined to attribute values
-    - Validate: Ignores now unbound/unrendered elements
-    - Validate: Correction for select elements without a selection (selectedIndex < 0)
+    - Correction for select elements without a selection (selectedIndex < 0)
+    - Correction of a lock leak during rendering
+    - Correction of double encoding of attribute values
+    - Correction of assigning undefined to attribute values
+    - Correction of cleanup for moved nodes
+    - Validation now ignores unbound/unrendered elements
 BF: DataSource: Correction of regex precedence error for Booleans
 BF: Expression: Corrections and optimization
     - Correction escaping of quotation marks in text expressions
-      Escaped backslashes and quotation marks in text expressions / literal text.
-      e.g. "Text \"double\" {{1 + 2}}" / "Text \\\"double\\\" {{1 + 2}}"
     - Addition of active script cache cleanup
 BF: Extension: Corrections and optimization
-    - String.prototype.encodeHex
-      - Empty string returns empty string, not 0x anymore
-    - String.prototype.decodeHex
+    - String.prototype.encodeHex: Correction for empty strings
+    - String.prototype.decodeHex: Correction for empty strings
       - Empty string returns empty string, not 0x anymore
       - Throws an error if the string does not start with 0x
-    - String.prototype.unescape
-      - Correction of literal boundaries
-BF: Routing: Corrections and optimization
-    - Correction of route expression generation
-      Incorrect generation of route expressions when a route was combined
-      condition.
+    - String.prototype.unescape: Correction of literal boundaries
+BF: Routing: Correction of route expression generation
+    - Correction when combining routes with conditions
 CR: Scripting: Corrections and optimization
     - Refactoring of the separate function scope
       Removes the use of with, at the expense of JIT performance :-(
@@ -33,6 +26,9 @@ CR: Scripting: Corrections and optimization
       The tolerate operator is now strictly space-delimited to avoid conflicts
       with JavaScript syntax: (? expression). If the expression throws an error,
       the operator now returns undefined instead of false.
+CR: Composer: Added DOM mutation events
+    Composer.EVENT_DOM_ADDED / Composer.EVENT_DOM_REMOVED / Composer.EVENT_DOM_MOVED
+    Events are triggered once per mutation cycle with an array of affected nodes.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

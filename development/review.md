@@ -101,26 +101,26 @@ Reactive-`notifications` (DOM-Refs pro Key, Cleanup nur im `set`-Trap desselben
 Keys). `_lock.release` mountet bei jedem Render-Ende alle
 `querySelectorAll("*")` -> quadratisch.
 
-##### 6.1. `Composer.mount.stack` räumt entfernte DOM-Elemente nicht auf
+#### 6.1. `Composer.mount.stack` räumt entfernte DOM-Elemente nicht auf
 - Mount-Referenzen bleiben im Stack erhalten.
 
-##### 6.2. `Composer.mount.stack` durch `Set` statt Array verwalten__
+#### 6.2. `Composer.mount.stack` durch `Set` statt Array verwalten__
 - Vermeidet `includes()` mit O(n) und erleichtert gezieltes Entfernen.
 
-##### 6.3. `_render_meta` besitzt keinen konsistenten DOM-Lifecycle
+#### 6.3. `_render_meta` besitzt keinen konsistenten DOM-Lifecycle
 - Render-Metadaten müssen zuverlässig beim Entfernen eines Elements freigegeben werden.
 
-##### 6.4. `_render_meta` hält entfernte DOM-Bäume über `template`-Referenzen fest
+#### 6.4. `_render_meta` hält entfernte DOM-Bäume über `template`-Referenzen fest
 - Besonders relevant bei `condition`/Templates.
 - Erledigt mit: https://github.com/seanox/composite-js/blob/master/manuals/architecture.md#trust-boundary
 
-##### ~~6.5. `Expression._cache` wird beim Entfernen von DOM-Elementen nicht bereinigt~~
+#### ~~6.5. `Expression._cache` wird beim Entfernen von DOM-Elementen nicht bereinigt~~
 - Cache-Einträge mit `serial` bleiben dauerhaft bestehen.
 
-##### 6.6. `Reactive.notifications` entfernt obsolete DOM-Subscriptions zu spät
+#### 6.6. `Reactive.notifications` entfernt obsolete DOM-Subscriptions zu spät
 - Cleanup erfolgt derzeit erst bei einem späteren Reactive-Update.
 
-##### 6.7. Kein zentraler Cleanup-Lifecycle für Composer, Expression und Reactive
+#### 6.7. Kein zentraler Cleanup-Lifecycle für Composer, Expression und Reactive
 - Ein gemeinsamer Cleanup-Pfad sollte alle elementbezogenen Ressourcen freigeben.
 
 | Komponente         | Ressource, die bereinigt werden muss                                                             |
@@ -140,10 +140,10 @@ Keys). `_lock.release` mountet bei jedem Render-Ende alle
 | ~~__Expression__~~ | ~~Expression-Cache~~         |
 | __Reactive__       | Reactive-Subscriptions       |
 
-##### 6.8. `serial`-basierter globaler Zustand verhindert sauberes Lifecycle-Management
+#####6.8. `serial`-basierter globaler Zustand verhindert sauberes Lifecycle-Management
 - `serial` dient gleichzeitig als Identifier für mehrere langlebige globale Strukturen.
 
-##### 6.9.`iterate` durch Keyed-Diffing statt vollständigem Re-Rendering optimieren
+#### 6.9.`iterate` durch Keyed-Diffing statt vollständigem Re-Rendering optimieren
 - Nicht direkt derselbe Fehler wie #6, aber der wichtigste strukturelle Hebel,
   um die Menge an erzeugtem/verworfenem Zustand drastisch zu reduzieren.
 
@@ -202,6 +202,12 @@ Per Zuweisung statt `defineProperty({enumerable:false})`:
 vorhandenes eigenes `serial`-Feld zurück (Kollision). `compliant` wirft hart bei
 künftigen Standard-Kollisionen -> Framework stirbt beim Laden statt zu
 degradieren.
+
+> compliant ist ein fester und konzeptioneller Bestandteil der Plattform.
+> composite-JS soll eine Anwendung nur dann starten, wenn die vorhandene
+> Browser-Runtime alle für die Plattform erforderlichen Voraussetzungen erfüllt.
+> Die Kompatibilitätsprüfung ist dabei bewusst strikt und kein Mechanismus zur
+> optionalen Degradation.
 
 ### ~~12. Iterate ohne Diffing~~
 

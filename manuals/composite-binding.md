@@ -14,7 +14,7 @@ The runtime provides the infrastructure for connecting views and application
 modules but does not define the internal structure or architectural role of an
 application module. Depending on the application architecture, an application
 module can implement a ViewModel, Controller, Service, application model or
-another application-specific structure — see [Architectural Patterns](
+another application-specific structure -- see [Architectural Patterns](
     #architectural-patterns).
 
 ## Contents Overview
@@ -61,21 +61,21 @@ behavior, but does not define application-specific logic itself.
 ### Runtime
 Provides the infrastructure that connects views and application modules,
 including resource loading, composite realization, binding, rendering and
-lifecycle management — see [Runtime](architecture.md#runtime) for the full list
-and its [responsibilities](architecture.md#runtime-responsibilities). The
+lifecycle management -- see [Runtime](architecture.md#runtime) for the full
+list and its [responsibilities](architecture.md#runtime-responsibilities). The
 runtime does not implement application-specific behavior or define the internal
 structure of an application module.
 
 ### Composer
 The runtime component that realizes composites and establishes composite binding
-between view and application module — see [Composer](architecture.md#composer).
+between view and application module -- see [Composer](architecture.md#composer).
 
 ### Composite
 An independently identified, domain-oriented application unit within the DOM,
 consisting of HTML (view), CSS, JavaScript (composite script) and optional
-additional resources — see [Composite](composite.md#composite) for structure and
-resource layout. Each composite is identified by a composite ID that connects it
-with its view, application module and associated resources.
+additional resources -- see [Composite](composite.md#composite) for structure
+and resource layout. Each composite is identified by a composite ID that
+connects it with its view, application module and associated resources.
 
 ## Binding
 Composite binding connects the HTML view of a composite with its application

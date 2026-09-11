@@ -43,7 +43,7 @@ separately below.
 The language is selected automatically from the browser language setting. If
 that language is not supported, the language declared as `default` is used.
 JavaScript can change the language and locale at runtime with
-`DataSource.localize()` — see [Locales](datasource.md#locales).
+`DataSource.localize()` -- see [Locales](datasource.md#locales).
 
 If a key occurs more than once within the locales, the first occurrence is used.
 Therefore, messages cannot be overwritten.

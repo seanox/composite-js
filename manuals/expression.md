@@ -128,7 +128,7 @@ Expressions output all values except the value `undefined`. The string
 `undefined` is interpreted as normal text.
 
 ### Value-Expression
-Outputs a [value](#value) — the value of an object property or a variable.
+Outputs a [value](#value) -- the value of an object property or a variable.
 
 ```
 {{Example.object.field}}

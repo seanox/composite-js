@@ -557,24 +557,24 @@
     <div id="_condition" condition="{{modelA.valueA eq 123}}">
       _{{modelA["counter"]}}_ / _{{modelA.counter}}_
       {{#_condition}}
-      {{#_condition.serial}}
-      {{#_condition.ordinal()}}
+      {{#_condition.uid}}
+      {{#_condition.serial()}}
       <!--
         Creates an infinite loop during rendering and must be caught in code.
         But it is not a bug in composite-js!
       -->
-      {{modelA.count(#_condition.serial)}}
+      {{modelA.count(#_condition.uid)}}
       <button id="button@modelA" event="click">
         {{modelA.button.ticks}}
         <!-- Element expression with logic #[element//logic//] -->
         {{#[button@model//String('A')//]}}
-        {{#[button@model//String('A')//].serial}}
-        {{#[button@model//String('A')//].ordinal()}}
+        {{#[button@model//String('A')//].uid}}
+        {{#[button@model//String('A')//].serial()}}
         <!--
           Creates an infinite loop during rendering and must be caught in code.
           But it is not a bug in composite-js!
         -->
-        {{modelA.count(#[button@modelA].serial)}}
+        {{modelA.count(#[button@modelA].serial())}}
       </button>
     </div>
   </body>

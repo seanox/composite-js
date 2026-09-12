@@ -630,21 +630,21 @@ repeated as required by rendering and lifecycle management.
 
 ## Architectural Invariants
 The architecture establishes the following invariants:
-1. Every Composite has a unique Composite ID.
-2. Every Composite ID defines the outer namespace of its Composite.
-3. Every Composite has exactly one application module.
-4. The application module is established by the Composite script.
-5. A Composite module provides resources but is not the running Composite.
-6. A Composite script is not the application module it establishes.
-7. An ECMAScript module is independent of Composite module and lifecycle semantics.
-8. A view provides declarative presentation but not the application logic.
-9. Objects participating in Composite binding must be explicitly exported.
+1.  Every composite has a unique composite ID.
+2.  Every composite ID defines the outer namespace of its composite.
+3.  Every composite has exactly one application module.
+4.  The application module is established by the composite script.
+5.  A composite module provides resources but is not the running composite.
+6.  A composite script is not the application module it establishes.
+7.  An ECMAScript module is independent of composite module and lifecycle semantics.
+8.  A view provides declarative presentation but not the application logic.
+9.  Objects participating in composite binding must be explicitly exported.
 10. Composite binding is established by the runtime during realization.
-11. The composer performs the concrete realization of Composites.
+11. The composer performs the concrete realization of composites.
 12. The composer is part of the runtime but is not the complete runtime.
 13. Rendering realizes declarative program state and is not limited to visual
     DOM updates.
-14. The runtime manages the Composite lifecycle.
+14. The runtime manages the composite lifecycle.
 15. The runtime does not enforce a specific application architecture.
 
 These invariants define the conceptual boundaries that implementations and

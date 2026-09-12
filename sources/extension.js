@@ -343,18 +343,19 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to create an alphanumeric unique (U)UID with fixed
-     * size. The quality of the ID is dependent of the length.
-     * @param {number} [size=16] Optional size of the unique ID
-     * @returns {string} The generated alphanumeric unique ID
+     * Adds a static function to create a fixed-size random alphanumeric unique
+     * identifier (UID). The generated identifier consists of uppercase letters
+     * and digits, with collision safety depending on its length.
+     * @param {number} [length=16] Optional length of the unique identifier
+     * @returns {string} The generated alphanumeric unique identifier
      */
     compliant("Math.unique");
-    compliant(null, Math.unique = (size) => {
-        size = size || 16;
-        if (size < 0)
-            size = 16;
+    compliant(null, Math.unique = (length) => {
+        length = length || 16;
+        if (length < 0)
+            length = 16;
         let unique = "";
-        for (let loop = 0; loop < size; loop++) {
+        for (let loop = 0; loop < length; loop++) {
             const random = Math.floor(Math.random() * Math.floor(26));
             if ((Math.floor(Math.random() *Math.floor(26))) % 2 === 0)
                 unique += String(random % 10);
@@ -365,10 +366,10 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to create a time based alphanumeric serial that is
-     * chronologically sortable as text and contains the time and a counter if
-     * serial are created at the same time.
-     * @returns {string} The generated time-based alphanumeric serial
+     * Adds a static function to create a time based alphanumeric serial
+     * identifier that is chronologically sortable as text and contains the time
+     * and a counter if serial are created at the same time.
+     * @returns {string} The generated time-based serial identifier
      */
     compliant("Math.serial");
     compliant(null, Math.serial = () => _serial.toString());
@@ -562,12 +563,17 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a property to get the UID for the window instance.
-     * @returns {string} The unique identifier (UID) for the window instance
+     * Add a time based alphanumeric serial identifier for the window instance
+     * that is chronologically sortable as text and contains the time and a
+     * counter if serial are created at the same time.
+     * @returns {string} The generated time-based serial identifier
      */
     compliant("window.serial");
     Object.defineProperty(window, "serial", {
-        value: Math.serial()
+        value: (() => {
+            const serial = Math.serial();
+            return () => serial;
+        })()
     });
 
     /**

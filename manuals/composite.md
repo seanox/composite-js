@@ -26,7 +26,8 @@ the declared DOM context.
 
 ## Structure
 A composite in markup consists of an HTML element marked with the attribute
-```composite``` and a unique ID. The combination of both is the composite ID.
+```composite``` and a unique identifier (id). The combination of both is the
+composite ID.
 
 ```html
 <!DOCTYPE html>

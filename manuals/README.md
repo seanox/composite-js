@@ -248,7 +248,7 @@
     - [Math.unique](extensions.md#mathunique)
     - [Math.serial](extensions.md#mathserial)
   - [Object](extensions.md#object)
-    - [Object.prototype.ordinal](extensions.md#objectprototypeordinal)
+    - [Object.prototype.serial](extensions.md#objectprototypeserial)
     - [Object.lookup](extensions.md#objectlookup)
     - [Object.exists](extensions.md#objectexists)
     - [Object.use](extensions.md#objectuse)

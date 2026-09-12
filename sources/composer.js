@@ -2698,22 +2698,6 @@
         });
     };
 
-    let _serial = 0;
-    
-    /**
-     * Enhancement of the JavaScript API
-     * Adds a function for getting the serial ID to the objects.
-     */
-    compliant("Object.prototype.serial");
-    compliant("Object.prototype.ordinal");
-    compliant(null, Object.prototype.ordinal = function() {
-        if (this.serial === undefined)
-            Object.defineProperty(this, "serial", {
-                value: ++_serial
-            });
-        return this.serial;
-    });
-
     /**
      * Enhancement of the JavaScript API
      * Adds a static function to create and use a namespace for an object.

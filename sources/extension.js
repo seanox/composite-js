@@ -371,8 +371,7 @@
      * @returns {string} The generated time-based alphanumeric serial
      */
     compliant("Math.serial");
-    compliant(null, Math.serial = () =>
-        _serial.toString());
+    compliant(null, Math.serial = () => _serial.toString());
     const _offset = -946684800000;
     const _serial = {timing:Date.now() + _offset, number:0,
         toString() {
@@ -384,6 +383,22 @@
             return (serial.length.toString(36) + serial
                 + number.length.toString(36) + number).toUpperCase();
         }};
+
+    const _sequence =  {symbol: new Symbol(), value: 0};
+
+    /**
+     * Enhancement of the JavaScript API
+     * Adds a function for getting the serial ID to the objects.
+     */
+    compliant("Object.prototype.serial");
+    compliant("Object.prototype.ordinal");
+    compliant(null, Object.prototype.ordinal = function() {
+        if (this.serial === undefined)
+            Object.defineProperty(this, "serial", {
+                value: ++_sequence.value
+            });
+        return this.serial;
+    });
 
     /**
      * Enhancement of the JavaScript API

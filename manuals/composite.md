@@ -233,8 +233,8 @@ const masterdata = {
 The example creates the namespace ```example.administration``` if necessary and
 exports ```masterdata``` into that namespace.
 
-In markup, namespaces are derived from Composite IDs. The nesting of Composites
-does not define namespaces because each Composite is treated independently.
+In markup, namespaces are derived from composite IDs. The nesting of composites
+does not define namespaces because each composite is treated independently.
 
 ```html
 <div id="example" composite>
@@ -302,10 +302,10 @@ resources, extending the module path accordingly.
 ```
 
 ## Notes
-The Composite binding between the view of a Composite and its application module
-is associated with the Composite ID. Namespace mapping can be used for resource
+The composite binding between the view of a composite and its application module
+is associated with the composite ID. Namespace mapping can be used for resource
 resolution and for structuring application objects, but namespace usage does not
-itself define the Composite binding.
+itself define the composite binding.
 
 Further details are described in the chapter [Composite binding](
     composite-binding.md#composite-binding).

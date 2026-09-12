@@ -184,7 +184,7 @@
                         // If the selector as the current rendered element is
                         // already registered as a recipient, then the
                         // registration can be canceled.
-                        if (recipients.has(selector.ordinal()))
+                        if (recipients.has(selector.serial()))
                             return;
 
                         for (const recipient of recipients.values()) {
@@ -206,10 +206,10 @@
                             // automatically.
                             if (selector.contains !== undefined
                                     && selector.contains(recipient))
-                                recipients.delete(recipient.ordinal());
+                                recipients.delete(recipient.serial());
                         }
 
-                        recipients.set(selector.ordinal(), selector);
+                        recipients.set(selector.serial(), selector);
                         notifications.set(key, recipients);
 
                     }, _selector, target, key, this.notifications);
@@ -262,7 +262,7 @@
                             // If the recipient is no longer included in the DOM
                             // and so it can be removed this case.
                             if (!document.body.contains(recipient))
-                                recipients.delete(recipient.ordinal());
+                                recipients.delete(recipient.serial());
                             else Composer.render(recipient);
                         }
 

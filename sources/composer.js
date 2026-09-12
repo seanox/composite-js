@@ -500,7 +500,7 @@
 
             // Validation requires an active composite binding.
             // Unbound elements are ignored.
-            const serial = selector.ordinal();
+            const serial = selector.serial();
             const object = _render_meta[serial];
             if (!object)
                 return;
@@ -742,7 +742,7 @@
                 if (Composer.mount.stack.includes(selector))
                     return;
 
-                const serial = selector.ordinal();
+                const serial = selector.serial();
                 const object = _render_meta[serial];
                 
                 // Objects that were not rendered should not be mounted. This
@@ -825,7 +825,7 @@
                     selector.addEventListener(event.toLowerCase(), (event) => {
 
                         const target = event.currentTarget;
-                        const serial = target.ordinal();
+                        const serial = target.serial();
                         const object = _render_meta[serial];
 
                         let action = event.type.toLowerCase();
@@ -1082,7 +1082,7 @@
                 const scanning = (element) => {
                     if (!(element instanceof Element))
                         return;
-                    const serial = element.ordinal();
+                    const serial = element.serial();
                     const object = _render_meta[serial];
                     if (!object)
                         return;
@@ -1215,11 +1215,11 @@
             // corresponds to the current context stack. After resolving the
             // expression, however, the context workspace must be reset.
             if (selector instanceof Element
-                    && !_render_meta[selector.ordinal()]) {
+                    && !_render_meta[selector.serial()]) {
                 _render_context_workspace.push(..._render_context_stack);
                 let id = selector.getAttribute(Composer.ATTRIBUTE_ID) || "";
                 if (id.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
-                    id = Expression.eval(selector.ordinal() + ":" + Composer.ATTRIBUTE_ID, id);
+                    id = Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID, id);
                     selector.setAttribute(Composer.ATTRIBUTE_ID, id);
                 }
                 _render_context_workspace.length = 0;
@@ -1244,7 +1244,7 @@
                 if (!(selector instanceof Node))
                     return;
 
-                let serial = selector.ordinal();
+                let serial = selector.serial();
                 let object = _render_meta[serial];
                 _render_context_workspace.length = 0;
                 if (object && object.context)
@@ -1476,7 +1476,7 @@
             if (composite instanceof Element) {
                 if (!composite.hasAttribute(Composer.ATTRIBUTE_ID))
                     throw new Error("Unknown composite without id");
-                object = _render_meta[composite.ordinal()];
+                object = _render_meta[composite.serial()];
                 if (!object)
                     throw new Error("Unknown composite");
                 const meta = _mount_locate(composite);
@@ -1650,7 +1650,7 @@
                             let selector = this.selector;
                             if (selector instanceof Node
                                     && selector.nodeType === Node.TEXT_NODE) {
-                                let serial = selector.ordinal();
+                                let serial = selector.serial();
                                 let object = _render_meta[serial] || {};
                                 if (object.condition
                                         && object.condition.element
@@ -1985,7 +1985,7 @@
                                 || attribute.name === Composer.ATTRIBUTE_ID
                                 || attribute.name === Composer.ATTRIBUTE_EVENTS
                                 || _statics.has(attribute.name)))
-                    attribute.value = Expression.eval(selector.ordinal() + ":" + attribute.name, attribute.value);
+                    attribute.value = Expression.eval(selector.serial() + ":" + attribute.name, attribute.value);
 
                 // The resolved value is written back to the meta-object, so
                 // that the object and event binding use the value of the
@@ -2042,7 +2042,7 @@
         const marker = document.createTextNode("");
         const template = selector.cloneNode(true);
         const attributes = object.attributes;
-        object = {serial:marker.ordinal(), element:marker, attributes,
+        object = {serial:marker.serial(), element:marker, attributes,
             context:[..._render_context_workspace],
             condition:{expression, template, marker, element:null, attributes, complete:false, share:null}};
         _render_meta[object.serial] = object;
@@ -2079,13 +2079,13 @@
         // If the current lock corresponds to the share from the condition
         // object, the rendering for marker and output has already been done and
         // nothing more needs to be done.
-        if (object.condition.share === lock.ordinal())
+        if (object.condition.share === lock.serial())
             return true;
 
         // If share absolute does not match the lock, the condition must be
         // validated initially.
-        if (Math.abs(object.condition.share || 0) !== lock.ordinal()) {
-            object.condition.share = -lock.ordinal();
+        if (Math.abs(object.condition.share || 0) !== lock.serial()) {
+            object.condition.share = -lock.serial();
 
             // The final rendering is recursive and uses a negated (negative)
             // lock as indicator that the condition has already been validated.
@@ -2108,7 +2108,7 @@
                         && condition.element.parentNode)
                     condition.element.parentNode.removeChild(condition.element);
                 condition.element = null;
-                condition.share = lock.ordinal();
+                condition.share = lock.serial();
                 return true;
             }
 
@@ -2123,8 +2123,8 @@
             condition.element = condition.template.cloneNode(true);
             const element = condition.element;
             const attributes = Object.assign({}, condition.attributes);
-            _render_meta[element.ordinal()] = {
-                serial:element.ordinal(), element, attributes, condition,
+            _render_meta[element.serial()] = {
+                serial:element.serial(), element, attributes, condition,
                 context:[..._render_context_workspace]};
 
             // Load the composite module resources.
@@ -2142,8 +2142,8 @@
         // If share matches the negated lock, then the content must be rendered
         // normally, but only once. Therefore, share is finalized by the positive
         // lock.
-        if (object.condition.share !== -lock.ordinal())
-            object.condition.share = lock.ordinal();
+        if (object.condition.share !== -lock.serial())
+            object.condition.share = lock.serial();
 
         return false;
     };
@@ -2220,7 +2220,7 @@
                 if (!match.substring(2, match.length -2).trim())
                     return "";
                 const node = document.createTextNode("");
-                const serial = node.ordinal();
+                const serial = node.serial();
                 const object = {serial, element:node, attributes:{}, value:null,
                     context:[..._render_context_workspace],
                     render() {
@@ -2262,7 +2262,7 @@
                         array[index] = object.element;
                     } else {
                         const node = document.createTextNode(word);
-                        const serial = node.ordinal();
+                        const serial = node.serial();
                         const object = {serial, element:node, attributes:{},
                             context:[..._render_context_workspace]};
                         Composer.fire(Composer.EVENT_RENDER_NEXT, object.element);
@@ -2381,12 +2381,12 @@
         } else if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
                 || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
             selector.appendChild(_render_datasource_collect(value), true);
-            const serial = selector.ordinal();
+            const serial = selector.serial();
             const object = _render_meta[serial];
             delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else if (_render_cache[value] !== undefined) {
             selector.innerHTML = _render_cache[value];
-            const serial = selector.ordinal();
+            const serial = selector.serial();
             const object = _render_meta[serial];
             delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else {
@@ -2401,7 +2401,7 @@
                     const content = request.responseText.trim();
                     _render_cache[request.responseURL] = content;
                     selector.innerHTML = content;
-                    const serial = selector.ordinal();
+                    const serial = selector.serial();
                     const object = _render_meta[serial];
                     delete object.attributes[Composer.ATTRIBUTE_IMPORT];
                 } catch (error) {
@@ -2882,7 +2882,7 @@
             // MutationObserver detects the composite to be removed in the DOM,
             // but undocking is not performed without the matching meta-object.
 
-            const serial = node.ordinal();
+            const serial = node.serial();
             const object = _render_meta[serial];
             if (object && object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE)) {
                 const meta = _mount_lookup(node);
@@ -2901,7 +2901,7 @@
             // meta-object assigned to the element must be deleted, because it
             // is an indicator for existence and presence of composites and
             // their application modules
-            delete _render_meta[node.ordinal()];
+            delete _render_meta[node.serial()];
         };
 
         (new MutationObserver((records) => {
@@ -2940,7 +2940,7 @@
                 if (!_render_meta.length)
                     return;
 
-                const serial = record.target.ordinal();
+                const serial = record.target.serial();
                 const object = _render_meta[serial];
                 
                 // Text changes are only monitored at text nodes with expression.
@@ -3043,7 +3043,7 @@
                         || (node instanceof Node
                                 && node.nodeType === Node.TEXT_NODE)))
                     return;
-                if (_render_meta[node.ordinal()])
+                if (_render_meta[node.serial()])
                     return;
                 if (!document.body.contains(node))
                     return;

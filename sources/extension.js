@@ -36,8 +36,8 @@
      *
      *     compliant("Composer");
      *     compliant(null, window.Composer = {...});
-     *     compliant("Object.prototype.ordinal");
-     *     compliant(null, Object.prototype.ordinal = function() {...}
+     *     compliant("Object.prototype.serial");
+     *     compliant(null, Object.prototype.serial = function() {...}
      *
      * This is only for the IDE so that syntax completion has a chance there.
      * This syntax will be simplified and corrected in the build process for the
@@ -343,7 +343,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to create a fixed-size random alphanumeric unique
+     * Static function to create a fixed-size random alphanumeric unique
      * identifier (UID). The generated identifier consists of uppercase letters
      * and digits, with collision safety depending on its length.
      * @param {number} [length=16] Optional length of the unique identifier
@@ -366,9 +366,9 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to create a time based alphanumeric serial
-     * identifier that is chronologically sortable as text and contains the time
-     * and a counter if serial are created at the same time.
+     * Static function to create a time based alphanumeric serial identifier
+     * that is chronologically sortable as text and contains the time and a
+     * counter if serial are created at the same time.
      * @returns {string} The generated time-based serial identifier
      */
     compliant("Math.serial");
@@ -385,20 +385,39 @@
                 + number.length.toString(36) + number).toUpperCase();
         }};
 
+    /**
+     * Enhancement of the JavaScript API
+     * Add a time based alphanumeric serial identifier for the window instance
+     * that is chronologically sortable as text and contains the time and a
+     * counter if serial are created at the same time.
+     *
+     * Window.serial must be defined before Object.prototype.serial because the
+     * own property on window takes precedence during property lookup.
+     *
+     * @returns {string} The generated time-based serial identifier
+     */
+    compliant("window.serial");
+    Object.defineProperty(window, "serial", {
+        value: (() => {
+            const serial = Math.serial();
+            return () => serial;
+        })()
+    });
+
     const _sequence =  {symbol:Symbol(), value:0};
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a function for getting the serial ID to the objects.
+     * Function that gets the unique identifier (UID) of an object instance.
      */
+    compliant("Object.prototype.uid");
     compliant("Object.prototype.serial");
-    compliant("Object.prototype.ordinal");
-    compliant(null, Object.prototype.ordinal = function() {
-        if (this.serial === undefined)
-            Object.defineProperty(this, "serial", {
+    compliant(null, Object.prototype.serial = function() {
+        if (this.uid === undefined)
+            Object.defineProperty(this, "uid", {
                 value: ++_sequence.value
             });
-        return this.serial;
+        return this.uid;
     });
 
     /**
@@ -418,7 +437,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a capitalize function to the String objects.
+     * Function to capitalize the first character of a string.
      * @returns {string} String with the first character capitalized
      */
     compliant("String.prototype.capitalize");
@@ -430,7 +449,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds an uncapitalize function to the String objects.
+     * Function to uncapitalize the String objects.
      * @returns {string} The string with the first character uncapitalized
      */
     compliant("String.prototype.uncapitalize");
@@ -442,7 +461,8 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a function for encoding the string objects in hexadecimal code.
+     * Function to encode a string as hexadecimal.
+     * Each character is represented by its hexadecimal character code.
      * @returns {string} The hexadecimal encoded string
      */
     compliant("String.prototype.encodeHex");
@@ -461,7 +481,8 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a function that parses hexadecimal chunks from String values.
+     * Function to decode a hexadecimal string.
+     * The string must start with the hexadecimal prefix 0x.
      * @returns {string} The decoded string
      * @throws {Error} In case of a malformed hexadecimal character sequence.
      */
@@ -481,7 +502,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a method for encoding Base64.
+     * Function to encode a string using Base64.
      * @returns {string} The Base64 encoded string.
      * @throws {Error} In case of a malformed character sequence.
      */
@@ -498,7 +519,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a method for decoding Base64.
+     * Function to decode a Base64 encoded string.
      * @returns {string} The decoded string.
      * @throws {Error} In case of a malformed character sequence
      */
@@ -514,7 +535,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds an HTML encode function to the String objects.
+     * Function to encode a string for use as HTML content.
      * @returns {string} The HTML encoded string
      */
     compliant("String.prototype.encodeHtml");
@@ -526,7 +547,7 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a method for calculating a hash value.
+     * Function to calculate a hash value for a string.
      * @returns {string} The calculated hash value
      */
     compliant("String.prototype.hashCode");
@@ -547,8 +568,8 @@
     });
 
     /**
-     * Enhancement of the JavaScript API
-     * Adds a decoding of slash sequences (control characters).
+     * Enhancement of the JavaScript APIa
+     * Function to decode escape sequences in a string.
      * @returns {string} The decoded string with processed control characters
      */
     compliant("String.prototype.unescape");
@@ -563,24 +584,9 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Add a time based alphanumeric serial identifier for the window instance
-     * that is chronologically sortable as text and contains the time and a
-     * counter if serial are created at the same time.
-     * @returns {string} The generated time-based serial identifier
-     */
-    compliant("window.serial");
-    Object.defineProperty(window, "serial", {
-        value: (() => {
-            const serial = Math.serial();
-            return () => serial;
-        })()
-    });
-
-    /**
-     * Enhancement of the JavaScript API
-     * Adds a property to get the context path. The context path is a part of
-     * the request URI and can be compared with the current working directory.
-     * The context path does not end with a slash and can be empty if the
+     * Property to get the context path. The context path is a part of the
+     * request URI and can be compared with the current working directory. The
+     * context path does not end with a slash and can be empty if the
      * application is located directly under the main domain of the server.
      * @returns {string} The context path of the request URI.
      */
@@ -593,8 +599,8 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a method to combine paths to a new one. The result will always start
-     * with a slash but ends without it.
+     * Function to combine paths to a new one. The result will always start with
+     * a slash but ends without it.
      * @param {...string} paths Paths to be combined
      * @returns {string} The combined path.
      */

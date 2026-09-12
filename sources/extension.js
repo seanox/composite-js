@@ -385,7 +385,7 @@
                 + number.length.toString(36) + number).toUpperCase();
         }};
 
-    const _sequence =  {symbol: new Symbol(), value: 0};
+    const _sequence =  {symbol:Symbol(), value:0};
 
     /**
      * Enhancement of the JavaScript API

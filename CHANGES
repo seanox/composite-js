@@ -29,6 +29,9 @@ CR: Scripting: Corrections and optimization
 CR: Composer: Added DOM mutation events
     Composer.EVENT_DOM_ADDED / Composer.EVENT_DOM_REMOVED / Composer.EVENT_DOM_MOVED
     Events are triggered once per mutation cycle with an array of affected nodes.
+CR: Composer: Refactoring ordinal/serial/uid
+    For greater technical accuracy, the uid property and serial() method are now
+    used -- analogous to serial number.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

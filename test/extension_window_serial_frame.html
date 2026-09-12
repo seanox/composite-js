@@ -13,7 +13,7 @@
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
         window.addEventListener("load", () => {
-            document.body.textContent = window.serial;
+            document.body.textContent = window.serial();
             parent["count"] += 1;
         });
     </script>

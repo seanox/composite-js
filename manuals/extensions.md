@@ -104,8 +104,9 @@ document.body.appendChild(nodes, true);
 ## Math
 
 ### Math.unique
-Creates an alphanumeric UID (Unique Identifier) with fixed length, where the
-length influences the quality of the UID. 
+Creates a fixed-size random alphanumeric unique identifier (UID). The generated
+identifier consists of uppercase letters and digits, with collision safety
+depending on its length.
 
 ```javascript
 Math.unique()
@@ -116,9 +117,9 @@ Math.unique(32)
 ```
 
 ### Math.serial
-Creates a time-based alphanumeric serial identifier that is chronologically
-sortable as text and contains the time and a counter if serial identifiers are
-created at the same time.
+Creates a time based alphanumeric serial identifier that is chronologically
+sortable as text and contains the time and a counter if serial are created at
+the same time.
 
 ```javascript
 Math.serial()
@@ -129,8 +130,7 @@ Math.serial()
 
 ### Object.prototype.serial
 Gets the serial (analogous to a serial number) to the objects. The serial is
-created continuously and should help if a unique identifier is needed at
-runtime.
+created continuously can be used when a unique identifier is needed at runtime.
 
 ```javascript
 const object1 = {};
@@ -284,7 +284,9 @@ Decodes slash sequences (control characters) in the string.
 ## window
 
 ### window.serial
-Get the alphanumeric serial identifier for the window instance.
+Get the time based alphanumeric serial identifier for the window instance that
+is chronologically sortable as text and contains the time and a counter if
+serial are created at the same time.
 
 ```javascript
 window.serial

@@ -1158,10 +1158,11 @@
          * 
          *     Serial
          *     ----
-         * Serial is a special extension of the JavaScript API of the object and
-         * creates a unique ID for each object. This ID can be used to compare,
-         * map and reference a wide variety of objects. Composite and rendering
-         * use serial, since this cannot be changed via the markup.  
+         * Serial (analogous to a serial number) is a special extension of the
+         * JavaScript API of the object and creates a unique ID for each object.
+         * This ID can be used to compare, map and reference a wide variety of
+         * objects. Composite and rendering use serial, since this cannot be
+         * changed via the markup.
          *     
          * The following attributes and elements are supported:
          *

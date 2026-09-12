@@ -37,7 +37,7 @@
      *     compliant("Composer");
      *     compliant(null, window.Composer = {...});
      *     compliant("Object.prototype.serial");
-     *     compliant(null, Object.prototype.serial = function() {...}
+     *     compliant(null, Object.defineProperty(Object.prototype, "serial", {...});
      *
      * This is only for the IDE so that syntax completion has a chance there.
      * This syntax will be simplified and corrected in the build process for the

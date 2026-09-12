@@ -95,6 +95,64 @@
      */
     const _register = new WeakMap();
 
+    /**
+     * Shadow map for fast subscription lookup by recipient serial.
+     * Proxy notifications are keyed by notification key and proxies are stored
+     * in a WeakMap, so neither can be used to find or iterate a recipient's
+     * subscriptions. The shadow map maps each serial to the recipient maps
+     * containing that recipient: Map(serial, Set(recipients)). Since recipient
+     * maps are also keyed by serial, subscriptions can be removed without
+     * knowing the notification or key. Serials are used deliberately to avoid
+     * keeping DOM references.
+     */
+    const _shadow = new Map();
+
+    /** Registers the subscription of a recipient in the shadow map. */
+    const _shadow_add = (serial, recipients) => {
+        let entries = _shadow.get(serial);
+        if (entries === undefined) {
+            entries = new Set();
+            _shadow.set(serial, entries);
+        }
+        entries.add(recipients);
+    };
+
+    /**
+     * Removes all subscriptions of a recipient -- in the recipient maps of the
+     * affected proxies as well as in the shadow map.
+     */
+    const _shadow_release = (serial) => {
+        const entries = _shadow.get(serial);
+        if (entries === undefined)
+            return;
+        _shadow.delete(serial);
+        entries.forEach((recipients) =>
+            recipients.delete(serial));
+    };
+
+    /**
+     * Releases the subscriptions of a node and its children. Because the event
+     * passes only the root nodes and implies the child nodes, the subtree must
+     * be resolved. The serial is read directly and not determined via serial(),
+     * because serial() assigns a new uid and so nodes without any subscription
+     * would be needlessly initialized.
+     * TODO: serial / uid
+     */
+    const _release = (node) => {
+        if (node.serial !== undefined)
+            _shadow_release(node.uid);
+        if (node.childNodes)
+            Array.from(node.childNodes).forEach((node) =>
+                _release(node));
+    };
+
+    // Subscriptions of removed DOM nodes become obsolete immediately and so
+    // they are released with the removal and not only with a later update of a
+    // reactive object. The event is fired after rendering and cleanup, moved
+    // nodes are not affected, because they were not removed from the DOM.
+    Composer.listen(Composer.EVENT_DOM_REMOVED, (event, nodes) =>
+        nodes.forEach((node) => _release(node)));
+
     const _reactive = (object) => {
 
         if (typeof object !== "object"
@@ -211,6 +269,7 @@
 
                         recipients.set(selector.serial(), selector);
                         notifications.set(key, recipients);
+                        _shadow_add(selector.serial(), recipients);
 
                     }, _selector, target, key, this.notifications);
                 }
@@ -259,10 +318,12 @@
 
                         const recipients = this.notifications.get(key) || new Map();
                         for (const recipient of recipients.values()) {
-                            // If the recipient is no longer included in the DOM
-                            // and so it can be removed this case.
+                            // Fallback for receivers removed from the DOM
+                            // without being detected by EVENT_DOM_REMOVED. The
+                            // shadow map removes all subscriptions associated
+                            // with this key.
                             if (!document.body.contains(recipient))
-                                recipients.delete(recipient.serial());
+                                _shadow_release(recipient.serial());
                             else Composer.render(recipient);
                         }
 

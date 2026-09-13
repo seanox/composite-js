@@ -500,7 +500,7 @@
 
             // Validation requires an active composite binding.
             // Unbound elements are ignored.
-            const serial = selector.serial();
+            const serial = selector.uid;
             const object = _render_meta[serial];
             if (!object)
                 return;
@@ -742,8 +742,7 @@
                 if (Composer.mount.stack.includes(selector))
                     return;
 
-                const serial = selector.serial();
-                const object = _render_meta[serial];
+                const object = _render_meta[selector.uid];
                 
                 // Objects that were not rendered should not be mounted. This
                 // can happen if new DOM elements are created during rendering
@@ -1082,8 +1081,7 @@
                 const scanning = (element) => {
                     if (!(element instanceof Element))
                         return;
-                    const serial = element.serial();
-                    const object = _render_meta[serial];
+                    const object = _render_meta[element.uid];
                     if (!object)
                         return;
                     changes.forEach((attribute) => {
@@ -1477,7 +1475,7 @@
             if (composite instanceof Element) {
                 if (!composite.hasAttribute(Composer.ATTRIBUTE_ID))
                     throw new Error("Unknown composite without id");
-                object = _render_meta[composite.serial()];
+                object = _render_meta[composite.uid];
                 if (!object)
                     throw new Error("Unknown composite");
                 const meta = _mount_locate(composite);
@@ -2883,7 +2881,9 @@
             // MutationObserver detects the composite to be removed in the DOM,
             // but undocking is not performed without the matching meta-object.
 
-            const serial = node.serial();
+            const serial = node.uid;
+            if (serial === undefined)
+                return;
             const object = _render_meta[serial];
             if (object && object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE)) {
                 const meta = _mount_lookup(node);
@@ -2902,7 +2902,7 @@
             // meta-object assigned to the element must be deleted, because it
             // is an indicator for existence and presence of composites and
             // their application modules
-            delete _render_meta[node.serial()];
+            delete _render_meta[serial];
         };
 
         (new MutationObserver((records) => {
@@ -2941,8 +2941,7 @@
                 if (!_render_meta.length)
                     return;
 
-                const serial = record.target.serial();
-                const object = _render_meta[serial];
+                const object = _render_meta[record.target.uid];
                 
                 // Text changes are only monitored at text nodes with expression.
                 // Manipulations are corrected/restored.
@@ -3044,7 +3043,7 @@
                         || (node instanceof Node
                                 && node.nodeType === Node.TEXT_NODE)))
                     return;
-                if (_render_meta[node.serial()])
+                if (_render_meta[node.uid])
                     return;
                 if (!document.body.contains(node))
                     return;

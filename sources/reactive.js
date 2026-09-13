@@ -133,14 +133,14 @@
     /**
      * Releases the subscriptions of a node and its children. Because the event
      * passes only the root nodes and implies the child nodes, the subtree must
-     * be resolved. The serial is read directly and not determined via serial(),
-     * because serial() assigns a new uid and so nodes without any subscription
-     * would be needlessly initialized.
-     * TODO: serial / uid
+     * be resolved. The uid of the serial is read directly and not determined
+     * via serial(), because serial() assigns a new uid and so nodes without any
+     * subscription would be needlessly initialized.
      */
     const _release = (node) => {
-        if (node.serial !== undefined)
-            _shadow_release(node.uid);
+        const serial = node.uid;
+        if (serial !== undefined)
+            _shadow_release(serial);
         if (node.childNodes)
             Array.from(node.childNodes).forEach((node) =>
                 _release(node));

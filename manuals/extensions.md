@@ -129,7 +129,7 @@ Math.serial()
 ## Object
 
 ### Object.prototype.serial
-Gets the serial (analogous to a serial number) to the objects. The serial is
+Gets the serial (analogous to serial number) to the objects. The serial is
 created continuously can be used when a unique identifier is needed at runtime.
 
 ```javascript

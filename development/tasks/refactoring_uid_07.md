@@ -2,52 +2,66 @@
 
 Übergeordnet: `refactoring_uid.md`
 Dateien: `test/**`, `CHANGES`, Build-Artefakte
-Aufwand: 2 Story Points
+Aufwand: 3 Story Points
 Abhängigkeiten: 01-06
 
 ---
 
 ## A - Bestehende Tests anpassen
 
-| Datei | Zeile | Bisher |
-|---|---|---|
-| `test/reactive_condition.html` | 561 | `{{#_condition.ordinal()}}` |
-| `test/reactive_condition.html` | 572 | `{{#[button@model//String('A')//].ordinal()}}` |
-| `test/reactive_recursion.html` | 45 | `return this.ordinal();` |
+Alle Tests der Objektidentität müssen das Zielbild abdecken:
 
-Jeweils `ordinal()` → `uid()`. Es handelt sich um reine Umbenennungen, die
-erwarteten Ergebnisse bleiben unverändert.
+- ~~`serial()` ist die Abfragemethode;~~
+- ~~`uid` ist die direkt lesbare Property;~~
+- ~~`ordinal()` und `uid()` werden nicht verwendet.~~
 
-Nicht anfassen: `test/extension_window_serial.html`,
-`test/extension_window_serial_frame.html` (betreffen `window.serial`),
-`test/benchmark/benchmark.js` und `test/benchmark/reactive_burst.html`
-(`renderSerial`), `test/compatibility.html` (eigener lokaler Zähler `serial`,
-ohne Bezug zur Erweiterung).
+~~Bereits teilweise umgestellte Stellen in `test/reactive_condition.html` und
+`test/reactive_recursion.html` werden geprüft und vereinheitlicht. Direkte
+Ausgaben von `.uid` und der Vergleich mit `.serial()` sind ausdrücklich
+zulässig und sollen erhalten bleiben.~~
 
-## B - Neuer Test `test/extension_object_uid.html`
+`test/reactive_recipients.html` muss für den Sonderfall der Freigabe prüfen,
+dass eine noch nicht vergebene UID nicht durch einen unnötigen `serial()`-Aufruf
+erzeugt wird.
 
-Bislang gibt es keinen dedizierten Test für die Erweiterung. Er wird nach dem
-Muster von `test/extension_url_canonicalPath.html` angelegt.
+Nicht anfassen:
+
+- ~~`test/extension_window_serial.html` und
+  `test/extension_window_serial_frame.html` betreffen `window.serial`;~~
+- ~~`test/benchmark/benchmark.js` und
+  `test/benchmark/reactive_burst.html` verwenden `renderSerial`;~~
+- ~~`test/compatibility.html` verwendet einen eigenen lokalen Zähler `serial`.~~
+
+## B - Neuer Test test/extension_object_serial.html
+
+Für die Erweiterung wird nach dem Muster der vorhandenen Extension-Tests ein
+dedizierter Test angelegt.
 
 Abzudeckende Fälle:
 
-1. **Eindeutigkeit** - zwei Objekte liefern verschiedene Werte.
-2. **Stabilität** - mehrfache Aufrufe auf demselben Objekt liefern denselben
-   Wert.
-3. **Klone** - `{...object}` und `element.cloneNode(true)` erhalten eine eigene
-   UID.
-4. **Keine Serialisierung** - nach `object.uid()` sind `Object.keys(object)`,
-   die Schlüssel aus `for-in` und `JSON.stringify(object)` unverändert.
-5. **Keine eigene Property** - `object.hasOwnProperty("uid")` ist `false`.
-6. **Kollisionsfreiheit** - ein Objekt mit einem Datenfeld `uid` behält dessen
-   Wert; die Zuweisung `object.uid = 42` ist im Strict Mode zulässig.
-7. **Typen** - funktioniert für Objektliterale, Arrays, `Map`, DOM-Elemente und
-   Textknoten.
-8. **Alte API entfernt** - `Object.prototype.ordinal` und
-   `Object.prototype.serial` sind `undefined`.
-9. **Reaktive Objekte** - ein `uid()`-Aufruf auf einem reaktiven Objekt löst
-   kein Rendering aus und erzeugt keinen Eintrag in der
-   Notification-Verwaltung (ergänzt Teilaufgabe 04).
+1. **Eindeutigkeit** - zwei Objekte ohne vorgegebene UID erhalten verschiedene
+   Werte.
+2. **Stabilität** - mehrfache `serial()`-Aufrufe liefern denselben Wert.
+3. **Property** - nach dem ersten Aufruf gilt
+   `object.uid === object.serial()` und `hasOwnProperty("uid")`.
+4. **Vorhandene UID** - `serial()` gibt eine bereits definierte `uid`
+   unverändert zurück.
+5. **Klone** - Objekt-Spread und `element.cloneNode(true)` übernehmen eine
+   framework-generierte, nicht enumerierbare UID nicht und erhalten bei Bedarf
+   eine eigene.
+6. **Keine Enumeration** - `Object.keys`, `for-in` und `JSON.stringify`
+   enthalten die generierte `uid` nicht.
+7. **Descriptor** - eine generierte UID ist nicht enumerierbar, nicht
+   beschreibbar und nicht konfigurierbar.
+8. **Typen** - die Vergabe funktioniert für Objektliterale, Arrays, `Map`,
+   DOM-Elemente und Textknoten.
+9. **API** - `Object.prototype.serial` ist eine Funktion,
+   `Object.prototype.ordinal` und `Object.prototype.uid` sind `undefined`.
+10. **Nicht erweiterbare Objekte** - ohne vorhandene UID wirft `serial()` bei
+    eingefrorenen oder versiegelten Objekten; mit vorhandener UID wird diese
+    zurückgegeben.
+11. **Reaktive Objekte** - `serial()` und der direkte Zugriff auf `uid` lösen
+    kein Rendering aus und registrieren keine Notification für `uid`.
 
 Grundgerüst:
 
@@ -71,11 +85,11 @@ Grundgerüst:
         Test.create({test() {
             const object1 = {};
             const object2 = {};
-            Assert.assertTrue(object1.uid() !== object2.uid());
-            Assert.assertEquals(object1.uid(), object1.uid());
+            Assert.assertTrue(object1.serial() !== object2.serial());
+            Assert.assertEquals(object1.uid, object1.serial());
         }});
 
-        …
+        ...
 
         Test.start();
     </script>
@@ -85,30 +99,31 @@ Grundgerüst:
 </html>
 ```
 
-Registrierung in `test/index.html`: neuer Eintrag `extension_object_uid.html`
-zwischen `extension_namespace_modules.html` und
-`extension_string_decodeBase64.html` (:163-164), passend zur alphabetischen
-Ordnung des Blocks.
+Registrierung in `test/index.html`: neuer Eintrag
+`extension_object_serial.html` passend zur alphabetischen Ordnung des
+Extension-Blocks.
 
 ## C - CHANGES
 
-Eintrag im Kopf der Datei, im bestehenden Format (`CR:` für Change Request,
-Modul als Präfix). Vorschlag:
+Der vorhandene Eintrag im Kopf der Datei wird vervollständigt:
 
-```
-CR: Composer: Refactoring of the object identity
-    - Object.prototype.ordinal has been renamed to Object.prototype.uid
-    - The identity is now stored internally with a symbol
-      No longer visible in Object.keys, for-in and JSON.stringify
-      No longer conflicts with a data field of the same name
-    - Object.prototype.serial is no longer reserved and has been released
-    - Meta-objects of the renderer use the field uid instead of serial
-      Affects the public Composer.render.meta
+```text
+CR: Composer: Refactoring ordinal/serial/uid
+    - Object.prototype.ordinal has been replaced by Object.prototype.serial
+    - The object identity is stored in the own property uid
+      An existing uid is returned unchanged
+      A missing uid is assigned lazily on the first serial() call
+    - Generated UIDs are non-enumerable and read-only
 ```
 
-> Der Eintrag beschreibt einen API-Bruch. Die Version im Kopf (`2.1.0 2026xxxx`)
-> ist zu prüfen -- eine Umbenennung dokumentierter API rechtfertigt mindestens
-> eine Minor-Version.
+Der Eintrag beschreibt einen API-Bruch. Die Version im Kopf
+(`2.1.0 2026xxxx`) ist vor dem Release zu prüfen.
+
+Nicht behaupten:
+
+- dass die UID unter einem Symbol gespeichert wird;
+- dass `Object.prototype.serial` entfernt wird;
+- dass `Composer.render.meta.serial` in `uid` umbenannt wird.
 
 ## D - Build und Artefakte
 
@@ -119,30 +134,37 @@ Nicht händisch bearbeiten, sondern neu erzeugen:
 - `benchmarks*/composite-js*.js`
 - `tutorials/**/assets/composite-js*.js`
 
-Erzeugung (build.xml:368-381):
+Erzeugung:
 
-```
+```text
 ant -f development/build.xml compile
 ant -f development/build.xml compile-max
 ```
 
-Der vollständige Release-Lauf (`ant -f development/build.xml release`) enthält
-ESLint über `-max.js` und die minimierte Fassung (build.xml:241-242, :262-267)
-und muss fehlerfrei durchlaufen.
+Der vollständige Release-Lauf
 
-Zu kontrollieren nach dem Build:
+```text
+ant -f development/build.xml release
+```
 
-- Der Composer-Block wurde durch build.xml:122-123 korrekt zu
-  `compliant("Object.prototype.uid", function(){…})` zusammengefasst.
-- Im Debug-Build steht `const _uid = window.__uid = Symbol("uid")`
-  (build.xml:236-237, :259-260).
-- Die Minimierung hat das Symbol nicht entfernt und `_uid_sequence` korrekt
-  umbenannt.
+enthält ESLint und die Minimierung und muss fehlerfrei durchlaufen.
+
+Nach dem Build kontrollieren:
+
+- Der zweizeilige Source-Block wurde zu
+  `compliant("Object.prototype.serial", function(){...})` zusammengefasst.
+- `compliant("Object.prototype.uid")` bleibt als eigenständige
+  Kompatibilitätsprüfung erhalten.
+- Die generierte Implementierung speichert die UID in der Property `uid` und
+  nicht unter `_sequence.symbol`.
+- Alle erzeugten Artefakte verwenden `serial()` statt `ordinal()`.
 
 ## E - Abschluss
 
-- [ ] Alle Tests unter `test/index.html` grün.
-- [ ] `Select-String -Path sources\*.js,manuals\*.md,test\*.html -Pattern 'ordinal'`
-      liefert keine Treffer.
-- [ ] Ticketdateien `refactoring_uid*.md` nach Abschluss entfernen oder in
+- [ ] Alle Tests unter `test/index.html` sind grün.
+- [x] ~~In Quellen, Manuals und Tests gibt es keine Aufrufe von `ordinal()` oder
+      `uid()`.~~
+- [ ] Manual und CHANGES beschreiben `uid` als Property und `serial()` als
+      Methode.
+- [ ] Ticketdateien `refactoring_uid*.md` nach Abschluss entfernen oder unter
       `development/` archivieren.

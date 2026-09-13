@@ -1,112 +1,102 @@
-# 02 - Aufrufer in composer.js und reactive.js umbenennen
+# ~~02 - Aufrufer auf serial() vereinheitlichen~~
 
 Übergeordnet: `refactoring_uid.md`
 Dateien: `sources/composer.js`, `sources/reactive.js`
-Aufwand: 3 Story Points
+Aufwand: 1 Story Point
 Abhängigkeiten: 01 (gemeinsamer Commit)
 
 ---
 
-## Ziel
+## ~~Ziel~~
 
-Alle Aufrufe von `ordinal()` werden zu `uid()`. Alle lokalen Variablen,
-Parameter und Meta-Felder, die eine Objekt-Identität halten, heißen `uid`.
+Alle aktiven Abfragen der Objektidentität verwenden `serial()`. Direkte
+Zugriffe auf `uid` sind nur dort vorgesehen, wo ausdrücklich geprüft werden
+muss, ob bereits eine Identität vergeben wurde, ohne dabei eine neue anzulegen.
 
-> **Achtung:** Kein globales Suchen/Ersetzen. `serial` hat in composer.js drei
-> verschiedene Bedeutungen. Die Markup-ID (composer.js:1777-1814) wird in
-> Teilaufgabe 03 gesondert behandelt und ist hier **nicht** anzufassen.
+Die Umstellung ist in den Quellen bereits weitgehend erfolgt. Dieses Ticket
+dient der Vervollständigung und der eindeutigen Abgrenzung der Begriffe.
 
-## A - Aufrufstellen `\.ordinal\(\)` → `\.uid\(\)`
+## ~~A - Methodenaufrufe~~
 
-`sources/composer.js`, 28 Stellen:
+- Verbliebene Aufrufe von `ordinal()` werden zu `serial()`.
+- Eventuell aus der vorherigen Planung übernommene Aufrufe von `uid()` werden
+  ebenfalls zu `serial()`.
+- Die bereits vorhandenen `serial()`-Aufrufe in `composer.js` und `reactive.js`
+  bleiben unverändert.
 
-| Zeile | Bisher |
-|---|---|
-| 503 | `const serial = selector.ordinal();` |
-| 745 | `const serial = selector.ordinal();` |
-| 828 | `const serial = target.ordinal();` |
-| 1085 | `const serial = element.ordinal();` |
-| 1218 | `&& !_render_meta[selector.ordinal()]) {` |
-| 1222 | `id = Expression.eval(selector.ordinal() + ":" + Composer.ATTRIBUTE_ID, id);` |
-| 1247 | `let serial = selector.ordinal();` |
-| 1479 | `object = _render_meta[composite.ordinal()];` |
-| 1653 | `let serial = selector.ordinal();` |
-| 1988 | `attribute.value = Expression.eval(selector.ordinal() + ":" + attribute.name, …);` |
-| 2045 | `object = {serial:marker.ordinal(), element:marker, attributes,` |
-| 2082 | `if (object.condition.share === lock.ordinal())` |
-| 2087 | `if (Math.abs(object.condition.share \|\| 0) !== lock.ordinal()) {` |
-| 2088 | `object.condition.share = -lock.ordinal();` |
-| 2111 | `condition.share = lock.ordinal();` |
-| 2126 | `_render_meta[element.ordinal()] = {` |
-| 2127 | `serial:element.ordinal(), element, attributes, condition,` |
-| 2145 | `if (object.condition.share !== -lock.ordinal())` |
-| 2146 | `object.condition.share = lock.ordinal();` |
-| 2223 | `const serial = node.ordinal();` |
-| 2265 | `const serial = node.ordinal();` |
-| 2392 | `const serial = selector.ordinal();` |
-| 2397 | `const serial = selector.ordinal();` |
-| 2412 | `const serial = selector.ordinal();` |
-| 2909 | `const serial = node.ordinal();` |
-| 2928 | `delete _render_meta[node.ordinal()];` |
-| 2967 | `const serial = record.target.ordinal();` |
-| 3070 | `if (_render_meta[node.ordinal()])` |
+Beispiele:
 
-`sources/reactive.js`, 4 Stellen: :187, :209, :212, :265.
+```js
+const serial = selector.serial();
+const object = _render_meta[serial];
 
-## B - Lokale Variablen und Parameter `serial` → `uid`
+Expression.eval(selector.serial() + ":" + attribute.name, expression);
+```
 
-Betroffen sind alle Stellen, an denen `serial` aus `ordinal()` stammt oder als
-Schlüssel für `_render_meta` dient:
+## ~~B - Interne Bezeichner~~
 
-- Lokale Deklarationen an den unter A genannten Zeilen (503, 745, 828, 1085,
-  1247, 1653, 2223, 2265, 2392, 2397, 2412, 2909, 2967) sowie deren
-  Verwendungen im jeweiligen Funktionsrumpf.
-- Funktionsparameter inklusive JSDoc `@param {number} serial Serial of the …`:
-  - `_render_meta_initialize(selector, serial)` - :1941, :1944, :1947, :1949
-  - `_render_attribute_condition_initialize(selector, object, serial, lock)` - :2025, :2030, :2052
-  - `_render_attribute_condition(selector, object, serial, lock)` - :2070, :2074, :2098
-  - `_render_attribute_import(selector, object, serial, lock)` - :2363, :2366, :2382
-  - `_render_attribute_output(selector, object, serial)` - :2436, :2438, :2446
-  - `_render_attribute_interval(selector, object, serial)` - :2470, :2473, :2477
-  - `_render_attribute_iterate(selector, object, serial, lock)` - :2511, :2515, :2530
-  - `_render_attributes_update(selector, object, serial)` - :2599, :2601, :2622
-- Die Aufrufe dieser Funktionen in `Composer.render` - :1276, :1283, :1292,
-  :1316-:1320.
+Lokale Variablen, Parameter und Meta-Felder mit dem Namen `serial` bleiben
+erhalten. Sie enthalten das Ergebnis von `serial()` und entsprechen damit der
+öffentlichen Methodenterminologie.
 
-JSDoc entsprechend anpassen, z. B.
-`@param {number} uid UID of the element`.
+Insbesondere bleiben unverändert:
 
-## C - Meta-Feld `object.serial` → `object.uid`
+- lokale Variablen wie `const serial = selector.serial()`;
+- Parameter wie `_render_meta_initialize(selector, serial)`;
+- das Feld `object.serial` in den Meta-Objekten von `Composer.render.meta`;
+- Kommentare, die tatsächlich eine durch `serial()` abgefragte Seriennummer
+  beschreiben.
 
-Das Feld der Render-Meta-Objekte wird umbenannt:
+Das öffentliche Meta-Feld wird somit nicht umbenannt und erzeugt keinen
+zusätzlichen API-Bruch.
 
-- :1947 `const object = {serial, element:selector, attributes:{}, …}`
-- :2045 / :2048 `object = {serial:marker.ordinal(), …}` / `_render_meta[object.serial] = object`
-- :2127 `serial:element.ordinal(), element, attributes, condition,`
-- :2224 / :2231 / :2234 `{serial, element:node, …}` bzw. `this.serial + ":" + …`
-- :2266 `{serial, element:node, attributes:{}, …}`
-- :1654 `let object = _render_meta[serial] \|\| {};`
+## ~~C - Direkter UID-Zugriff bei reinen Lookups~~
 
-> **Hinweis:** `_render_meta` ist über `Composer.render.meta` (:1887-1889)
-> öffentlich lesbar. Das umbenannte Feld ist damit Teil des API-Bruchs und
-> gehört in den CHANGES-Eintrag (Teilaufgabe 07).
+Bei reinen Existenz- und Meta-Lookups darf keine neue UID erzeugt werden. Diese
+Stellen verwenden deshalb die Property direkt. Das betrifft in `composer.js`:
 
-## D - Textmarken-Platzhalter
+- Validierung und Mount unbekannter Elemente;
+- den Scan statischer Attribute;
+- den Lookup eines übergebenen Composites;
+- Cleanup und MutationObserver.
 
-composer.js:2245 erzeugt `"{{" + serial + "}}"`, :2258 liest ihn mit
-`parseInt(word.substring(2, word.length -2).trim())` zurück. Beide Stellen
-konsistent auf `uid` umbenennen. Das Format des Platzhalters bleibt unverändert.
+In `reactive.js` liest `_release` die UID beim Freigeben von Subscriptions
+ebenfalls direkt:
 
-## E - Nicht anfassen
+```js
+const _release = (node) => {
+    const uid = node.uid;
+    if (uid !== undefined)
+        _shadow_release(uid);
+    if (node.childNodes)
+        Array.from(node.childNodes).forEach((node) =>
+            _release(node));
+};
+```
 
-- composer.js:1777-1814 (`_mount_locate`) -- Markup-Composite-ID, siehe 03.
-- `Math.serial`, `window.serial` in extension.js.
-- `meta.serial` in test.js.
+Die teilweise vorhandene Variante
 
-## Prüfung
+```js
+if (node.serial !== undefined)
+    _shadow_release(node.serial());
+```
 
-- `Select-String -Path sources\composer.js,sources\reactive.js -Pattern '\bordinal\b'`
-  liefert keine Treffer.
-- `Select-String -Path sources\reactive.js -Pattern '\bserial\b'` liefert nur
-  noch `Math.serial()` (:88).
-- Alle Tests unter `test/index.html` laufen grün.
+ist falsch: `serial` ist über den Prototyp immer vorhanden und der Aufruf würde
+für Knoten ohne Subscription unnötig eine neue `uid` anlegen.
+
+## ~~D - Nicht anfassen~~
+
+- ~~Die lokale Markup-ID in `_mount_locate` wird in Teilaufgabe 03 behandelt.~~
+- ~~`Math.serial()` und `window.serial` in extension.js bleiben unverändert.~~
+- ~~`Expression.eval` verwendet `serial` derzeit als Cache-Schlüssel; die
+  optionale Umbenennung ist Teilaufgabe 06.~~
+- ~~`Test.worker.task.meta.serial` und `renderSerial` sind fachlich eigenständige
+  Zähler.~~
+
+## ~~Prüfung~~
+
+- ~~In `sources/**` gibt es keine Aufrufe von `ordinal()` oder `uid()`.~~
+- ~~Identitätsabfragen in `composer.js` und `reactive.js` verwenden `serial()`.~~
+- ~~Reine Meta-Lookups verwenden eine bereits vorhandene `uid` und rufen nicht
+  `serial()` auf.~~
+- ~~Das Meta-Feld `serial` von `Composer.render.meta` bleibt erhalten.~~

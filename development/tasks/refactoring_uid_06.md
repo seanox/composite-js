@@ -10,40 +10,38 @@ Status: optional, kann entfallen
 
 ## Ziel
 
-`Expression.eval` nennt seinen optionalen ersten Parameter `serial`. Nach
-Abschluss von 01-03 ist das die letzte Stelle in den Quellen, an der der
-Begriff für etwas anderes als `Math.serial`/`window.serial` steht.
+`Expression.eval` nennt seinen optionalen ersten Parameter `serial`. Der Wert
+ist jedoch keine Seriennummer und keine `uid`, sondern ein zusammengesetzter
+Cache-Schlüssel.
+
+Die Umbenennung ist unabhängig von der Entscheidung, dass `serial()` die
+Objektidentität abfragt. Sie dient ausschließlich der lokalen Präzisierung in
+`expression.js`.
 
 ## Bestand
 
-`sources/expression.js`, 10 Treffer:
+`sources/expression.js` verwendet `serial` in Dokumentation, Signatur, lokaler
+Variable und den Zugriffen auf `_cache`.
 
-| Zeile | Inhalt |
-|---|---|
-| :33-34 | „A serial can be specified optionally. The serial is an alias for caching compiled expressions." |
-| :39 | Signatur `function(serial, expression)` |
-| :41 | `@param {string} [serial] Optional serial for caching expressions` |
-| :55, :58 | `let serial;` / `serial = String(variants[0]);` |
-| :60, :63-65 | `_cache.get(serial)` / `_cache.delete(serial)` / `_cache.set(serial, script)` |
+Aufgerufen wird die Funktion aus composer.js typischerweise mit einem aus der
+Objektidentität und einem Attributnamen zusammengesetzten Schlüssel:
 
-Aufgerufen wird die Funktion aus composer.js durchgängig mit einem aus der UID
-zusammengesetzten Schlüssel, z. B. :1222
-`Expression.eval(selector.uid() + ":" + Composer.ATTRIBUTE_ID, id)`.
+```js
+Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID, id);
+```
 
-## Bewertung
+Der vollständige Wert ist damit kein `serial()`-Ergebnis mehr.
 
-Der Parameter ist **keine** Objekt-Identität, sondern ein Cache-Schlüssel, der
-aus einer UID und einem Attributnamen zusammengesetzt wird. Eine Umbenennung zu
-`uid` wäre daher sachlich falsch und würde eine neue Unschärfe erzeugen.
+## Empfehlung
 
-Empfohlen wird `key`:
+Der Parameter wird zu `key` umbenannt:
 
 ```js
 /**
  * Interprets the passed expression. In case of an error, the error is
  * returned and no error is thrown. A key can be specified optionally. The key
  * is an alias for caching compiled expressions. Without, the expressions are
- * always compiled. …
+ * always compiled. ...
  *
  *     function(expression)
  *     function(key, expression)
@@ -56,20 +54,20 @@ Empfohlen wird `key`:
 ## Vorgaben
 
 - Reine Umbenennung von Parameter, lokaler Variable und JSDoc. Kein
-  Verhaltenswechsel, keine Signaturänderung.
+  Verhaltenswechsel und keine Signaturänderung.
 - Die Aufrufer in composer.js bleiben unverändert, da der Parameter positional
   übergeben wird.
-- Der Kommentar in composer.js:3082-3085 zur `Expression.prune`-Bereinigung wird
-  bereits in Teilaufgabe 05 angepasst und ist hier nicht erneut zu ändern.
+- `selector.serial()` in den Aufrufern bleibt ausdrücklich erhalten.
+- Andere fachlich korrekte Verwendungen von `serial` werden nicht geändert.
 
-## Abwägung gegen den Verzicht
+## Abwägung
 
-Dafür: `serial` verschwindet damit vollständig aus den Quellen -- bis auf die
-beiden Stellen, an denen es korrekt ist.
+Dafür: `key` beschreibt die Funktion des Parameters präziser und verhindert
+eine Verwechslung mit `Object.prototype.serial()`.
 
 Dagegen: `Expression.eval` ist dokumentierte API. Der Parametername taucht zwar
-in keinem Manual auf (`manuals/expression.md` nennt ihn nicht), erscheint aber
-in der IDE-Signaturhilfe. Der Nutzen ist rein kosmetisch.
+nicht im Manual auf, erscheint aber in der IDE-Signaturhilfe. Der Nutzen ist
+rein terminologisch.
 
-Empfehlung: umsetzen, aber in einem eigenen Commit, damit es bei Bedarf
-separat zurückgenommen werden kann.
+Empfehlung: umsetzen, aber in einem eigenen Commit, damit die kosmetische
+Änderung bei Bedarf separat zurückgenommen werden kann.

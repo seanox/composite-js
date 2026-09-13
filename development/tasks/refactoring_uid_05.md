@@ -1,115 +1,109 @@
 # 05 - Dokumentation (Code-Kommentare und Manual)
 
 Übergeordnet: `refactoring_uid.md`
-Dateien: `sources/composer.js`, `sources/extension.js`, `manuals/extensions.md`,
-`manuals/README.md`
+Dateien: `sources/composer.js`, `sources/reactive.js`,
+`sources/extension.js`, `manuals/extensions.md`, `manuals/README.md`
 Aufwand: 2 Story Points
-Abhängigkeiten: 01, 02, 03
+Abhängigkeiten: 01, 02, 03, 04
 
 ---
 
-## A - Manual: `manuals/extensions.md`
+## A - Manual: manuals/extensions.md
 
-Der Abschnitt :128-144 wird ersetzt. Die Überschrift ändert sich, dadurch ändert
-sich auch der Anker (`#objectprototypeordinal` → `#objectprototypeuid`).
+Der Abschnitt `Object.prototype.serial` beschreibt Methode und Property
+getrennt:
 
-Bisher:
+````markdown
+### Object.prototype.serial
+Gets the unique identifier (`uid`) of an object. If the object does not yet
+have a `uid`, a numeric value is assigned on first access. Subsequent calls
+return the same value.
 
-```markdown
-### Object.prototype.ordinal
-Gets the serial ID to the objects. The ID is created continuously and should
-help if a unique ID is needed at runtime.
+The generated `uid` is stored as a non-enumerable, read-only property of the
+object. It therefore does not appear in `Object.keys`, `for-in` or
+`JSON.stringify`, but it can be read directly as `object.uid`.
 
-```javascript
-const object1 = {};
-const object2 = {};
+If an object already has a defined `uid`, `serial()` returns that value
+unchanged. Its uniqueness and stability are then the caller's responsibility.
+The order of generated values is an implementation detail and must not be used
+to derive chronological order.
 
-object1.ordinal() != object2.ordinal();
-
-const element1 = document.createElement("a");
-const element2 = element1.cloneNode(true);
-
-element1.ordinal() != element2.ordinal();
-```
-```
-
-Neu:
-
-```markdown
-### Object.prototype.uid
-Gets the UID of an object. The UID is assigned on first access and is then
-stable for the lifetime of the object. It is used if a unique identifier is
-needed at runtime, e.g. to compare, map and reference objects.
-
-The value is stored internally with a symbol and therefore does not appear in
-`Object.keys`, `for-in` and `JSON.stringify` and does not collide with a data
-field of the same name.
-
-The order of assignment is an implementation detail. The UID must not be used
-for sorting or to derive a chronological order.
-
-Objects that are not extensible (`Object.freeze`, `Object.seal`) and objects
-without prototype (`Object.create(null)`) are not supported.
+Objects that are not extensible (`Object.freeze`, `Object.seal`) require an
+existing `uid`. Objects without a prototype (`Object.create(null)`) do not
+provide the method.
 
 ```javascript
 const object1 = {};
 const object2 = {};
 
-object1.uid() != object2.uid();
+object1.serial() != object2.serial();
+object1.uid === object1.serial();
 
 const element1 = document.createElement("a");
 const element2 = element1.cloneNode(true);
 
-element1.uid() != element2.uid();
+element1.serial() != element2.serial();
 ```
-```
+````
 
-## B - Manual: `manuals/README.md`
+Die Überschrift und der Anker bleiben
+`Object.prototype.serial` / `#objectprototypeserial`.
 
-Zeile :251 anpassen:
+## ~~B - Manual: manuals/README.md~~
+
+Der vorhandene Eintrag muss weiterhin lauten:
 
 ```markdown
-    - [Object.prototype.uid](extensions.md#objectprototypeuid)
+    - [Object.prototype.serial](extensions.md#objectprototypeserial)
 ```
 
-> Im Inhaltsverzeichnis wird jede Überschrift der Kapiteldateien verlinkt. Der
-> Anker muss exakt der neuen Überschrift entsprechen (Kleinschreibung, Punkte
-> entfallen). Die Position innerhalb des Abschnitts `Object` bleibt unverändert.
+Es wird kein Eintrag `Object.prototype.uid` ergänzt, weil `uid` keine Methode
+auf dem Prototyp ist. Die Kopf- und Fußzeilen von `extensions.md` bleiben
+unverändert.
 
-Die Kopf- und Fußzeilen von `extensions.md` verlinken auf Abschnitte in
-`README.md` und sind nicht betroffen.
+## C - Code-Dokumentation
 
-## C - Code-Dokumentation: `sources/composer.js`
+### sources/extension.js
 
-| Stelle | Anpassung |
-|---|---|
-| :1154-1164 | Absatz „Serial" im Klassenkommentar von `Composer.render`. Überschrift `Serial` → `UID`, Text entsprechend: die UID ist eine Erweiterung der JavaScript-API des Objekts, erzeugt eine eindeutige ID je Objekt und wird von Composite und Rendering genutzt, weil sie über das Markup nicht verändert werden kann. |
-| :1155 | „The serial, the reference on the HTML element …" → „The UID, the reference …" |
-| :1884 | `(key:serial, value:meta)` → `(key:uid, value:meta)` |
-| :2208 | „expression with a serial" → „expression with a UID" |
-| :3082-3085 | Kommentar zur Cache-Bereinigung: „Since serial is used only as a key prefix …" → „Since the UID is used only as a key prefix …", „without tracking serials" → „without tracking UIDs" |
-| :2711-2714 | Kommentar der Erweiterung, siehe Teilaufgabe 01 |
+Der Kommentar von `Object.prototype.serial` muss erklären:
 
-## D - Code-Dokumentation: `sources/extension.js`
+- `serial()` fragt die eindeutige Objektidentität ab;
+- der Wert liegt in der Own-Property `uid`;
+- eine fehlende UID wird beim ersten Aufruf vergeben;
+- eine vorhandene UID wird unverändert zurückgegeben.
 
-Der Beispielblock im Kommentar zu `compliant` (:37-42) nennt die alte API:
+### sources/composer.js
 
-```js
- *     compliant("Object.prototype.ordinal");
- *     compliant(null, Object.defineProperty(Object.prototype, "ordinal", {...});
-```
+Kommentare zur Objektidentität verwenden `serial` für die Methode bzw. deren
+Ergebnis und `uid` nur für die gespeicherte Property. Insbesondere:
 
-Anpassen auf `uid`. `compliant("Math.serial")` in :39-40 bleibt unverändert.
+- Der Klassenkommentar von `Composer.render` erklärt, dass `serial()` die UID
+  des Elements liefert.
+- ~~`(key:serial, value:meta)` und das öffentliche Meta-Feld `serial` bleiben
+  unverändert.~~
+- ~~Kommentare zu Expression-Cache-Präfixen dürfen weiterhin von `serial`
+  sprechen, solange sie das Ergebnis von `serial()` meinen.~~
 
-## Vorgaben
+### ~~sources/reactive.js~~
 
-- `Math.serial` (extensions.md:119-126) und `window.serial` (:300-308) bleiben
-  unverändert. Eine Vereinheitlichung zu `window.uid` wäre ein separater
-  API-Bruch und ist nicht Teil dieses Tickets.
-- Die Sprache der Manuals ist Englisch, die der Ticketdateien Deutsch.
+- ~~Der Kommentar von `_release` erklärt, dass `node.uid` direkt gelesen wird,
+  damit `serial()` keine neue UID anlegt.~~
+- ~~Kommentare der Shadow-Map dürfen `serial` verwenden, weil ihre Schlüssel aus
+  `serial()` stammen.~~
+- ~~Das provisorische `TODO: serial / uid` wird entfernt.~~
+
+## ~~D - Nicht ändern~~
+
+- ~~`Math.serial` und `window.serial` bleiben unverändert.~~
+- ~~`Object.prototype.serial` wird nicht zu `Object.prototype.uid` umbenannt.~~
+- ~~Das Meta-Feld `serial` von `Composer.render.meta` bleibt erhalten.~~
+- ~~Die Sprache der Manuals ist Englisch, die der Ticketdateien Deutsch.~~
 
 ## Prüfung
 
-- Alle Anker in `manuals/README.md` lassen sich auflösen.
-- `Select-String -Path manuals\*.md -Pattern 'ordinal'` liefert keine Treffer.
-- `Select-String -Path sources\*.js -Pattern 'ordinal'` liefert keine Treffer.
+- ~~Jeder Link in `manuals/README.md` lässt sich auflösen.~~
+- ~~`Object.prototype.serial` ist dokumentiert; `Object.prototype.uid` wird
+  nicht als API-Methode aufgeführt.~~
+- ~~In Quellen und Manuals wird `uid()` nirgends als aufrufbare Methode
+  dargestellt.~~
+- ~~Veraltete Verweise auf `ordinal()` sind entfernt.~~

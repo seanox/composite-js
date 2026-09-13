@@ -197,9 +197,9 @@ endlos.
 > test.js:689-695; extension.js:409ff, Story-Points: 3
 
 Per Zuweisung statt `defineProperty({enumerable:false})`:
-`Object.prototype.ordinal/reactive/toPlainString`, `String.prototype.*`,
-`Element.prototype.*` erscheinen in jedem `for...in`. `ordinal()` gibt
-vorhandenes eigenes `serial`-Feld zurück (Kollision). `compliant` wirft hart bei
+`Object.prototype.serial/reactive/toPlainString`, `String.prototype.*`,
+`Element.prototype.*` erscheinen in jedem `for...in`. `serial()` gibt
+vorhandenes eigenes `uid`-Feld zurück (Kollision). `compliant` wirft hart bei
 künftigen Standard-Kollisionen -> Framework stirbt beim Laden statt zu
 degradieren.
 

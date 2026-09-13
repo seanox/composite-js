@@ -1,27 +1,24 @@
-# 01 - Kern-API in composer.js umstellen
+# ~~01 - Kern-API in extension.js fertigstellen~~
 
 Übergeordnet: `refactoring_uid.md`
-Datei: `sources/composer.js`
-Aufwand: 2 Story Points
-Abhängigkeiten: keine (muss gemeinsam mit 02 committet werden)
+Datei: `sources/extension.js`
+Aufwand: 1 Story Point
+Abhängigkeiten: keine (soll gemeinsam mit 02 committet werden)
 
 ---
 
-## Ziel
+## ~~Ziel~~
 
-Die Erweiterung `Object.prototype.ordinal()` wird durch
-`Object.prototype.uid()` ersetzt. Der Speicher wandert von einer sichtbaren
-String-Property auf ein modul-privates Symbol.
+`Object.prototype.ordinal()` wird durch `Object.prototype.serial()` ersetzt.
+Die abgefragte Objektidentität liegt als Own-Property `uid` auf dem Objekt.
+Diese Umstellung ist bereits teilweise umgesetzt und wird in diesem Schritt
+bereinigt und abgeschlossen.
 
-## Bisher (composer.js:2709-2723)
+## Bisher
 
 ```js
 let _serial = 0;
 
-/**
- * Enhancement of the JavaScript API
- * Adds a function for getting the serial ID to the objects.
- */
 compliant("Object.prototype.serial");
 compliant("Object.prototype.ordinal");
 compliant(null, Object.prototype.ordinal = function() {
@@ -33,70 +30,59 @@ compliant(null, Object.prototype.ordinal = function() {
 });
 ```
 
-## Neu
+## ~~Soll~~
 
 ```js
-/**
- * Symbol used as hidden key for the object identity. A symbol is used so that
- * the identity cannot collide with data fields, does not appear in
- * Object.keys, for-in and JSON.stringify, and is not visible as an own
- * property for the reactive notification management.
- */
-const _uid = Symbol("uid");
+const _sequence = {symbol:Symbol(), value:0};
 
-let _uid_sequence = 0;
-
-/**
- * Enhancement of the JavaScript API
- * Adds a function for getting the UID of an object. The UID is a unique
- * identifier that is assigned on first access and is then stable for the
- * lifetime of the object. The order of assignment is an implementation detail
- * and must not be used for sorting or comparison.
- * @returns {number} The UID of the object
- */
 compliant("Object.prototype.uid");
-compliant(null, Object.prototype.uid = function() {
-    let uid = this[_uid];
-    if (uid === undefined)
-        Object.defineProperty(this, _uid, {value: uid = ++_uid_sequence});
-    return uid;
+compliant("Object.prototype.serial");
+compliant(null, Object.prototype.serial = function() {
+    if (this.uid === undefined)
+        Object.defineProperty(this, "uid", {
+            value: ++_sequence.value
+        });
+    return this.uid;
 });
 ```
 
-## Vorgaben
+## ~~Vorgaben~~
 
-- Die beiden Reservierungen `compliant("Object.prototype.serial")` und
-  `compliant("Object.prototype.ordinal")` entfallen ersatzlos. Beide Namen
-  werden damit für Fremdcode freigegeben.
-- Die Zuweisung erfolgt als schlichte Zuweisung. **Kein**
-  `Object.defineProperty(Object.prototype, "uid", {...})` und insbesondere kein
-  `writable: false` -- das würde `object.uid = 42` im Strict Mode werfen lassen
-  und die Methode unüberschattbar machen.
-- **Kein Getter.** Ein Accessor auf `Object.prototype` ohne Setter blockiert
-  seitenweit jede Zuweisung an ein Feld `uid` und lässt bereits einen reinen
-  Lesezugriff auf eingefrorene Objekte werfen.
-- Die Konstante heißt `_uid`, nicht `uid`. Bei `const uid = Symbol("uid")`
-  überschattet das lokale `let uid` in der Methode die Konstante und erzeugt
-  `ReferenceError: Cannot access 'uid' before initialization`.
-- `let _uid_sequence` ersetzt `let _serial`. Der Zähler bleibt eine `let`-
-  Variable, damit ihn das Debug-Regex (build.xml:236-237, greift nur auf
-  `const`) nicht umschreibt.
-- Die zweizeilige `compliant`-Form ist zwingend, siehe build.xml:122-123.
-- Position im Modul: unverändert an der Stelle des bisherigen Blocks, damit die
-  Deklaration von `_uid` vor allen Aufrufern liegt.
+- ~~`serial()` ist die Methode, `uid` die Property. Eine Methode `uid()` wird
+  nicht eingeführt.~~
+- ~~`compliant("Object.prototype.uid")` prüft, dass der Property-Name auf dem
+  Prototyp noch frei ist. Die Zeile definiert selbst keine Property.~~
+- ~~Die zweizeilige `compliant`-Form für `Object.prototype.serial` ist zwingend,
+  damit build.xml:122-123 sie im Build korrekt zusammenfasst.~~
+- ~~Die Methode bleibt eine normale `function`, weil sie ihr aufrufendes Objekt
+  über `this` benötigt.~~
+- ~~Eine vorhandene `uid` wird unverändert zurückgegeben. Nur bei
+  `this.uid === undefined` wird eine neue numerische UID vergeben.~~
+- ~~Für `uid` werden keine Descriptor-Optionen ergänzt. Die Standardwerte
+  `enumerable: false`, `writable: false` und `configurable: false` sind
+  beabsichtigt.~~
+- ~~`_sequence` bleibt als konstantes Statusobjekt mit `symbol` und `value`
+  erhalten. Die laufende Nummer wird ausschließlich über `_sequence.value`
+  erhöht; die UID selbst wird in der String-Property `uid` gespeichert.~~
+- ~~`window.serial` muss im Modul weiterhin vor `Object.prototype.serial`
+  definiert werden.~~
 
-## Prüfung
+## ~~Prüfung~~
 
 ```js
 const object = {name: "x"};
-object.uid();
-Object.keys(object);              // ["name"]
-JSON.stringify(object);           // {"name":"x"}
-object.hasOwnProperty("uid");     // false
-object.uid() === object.uid();    // true
-({...object}).uid() !== object.uid();  // true
-(() => {"use strict"; const o = {}; o.uid = 42; return o.uid;})();  // 42
-Object.assign({}, {uid: 7});      // {uid: 7}
-typeof Object.prototype.ordinal;  // "undefined"
-typeof Object.prototype.serial;   // "undefined"
+const serial = object.serial();
+
+object.uid === serial;                  // true
+object.serial() === serial;             // true
+object.hasOwnProperty("uid");           // true
+Object.keys(object);                    // ["name"]
+JSON.stringify(object);                 // {"name":"x"}
+
+const assigned = {uid: "external"};
+assigned.serial();                      // "external"
+
+typeof Object.prototype.serial;         // "function"
+typeof Object.prototype.ordinal;        // "undefined"
+typeof Object.prototype.uid;            // "undefined"
 ```

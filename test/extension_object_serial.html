@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        // 1. Uniqueness
+        Test.create({test() {
+            const object1 = {};
+            const object2 = {};
+
+            Assert.assertNotEquals(object1.serial(), object2.serial());
+        }});
+
+        // 2. Stability
+        Test.create({test() {
+            const object = {};
+            const serial = object.serial();
+
+            Assert.assertEquals(serial, object.serial());
+            Assert.assertEquals(serial, object.serial());
+        }});
+
+        // 3. Property
+        Test.create({test() {
+            const object = {};
+            const serial = object.serial();
+
+            Assert.assertEquals(serial, object.uid);
+            Assert.assertTrue(Object.prototype.hasOwnProperty.call(object, "uid"));
+        }});
+
+        // 4. Existing UID
+        Test.create({test() {
+            const object = {uid: "custom-uid"};
+
+            Assert.assertEquals("custom-uid", object.serial());
+            Assert.assertEquals("custom-uid", object.uid);
+        }});
+
+        // 5. Clones
+        Test.create({test() {
+            const object = {};
+            const serial = object.serial();
+            const clone = {...object};
+
+            Assert.assertUndefined(clone.uid);
+            Assert.assertNotEquals(serial, clone.serial());
+
+            const element = document.createElement("div");
+            const elementSerial = element.serial();
+            const cloneElement = element.cloneNode(true);
+
+            Assert.assertUndefined(cloneElement.uid);
+            Assert.assertNotEquals(elementSerial, cloneElement.serial());
+        }});
+
+        // 6. No enumeration
+        Test.create({test() {
+            const object = {
+                value: "test"
+            };
+            object.serial();
+
+            const keys = Object.keys(object);
+            const entries = [];
+            for (const key in object)
+                entries.push(key);
+            const json = JSON.stringify(object);
+
+            Assert.assertFalse(keys.includes("uid"));
+            Assert.assertFalse(entries.includes("uid"));
+            Assert.assertFalse(json.includes("uid"));
+        }});
+
+        // 7. Descriptor
+        Test.create({test() {
+            const object = {};
+            object.serial();
+
+            const descriptor = Object.getOwnPropertyDescriptor(object, "uid");
+
+            Assert.assertNotUndefined(descriptor);
+            Assert.assertFalse(descriptor.enumerable);
+            Assert.assertFalse(descriptor.writable);
+            Assert.assertFalse(descriptor.configurable);
+        }});
+
+        // 8. Types
+        Test.create({test() {
+            const object = {};
+            const array = [];
+            const map = new Map();
+            const element = document.createElement("div");
+            const text = document.createTextNode("text");
+
+            const objectSerial = object.serial();
+            const arraySerial = array.serial();
+            const mapSerial = map.serial();
+            const elementSerial = element.serial();
+            const textSerial = text.serial();
+
+            Assert.assertNotUndefined(objectSerial);
+            Assert.assertNotUndefined(arraySerial);
+            Assert.assertNotUndefined(mapSerial);
+            Assert.assertNotUndefined(elementSerial);
+            Assert.assertNotUndefined(textSerial);
+
+            Assert.assertEquals(objectSerial, object.uid);
+            Assert.assertEquals(arraySerial, array.uid);
+            Assert.assertEquals(mapSerial, map.uid);
+            Assert.assertEquals(elementSerial, element.uid);
+            Assert.assertEquals(textSerial, text.uid);
+        }});
+
+        // 9. API
+        Test.create({test() {
+            Assert.assertEquals("function", typeof Object.prototype.serial);
+            Assert.assertUndefined(Object.prototype.ordinal);
+            Assert.assertUndefined(Object.prototype.uid);
+        }});
+
+        const PATTERN_EXPECTED_NON_EXTENSIBLE = new RegExp([
+                "Cannot define property uid, object is not extensible",
+                "can't define property \"uid\": Object is not extensible"].join("|"), "i"
+        );
+
+        // 10.1. Non-extensible objects (frozen failed)
+        Test.create({expected: PATTERN_EXPECTED_NON_EXTENSIBLE, test() {
+            const frozen = Object.freeze({});
+            frozen.serial();
+        }});
+
+        // 10.2. Non-extensible objects (sealed failed)
+        Test.create({expected: PATTERN_EXPECTED_NON_EXTENSIBLE, test() {
+            const sealed = Object.seal({});
+            sealed.serial();
+        }});
+
+        // 10. Non-extensible objects
+        Test.create({test() {
+            const frozenWithUid = {uid: "frozen-uid"};
+            Object.freeze(frozenWithUid);
+            Assert.assertEquals("frozen-uid", frozenWithUid.serial());
+
+            const sealedWithUid = {uid: "sealed-uid"};
+            Object.seal(sealedWithUid);
+            Assert.assertEquals("sealed-uid", sealedWithUid.serial());
+        }});
+
+        // 11. Reactive Objects
+        Test.create({test() {
+            const object = {
+                value: "test"
+            };
+            const reactive = object.reactive();
+
+            let renders = 0;
+            const listener = () => renders++;
+            Composer.listen(Composer.EVENT_RENDER_START, listener);
+
+            const serial = reactive.serial();
+            const uid = reactive.uid;
+            Assert.assertEquals(serial, uid);
+            Composer.asynchronous(() => {
+                Assert.assertEquals(0, renders);
+            });
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

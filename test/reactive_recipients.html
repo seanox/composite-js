@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-debug-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const result = {
+            replacement: {},
+            release: {}
+        };
+
+        Test.create({name: "Replace nested recipient", test() {
+            Assert.assertTrue(result.replacement.registered);
+            Assert.assertEquals(1, result.replacement.serialCalls);
+            Assert.assertTrue(result.replacement.removed);
+            Assert.assertTrue(result.replacement.parentRegistered);
+            Assert.assertTrue(result.replacement.remainedRemoved);
+        }});
+
+        Test.create({name: "Release detached recipient", test() {
+            Assert.assertTrue(result.release.registered);
+            Assert.assertEquals(1, result.release.serialCalls);
+            Assert.assertTrue(result.release.releasedFromShadow);
+            Assert.assertTrue(result.release.releasedFromRecipients);
+            Assert.assertTrue(result.release.remainedReleased);
+        }});
+
+        const asynchronous = () => new Promise((resolve) =>
+                Composer.asynchronous(resolve));
+
+        const register = async (model, recipient) => {
+            Composer.fire(Composer.EVENT_RENDER_START, recipient);
+            void model.value;
+            Composer.fire(Composer.EVENT_RENDER_END, recipient);
+            await asynchronous();
+        };
+
+        window.addEventListener("load", () => window.setTimeout(async () => {
+
+            const model = ({value: "A"}).reactive();
+            const parent = document.createElement("div");
+            const recipient = document.createElement("div");
+            parent.appendChild(recipient);
+
+            const recipientSerial = recipient.serial();
+            const parentSerial = parent.serial();
+            const serial = recipient.serial;
+            let serialCalls = 0;
+
+            recipient.serial = function() {
+                serialCalls++;
+                return serial.call(this);
+            };
+
+            await register(model, recipient);
+
+            const recipientMaps = Array.from(___shadow.get(recipientSerial) || []);
+            result.replacement.registered = recipientMaps.some((recipients) =>
+                    recipients.has(recipientSerial));
+
+            serialCalls = 0;
+            await register(model, parent);
+            await asynchronous();
+
+            result.replacement.serialCalls = serialCalls;
+            result.replacement.removed = recipientMaps.every((recipients) =>
+                  !recipients.has(recipientSerial));
+            result.replacement.parentRegistered = recipientMaps.some((recipients) =>
+                  recipients.has(parentSerial));
+            result.replacement.remainedRemoved = recipientMaps.every((recipients) =>
+                  !recipients.has(recipientSerial));
+        }, 0));
+
+        window.addEventListener("load", () => window.setTimeout(async () => {
+
+            const model = ({value: "A"}).reactive();
+            const recipient = document.createElement("div");
+            const recipientSerial = recipient.serial();
+            const serial = recipient.serial;
+
+            let serialCalls = 0;
+
+            recipient.serial = function() {
+                serialCalls++;
+                return serial.call(this);
+            };
+
+            await register(model, recipient);
+
+            const recipientMaps = Array.from(___shadow.get(recipientSerial) || []);
+            result.release.registered = recipientMaps.some((recipients) =>
+                    recipients.has(recipientSerial));
+
+            serialCalls = 0;
+            model.value = "B";
+            await asynchronous();
+
+            result.release.serialCalls = serialCalls;
+            result.release.releasedFromShadow = !___shadow.has(recipientSerial);
+            result.release.releasedFromRecipients = recipientMaps.every((recipients) =>
+                    !recipients.has(recipientSerial));
+
+            model.value = "C";
+            await asynchronous();
+
+            result.release.remainedReleased = !___shadow.has(recipientSerial)
+                    && recipientMaps.every((recipients) =>
+                            !recipients.has(recipientSerial));
+
+            Test.start({auto:true});
+        }, 0));
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

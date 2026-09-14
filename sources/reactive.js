@@ -178,15 +178,15 @@
 
             get(target, key) {
 
-                try {
+                // Proxy is implemented exotically, cannot be inherited and has
+                // no prototype. Therefore, this unconventional way with a
+                // secret simulated property that is used as an indicator for
+                // existing reactive object instances and also contains a
+                // reference to the original object.
+                if (key === _secret)
+                    return target;
 
-                    // Proxy is implemented exotically, cannot be inherited and
-                    // has no prototype. Therefore, this unconventional way with
-                    // a secret simulated property that is used as an indicator
-                    // for existing reactive object instances and also contains
-                    // a reference to the original object.
-                    if (key === _secret)
-                        return target;
+                try {
 
                     let value;
 

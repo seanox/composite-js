@@ -30,15 +30,17 @@
 
         /**
          * Interprets the passed expression. In case of an error, the error is
-         * returned and no error is thrown. A serial can be specified
-         * optionally. The serial is an alias for caching compiled expressions.
-         * Without, the expressions are always compiled. The function uses
-         * variable parameters and has the following signatures:
+         * returned and no error is thrown. The identifier is used for caching
+         * compiled expressions can be specified optionally. Without, the
+         * expressions always compiled.
+         *
+         * The function uses variable parameters and has the following
+         * signatures:
          *
          *     function(expression)
-         *     function(serial, expression)
+         *     function(identifier, expression)
          *
-         * @param {string} [serial] Optional serial for caching expressions
+         * @param {string} [identifier] Optional identifier for caching
          * @param {string} expression Expression to be interpreted.
          * @returns {*} The return value of the interpreted expression, or an
          *     error if an error has occurred
@@ -52,17 +54,17 @@
             else if (variants.length > 0)
                 expression = String(variants[0]);
 
-            let serial;
+            let identifier;
             if (variants.length > 1
                     && variants[0])
-                serial = String(variants[0]);
+                identifier = String(variants[0]);
 
-            let script = serial ? _cache.get(serial) : null;
+            let script = identifier ? _cache.get(identifier) : null;
             if (!script)
                 script = _parse(TYPE_MIXED, expression);
-            if (serial) {
-                _cache.delete(serial);
-                _cache.set(serial, script);
+            if (identifier) {
+                _cache.delete(identifier);
+                _cache.set(identifier, script);
             }
 
             try {return Scripting.run(script);

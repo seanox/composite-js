@@ -1,4 +1,4 @@
-# 06 - Optional: Cache-Schlüssel in expression.js umbenennen
+# ~~06 - Optional: Cache-Schlüssel in expression.js umbenennen~~
 
 Übergeordnet: `refactoring_uid.md`
 Datei: `sources/expression.js`
@@ -34,36 +34,36 @@ Der vollständige Wert ist damit kein `serial()`-Ergebnis mehr.
 
 ## Empfehlung
 
-Der Parameter wird zu `key` umbenannt:
+Der Parameter wird zu `identifier` umbenannt:
 
 ```js
 /**
  * Interprets the passed expression. In case of an error, the error is
- * returned and no error is thrown. A key can be specified optionally. The key
- * is an alias for caching compiled expressions. Without, the expressions are
- * always compiled. ...
+ * returned and no error is thrown. The identifier is used for caching
+ * compiled expressions can be specified optionally. Without, the
+ * expressions always compiled. ...
  *
  *     function(expression)
- *     function(key, expression)
+ *     function(identifier, expression)
  *
- * @param {string} [key] Optional key for caching expressions
+ * @param {string} [identifier] Optional identifier for caching expressions
  * @param {string} expression Expression to be interpreted.
  */
 ```
 
 ## Vorgaben
 
-- Reine Umbenennung von Parameter, lokaler Variable und JSDoc. Kein
-  Verhaltenswechsel und keine Signaturänderung.
-- Die Aufrufer in composer.js bleiben unverändert, da der Parameter positional
-  übergeben wird.
-- `selector.serial()` in den Aufrufern bleibt ausdrücklich erhalten.
-- Andere fachlich korrekte Verwendungen von `serial` werden nicht geändert.
+- ~~Reine Umbenennung von Parameter, lokaler Variable und JSDoc. Kein
+  Verhaltenswechsel und keine Signaturänderung.~~
+- ~~Die Aufrufer in composer.js bleiben unverändert, da der Parameter positional
+  übergeben wird.~~
+- ~~`selector.serial()` in den Aufrufern bleibt ausdrücklich erhalten.~~
+- ~~Andere fachlich korrekte Verwendungen von `serial` werden nicht geändert.~~
 
 ## Abwägung
 
-Dafür: `key` beschreibt die Funktion des Parameters präziser und verhindert
-eine Verwechslung mit `Object.prototype.serial()`.
+Dafür: `identifier` beschreibt die Funktion des Parameters präziser und
+verhindert eine Verwechslung mit `Object.prototype.serial()`.
 
 Dagegen: `Expression.eval` ist dokumentierte API. Der Parametername taucht zwar
 nicht im Manual auf, erscheint aber in der IDE-Signaturhilfe. Der Nutzen ist

@@ -1,4 +1,4 @@
-# 03 - Markup-ID in composer.js entflechten
+# ~~03 - Markup-ID in composer.js entflechten~~
 
 Übergeordnet: `refactoring_uid.md`
 Datei: `sources/composer.js`, Funktion `_mount_locate`
@@ -81,16 +81,16 @@ if (matches[3])
 
 ## Vorgaben
 
-- `let` wird zu `const`, da `identifier` nicht neu zugewiesen wird.
-- Der doppelte `match`-Aufruf für `PATTERN_ELEMENT_ID` wird zu einem einzigen
-  Aufruf zusammengefasst.
-- Die Reihenfolge der Prüfungen bleibt unverändert. Der Match-Aufruf muss
+- ~~`let` wird zu `const`, da `identifier` nicht neu zugewiesen wird.~~
+- ~~Der doppelte `match`-Aufruf für `PATTERN_ELEMENT_ID` wird zu einem einzigen
+  Aufruf zusammengefasst.~~
+- ~~Die Reihenfolge der Prüfungen bleibt unverändert. Der Match-Aufruf muss
   weiterhin nach `_mount_locate(element.parentNode)` und nach der Prüfung auf
-  `ATTRIBUTE_ID` stehen.
-- Fehlermeldungen (`Invalid composite id`, `Invalid element id`) bleiben
-  unverändert, da sie in Tests geprüft werden.
-- Andere Bezeichner `serial` in composer.js werden nicht pauschal umbenannt.
-  Ergebnisse von `serial()` dürfen weiterhin `serial` heißen.
+  `ATTRIBUTE_ID` stehen.~~
+- ~~Fehlermeldungen (`Invalid composite id`, `Invalid element id`) bleiben
+  unverändert, da sie in Tests geprüft werden.~~
+- ~~Andere Bezeichner `serial` in composer.js werden nicht pauschal umbenannt.
+  Ergebnisse von `serial()` dürfen weiterhin `serial` heißen.~~
 
 ## Prüfung
 

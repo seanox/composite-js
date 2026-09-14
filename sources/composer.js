@@ -1215,10 +1215,10 @@
             if (selector instanceof Element
                     && !_render_meta[selector.serial()]) {
                 _render_context_workspace.push(..._render_context_stack);
-                let id = selector.getAttribute(Composer.ATTRIBUTE_ID) || "";
-                if (id.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
-                    id = Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID, id);
-                    selector.setAttribute(Composer.ATTRIBUTE_ID, id);
+                let identifier = selector.getAttribute(Composer.ATTRIBUTE_ID) || "";
+                if (identifier.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
+                    identifier = Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID, identifier);
+                    selector.setAttribute(Composer.ATTRIBUTE_ID, identifier);
                 }
                 _render_context_workspace.length = 0;
             }
@@ -1772,11 +1772,11 @@
         // Composite-ID can contain a namespace, which is then taken into
         // consideration.
 
-        let serial = (element.getAttribute(Composer.ATTRIBUTE_ID) || "").trim();
+        const identifier = (element.getAttribute(Composer.ATTRIBUTE_ID) || "").trim();
         if (element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)) {
-            const composite = serial.match(Composer.PATTERN_COMPOSITE_ID);
+            const composite = identifier.match(Composer.PATTERN_COMPOSITE_ID);
             if (!composite)
-                throw new Error(`Invalid composite id${serial ? ": " + serial : ""}`);
+                throw new Error(`Invalid composite id${identifier ? ": " + identifier : ""}`);
             if (!composite[2])
                 return {model:composite[1]};
             return {namespace:composite[2].split(/:+/), model:composite[1]};
@@ -1786,8 +1786,9 @@
         if (!element.hasAttribute(Composer.ATTRIBUTE_ID))
             return locate;
 
-        if (!serial.match(Composer.PATTERN_ELEMENT_ID))
-            throw new Error(`Invalid element id${serial ? ": " + serial : ""}`);
+        const matches = identifier.match(Composer.PATTERN_ELEMENT_ID);
+        if (!matches)
+            throw new Error(`Invalid element id${identifier ? ": " + identifier : ""}`);
 
         const meta = {namespace:[], model:null, route:[], target:null};
         if (locate) {
@@ -1800,16 +1801,15 @@
             else meta.route.push(locate.model);
         }
 
-        serial = serial.match(Composer.PATTERN_ELEMENT_ID);
-        if (serial[4]) {
-            meta.namespace = serial[4].split(/:/);
+        if (matches[4]) {
+            meta.namespace = matches[4].split(/:/);
             meta.route = [meta.namespace[meta.namespace.length -1]];
         }
-        meta.route.push(serial[1]);
-        if (serial[2])
-            meta.route.push(...serial[2].split(/:/));
-        if (serial[3])
-            meta.unique = serial[3];
+        meta.route.push(matches[1]);
+        if (matches[2])
+            meta.route.push(...matches[2].split(/:/));
+        if (matches[3])
+            meta.unique = matches[3];
         meta.target = meta.route[meta.route.length -1];
         meta.model = meta.namespace.pop();
         if (meta.namespace.length <= 0)

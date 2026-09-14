@@ -1,4 +1,4 @@
-# 05 - Dokumentation (Code-Kommentare und Manual)
+# ~~05 - Dokumentation (Code-Kommentare und Manual)~~
 
 Übergeordnet: `refactoring_uid.md`
 Dateien: `sources/composer.js`, `sources/reactive.js`,
@@ -8,7 +8,7 @@ Abhängigkeiten: 01, 02, 03, 04
 
 ---
 
-## A - Manual: manuals/extensions.md
+## ~~A - Manual: manuals/extensions.md~~
 
 Der Abschnitt `Object.prototype.serial` beschreibt Methode und Property
 getrennt:
@@ -61,7 +61,7 @@ Es wird kein Eintrag `Object.prototype.uid` ergänzt, weil `uid` keine Methode
 auf dem Prototyp ist. Die Kopf- und Fußzeilen von `extensions.md` bleiben
 unverändert.
 
-## C - Code-Dokumentation
+## ~~C - Code-Dokumentation~~
 
 ### sources/extension.js
 

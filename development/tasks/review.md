@@ -117,7 +117,7 @@ Keys). `_lock.release` mountet bei jedem Render-Ende alle
 #### ~~6.5. `Expression._cache` wird beim Entfernen von DOM-Elementen nicht bereinigt~~
 - Cache-Einträge mit `serial` bleiben dauerhaft bestehen.
 
-#### 6.6. `Reactive.notifications` entfernt obsolete DOM-Subscriptions zu spät
+#### ~~6.6. `Reactive.notifications` entfernt obsolete DOM-Subscriptions zu spät~~
 - Cleanup erfolgt derzeit erst bei einem späteren Reactive-Update.
 
 #### 6.7. Kein zentraler Cleanup-Lifecycle für Composer, Expression und Reactive
@@ -140,7 +140,7 @@ Keys). `_lock.release` mountet bei jedem Render-Ende alle
 | ~~__Expression__~~ | ~~Expression-Cache~~         |
 | __Reactive__       | Reactive-Subscriptions       |
 
-#####6.8. `serial`-basierter globaler Zustand verhindert sauberes Lifecycle-Management
+#### 6.8. `serial`-basierter globaler Zustand verhindert sauberes Lifecycle-Management
 - `serial` dient gleichzeitig als Identifier für mehrere langlebige globale Strukturen.
 
 #### 6.9.`iterate` durch Keyed-Diffing statt vollständigem Re-Rendering optimieren
@@ -192,7 +192,11 @@ endlos.
 
 ## Mittel
 
-### 11. Enumerable Prototype-Erweiterungen
+### ~~11. Enumerable Prototype-Erweiterungen~~
+
+<details>
+  <summary>Problem</summary>
+
 > Stelle: composer.js:2697-2703; reactive.js:76; datasource.js:407;
 > test.js:689-695; extension.js:409ff, Story-Points: 3
 
@@ -208,6 +212,19 @@ degradieren.
 > Browser-Runtime alle für die Plattform erforderlichen Voraussetzungen erfüllt.
 > Die Kompatibilitätsprüfung ist dabei bewusst strikt und kein Mechanismus zur
 > optionalen Degradation.
+> 
+
+> composite-js is a runtime environment, not a conventional JavaScript library.
+> Its prototype extensions constitute part of the public Composite API and are
+> intentionally exposed to application developers. The runtime therefore
+> intentionally extends the native JavaScript object model.
+>
+> Enumerability alone does not constitute an incompatibility. Applications
+> running on the Composite Runtime are expected to operate against the Composite
+> object model. Whether individual API extensions should be enumerable is an API
+> design question, not a defect by itself.
+
+</details>
 
 ### ~~12. Iterate ohne Diffing~~
 

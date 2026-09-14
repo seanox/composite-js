@@ -408,7 +408,9 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Function that gets the unique identifier (UID) of an object instance.
+     * Function that returns the unique identifier (UID) of an object instance,
+     * generated lazily on first invocation and immutable thereafter. Analogous
+     * to a serial number, it provides a unique runtime identifier for the object instance.
      */
     compliant("Object.prototype.uid");
     compliant("Object.prototype.serial");

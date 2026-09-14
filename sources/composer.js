@@ -1156,11 +1156,10 @@
          * 
          *     Serial
          *     ----
-         * Serial (analogous to serial number) is a extension of the JavaScript
-         * API of the object and creates a unique identificator (UID) for each
-         * object. This serial can be used to compare, map and reference a wide
-         * variety of objects. Composite and rendering use serial, since this
-         * cannot be changed via the markup.
+         * Serial (analogous to serial number) is an extension of the JavaScript
+         * API and returns the unique identifier (UID) of an object. This serial
+         * can be used to compare, map and reference a wide variety of objects.
+         * The composer uses this because this cannot be changed via the markup.
          *     
          * The following attributes and elements are supported:
          *

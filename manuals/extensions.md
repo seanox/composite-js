@@ -129,14 +129,9 @@ Math.serial()
 ## Object
 
 ### Object.prototype.serial
-Returns the unique identifier (UID) of an object. The name serial is analogous
-to a serial number used to uniquely identify an individual item.
-
-If the object does not yet have an identifier, one is assigned on first access.
-Subsequent calls return the same identifier for that object.
-
-An existing identifier is preserved and returned unchanged. The identifier is
-created continuously can be used when a unique identifier is needed at runtime.
+Returns the unique identifier (UID) of an object instance, generated lazily on
+first invocation and immutable thereafter. Analogous to a serial number, it
+provides a unique runtime identifier for the object instance.
 
 ```javascript
 const object1 = {};

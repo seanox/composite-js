@@ -449,12 +449,24 @@ immer false; Off-by-one in `Assert.create` (`index > values.length`);
 `clearTimeout` für `setInterval`-Handles; String-basierter Kontrollfluss auf
 `Timeout occurred...`; `typeValue` dispatcht `input` mit `bubbles=false`.
 
-### 38. `Math.unique` und `RegExp`-Erweiterungen
+### ~~38. `Math.unique` und `RegExp`-Erweiterungen~~
+
+<details>
+  <summary>Problem</summary>
+
 > Stelle: extension.js:351-401, Story-Points: 1
 
 `Math.unique` nutzt `random % 10` (verzerrte Verteilung), `size = 0` -> 16.
 `RegExp.quote` escaped `-` (SyntaxError mit `u`-Flag); `RegExp.escape` (ES2025)
 nativ verfügbar.
+
+> `Math.unique` isn't really unique; it wasn't used, `crypto.randomUUID()`
+> solves the problem better -- and that's why `Math.unique` was removed.
+> 
+> `RegExp.quote` will remain more than 5 years old by the time ES2025 is
+> released.
+
+</details>
 
 ### 39. `_export` ohne Typprüfung
 > Stelle: scripting.js:85-104, 236-262, Story-Points: 2

@@ -245,7 +245,6 @@
   - [Element](extensions.md#element)
     - [Element.prototype.appendChild](extensions.md#elementprototypeappendchild)
   - [Math](extensions.md#math)
-    - [Math.unique](extensions.md#mathunique)
     - [Math.serial](extensions.md#mathserial)
   - [Object](extensions.md#object)
     - [Object.prototype.serial](extensions.md#objectprototypeserial)

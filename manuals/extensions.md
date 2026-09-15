@@ -103,19 +103,6 @@ document.body.appendChild(nodes, true);
 
 ## Math
 
-### Math.unique
-Creates a fixed-size random alphanumeric unique identifier (UID). The generated
-identifier consists of uppercase letters and digits, with collision safety
-depending on its length.
-
-```javascript
-Math.unique()
-// returns string e.g. "42X3IUW7622CKY02"
-
-Math.unique(32)
-// returns string e.g. "SPH507D0C5SQ1EP5107HD3514K08T8H1"
-```
-
 ### Math.serial
 Creates a time based alphanumeric serial identifier that is chronologically
 sortable as text and contains the time and a counter if serial are created at

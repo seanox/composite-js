@@ -32,6 +32,9 @@ CR: Composer: Added DOM mutation events
 CR: Composer: Refactoring ordinal/serial/uid
     For greater technical accuracy, the uid property and serial() method are now
     used -- analogous to serial number.
+CR: Extensions: Removal of Math.unique
+    The method wasn't unique enough, wasn't used anyway, and crypto.randomUUID()
+    is the better solution.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access
@@ -47,7 +50,7 @@ CR: Composer: Refactoring the rendering
     Allocation of responsibility according to the appropriate method, without
     affecting runtime behavior.
 CR: Documentation: Using GitHub Pages
-CR: Scripting: Omission of macro #module
+CR: Scripting: Removal of macro #module
     This became obsolete with the automatic sourceURL directive in modules,
     making debugging more convenient.
 CR: Test: Expansion of benchmarks/tests
@@ -62,7 +65,7 @@ CR: Project: Refactoring after renaming to composite-js
 
 1.9.0 20260717
 BF: Composite: Validation corrections and optimization
-    - Omission of the reportValidity method call. More annoying than helpful due
+    - Removal of the reportValidity method call. More annoying than helpful due
       to the loss of focus (standard browser behavior).
 BF: DataSource: Correction for the use of locator/path with (sub)directories
 BF: DataSource: Correction of the method fetch when using the cache
@@ -128,7 +131,7 @@ CR: Extension: Review, corrections and optimization
     - Renamed window.location.pathcontext in window.location.contextPath
 CR: Release: Review, corrections and optimization
     - Added eslint for ES6 check
-    - Omission of the micro version without routing
+    - Removal of the micro version without routing
       This unnecessarily inflated the number of release (channels).
     - Reworked file structure:
       - aspect-js.js
@@ -158,10 +161,10 @@ CR: SiteMap: Review, refactoring, corrections and optimization
     - Renaming to routing
     - Change to activation of routing to the attribute boolean route in the body
       tag; values are not supported
-    - Omission of predefined paths like SiteMap.customize(...), replaced by
+    - Removal of predefined paths like SiteMap.customize(...), replaced by
       dynamic paths based on the nested composites
-    - Omission of functional paths, the existing acceptors is the better way
-    - Omission of variable path, becomes obsolete with the new dynamic routing
+    - Removal of functional paths, the existing acceptors is the better way
+    - Removal of variable path, becomes obsolete with the new dynamic routing
     - Optimization of the path for routing
     - Conversion from acceptors to interceptors
 CR: Test: Change the start to ant -f development/build.xml run
@@ -179,11 +182,11 @@ BF: Composite: Correction of the view model binding
 BF: Composite Mount Events: Correction of the unwanted assignment of child elements
 BF: Reactive: Correction of incorrect creation of proxies for HTML elements
 BF: Reactive: Correction of unwanted rendering when docking modules
-CR: Composite: Omission of the attribute namespace
+CR: Composite: Removal of the attribute namespace
     Replaced by extended composite ID name@namespace (separated by colon).
     e.g. model@a:b:c -> ./modules/a/b/c/model.js -> a.b.c.model
     The approach with the attribute namespace was not practical.
-CR: Composite: Omission of attributes strict in combination with composite
+CR: Composite: Removal of attributes strict in combination with composite
     The combination of the attribute strict was not practicable for namespaces.
     The notation for the module files is now used 1:1.
 CR: Composite: Added EVENT_MODULE_LOAD when a module is loaded
@@ -244,9 +247,9 @@ CR: Expression: Extension of the syntax for elements and variables
     - support of complex element syntax #[...]
 CR: Expression: Optimization (consequent new implementation)
     - complete new approach for parser and interpreter
-CR: Expression: Omission of automatic use of get and is methods for fields
+CR: Expression: Removal of automatic use of get and is methods for fields
     - since getters and setters are available in JavaScript
-CR: Expression: omission of tolerance for undefined parts in object chains (like JSP EL)
+CR: Expression: Removal of tolerance for undefined parts in object chains (like JSP EL)
     - is too extensive in JavaScript with ReferenceError/TypeError/undefined/false/null/...
     - is replaced by (?...), in case of error this syntax in the brackets will return false
 CR: Composite: Errors during rendering are output in the view
@@ -255,10 +258,10 @@ CR: Composite: Errors during rendering are output in the view
     - Errors can also be subscribed as a composite event
 CR: Composite: Renamed method Object.using(...) in Object.use(...)
 CR: Composite: Optimization when loading module resources
-    - change of sequence to: JS, CSS, HTML (markup)
+    - Change of sequence to: JS, CSS, HTML (markup)
     - JavaScript for modules is only loaded if no JavaScript model exists
     - CSS for modules is only loaded if HTML is also loaded
-    - omission of the HEAD request
+    - Removal of the HEAD request
     Minimizes HTTP requests in the background and when loading the page.
 CR: Composite: Extension of the element ID with a unique identifier
     format: name:qualifier...#identifier@namespace...:model
@@ -281,8 +284,8 @@ CR: Scripting: Added macro (?...) for Composite JavaScript
     without throwing an error, except for syntax errors.
     except for syntax errors.
 CR: Datasource: Optimization when loading module resources
-    - Omission of the HEAD request
-    - Omission of XML error when the request receives an error page
+    - Removal of the HEAD request
+    - Removal of XML error when the request receives an error page
     - Minimizes HTTP requests in the background and when loading the page.
 CR: Messages: Added messages as alternative object tree for associative array Messages
 CR: Messages: Added Messages.customize(label, ...values) to fill placeholders with values
@@ -435,11 +438,11 @@ CR: Composite Modules: Added the macro #import to import additional composites/m
     Macros can be used only at the beginning of the Composite JavaScript.
     The meta-section ends with the first comment or JavaScript line.
 CR: Composite Events: Renaming of EVENT_AJAX... in EVENT_HTTP...
-CR: DataSource Fetch: Omission of the parameter raw
+CR: DataSource Fetch: Removal of the parameter raw
     When using the transformation a NodeList is always returned.
 CR: DataSource Fetch: Added optional parameters for the transformation
     The parameters are passed to the XSLTProcessor as meta-object or map.
-CR: DataSource Transform: Omission of the parameter raw
+CR: DataSource Transform: Removal of the parameter raw
     When using the transformation a NodeList is always returned.
 CR: DataSource Transform: Added optional parameters for the transformation
     The parameters are passed to the XSLTProcessor as meta-object or map.
@@ -469,7 +472,7 @@ CR: Test: Extension for passing events (Test + Console) to the enclosing object 
 CR: Test: Extension for central catching of errors with activated Test-AP
 CR: Test: Optimization for using readonly meta-objects for return values
 CR: Test Suite: Optimization of error output
-CR: Test: Omission of the method Test.configure(...), function is taken over by Test.start(...)
+CR: Test: Removal of the method Test.configure(...), function is taken over by Test.start(...)
 CR: Composite Object Lookup: Added support now for arrays (also associative)
     In additional ':' is accepted as separator, so that the syntax is more understandable
     e.g. model.array:1 / model.object:property

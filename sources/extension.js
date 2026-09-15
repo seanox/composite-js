@@ -343,29 +343,6 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Static function to create a fixed-size random alphanumeric unique
-     * identifier (UID). The generated identifier consists of uppercase letters
-     * and digits, with collision safety depending on its length.
-     * @param {number} [length=16] Optional length of the unique identifier
-     * @returns {string} The generated alphanumeric unique identifier
-     */
-    compliant("Math.unique");
-    compliant(null, Math.unique = (length) => {
-        length = length || 16;
-        if (length < 0)
-            length = 16;
-        let unique = "";
-        for (let loop = 0; loop < length; loop++) {
-            const random = Math.floor(Math.random() * Math.floor(26));
-            if ((Math.floor(Math.random() *Math.floor(26))) % 2 === 0)
-                unique += String(random % 10);
-            else unique += String.fromCharCode(65 +random);
-        }
-        return unique;
-    });
-
-    /**
-     * Enhancement of the JavaScript API
      * Static function to create a time based alphanumeric serial identifier
      * that is chronologically sortable as text and contains the time and a
      * counter if serial are created at the same time.
@@ -374,7 +351,9 @@
     compliant("Math.serial");
     compliant(null, Math.serial = () => _serial.toString());
     const _offset = -946684800000;
-    const _serial = {timing:Date.now() + _offset, number:0,
+    const _serial = {
+        timing: Date.now() + _offset,
+        number: 0,
         toString() {
             const timing = Date.now() + _offset;
             this.number = this.timing === timing ? this.number +1 : 0;
@@ -383,7 +362,7 @@
             const number = this.number.toString(36);
             return (serial.length.toString(36) + serial
                 + number.length.toString(36) + number).toUpperCase();
-        }};
+    }};
 
     /**
      * Enhancement of the JavaScript API

@@ -108,11 +108,11 @@ Keys). `_lock.release` mountet bei jedem Render-Ende alle
 - Erledigt; vermeidet starke Referenzen auf entfernte DOM-Elemente.
 
 #### ~~6.3. `_render_meta` besitzt keinen konsistenten DOM-Lifecycle~~
-- ~~Render-Metadaten müssen zuverlässig beim Entfernen eines Elements freigegeben werden.~~
+- Render-Metadaten müssen zuverlässig beim Entfernen eines Elements freigegeben werden.
 - Erledigt mit einem zentralen Set-/Delete-Cleanup und einer aktiven Metadatenzählung.
 
 #### ~~6.4. `_render_meta` hält entfernte DOM-Bäume über `template`-Referenzen fest~~
-- ~~Besonders relevant bei `condition`/Templates.~~
+- Besonders relevant bei `condition`/Templates.
 - Erledigt durch das Bereinigen von Condition-Rückreferenzen im DOM-Cleanup.
 - Erledigt mit: https://github.com/seanox/composite-js/blob/master/manuals/architecture.md#trust-boundary
 

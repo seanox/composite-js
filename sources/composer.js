@@ -2884,6 +2884,13 @@
             if (serial === undefined)
                 return;
             const object = _render_meta[serial];
+            // Resets the rendered condition element when it is removed from the
+            // DOM. Prevents the renderer from treating a deleted element as an
+            // active condition output, ensuring correct re‑rendering and
+            // avoiding reuse of stale DOM references.
+            if (object && object.condition
+                    && object.condition.element === node)
+                object.condition.element = null;
             if (object && object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE)) {
                 const meta = _mount_lookup(node);
                 if (meta && meta.meta && meta.meta.model && meta.model) {

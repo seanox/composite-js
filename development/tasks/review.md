@@ -21,7 +21,7 @@ zusammengefasst.
 ### ~~1. Code-Injection über `String.prototype.unescape`~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: extension.js:537-539, messages.js:49, Story-Points: 3
 
@@ -34,7 +34,7 @@ nie escaped. i18n-Werte aus `locales.xml`/Modul-XML landen ungeschützt in `eval
 ### ~~2. Syntaxfehler in generierter Route-Expression~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: routing.js:478, Story-Points: 1
 
@@ -46,7 +46,7 @@ eigener `condition` erzeugt ungültige Expression und verschwindet immer.
 ### ~~3. XSS-Oberfläche~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: composer.js:2438, 2375, 1528; datasource.js:195-215,
 > Story-Points: 5
@@ -64,7 +64,7 @@ das der Renderer ausführt.
 ### ~~4. Jede `{{...}}`-Sequenz im DOM ist ausführbarer JS-Code~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: expression.js:66; scripting.js:225-232;
 > extension.js:52-63, 307-317, Story-Points: 8
@@ -101,17 +101,19 @@ Reactive-`notifications` (DOM-Refs pro Key, Cleanup nur im `set`-Trap desselben
 Keys). `_lock.release` mountet bei jedem Render-Ende alle
 `querySelectorAll("*")` -> quadratisch.
 
-#### 6.1. `Composer.mount.stack` räumt entfernte DOM-Elemente nicht auf
-- Mount-Referenzen bleiben im Stack erhalten.
+#### ~~6.1. `Composer.mount.elements` räumt entfernte DOM-Elemente nicht auf~~
+- ~~Mount-Referenzen bleiben im Stack erhalten.~~
 
-#### 6.2. `Composer.mount.stack` durch `Set` statt Array verwalten__
-- Vermeidet `includes()` mit O(n) und erleichtert gezieltes Entfernen.
+#### ~~6.2. `Composer.mount.elements` durch `WeakSet` statt Array verwalten~~
+- Erledigt; vermeidet starke Referenzen auf entfernte DOM-Elemente.
 
-#### 6.3. `_render_meta` besitzt keinen konsistenten DOM-Lifecycle
-- Render-Metadaten müssen zuverlässig beim Entfernen eines Elements freigegeben werden.
+#### ~~6.3. `_render_meta` besitzt keinen konsistenten DOM-Lifecycle~~
+- ~~Render-Metadaten müssen zuverlässig beim Entfernen eines Elements freigegeben werden.~~
+- Erledigt mit einem zentralen Set-/Delete-Cleanup und einer aktiven Metadatenzählung.
 
-#### 6.4. `_render_meta` hält entfernte DOM-Bäume über `template`-Referenzen fest
-- Besonders relevant bei `condition`/Templates.
+#### ~~6.4. `_render_meta` hält entfernte DOM-Bäume über `template`-Referenzen fest~~
+- ~~Besonders relevant bei `condition`/Templates.~~
+- Erledigt durch das Bereinigen von Condition-Rückreferenzen im DOM-Cleanup.
 - Erledigt mit: https://github.com/seanox/composite-js/blob/master/manuals/architecture.md#trust-boundary
 
 #### ~~6.5. `Expression._cache` wird beim Entfernen von DOM-Elementen nicht bereinigt~~
@@ -157,7 +159,7 @@ werden mit `this = proxy` aufgerufen -> `TypeError: incompatible receiver`. Nur
 ### ~~8. Tolerant-Makro `(?...)` korrumpiert Regex-Literale~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: scripting.js:94-141; expression.js:242-252,
 > Story-Points: 8
@@ -172,7 +174,7 @@ nachfolgende `#export`-Makros. Gleiche Erkennung in expression.js trifft
 ### ~~9. Doppel-Encoding + `"undefined"`~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: composer.js:2608-2633, Story-Points: 2
 
@@ -195,7 +197,7 @@ endlos.
 ### ~~11. Enumerable Prototype-Erweiterungen~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: composer.js:2697-2703; reactive.js:76; datasource.js:407;
 > test.js:689-695; extension.js:409ff, Story-Points: 3
@@ -229,7 +231,7 @@ degradieren.
 ### ~~12. Iterate ohne Diffing~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: composer.js:2494-2563, Story-Points: 13
 
@@ -261,12 +263,20 @@ auch beim Release `asynchronous(render, shift())` geplant -> Doppel-Scheduling,
 Reihenfolge-Inversion; `render()` ohne Selector kann `undefined` in Queue
 pushen.
 
-### 15. Fragiler Bootstrap
+### ~~15. Fragiler Bootstrap~~
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:2841-2861, 3015, Story-Points: 2
 
-Wirft `Composite.include("common")` (HTTP ≠ 200/404), wird weder
-MutationObserver installiert noch gerendert -- Seite bleibt leer ohne
-Fehlermeldung.
+Das Fehlen von `common.js` oder `common.css` ist kein Fehler. `Composer.load()`
+behandelt HTTP 404 bei nicht-striktem Laden als optional, sodass der Bootstrap
+fortgesetzt wird.
+
+> Unerwartete HTTP- oder Netzwerkfehler können den Bootstrap weiterhin abbrechen,
+> dies ist jedoch kein Fehler der optionalen Common-Ressourcen selbst.
+
+</details>
 
 ### 16. Listener-Exceptions in `fire(EVENT_RENDER_END)`
 > Stelle: composer.js:354-355, 1629-1684, Story-Points: 2
@@ -313,7 +323,7 @@ Renderings (`_selector === null` erst im Callback geprüft).
 ### ~~22. Regex-Präzedenzfehler~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: datasource.js:190, 197, Story-Points: 1
 
@@ -348,7 +358,7 @@ liefert still `[]` statt TypeError. Nur `Element`, nicht
 ### ~~26. `decodeHex` nutzt `text.substring(loop, 2)`~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: extension.js:455-456, Story-Points: 1
 
@@ -383,7 +393,7 @@ totes Public-API.
 ### ~~30. Text ausserhalb `{{}}` wird ungeescaped in `"..."` gesetzt~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: expression.js:157, Story-Points: 1
 
@@ -401,7 +411,7 @@ totes Public-API.
 ### ~~31. `Composer.validate` auf nicht gerenderte Elemente~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: composer.js:497-580, 532, 843, Story-Points: 1
 
@@ -452,7 +462,7 @@ immer false; Off-by-one in `Assert.create` (`index > values.length`);
 ### ~~38. `Math.unique` und `RegExp`-Erweiterungen~~
 
 <details>
-  <summary>Problem</summary>
+  <summary>Details</summary>
 
 > Stelle: extension.js:351-401, Story-Points: 1
 

@@ -738,8 +738,8 @@
                     return;
 
                 // An element/selector should only be mounted once.
-                Composer.mount.stack = Composer.mount.stack || [];
-                if (Composer.mount.stack.includes(selector))
+                Composer.mount.elements = Composer.mount.elements || new WeakSet();
+                if (Composer.mount.elements.has(selector))
                     return;
 
                 const object = _render_meta[selector.uid];
@@ -819,7 +819,7 @@
                 }
 
                 // The determined events are registered.
-                Composer.mount.stack.push(selector);
+                Composer.mount.elements.add(selector);
                 events.forEach((event) => {
                     selector.addEventListener(event.toLowerCase(), (event) => {
 

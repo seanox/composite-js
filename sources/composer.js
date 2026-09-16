@@ -2464,8 +2464,8 @@
         let interval = String(object.attributes[Composer.ATTRIBUTE_INTERVAL] || "").trim();
         if (!interval || object.interval)
             return;
-        const context = serial + ":" + Composer.ATTRIBUTE_INTERVAL;
-        interval = String(Expression.eval(context, interval));
+        const identifier = serial + ":" + Composer.ATTRIBUTE_INTERVAL;
+        interval = String(Expression.eval(identifier, interval));
         if (!interval.match(/^\d*$/))
             throw new Error("Invalid interval: " + interval);
         interval = Number.parseInt(interval);
@@ -2517,8 +2517,8 @@
             selector.innerHTML = "";
         }
 
-        const context = serial + ":" + Composer.ATTRIBUTE_ITERATE;
-        let iterate = Expression.eval(context, object.iterate.expression);
+        const identifier = serial + ":" + Composer.ATTRIBUTE_ITERATE;
+        let iterate = Expression.eval(identifier, object.iterate.expression);
         if (iterate instanceof Error)
             throw iterate;
         if (iterate) {
@@ -2609,8 +2609,8 @@
             let value = String(object.attributes[attribute] || "");
             if (!value.match(Composer.PATTERN_EXPRESSION_CONTAINS))
                 return;
-            const context = serial + ":" + attribute;
-            value = Expression.eval(context, value);
+            const identifier = serial + ":" + attribute;
+            value = Expression.eval(identifier, value);
             // If the type value is undefined, the attribute is removed. Since
             // the attribute contains an expression, the removal is only
             // temporary and is checked again at the next render cycle and

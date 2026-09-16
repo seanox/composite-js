@@ -55,19 +55,19 @@
     /** Internal queue for pending asynchronous callback executions */
     const _asynchronous_queue = [];
 
-    /** Storage for variables with the page scope */
+    /** Storage for persistent markup variables */
     const _render_context_scope = [];
 
-    /** Storage for dynamic/temporary variables with the page scope */
-    const _render_context_stack = [];
+    /** Stack of dynamic/temporary variable scopes for markup expressions */
+    const _render_context_scope_stack = [];
 
     /**
      * Storage for the currently used dynamic/temporary variables with the page
-     * scope. The storages _render_context_scope and _render_context_stack are
-     * used to manage the variables. So that these remain clean and the elements
-     * can use their initial context when rendering without manipulating
-     * _render_context_stack. This applies in particular to the generated
-     * children with their own meta-objects when iterating.
+     * scope. The storages _render_context_scope and _render_context_scope_stack
+     * are used to manage the variables. So that these remain clean and the
+     * elements can use their initial context when rendering without
+     * manipulating _render_context_scope_stack. This applies in particular to
+     * the generated children with their own meta-objects when iterating.
      */
     const _render_context_workspace = [];
 
@@ -1214,7 +1214,7 @@
             // expression, however, the context workspace must be reset.
             if (selector instanceof Element
                     && !_render_meta[selector.serial()]) {
-                _render_context_workspace.push(..._render_context_stack);
+                _render_context_workspace.push(..._render_context_scope_stack);
                 let identifier = selector.getAttribute(Composer.ATTRIBUTE_ID) || "";
                 if (identifier.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
                     identifier = Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID, identifier);
@@ -1247,7 +1247,7 @@
                 _render_context_workspace.length = 0;
                 if (object && object.context)
                     _render_context_workspace.push(...object.context);
-                else _render_context_workspace.push(..._render_context_stack);
+                else _render_context_workspace.push(..._render_context_scope_stack);
 
                 // Customizing: If a custom tag or a custom selector exists, the
                 // corresponding action is executed. Only the return value false
@@ -2557,7 +2557,7 @@
 
                 // Creation of the stack with the temporary variables for the
                 // script context / page scope.
-                _render_context_stack.push({[object.iterate.name]:meta});
+                _render_context_scope_stack.push({[object.iterate.name]:meta});
 
                 // For whatever reason, if forEach is used on the NodeList, each
                 // time it is appended to the DOM the elements are removed from
@@ -2569,7 +2569,7 @@
 
                 // Clean up of the stack with the temporary variables for the
                 // script context / page scope.
-                _render_context_stack.pop();
+                _render_context_scope_stack.pop();
             });
         }
 

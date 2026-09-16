@@ -55,6 +55,13 @@
          *            corresponds to the value undefined in case of an error,
          *            except for syntax errors
          *
+         * The function uses variable parameters and has the following
+         * signatures:
+         *
+         *     function(script)
+         *     function(url, script)
+         *     function(url, script, debug)
+         *
          * @param {string} [url] Optional sourceURL
          * @param {string} script
          * @param {boolean} [debug=false] Optional debug
@@ -68,10 +75,14 @@
             let [url, script, debug = false] = variants.length > 1
                     ? variants : [undefined, variants[0]];
 
-            if (typeof script !== "string"
-                    || (url && typeof url !== "string")
-                    || (debug !== undefined && typeof debug !== "boolean"))
-                throw new TypeError("Invalid data type");
+            if (url != null
+                    && typeof url !== "string")
+                throw new TypeError("Invalid url: " + typeof url)
+            if (typeof script !== "string")
+                throw new TypeError("Invalid script: " + typeof script)
+            if (debug !== undefined
+                    && typeof debug !== "boolean")
+                throw new TypeError("Invalid debug: " + typeof debug)
 
             // Performance is important here.
             // The implementation parses and replaces macros in one pass.
@@ -222,10 +233,12 @@
          * @returns {*} return value of the script, if available
          */
         run(script) {
+
             if (typeof script !== "string")
-                throw new TypeError("Invalid data type");
+                throw new TypeError("Invalid script: " + typeof script)
             if (!script.trim())
                 return;
+
             const context = Composer.render.context;
             return Function(
                 ...Object.keys(context),

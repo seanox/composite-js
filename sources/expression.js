@@ -48,16 +48,14 @@
          */
         eval(...variants) {
 
-            let expression;
-            if (variants.length > 1)
-                expression = String(variants[1]);
-            else if (variants.length > 0)
-                expression = String(variants[0]);
+            let [identifier, expression] = variants.length > 1
+                    ? variants : [undefined, variants[0]];
 
-            let identifier;
-            if (variants.length > 1
-                    && variants[0])
-                identifier = String(variants[0]);
+            if (identifier != null
+                    && typeof identifier !== "string")
+                throw new TypeError("Invalid identifier: " + typeof identifier)
+            if (typeof expression !== "string")
+                throw new TypeError("Invalid expression: " + typeof expression)
 
             let script = identifier ? _cache.get(identifier) : null;
             if (!script)

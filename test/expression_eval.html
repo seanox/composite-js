@@ -16,13 +16,13 @@
 
       Test.create({test() {
           Assert.assertEquals("Text \"double\" 2",
-                  Expression.eval("Text \"double\" {{1 + 1}}"));
+                  Expression.eval({}, "Text \"double\" {{1 + 1}}"));
           Assert.assertEquals("Text \\\"double\\\" 2",
-                  Expression.eval("Text \\\"double\\\" {{1 + 1}}"));
+                  Expression.eval({}, "Text \\\"double\\\" {{1 + 1}}"));
           Assert.assertEquals("Text 'single' 2",
-                  Expression.eval("Text 'single' {{1 + 1}}"));
+                  Expression.eval({}, "Text 'single' {{1 + 1}}"));
           Assert.assertEquals("Text `backtick` 2",
-                  Expression.eval("Text `backtick` {{1 + 1}}"));
+                  Expression.eval({}, "Text `backtick` {{1 + 1}}"));
       }});
 
       Test.start({auto:true});

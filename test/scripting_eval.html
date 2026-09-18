@@ -18,19 +18,19 @@
         Test.create({test() {
             Assert.assertEquals(
                     "(_tolerate(()=>1 + 2))",
-                    Scripting.eval("", "(? 1 + 2)", true)
+                    Scripting.eval("", {}, "(? 1 + 2)", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>unknownVariable))",
-                    Scripting.eval("", "(? unknownVariable)", true)
+                    Scripting.eval("", {}, "(? unknownVariable)", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>foo.bar))",
-                    Scripting.eval("", "(? foo.bar)", true)
+                    Scripting.eval("", {}, "(? foo.bar)", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>foo()))",
-                    Scripting.eval("", "(? foo())", true)
+                    Scripting.eval("", {}, "(? foo())", true)
             );
         }});
 
@@ -38,22 +38,22 @@
         Test.create({test() {
             Assert.assertEquals(
                     "(_tolerate(()=>1 + 2))\n//# sourceURL=scripting_eval.html",
-                    Scripting.eval("scripting_eval.html", "(? 1 + 2)", true)
+                    Scripting.eval("scripting_eval.html", {}, "(? 1 + 2)", true)
                             .replaceAll(/[\r\n]+/g, "\n").trim()
             );
             Assert.assertEquals(
                     "(_tolerate(()=>unknownVariable))\n//# sourceURL=scripting_eval.html",
-                    Scripting.eval("scripting_eval.html", "(? unknownVariable)", true)
+                    Scripting.eval("scripting_eval.html", {}, "(? unknownVariable)", true)
                             .replaceAll(/[\r\n]+/g, "\n").trim()
             );
             Assert.assertEquals(
                     "(_tolerate(()=>foo.bar))\n//# sourceURL=scripting_eval.html",
-                    Scripting.eval("scripting_eval.html", "(? foo.bar)", true)
+                    Scripting.eval("scripting_eval.html", {}, "(? foo.bar)", true)
                             .replaceAll(/[\r\n]+/g, "\n").trim()
             );
             Assert.assertEquals(
                     "(_tolerate(()=>foo()\n//# sourceURL=scripting_eval.html",
-                    Scripting.eval("scripting_eval.html", "(? foo()", true)
+                    Scripting.eval("scripting_eval.html", {}, "(? foo()", true)
                             .replaceAll(/[\r\n]+/g, "\n").trim()
             );
         }});
@@ -62,19 +62,19 @@
         Test.create({test() {
             Assert.assertEquals(
                     "(_tolerate(()=>(1 + 2) * 3))",
-                    Scripting.eval("", "(? (1 + 2) * 3)", true)
+                    Scripting.eval("", {}, "(? (1 + 2) * 3)", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>Math.max(1, 2)))",
-                    Scripting.eval("", "(? Math.max(1, 2))", true)
+                    Scripting.eval("", {}, "(? Math.max(1, 2))", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>Math.max(1, Math.min(2, 3))))",
-                    Scripting.eval("", "(? Math.max(1, Math.min(2, 3)))", true)
+                    Scripting.eval("", {}, "(? Math.max(1, Math.min(2, 3)))", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>foo(bar(1, 2), baz(3))))",
-                    Scripting.eval("", "(? foo(bar(1, 2), baz(3)))", true)
+                    Scripting.eval("", {}, "(? foo(bar(1, 2), baz(3)))", true)
             );
         }});
 
@@ -82,15 +82,15 @@
         Test.create({test() {
             Assert.assertEquals(
                     "(_tolerate(()=>1 + (_tolerate(()=>2 + 3))))",
-                    Scripting.eval("", "(? 1 + (? 2 + 3))", true)
+                    Scripting.eval("", {}, "(? 1 + (? 2 + 3))", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>foo((_tolerate(()=>bar.baz)))",
-                    Scripting.eval("", "(? foo((? bar.baz))", true)
+                    Scripting.eval("", {}, "(? foo((? bar.baz))", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>1 + (_tolerate(()=>2 + (_tolerate(()=>3 + 4))))))",
-                    Scripting.eval("", "(? 1 + (? 2 + (? 3 + 4)))", true)
+                    Scripting.eval("", {}, "(? 1 + (? 2 + (? 3 + 4)))", true)
             );
         }});
 
@@ -101,6 +101,7 @@
                     + "const b = (_tolerate(()=>unknownB));",
                     Scripting.eval(
                             "",
+                            {},
                             "const a = (? unknownA);\n"
                             + "const b = (? unknownB);",
                             true
@@ -108,22 +109,22 @@
             );
             Assert.assertEquals(
                     "const a = (_tolerate(()=>foo)); const b = (_tolerate(()=>bar));",
-                    Scripting.eval("", "const a = (? foo); const b = (? bar);", true));
+                    Scripting.eval("", {}, "const a = (? foo); const b = (? bar);", true));
         }});
 
         // Tolerate with arrays
         Test.create({test() {
             Assert.assertEquals(
                     "(_tolerate(()=>[1, 2, 3]))",
-                    Scripting.eval("", "(? [1, 2, 3])", true)
+                    Scripting.eval("", {}, "(? [1, 2, 3])", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>[1, 2, foo.bar]))",
-                    Scripting.eval("", "(? [1, 2, foo.bar])", true)
+                    Scripting.eval("", {}, "(? [1, 2, foo.bar])", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>[foo(bar(1)), baz]))",
-                    Scripting.eval("", "(? [foo(bar(1)), baz])", true)
+                    Scripting.eval("", {}, "(? [foo(bar(1)), baz])", true)
             );
         }});
 
@@ -131,15 +132,15 @@
         Test.create({test() {
             Assert.assertEquals(
                     "(_tolerate(()=>({foo: 1, bar: 2})))",
-                    Scripting.eval("", "(? ({foo: 1, bar: 2}))", true)
+                    Scripting.eval("", {}, "(? ({foo: 1, bar: 2}))", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>({foo: bar.baz})))",
-                    Scripting.eval("", "(? ({foo: bar.baz}))", true)
+                    Scripting.eval("", {}, "(? ({foo: bar.baz}))", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>({foo: {bar: baz}})))",
-                    Scripting.eval("", "(? ({foo: {bar: baz}}))", true)
+                    Scripting.eval("", {}, "(? ({foo: {bar: baz}}))", true)
             );
         }});
 
@@ -147,11 +148,11 @@
         Test.create({test() {
             Assert.assertEquals(
                     "(_tolerate(()=>foo.map(value => value.bar)))",
-                    Scripting.eval("", "(? foo.map(value => value.bar))", true)
+                    Scripting.eval("", {}, "(? foo.map(value => value.bar))", true)
             );
             Assert.assertEquals(
                     "(_tolerate(()=>foo.map(value => ({value: value.bar}))))",
-                    Scripting.eval("", "(? foo.map(value => ({value: value.bar})))", true)
+                    Scripting.eval("", {}, "(? foo.map(value => ({value: value.bar})))", true)
             );
         }});
 
@@ -161,6 +162,7 @@
                     "(_tolerate(()=>foo(\n    bar,\n    baz\n)))\n//# sourceURL=scripting_eval.html",
                     Scripting.eval(
                             "scripting_eval.html",
+                            {},
                             "(? foo(\n"
                             + "    bar,\n"
                             + "    baz\n"
@@ -176,6 +178,7 @@
                     + "return value;\n//# sourceURL=scripting_eval.html",
                     Scripting.eval(
                             "scripting_eval.html",
+                            {},
                             "const value = (? foo(\n"
                             + "    bar,\n"
                             + "    baz\n"
@@ -190,15 +193,15 @@
         Test.create({test() {
             Assert.assertEquals(
                     'const value = "(? foo.bar)";',
-                    Scripting.eval("", 'const value = "(? foo.bar)";', true)
+                    Scripting.eval("", {}, 'const value = "(? foo.bar)";', true)
             );
             Assert.assertEquals(
                     "const value = '(? foo.bar)';",
-                    Scripting.eval("", "const value = '(? foo.bar)';", true)
+                    Scripting.eval("", {}, "const value = '(? foo.bar)';", true)
             );
             Assert.assertEquals(
                     "const value = `(? foo.bar)`;",
-                    Scripting.eval("", "const value = `(? foo.bar)`;", true)
+                    Scripting.eval("", {}, "const value = `(? foo.bar)`;", true)
             );
         }});
 
@@ -208,6 +211,7 @@
                     "// (? foo.bar)\nconst value = 1;",
                     Scripting.eval(
                             "",
+                            {},
                             "// (? foo.bar)\n"
                             + "const value = 1;",
                             true
@@ -217,6 +221,7 @@
                     "/* (? foo.bar) */\nconst value = 1;",
                     Scripting.eval(
                             "",
+                            {},
                             "/* (? foo.bar) */\n"
                             + "const value = 1;",
                             true
@@ -226,6 +231,7 @@
                     "const value = 1; // (? foo.bar)",
                     Scripting.eval(
                             "",
+                            {},
                             "const value = 1; // (? foo.bar)",
                             true
                     )
@@ -235,17 +241,18 @@
         // #use
         Test.create({test() {
             Assert.assertEquals('_use(...["foo"])',
-                    Scripting.eval("", "#use foo", true)
+                    Scripting.eval("", {}, "#use foo", true)
             );
             Assert.assertEquals(
                     '_use(...["foo","bar"])',
-                    Scripting.eval("", "#use foo bar", true)
+                    Scripting.eval("", {}, "#use foo bar", true)
             );
             Assert.assertEquals(
                     '_use(...["foo"]);\n'
                     + 'const value = (_tolerate(()=>foo.bar));',
                     Scripting.eval(
                             "",
+                            {},
                             "#use foo;\n"
                             + "const value = (? foo.bar);",
                             true
@@ -256,16 +263,17 @@
         // #export
         Test.create({test() {
             Assert.assertEquals('_export(...[[value,"value"]])',
-                    Scripting.eval("", "#export value", true));
+                    Scripting.eval("", {}, "#export value", true));
             Assert.assertEquals('_export(...[[value,"value","foo"]])',
-                    Scripting.eval("", "#export value@foo", true));
+                    Scripting.eval("", {}, "#export value@foo", true));
             Assert.assertEquals('_export(...[[foo,"foo"],[bar,"bar"]])',
-                    Scripting.eval("", "#export foo bar", true));
+                    Scripting.eval("", {}, "#export foo bar", true));
             Assert.assertEquals(
                     'const value = (_tolerate(()=>foo));\n'
                     + '_export(...[[value,"value"]])',
                     Scripting.eval(
                             "",
+                            {},
                             "const value = (? foo);\n"
                             + "#export value",
                             true
@@ -276,14 +284,15 @@
         // #import
         Test.create({test() {
             Assert.assertEquals('_import(...["foo"])',
-                    Scripting.eval("", "#import foo", true));
+                    Scripting.eval("", {}, "#import foo", true));
             Assert.assertEquals('_import(...["foo","bar"])',
-                    Scripting.eval("", "#import foo bar", true));
+                    Scripting.eval("", {}, "#import foo bar", true));
             Assert.assertEquals(
                     '_import(...["foo"]);\n'
                     + 'const value = (_tolerate(()=>foo.bar));',
                     Scripting.eval(
                             "",
+                            {},
                             "#import foo;\n"
                             + "const value = (? foo.bar);",
                             true
@@ -300,6 +309,7 @@
                     + '_export(...[[value,"value"]])',
                     Scripting.eval(
                             "",
+                            {},
                             "#use foo;\n"
                             + "#import bar;\n"
                             + "const value = (? foo.bar);\n"
@@ -315,6 +325,7 @@
                     "(_tolerate(()=>foo.bar))\n\n//# sourceURL=scripting_eval.html\n",
                     Scripting.eval(
                             "scripting_eval.html",
+                            {},
                             "(? foo.bar)",
                             true
                     )
@@ -323,6 +334,7 @@
                     "const value = 42;\n\n//# sourceURL=scripting_eval.html\n",
                     Scripting.eval(
                             "scripting_eval.html",
+                            {},
                             "const value = 42;",
                             true
                     )
@@ -331,10 +343,10 @@
 
         // No debug: script is actually executed
         Test.create({test() {
-            Assert.assertEquals(3, Scripting.eval("scripting_eval.html", "1 + 2"));
-            Assert.assertEquals(3, Scripting.eval("scripting_eval.html", "(? 1 + 2)"));
-            Assert.assertEquals(undefined, Scripting.eval("scripting_eval.html", "(? unknownVariable)"));
-            Assert.assertEquals(42, Scripting.eval("scripting_eval.html", "(? unknownVariable) || 42"));
+            Assert.assertEquals(3, Scripting.eval("scripting_eval.html", {}, "1 + 2"));
+            Assert.assertEquals(3, Scripting.eval("scripting_eval.html", {}, "(? 1 + 2)"));
+            Assert.assertEquals(undefined, Scripting.eval("scripting_eval.html", {}, "(? unknownVariable)"));
+            Assert.assertEquals(42, Scripting.eval("scripting_eval.html", {}, "(? unknownVariable) || 42"));
         }});
 
         Test.start({auto:true});

@@ -168,12 +168,12 @@
     S1: {{s1:0}}
     <div id="outputScript1"></div>
     <script type="composite/javascript" interval="3000">
-        outputScript1.textContent = ++s1;
+        outputScript1.textContent = ++view.s1;
     </script>
     S2: {{s2:0}}
     <div id="outputScript2"></div>
     <script type="composite/javascript" interval="1500">
-        outputScript2.textContent = ++s2;
+      outputScript2.textContent = ++view.s2;
     </script>
     <br>
     Please wait, test in progress...

@@ -22,16 +22,16 @@
     
         Test.activate();
 
-        // The use of let is difficult and should be used with caution. Because
-        // let works exclusively in the current scope. Possible global variables
-        // can be overwritten in the validity area. In the example of
-        // countRender let would create the variable here. But the varibale
-        // expression uses the global scope. So changes in the expression would
-        // not reach the variable in this scope.
-        // It is easier if countRender is a field in an object created with const.
+        // The variable expression {{countRender:...}} creates countRender in
+        // the view scope, not in the global (window) scope. Therefore the
+        // value cannot be read directly from the test script and the number
+        // of iterations must be fixed. Each iteration triggers the rendering
+        // twice (OnClick method and render attribute), so 4 iterations plus
+        // the initial rendering result in Render:9. In the markup, the first
+        // access to countRender is tolerated, as the variable does not exist
+        // in the view scope before the first rendering.
 
         let countClick = 0
-        Namespace.create("countRender", 0);
         const about = {
             contact: {
                 onClick() {
@@ -46,7 +46,7 @@
         };
         
         Test.create({test() {
-            while (countRender < 9) {
+            for (let loop = 0; loop < 4; loop++) {
                 document.querySelector("#contact").click();
                 document.querySelector("#refresh").click();
             }
@@ -66,7 +66,7 @@
       that it is difficult to adjust and would be annoying if the error is not
       noticed later.
     -->
-    {{countRender:countRender +1}}
+    {{countRender:((? countRender) ?? 0) +1}}
     Render:{{countRender}}, Click:{{countClick}}
     <div id="about" composite condition="{{true}}">
       <button id="refresh" events="click" render="body">refresh</button>

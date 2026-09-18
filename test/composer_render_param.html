@@ -56,29 +56,29 @@
     {{n: }}
     {{n}}
   
-    A:1: {{(? globalA) || ''}}
-    {{globalA:Hallo}}
-    A:2: {{globalA}}
-    {{globalA:'Hallo'}}
-    A:3: {{globalA}}
+    A:1: {{(? scopeA) || ''}}
+    {{scopeA:Hallo}}
+    A:2: {{scopeA}}
+    {{scopeA:'Hallo'}}
+    A:3: {{scopeA}}
     <article id="AB">
-      AA:1: {{globalA}}
-      AB:1: {{(? globalAB) || ''}}
-      {{globalAB:Hallo}}
-      AA:2: {{globalA}}
-      AB:2: {{globalAB}}
-      {{globalAB:'Welt'}}
-      AA:3: {{globalA}}
-      AB:3: {{globalAB}}
-      {{globalAB:globalAB}}
-      AA:4: {{globalA}}
-      AB:4: {{globalAB}}
-      {{globalAB:'Hallo ' + globalAB}}
-      AA:5: {{globalA}}
-      AB:5: {{globalAB}}
-      {{globalAB:globalAB + ' ' + globalAB}}
-      AA:5: {{globalA}}
-      AB:5: {{globalAB}}
+      AA:1: {{scopeA}}
+      AB:1: {{(? scopeAB) || ''}}
+      {{scopeAB:Hallo}}
+      AA:2: {{scopeA}}
+      AB:2: {{scopeAB}}
+      {{scopeAB:'Welt'}}
+      AA:3: {{scopeA}}
+      AB:3: {{scopeAB}}
+      {{scopeAB:scopeAB}}
+      AA:4: {{scopeA}}
+      AB:4: {{scopeAB}}
+      {{scopeAB:'Hallo ' + scopeAB}}
+      AA:5: {{scopeA}}
+      AB:5: {{scopeAB}}
+      {{scopeAB:scopeAB + ' ' + scopeAB}}
+      AA:5: {{scopeA}}
+      AB:5: {{scopeAB}}
     </article>
     {{x : '1'}}
     X: {{x}}

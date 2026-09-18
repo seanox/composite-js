@@ -58,26 +58,31 @@
          * The function uses variable parameters and has the following
          * signatures:
          *
-         *     function(script)
-         *     function(url, script)
-         *     function(url, script, debug)
+         *     function(context, script)
+         *     function(url, context, script)
+         *     function(url, context, script, debug)
          *
          * @param {string} [url] Optional sourceURL
+         * @param {object} context Execution context containing values
+         *     available to the script
          * @param {string} script
          * @param {boolean} [debug=false] Optional debug
          * @returns {*} the return value from the script
+         * @throws {Error} In case of invalid data types or syntax.
          *
          * see also: https://seanox.github.io/composite-js/manuals/scripting.html#macros
          *           https://seanox.github.io/composite-js/manuals/expression.html
          */
         eval(...variants) {
 
-            let [url, script, debug = false] = variants.length > 1
-                    ? variants : [undefined, variants[0]];
+            let [url, context, script, debug = false] = variants.length > 2
+                    ? variants : [undefined, variants[0], variants[1]];
 
             if (url != null
                     && typeof url !== "string")
                 throw new TypeError("Invalid url: " + typeof url)
+            if (typeof context !== "object")
+                throw new TypeError("Invalid context: " + typeof context)
             if (typeof script !== "string")
                 throw new TypeError("Invalid script: " + typeof script)
             if (debug !== undefined
@@ -219,7 +224,7 @@
             }
 
              script = url ? script + "\n\n//# sourceURL=" + url + "\n" : script;
-             return debug ? script : this.run(script);
+             return debug ? script : this.run(context, script);
         },
 
         /**
@@ -229,21 +234,27 @@
          * Note: This provides neither a secure sandbox nor proper isolation,
          * and it does not prevent access to global variables.
          *
+         * @param {object} context Execution context containing values
+         *     available to the script
          * @param {string} script
          * @returns {*} return value of the script, if available
+         * @throws {Error} In case of invalid data types or syntax.
          */
-        run(script) {
+        run(context, script) {
 
+            if (typeof context !== "object")
+                throw new TypeError("Invalid context: " + typeof context)
             if (typeof script !== "string")
                 throw new TypeError("Invalid script: " + typeof script)
+
             if (!script.trim())
                 return;
 
-            const context = Composer.render.context;
             return Function(
                 ...Object.keys(context),
                 "_import", "_export", "_use", "_tolerate", "script",
                 '"use strict"; return eval(script);'
+
             )(
                 ...Object.values(context),
                 _import, _export, _use, _tolerate, script

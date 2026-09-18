@@ -29,6 +29,17 @@ CR: Scripting: Corrections and optimization
 CR: Composer: Added DOM mutation events
     Composer.EVENT_DOM_ADDED / Composer.EVENT_DOM_REMOVED / Composer.EVENT_DOM_MOVED
     Events are triggered once per mutation cycle with an array of affected nodes.
+CR: Composer: Redesign of the scope model
+    Scopes were reconsidered, defined and reimplemented.
+    - Global Scope: window, unchanged, no longer used for expression variables
+    - Application Scope: persistent variables of the application instance,
+      shared across composites and modules, object application
+    - View Scope: persistent variables of expressions {{a:...}}, object view
+    - Execution Scope: non-persistent, created per evaluation of expressions and
+      composite scripts; contains temporary variables that can shadow persistent
+      ones and provides access to the view and application objects
+    - The view and application objects provide explicit access points between
+      persistent and execution scopes -- names view and application are reserved
 CR: Composer: Refactoring ordinal/serial/uid
     For greater technical accuracy, the uid property and serial() method are now
     used -- analogous to serial number.

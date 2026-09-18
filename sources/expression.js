@@ -29,31 +29,34 @@
     compliant(null, window.Expression = {
 
         /**
-         * Interprets the passed expression. In case of an error, the error is
-         * returned and no error is thrown. The identifier is used for caching
-         * compiled expressions can be specified optionally. Without, the
-         * expressions always compiled.
+         * Interprets the JavaScript translation of the passed expression. An
+         * identifier can optionally be specified to cache this translation.
+         * Without an identifier, the expression is translated on every call.
          *
          * The function uses variable parameters and has the following
          * signatures:
          *
-         *     function(expression)
-         *     function(identifier, expression)
+         *     function(context, expression)
+         *     function(identifier, context, expression)
          *
          * @param {string} [identifier] Optional identifier for caching
-         * @param {string} expression Expression to be interpreted.
+         * @param {object} context Execution context containing values
+         *     available to the expression
+         * @param {string} expression Expression to be interpreted
          * @returns {*} The return value of the interpreted expression, or an
          *     error if an error has occurred
          * @throws {Error} In case of invalid data types or syntax.
          */
         eval(...variants) {
 
-            let [identifier, expression] = variants.length > 1
-                    ? variants : [undefined, variants[0]];
+            let [identifier, context, expression] = variants.length > 2
+                    ? variants : [undefined, variants[0], variants[1]];
 
             if (identifier != null
                     && typeof identifier !== "string")
                 throw new TypeError("Invalid identifier: " + typeof identifier)
+            if (typeof context !== "object")
+                throw new TypeError("Invalid context: " + typeof context)
             if (typeof expression !== "string")
                 throw new TypeError("Invalid expression: " + typeof expression)
 
@@ -65,7 +68,7 @@
                 _cache.set(identifier, script);
             }
 
-            try {return Scripting.run(script);
+            try {return Scripting.run(context, script);
             } catch (error) {
                 console.error(error.message + "\n\t" + script);
                 return new Error(error.message + " in " + script);

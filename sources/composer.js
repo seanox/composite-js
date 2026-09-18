@@ -55,21 +55,23 @@
     /** Internal queue for pending asynchronous callback executions */
     const _asynchronous_queue = [];
 
-    /** Storage for persistent markup variables */
-    const _render_context_scope = [];
+    /** Storage for persistent application variables (application scope) */
+    const _application_scope = {};
+
+    /** Storage for persistent view variables (view scope) */
+    const _view_scope = {};
 
     /** Stack of dynamic/temporary variable scopes for markup expressions */
-    const _render_context_scope_stack = [];
+    const _view_scope_stack = [];
 
     /**
-     * Storage for the currently used dynamic/temporary variables with the page
-     * scope. The storages _render_context_scope and _render_context_scope_stack
-     * are used to manage the variables. So that these remain clean and the
-     * elements can use their initial context when rendering without
-     * manipulating _render_context_scope_stack. This applies in particular to
-     * the generated children with their own meta-objects when iterating.
+     * Workspace for the currently active dynamic/temporary variables of the
+     * view scope. This keeps the active variables separate from
+     * _view_scope_stack so that elements can render using their initial
+     * context without modifying the stack, particularly for generated children
+     * with their own meta-objects.
      */
-    const _render_context_workspace = [];
+    const _view_scope_workspace = [];
 
     /**
      * Pattern for a DataSource XML locator, based on the URL syntax but only
@@ -591,7 +593,8 @@
                         if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_MESSAGE))
                             message = String(object.attributes[Composer.ATTRIBUTE_MESSAGE] || "");
                         if ((message || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-                            message = String(Expression.eval(serial + ":" + Composer.ATTRIBUTE_MESSAGE, message));
+                            message = String(Expression.eval(serial + ":" + Composer.ATTRIBUTE_MESSAGE,
+                                _execution_context(),  message));
                     }
 
                     if (Object.usable(message)) {
@@ -944,7 +947,8 @@
                                     ? object.attributes[Composer.ATTRIBUTE_RENDER] : "";
                             render = String(render || "");
                             if ((render || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-                                render = Expression.eval(serial + ":" + Composer.ATTRIBUTE_RENDER, render);
+                                render = Expression.eval(serial + ":" + Composer.ATTRIBUTE_RENDER,
+                                    _execution_context(), render);
                             Composer.render(render);
                         }
                         
@@ -1214,13 +1218,14 @@
             // expression, however, the context workspace must be reset.
             if (selector instanceof Element
                     && !_render_meta[selector.serial()]) {
-                _render_context_workspace.push(..._render_context_scope_stack);
+                _view_scope_workspace.push(..._view_scope_stack);
                 let identifier = selector.getAttribute(Composer.ATTRIBUTE_ID) || "";
                 if (identifier.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
-                    identifier = Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID, identifier);
+                    identifier = Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID,
+                        _execution_context(), identifier);
                     selector.setAttribute(Composer.ATTRIBUTE_ID, identifier);
                 }
-                _render_context_workspace.length = 0;
+                _view_scope_workspace.length = 0;
             }
 
             lock = _lock(Composer.render, selector);
@@ -1244,10 +1249,10 @@
 
                 let serial = selector.serial();
                 let object = _render_meta[serial];
-                _render_context_workspace.length = 0;
+                _view_scope_workspace.length = 0;
                 if (object && object.context)
-                    _render_context_workspace.push(...object.context);
-                else _render_context_workspace.push(..._render_context_scope_stack);
+                    _view_scope_workspace.push(...object.context);
+                else _view_scope_workspace.push(..._view_scope_stack);
 
                 // Customizing: If a custom tag or a custom selector exists, the
                 // corresponding action is executed. Only the return value false
@@ -1334,7 +1339,7 @@
 
                 // At the end of the rendering of an element, the temporary
                 // context must be reset/cleaned.
-                _render_context_workspace.length = 0;
+                _view_scope_workspace.length = 0;
 
                 // The queue is used to prevent elements from being registered
                 // for update multiple times during a render cycle when a lock
@@ -1415,7 +1420,7 @@
 
             const content = _render_cache[resource];
             if (resource.match(/\.js(\?.*)?$/i)) {
-                try {Scripting.eval(resource, content);
+                try {Scripting.eval(resource, _execution_context(), content);
                 } catch (error) {
                     console.error(resource, error.name + ": " + error.message);
                     throw error;
@@ -1539,22 +1544,6 @@
                     composite.innerHTML = content;
             }
         }
-    });
-
-    /**
-     * The render function gets a getter for the context, which returns the
-     * persistent and the dynamic/temporary variables of the page scope.
-     */
-    Object.defineProperty(Composer.render, "context", {
-        get: () => {
-            const scope = Array.from(_render_context_scope);
-            for (const object of _render_context_workspace)
-                for (const key of Object.keys(object))
-                    scope[key] = object[key];
-            return scope;
-        },
-        configurable: false,
-        enumerable: true
     });
 
     /**
@@ -1878,6 +1867,24 @@
     const _render_cache = {};
 
     /**
+     * Creates the current execution scope for expressions and composite
+     * scripts. It is built per evaluation from the persistent view scope, the
+     * currently active dynamic/temporary variables (which shadow persistent
+     * variables of the same name) and the scope objects view and application.
+     * The scope objects retain write access to their persistent scopes.
+     * @returns {object} current execution scope
+     */
+    const _execution_context = () => {
+        const context = Object.assign({}, _view_scope);
+        for (const object of _view_scope_workspace)
+            for (const key of Object.keys(object))
+                context[key] = object[key];
+        context.view = _view_scope;
+        context.application = _application_scope;
+        return context;
+    };
+
+    /**
      * Associative array for element-related meta-objects, those which are
      * created during rendering: (key:serial, value:meta)
      */
@@ -1943,7 +1950,7 @@
         _interceptors.forEach((interceptor) =>
             interceptor.call(null, selector));
         const object = {serial, element:selector, attributes:{},
-            context:[..._render_context_workspace]};
+            context:[..._view_scope_workspace]};
         _render_meta[serial] = object;
         return object;
     };
@@ -1983,7 +1990,8 @@
                                 || attribute.name === Composer.ATTRIBUTE_ID
                                 || attribute.name === Composer.ATTRIBUTE_EVENTS
                                 || _statics.has(attribute.name)))
-                    attribute.value = Expression.eval(selector.serial() + ":" + attribute.name, attribute.value);
+                    attribute.value = Expression.eval(selector.serial() + ":" + attribute.name,
+                        _execution_context(), attribute.value);
 
                 // The resolved value is written back to the meta-object, so
                 // that the object and event binding use the value of the
@@ -2041,7 +2049,7 @@
         const template = selector.cloneNode(true);
         const attributes = object.attributes;
         object = {serial:marker.serial(), element:marker, attributes,
-            context:[..._render_context_workspace],
+            context:[..._view_scope_workspace],
             condition:{expression, template, marker, element:null, attributes, complete:false, share:null}};
         _render_meta[object.serial] = object;
 
@@ -2093,7 +2101,8 @@
             // The condition must be explicitly true, otherwise the output is
             // removed from the DOM and the rendering ends. The cleanup will be
             // done by the MutationObserver.
-            const expression = Expression.eval(serial + ":" + Composer.ATTRIBUTE_CONDITION, condition.expression);
+            const expression = Expression.eval(serial + ":" + Composer.ATTRIBUTE_CONDITION,
+                _execution_context(), condition.expression);
             selector.nodeValue = expression instanceof Error ? expression : "";
             if (expression !== true) {
                 // Because a condition can consist of two elements (marker and
@@ -2123,7 +2132,7 @@
             const attributes = Object.assign({}, condition.attributes);
             _render_meta[element.serial()] = {
                 serial:element.serial(), element, attributes, condition,
-                context:[..._render_context_workspace]};
+                context:[..._view_scope_workspace]};
 
             // Load the composite module resources.
             // That no resources are loaded more than once is taken care of by
@@ -2220,16 +2229,18 @@
                 const node = document.createTextNode("");
                 const serial = node.serial();
                 const object = {serial, element:node, attributes:{}, value:null,
-                    context:[..._render_context_workspace],
+                    context:[..._view_scope_workspace],
                     render() {
                         let word = "";
                         if (this.attributes.hasOwnProperty(Composer.ATTRIBUTE_NAME)) {
                             const name = String(this.attributes[Composer.ATTRIBUTE_NAME] || "").trim();
                             const value = String(this.attributes[Composer.ATTRIBUTE_VALUE] || "").trim();
-                            window[name] = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE, value);
+                            _view_scope[name] = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE,
+                                _execution_context(), value);
                         } else {
                             word = String(this.attributes[Composer.ATTRIBUTE_VALUE] || "");
-                            word = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE, word);
+                            word = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE,
+                                _execution_context(), word);
                         }
                         this.value = word;
                         this.element.textContent = word !== undefined ? word : "";
@@ -2262,7 +2273,7 @@
                         const node = document.createTextNode(word);
                         const serial = node.serial();
                         const object = {serial, element:node, attributes:{},
-                            context:[..._render_context_workspace]};
+                            context:[..._view_scope_workspace]};
                         Composer.fire(Composer.EVENT_RENDER_NEXT, object.element);
                         object.element.textContent = word;
                         object.attributes[Composer.ATTRIBUTE_TEXT] = word;
@@ -2369,7 +2380,8 @@
         selector.innerHTML = "";
         let value = object.attributes[Composer.ATTRIBUTE_IMPORT];
         if ((value || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_IMPORT, String(value));
+            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_IMPORT,
+                _execution_context(), String(value));
         if (!value) {
             delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else if (value instanceof Element
@@ -2433,7 +2445,8 @@
         selector.innerHTML = "";
         let value = object.attributes[Composer.ATTRIBUTE_OUTPUT];
         if ((value || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_OUTPUT, String(value));
+            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_OUTPUT,
+                _execution_context(), String(value));
         if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
                 || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
             selector.appendChild(_render_datasource_collect(value), true);
@@ -2465,7 +2478,7 @@
         if (!interval || object.interval)
             return;
         const identifier = serial + ":" + Composer.ATTRIBUTE_INTERVAL;
-        interval = String(Expression.eval(identifier, interval));
+        interval = String(Expression.eval(identifier, _execution_context(), interval));
         if (!interval.match(/^\d*$/))
             throw new Error("Invalid interval: " + interval);
         interval = Number.parseInt(interval);
@@ -2518,7 +2531,7 @@
         }
 
         const identifier = serial + ":" + Composer.ATTRIBUTE_ITERATE;
-        let iterate = Expression.eval(identifier, object.iterate.expression);
+        let iterate = Expression.eval(identifier, _execution_context(), object.iterate.expression);
         if (iterate instanceof Error)
             throw iterate;
         if (iterate) {
@@ -2556,8 +2569,8 @@
                 });
 
                 // Creation of the stack with the temporary variables for the
-                // script context / page scope.
-                _render_context_scope_stack.push({[object.iterate.name]:meta});
+                // execution scope.
+                _view_scope_stack.push({[object.iterate.name]:meta});
 
                 // For whatever reason, if forEach is used on the NodeList, each
                 // time it is appended to the DOM the elements are removed from
@@ -2568,8 +2581,8 @@
                 });
 
                 // Clean up of the stack with the temporary variables for the
-                // script context / page scope.
-                _render_context_scope_stack.pop();
+                // execution scope.
+                _view_scope_stack.pop();
             });
         }
 
@@ -2610,7 +2623,7 @@
             if (!value.match(Composer.PATTERN_EXPRESSION_CONTAINS))
                 return;
             const identifier = serial + ":" + attribute;
-            value = Expression.eval(identifier, value);
+            value = Expression.eval(identifier, _execution_context(), value);
             // If the type value is undefined, the attribute is removed. Since
             // the attribute contains an expression, the removal is only
             // temporary and is checked again at the next render cycle and
@@ -2663,7 +2676,7 @@
         const type = (selector.getAttribute(Composer.ATTRIBUTE_TYPE) || "").trim();
         if (!type.match(Composer.PATTERN_COMPOSITE_SCRIPT))
             return;
-        try {Scripting.eval(selector.textContent);
+        try {Scripting.eval(_execution_context(), selector.textContent);
         } catch (error) {
             throw new Error("Composite JavaScript: " + error.message);
         }

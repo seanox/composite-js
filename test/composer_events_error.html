@@ -26,9 +26,9 @@
             }
         }});
         
-        // must be var because it is used in a frame via parent
-        // must be used as global, because the expression language uses its own scope,
-        // alternatively var can be used.
+        // Must be var because the value is accessed from a frame via parent.
+        // This is a window/global property; it is independent of the execution
+        // scope used for expressions and composite scripts.
         var count = 0;
         let interval = window.setInterval(() => {
             if (count < 3)

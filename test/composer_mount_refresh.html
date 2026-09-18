@@ -22,14 +22,14 @@
     
         Test.activate();
 
-        // The variable expression {{countRender:...}} creates countRender in
-        // the view scope, not in the global (window) scope. Therefore the
-        // value cannot be read directly from the test script and the number
-        // of iterations must be fixed. Each iteration triggers the rendering
-        // twice (OnClick method and render attribute), so 4 iterations plus
-        // the initial rendering result in Render:9. In the markup, the first
-        // access to countRender is tolerated, as the variable does not exist
-        // in the view scope before the first rendering.
+        // The variable expression {{countRender:...}} persists countRender in
+        // the view scope, not in the global (window) scope. The test script
+        // therefore cannot access the view scope directly and uses a fixed
+        // number of iterations for deterministic output. Each iteration
+        // triggers rendering twice (OnClick method and render attribute), so
+        // 4 iterations plus the initial rendering result in Render:9. In the
+        // markup, the first access to countRender is tolerated because the
+        // variable does not exist in the view scope before the first rendering.
 
         let countClick = 0
         const about = {

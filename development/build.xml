@@ -12,10 +12,9 @@
     <echo>                 Synchronizes README.md with CHANGES             </echo>
     <echo>                 Publishes the version to the npm repository     </echo>
     <echo>                                                                 </echo>
-    <echo>  compile        Prepare the environment for testing             </echo>
     <echo>                 Combinable with the task start.                 </echo>
     <echo>                                                                 </echo>
-    <echo>  compile-max    Prepare the environment for testing with max    </echo>
+    <echo>  compose-max    Prepare the environment for testing with max    </echo>
     <echo>                 Combinable with the task start.                 </echo>
     <echo>                                                                 </echo>
     <echo>  start          Starts the included development server          </echo>
@@ -365,13 +364,13 @@
     <replaceregexp file="${workspace}/package.json" match="(&quot;version&quot;: &quot;)\d+(?:\.\d+)+(\&quot;)" flags="g" replace="\10.0.0\2" byline="false"/>
   </target>
 
-  <target name="compile" depends="release">
+  <target name="compose" depends="release">
     <copy file="${release.file.testing}" todir="${workspace.benchmarks}" overwrite="true"/>
     <copy file="${release.file.testing}" todir="${workspace.test}" overwrite="true"/>
     <copy file="${release.file.debug.testing}" todir="${workspace.test}" overwrite="true"/>
   </target>
 
-  <target name="compile-max" depends="release">
+  <target name="compose-max" depends="release">
     <copy file="${release.file.testing.max}"
         tofile="${workspace.benchmarks}/${ant.project.name}-testing.js" overwrite="true"/>
     <copy file="${release.file.testing.max}"

@@ -99,12 +99,12 @@ successfully.
 The test environment can be prepared in two variants:
 
 ```bash
-ant -f ./development/build.xml compile
-ant -f ./development/build.xml compile-max
+ant -f ./development/build.xml compose
+ant -f ./development/build.xml compose-max
 ```
 
-- __compile__ prepares the environment for testing with the standard build
-- __compile-max__ prepares the environment for testing with an unminified build
+- __compose__ prepares the environment for testing with the standard build
+- __compose-max__ prepares the environment for testing with an unminified build
   including comments
 
 Both tasks can be combined with the task _start_.
@@ -125,7 +125,7 @@ available at the time of the release must be used.
 
 ### Procedure
 - Create a release and start the server
-  `ant -f ./development/build.xml compile start`
+  `ant -f ./development/build.xml compose start`
 - URLs to be tested
   http://127.0.0.1:8000/  
   http://127.0.0.1:8000/benchmarks

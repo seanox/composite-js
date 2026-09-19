@@ -98,7 +98,6 @@
          *     Namespace.use();
          *     Namespace.use(string);
          *     Namespace.use(string, ...string|number);
-         *     Namespace.use(object);
          *     Namespace.use(object, ...string|number);
          *
          * @param {...(string|number|object)} levels Levels of the namespace
@@ -112,12 +111,12 @@
 
             _filter(...levels);
 
-            let offset = levels.length;
-            let namespace = null;
-            if (levels.length > 0
-                    && typeof levels[0] === "object")
-                namespace = levels.shift();
-            offset -= levels.length;
+            let [namespace, levels] = typeof levels[0] === "object"
+                    ? [levels[0], levels.slice(1)] : [null, levels];
+            const offset = namespace === null ? 0 : 1;
+            if (namespace !== null
+                    && levels.length <= 0)
+                throw new Error("Namespace level is required");
 
             levels = levels.join(".");
             levels.split(Namespace.PATTERN_NAMESPACE_SEPARATOR).forEach((level, index, array) => {
@@ -138,6 +137,7 @@
                         && namespace === null) {
                     namespace = _populate(namespace, level);
                     if (namespace !== undefined
+                            && namespace !== null
                             && !(namespace instanceof Element))
                         return;
                     namespace = window;
@@ -171,21 +171,24 @@
          * The method has the following various signatures:
          *     Namespace.create(string, value);
          *     Namespace.create(string, ...string|number, value);
-         *     Namespace.create(object, value);
          *     Namespace.create(object, ...string|number, value);
          *
          * @param {...(string|number|object)} levels Levels of the namespace
-         * @param {*} value Value to initialize/set
          * @returns {object} The created or already existing object (level)
          * @throws {Error} In case of invalid data types or syntax
          */
         create(...levels) {
             if (levels.length < 2)
-                throw new Error("Invalid namespace for creation: Namespace and/or value is missing");
+                throw new Error("Namespace and/or value is missing");
             const value = levels.pop();
             levels = _filter(...levels);
+            if (levels.length === 1
+                    && typeof levels[0] === "object")
+                throw new Error("Namespace level is required");
             const level = levels.pop();
-            const namespace = Namespace.use(...levels);
+            const namespace = levels.length === 1
+                    && typeof levels[0] === "object"
+                ? levels[0] : Namespace.use(...levels);
             if (namespace === null)
                 return null;
             namespace[level] = value;
@@ -214,12 +217,9 @@
 
             _filter(...levels);
 
-            let offset = levels.length;
-            let namespace = null;
-            if (levels.length > 0
-                    && typeof levels[0] === "object")
-                namespace = levels.shift();
-            offset -= levels.length;
+            let [namespace, levels] = typeof levels[0] === "object"
+                    ? [levels[0], levels.slice(1)] : [null, levels];
+            const offset = namespace === null ? 0 : 1;
 
             levels = levels.join(".");
             levels = levels.split(Namespace.PATTERN_NAMESPACE_SEPARATOR);
@@ -382,6 +382,76 @@
             return () => serial;
         })()
     });
+
+    /**
+     * Enhancement of the JavaScript API
+     * Adds a static function to create and use a namespace for an object.
+     * Without arguments, the method returns the global namespace window.
+     *
+     * The method has the following various signatures:
+     *     Object.use();
+     *     Object.use(string);
+     *     Object.use(string, ...string|number);
+     *     Object.use(object, ...string|number);
+     *
+     * @param {...(string|number|object)} levels Levels of the namespace
+     * @returns {object} The created or already existing object(-level)
+     * @throws {Error} In case of invalid data types or syntax
+     */
+    compliant("Object.use");
+    compliant(null, Object.use = (...levels) =>
+        Namespace.use.apply(null, levels));
+
+    /**
+     * Enhancement of the JavaScript API
+     * Adds a static function to determine an object via the namespace.
+     * Without arguments, the method returns the global namespace window.
+     *
+     * The method has the following various signatures:
+     *     Object.lookup();
+     *     Object.lookup(string);
+     *     Object.lookup(string, ...string|number);
+     *     Object.lookup(object);
+     *     Object.lookup(object, ...string|number);
+     *
+     * @param {...(string|number|object)} levels Levels of the namespace
+     * @returns {object} The determined object(-level)
+     * @throws {Error} In case of invalid data types or syntax
+     */
+    compliant("Object.lookup");
+    compliant(null, Object.lookup = (...levels) =>
+        Namespace.lookup.apply(null, levels));
+
+    /**
+     * Enhancement of the JavaScript API
+     * Adds a static function to check whether an object exists in a namespace.
+     * This method is an alias for Namespace.exists(...levels) and uses the
+     * same namespace syntax.
+     *
+     * The method has the following various signatures:
+     *     Object.exists();
+     *     Object.exists(string);
+     *     Object.exists(string, ...string|number);
+     *     Object.exists(object);
+     *     Object.exists(object, ...string|number);
+     *
+     * @param {...(string|number|object)} levels Levels of the namespace
+     * @returns {boolean} True if the namespace exists
+     * @throws {Error} In case of invalid data types or syntax
+     */
+    compliant("Object.exists");
+    compliant(null, Object.exists = (...levels) =>
+        Namespace.exists.apply(null, levels));
+
+    /**
+     * Enhancement of the JavaScript API
+     * Adds a static function to checks that an object is not undefined / null.
+     * @param {*} object Object to be checked
+     * @returns {boolean} True if the object is neither undefined nor null
+     */
+    compliant("Object.usable");
+    compliant(null, Object.usable = (object) =>
+        object !== undefined && object !== null);
 
     const _sequence =  {symbol:Symbol(), value:0};
 

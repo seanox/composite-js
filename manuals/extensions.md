@@ -9,12 +9,35 @@ functions.
 
 ## Contents Overview
 - [Namespace](#namespace)
+  - [Namespace.use](#namespaceuse)
+  - [Namespace.lookup](#namespacelookup)
+  - [Namespace.exists](#namespaceexists)
 - [Element](#element)
+  - [Element.prototype.appendChild](#elementprototypeappendchild)
 - [Math](#math)
+  - [Math.serial](#mathserial)
 - [Object](#object)
+  - [Object.prototype.serial](#objectprototypeserial)
+  - [Object.lookup](#objectlookup)
+  - [Object.exists](#objectexists)
+  - [Object.use](#objectuse)
 - [RegExp](#regexp)
+  - [RegExp.quote](#regexpquote)
 - [String](#string)
+  - [String.prototype.capitalize](#stringprototypecapitalize)
+  - [String.prototype.uncapitalize](#stringprototypeuncapitalize)
+  - [String.prototype.encodeHex](#stringprototypeencodehex)
+  - [String.prototype.decodeHex](#stringprototypedecodehex)
+  - [String.prototype.encodeBase64](#stringprototypeencodebase64)
+  - [String.prototype.decodeBase64](#stringprototypedecodebase64)
+  - [String.prototype.encodeHtml](#stringprototypeencodehtml)
+  - [String.prototype.hashCode](#stringprototypehashcode)
+  - [String.prototype.unescape](#stringprototypeunescape)
 - [window](#window)
+  - [window.serial](#windowserial)
+  - [window.compliant](#windowcompliant)
+  - [window.location.combine](#windowlocationcombine)
+  - [window.location.contextPath](#windowlocationcontextpath)
 - [XMLHttpRequest](#xmlhttprequest)
 
 ## Namespace
@@ -31,8 +54,8 @@ also supported. If a layer in the namespace uses an integer, this layer is
 interpreted as an array.
 
 ### Namespace.use
-Creates a namespace to pass string. Without argument, the method returns the
-global namespace window.
+Retrieves or creates a namespace from a string or based on an existing object.
+Without arguments, the method returns the global namespace window.
 
 ```javascript
 Namespace.use("app.example");
@@ -42,6 +65,10 @@ Namespace.use("app.example");
 Namespace.use("app.example", "more");
 // creates window["app", {example: {more: {}}}]
 // returns window["app"] / {example: {more: {}}}
+
+Namespace.use(app, "example");
+// creates window["app", {example: {}}]
+// returns window["app"] / {example: {}}
 
 Namespace.use()
 // returns window
@@ -170,8 +197,8 @@ Object.exists("foo");
 ```
 
 ### Object.use
-Equivalent to [Namespace.use](#namespaceuse). Creates a namespace to the
-passed string. Without argument, the method returns the global namespace window.
+Equivalent to [Namespace.use](#namespaceuse). Retrieves or creates a namespace
+from a string or based on an existing object.
 
 ```javascript
 Object.use("app.example");
@@ -179,6 +206,10 @@ Object.use("app.example");
 
 Object.use("app.example", "more");
 // returns object window["app.example.more"] / {}
+
+Object.use(app, "example");
+// creates window["app", {example: {}}]
+// returns window["app"] / {example: {}}
 
 Object.use()
 // returns object window

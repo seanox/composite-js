@@ -8,13 +8,14 @@ Seanox composite-js uses composite script, an extension of standard ECMAScript
 that provides a small set of [macros](#macros) for browser-based module
 execution.
 
-Composite script is used for the JavaScript resources in the module directory.
-It is executed directly in a separate function scope rather than as a
-&lt;script&gt; element. Variables, constants and functions declared in a
-module remain local to that module and are not automatically available in the
-global scope or in other modules. The [macros](#macros) provide language
-extensions for tasks such as loading further JavaScript resources, exporting
-declarations and creating namespaces.
+Composite script resources are executed as functions rather than &lt;script&gt;
+elements. Variables, constants and functions declared in a module remain local
+to that module and are not automatically available in the global scope or in
+other modules. Runtime values are evaluated in the [Execution-Scope](
+    architecture.md#execution-scope). Their lifetime and sharing behavior is
+summarized in the [Scope overview](architecture.md#scopes). The [macros](
+    #macros) provide language extensions for tasks such as loading further
+JavaScript resources, exporting declarations and creating namespaces.
 
 ## Contents Overview
 - [Embedded Composite Script](#embedded-composite-script)
@@ -40,6 +41,17 @@ JavaScript code and executes it in every relevant render cycle. This allows
 <script type="composite/javascript">
     ...
 </script>
+```
+
+Embedded Composite scripts run in the current [Execution-Scope](
+    architecture.md#execution-scope). They access the view- and application
+scope through `view` and `application`. View scope variables are passed to the
+script as values; use `view` to persist changes within the current view. Use
+`application` for values shared across Composites:
+
+```javascript
+view.counter++;
+application.sharedValue = true;
 ```
 
 ## Modules

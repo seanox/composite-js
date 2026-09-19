@@ -163,6 +163,12 @@ const login = {
 #export login;
 ```
 
+Composite scripts run in the [Execution-Scope](architecture.md#execution-scope)
+and access the View- and Application-Scope through `view` and `application`.
+Since a Composite script runs only once when loaded, use `application` for
+values shared across Composites. See the [Scope overview](
+    architecture.md#scopes).
+
 In addition to the composite-js `#import` and `#export` macros, a Composite
 script can use the standard ECMAScript `import` and `export` mechanisms.
 ECMAScript modules remain independent of the Composite lifecycle.

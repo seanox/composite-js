@@ -162,8 +162,8 @@ be enclosed in square brackets.
 ```
 
 ### Variable-Expression
-The expression language can create and set variables in the page scope at
-runtime. The expression must start with the variable name (identifier), which
+The expression language can create and set variables in the view scope at
+runtime. The expression must start with a variable name (identifier), which
 uses the word characters `_ a-z A-Z 0-9` and is separated from the expression by
 a colon.
 
@@ -171,16 +171,15 @@ a colon.
 {{foo:1 +2 +3 + 'x hello'}}
 ```
 
-Creates or sets the value for variable `foo` in the page scope with `6x hello`.
-
-The expression corresponds to the JavaScript syntax:
-    `var foo = 1 +2 +3 + 'x hello';`
+Creates or sets the value for variable `foo` in the view scope with `6x hello`.
 
 > [!IMPORTANT]
-> __Page Scope:__ Variables can only be used in the markup and are in a separate
-> function scope from the rest of the JavaScript. They are intended for output
-> and data processing in HTML markup and are not accessible in general
-> JavaScript code.
+> __View Scope Variables:__ Variables defined in markup can be referenced by
+> name in expressions and scripts, but they are not global JavaScript variables.
+> Expressions and scripts run in a temporary execution scope. Persistent view
+> and application scopes are accessed through the `view` and `application`
+> objects.  
+> See the [Scope overview](architecture.md#scopes) for details.
 
 ### Combination
 All types of expressions can be combined.

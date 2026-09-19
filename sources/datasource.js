@@ -150,7 +150,8 @@
                 if (!(xml instanceof XMLDocument)) {
                     const document = window.document.implementation.createDocument(null, "data", null);
                     if (xml instanceof NodeList) {
-                        document.documentElement.appendChild(xml);
+                        Array.from(xml).forEach(node =>
+                            document.documentElement.appendChild(node));
                     } else {
                         const node = document.createTextNode(String(xml));
                         document.documentElement.appendChild(node);
@@ -333,7 +334,8 @@
             if (nodes.length <= 0)
                 return null;
 
-            xml.documentElement.appendChild(nodes);
+            nodes.forEach(node =>
+                xml.documentElement.appendChild(node));
             return xml.documentElement.childNodes;
         },
         
@@ -384,7 +386,8 @@
                 if (result instanceof XMLDocument) {
                     data.documentElement.appendChild(result.documentElement.cloneNode(true));
                 } else if (result instanceof NodeList) {
-                    data.documentElement.appendChild(result);
+                    Array.from(result).forEach(node =>
+                        data.documentElement.appendChild(node));
                 } else {
                     const text = data.createElement("text");
                     text.textContent = String(result);

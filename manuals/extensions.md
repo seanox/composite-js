@@ -12,8 +12,6 @@ functions.
   - [Namespace.use](#namespaceuse)
   - [Namespace.lookup](#namespacelookup)
   - [Namespace.exists](#namespaceexists)
-- [Element](#element)
-  - [Element.prototype.appendChild](#elementprototypeappendchild)
 - [Math](#math)
   - [Math.serial](#mathserial)
 - [Object](#object)
@@ -109,23 +107,6 @@ Namespace.exists(app.example, "nothing")
 
 Namespace.exists()
 // returns boolean true
-```
-
-## Element
-
-### Element.prototype.appendChild
-Modifies the original method to support node and nodes as NodeList and Array.
-If the option `exclusive` is used, existing children will be removed first.
-
-```javascript
-const nodes = [];
-nodes.push(document.createElement("a"));
-nodes.push(document.createElement("a"));
-nodes.push(document.createElement("a"));
-
-document.body.appendChild(nodes);
-
-document.body.appendChild(nodes, true);
 ```
 
 ## Math

@@ -287,31 +287,6 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Modifies the method to support node and nodes as NodeList and Array. If
-     * the option exclusive is used, existing children will be removed first.
-     * @param {(Node|NodeList|Array)} node Node(s) to be modified
-     * @param {boolean} [exclusive=false] True, removes existing children
-     */
-    const _appendChild = Element.prototype.appendChild;
-    Element.prototype.appendChild = function(node, exclusive) {
-        if (exclusive)
-            this.innerHTML = "";
-        if (node instanceof Node)
-            return _appendChild.call(this, node);
-        if (Array.isArray(node)
-                || node instanceof NodeList
-                || (Symbol && Symbol.iterator
-                        && node && typeof node[Symbol.iterator])) {
-            node = Array.from(node);
-            for (let loop = 0; loop < node.length; loop++)
-                _appendChild.call(this, node[loop]);
-            return node;
-        }
-        return _appendChild.call(this, node);
-    };
-
-    /**
-     * Enhancement of the JavaScript API
      * Static function to create a time based alphanumeric serial identifier
      * that is chronologically sortable as text and contains the time and a
      * counter if serial are created at the same time.

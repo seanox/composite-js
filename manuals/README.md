@@ -247,8 +247,6 @@
     - [Namespace.use](extensions.md#namespaceuse)
     - [Namespace.lookup](extensions.md#namespacelookup)
     - [Namespace.exists](extensions.md#namespaceexists)
-  - [Element](extensions.md#element)
-    - [Element.prototype.appendChild](extensions.md#elementprototypeappendchild)
   - [Math](extensions.md#math)
     - [Math.serial](extensions.md#mathserial)
   - [Object](extensions.md#object)

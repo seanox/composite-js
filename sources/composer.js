@@ -2353,6 +2353,15 @@
         return data;
     };
 
+    const _render_append_nodes = (selector, value, exclusive = false) => {
+        if (exclusive)
+            selector.innerHTML = "";
+        if (value instanceof Node)
+            selector.appendChild(value);
+        else Array.from(value).forEach(node =>
+            selector.appendChild(node));
+    };
+
     /**
      * ATTRIBUTE_IMPORT: This declaration loads the content and replaces the
      * inner HTML of an element with the content.
@@ -2385,11 +2394,11 @@
             delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else if (value instanceof Element
                 || value instanceof NodeList) {
-            selector.appendChild(value, true);
+            _render_append_nodes(selector, value, true);
             delete object.attributes[Composer.ATTRIBUTE_IMPORT];
         } else if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
                 || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
-            selector.appendChild(_render_datasource_collect(value), true);
+            _render_append_nodes(selector, _render_datasource_collect(value), true);
             const serial = selector.serial();
             const object = _render_meta[serial];
             delete object.attributes[Composer.ATTRIBUTE_IMPORT];
@@ -2448,16 +2457,16 @@
                 _execution_context(), String(value));
         if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
                 || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
-            selector.appendChild(_render_datasource_collect(value), true);
+            _render_append_nodes(selector, _render_datasource_collect(value), true);
         } else if (value instanceof XMLDocument
                 || value instanceof DocumentFragment)
             Array.from(value.childNodes).forEach((node, index) =>
-                selector.appendChild(node.cloneNode(true), index === 0));
+                _render_append_nodes(selector, node.cloneNode(true), index === 0));
         else if (value instanceof Node)
-            selector.appendChild(value.cloneNode(true), true);
+            _render_append_nodes(selector, value.cloneNode(true), true);
         else if (value instanceof NodeList)
             Array.from(value).forEach((node, index) =>
-                selector.appendChild(node.cloneNode(true), index === 0));
+                _render_append_nodes(selector, node.cloneNode(true), index === 0));
         else selector.innerHTML = String(value);
     };
 

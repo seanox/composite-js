@@ -10,7 +10,7 @@ BF: Composer: Corrections and optimization
 BF: DataSource: Correction of regex precedence error for Booleans
 BF: Expression: Corrections and optimization
     - Correction escaping of quotation marks in text expressions
-    - Addition of active script cache cleanup
+    - Addition of a dynamic cache with an active cleanup function
 BF: Extension: Corrections and optimization
     - String.prototype.encodeHex: Correction for empty strings
     - String.prototype.decodeHex: Correction for empty strings
@@ -27,6 +27,7 @@ CR: Scripting: Corrections and optimization
       The tolerate operator is now strictly space-delimited to avoid conflicts
       with JavaScript syntax: (? expression). If the expression throws an error,
       the operator now returns undefined instead of false.
+    - Addition of a dynamic cache with an active cleanup function
 CR: Composer: Added DOM mutation events
     Composer.EVENT_DOM_ADDED / Composer.EVENT_DOM_REMOVED / Composer.EVENT_DOM_MOVED
     Events are triggered once per mutation cycle with an array of affected nodes.

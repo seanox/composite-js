@@ -250,17 +250,42 @@
             if (!script.trim())
                 return;
 
-            return Function(
-                ...Object.keys(context),
-                "_import", "_export", "_use", "_tolerate", "script",
-                '"use strict"; return eval(script);'
+            // To improve performance, cacheable execution wrappers are used.
+            // Unbound wrappers are cached by their ordered context keys.
+            // Values and scripts are passed anew on every invocation.
 
-            )(
+            const keys = Object.keys(context);
+            const signature = JSON.stringify(keys);
+            let execute = _cache.get(signature);
+            if (!execute)
+                execute = Function(
+                    ...keys,
+                    "_import", "_export", "_use", "_tolerate", "script",
+                    '"use strict"; return eval(script);'
+                );
+
+            _cache.delete(signature);
+            _cache.set(signature, execute);
+
+            return execute(
                 ...Object.values(context),
                 _import, _export, _use, _tolerate, script
             );
+        },
+
+        /**
+         * Removes cached execution wrappers until the cache size is <= size.
+         * @param {number} size Maximum number of cached execution wrappers.
+         */
+        prune(size) {
+            size = Math.max(0, size);
+            while (_cache.size > size)
+                _cache.delete(_cache.keys().next().value);
         }
     });
+
+    /** Cache (signature/execution wrapper) */
+    const _cache = new Map();
 
     const _import = (...imports) => {
         // Because it is an internal method, an additional validation of the

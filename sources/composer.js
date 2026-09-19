@@ -3078,6 +3078,7 @@
             // current cache size, effectively providing implicit cleanup
             // without tracking serials.
             Expression.prune(_render_meta.length);
+            Scripting.prune(_render_meta.length);
 
             // The events about the changes at the DOM are fired batched with
             // an array of the affected nodes, after the renderer and the

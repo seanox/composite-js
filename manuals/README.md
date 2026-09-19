@@ -49,6 +49,11 @@
 - __[Architecture](architecture.md#architecture)__
   - [Architecture Model](architecture.md#architecture-model)
   - [Trust Boundary](architecture.md#trust-boundary)
+  - [Scopes](architecture.md#scopes)
+    - [Global Scope](architecture.md#global-scope)
+    - [Application Scope](architecture.md#application-scope)
+    - [View Scope](architecture.md#view-scope)
+    - [Execution Scope](architecture.md#execution-scope)
   - [Composite](architecture.md#composite)
     - [Composite Declaration](architecture.md#composite-declaration)
     - [Composite Responsibilities](architecture.md#composite-responsibilities)

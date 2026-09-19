@@ -89,7 +89,11 @@ Korrektur:
   Cross-Origin-Ressourcen gar nicht zum normalen Anwendungsfall gehören,
 - Offline-Betrieb kein Ziel ist,
 
-### 6. Speicherlecks / unbegrenzt wachsender Zustand
+### ~~6. Speicherlecks / unbegrenzt wachsender Zustand~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:730-731, 812, 1873, 2269, 2927;
 > expression.js:60-75; reactive.js:117, 119, 182-213,
 > Story-Points: 8
@@ -122,7 +126,7 @@ Keys). `_lock.release` mountet bei jedem Render-Ende alle
 #### ~~6.6. `Reactive.notifications` entfernt obsolete DOM-Subscriptions zu spät~~
 - Cleanup erfolgt derzeit erst bei einem späteren Reactive-Update.
 
-#### 6.7. Kein zentraler Cleanup-Lifecycle für Composer, Expression und Reactive
+#### ~~6.7. Kein zentraler Cleanup-Lifecycle für Composer, Expression und Reactive~~
 - Ein gemeinsamer Cleanup-Pfad sollte alle elementbezogenen Ressourcen freigeben.
 
 | Komponente         | Ressource, die bereinigt werden muss                                                             |
@@ -142,12 +146,41 @@ Keys). `_lock.release` mountet bei jedem Render-Ende alle
 | ~~__Expression__~~ | ~~Expression-Cache~~         |
 | __Reactive__       | Reactive-Subscriptions       |
 
-#### 6.8. `serial`-basierter globaler Zustand verhindert sauberes Lifecycle-Management
-- `serial` dient gleichzeitig als Identifier für mehrere langlebige globale Strukturen.
+> Die Komponenten verwalten ihre jeweiligen Ressourcen eigenständig. Das
+> gemeinsame Composer.EVENT_DOM_REMOVED dient lediglich als Lifecycle-Signal und
+> erfordert keinen zentralen Cleanup-Pfad.
 
-#### 6.9.`iterate` durch Keyed-Diffing statt vollständigem Re-Rendering optimieren
+#### ~~6.8. `serial`-basierter globaler Zustand verhindert sauberes Lifecycle-Management~~
+- `serial` ist lediglich ein gemeinsamer Identifier für die Zuordnung von Zuständen.
+
+> Entfällt: Ein globaler `serial`-Generator verhindert kein sauberes
+> Lifecycle-Management. Die beteiligten Komponenten bereinigen ihre jeweiligen
+> Strukturen eigenständig; entscheidend ist nur, dass langlebige Strukturen beim
+> Entfernen eines Elements zuverlässig über den `serial` bereinigt werden.
+
+#### ~~6.9.`iterate` durch Keyed-Diffing statt vollständigem Re-Rendering optimieren~~
 - Nicht direkt derselbe Fehler wie #6, aber der wichtigste strukturelle Hebel,
   um die Menge an erzeugtem/verworfenem Zustand drastisch zu reduzieren.
+
+> iterate rendert bewusst vollständig neu, um komplexe Template- und
+> Condition-Zustände berechenbar/eindeutig zurückzusetzen. Keyed-Diffing wäre
+> nur für klar abgegrenzte, zustandsarme Iterationen sinnvoll und sollte nicht
+> pauschal eingeführt werden.
+
+#### ~~6.10. Render sammelt vollständige Unterbäume vor dem Mounten~~
+- Beim Abschluss eines Render-Vorgangs werden mit `querySelectorAll("*")`
+  vollständige Unterbäume gesammelt.
+- Bei String-Selektoren werden Treffer und Nachfahren über `includes` dedupliziert,
+  was bei großen Unterbäumen quadratischen Aufwand verursachen kann.
+- Das `WeakSet` verhindert doppelte Mount-Verarbeitung, aber nicht die wiederholte
+  Traversierung und Sammlung der Knoten.
+
+> Die Lock-Rekursion verursacht keine mehrfachen Traversierungen.
+> Diese entstehen nur durch überlappende, vom Entwickler deklarierte Selektoren.
+> Das Set bleibt wegen der effizienteren Deduplizierung; 
+> die weitere Optimierung entfällt. 
+
+</details>
 
 ### 7. Reactive-Proxy zerstört Objekte mit internen Slots
 > Stelle: reactive.js:121-163, Story-Points: 3
@@ -264,6 +297,7 @@ Reihenfolge-Inversion; `render()` ohne Selector kann `undefined` in Queue
 pushen.
 
 ### ~~15. Fragiler Bootstrap~~
+
 <details>
   <summary>Details</summary>
 
@@ -284,11 +318,20 @@ fortgesetzt wird.
 Listener-Exceptions propagieren bis in MutationObserver/Event-Handler;
 `context.queue.shift()` wird übersprungen. Keine Isolation der Listener.
 
-### 17. `{{name:expr}}` in Textknoten schreibt globale Variablen
+### ~~17. `{{name:expr}}` in Textknoten schreibt globale Variablen~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:2218, Story-Points: 3
 
 `window[name]` kann `Composer`, `Expression`, `location` überschreiben; kein
 Scope.
+
+> Mit der Überarbeitung der Scopes ist der Punkt erledigt.
+> Das mögliche Überschreiben innerhalb des View-Scopes ist beabsichtigt und kein Fehler.
+
+</details>
 
 ### 18. Attributnamen pauschal `toLowerCase()`
 > Stelle: composer.js:1949, 1962, 2629, Story-Points: 2
@@ -340,12 +383,18 @@ Async-Import-Callback greift auf ggf. per `_cleanup` gelöschtes
 (absolut) befüllt, mit Roh-`value` (relativ) gelesen -> nie Treffer. Kein
 Negative-Caching -> bei Fehler sync XHR pro Render-Zyklus.
 
-### 24. `Namespace.use(object)` / `Namespace.create(object, value)`
-> Stelle: extension.js:108-193, Story-Points: 3
+### ~~24. `Namespace.use(object)`~~
+
+<details>
+  <summary>Details</summary>
+
+> Stelle: extension.js:108-167, Story-Points: 3
 
 Trotz dokumentierter Signatur kaputt (`"".split` ->
 `[""]`, `eval("typeof [object Object]")`). Bei `null`-Wurzel
 (`window.a === null`) fällt `use("a.b")` auf globale Suche nach `b` zurück.
+
+</details>
 
 ### 25. Override von `Element.prototype.appendChild`
 > Stelle: extension.js:326-342; composer.js:2366, Story-Points: 3

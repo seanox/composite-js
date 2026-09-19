@@ -47,7 +47,7 @@
                 let expression = document.querySelector("script[type='text/expression']");
                 expression = expression.innerHTML;
                 for (let loop = 0; loop < 2500; loop++)
-                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval(expression));
+                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval({}, expression));
                 const duration = Date.now() -timing;
                 const message = `${duration}`;
                 console.log(`Benchmark 2: ${message} ms`);
@@ -57,7 +57,7 @@
                 let expression = document.querySelector("script[type='text/expression']");
                 expression = expression.innerHTML;
                 for (let loop = 0; loop < 25000; loop++)
-                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval("ceb_1", expression));
+                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval("ceb_1", {}, expression));
                 const duration = Date.now() -timing;
                 const message = `${duration} ms`;
                 console.log(`Benchmark 3: ${message}`);

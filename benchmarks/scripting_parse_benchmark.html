@@ -20,7 +20,7 @@
                 document.body.innerText += "Start 2500 runs\n";
                 const timing = Date.now();
                 for (let count = 0; count < 2500; count++) {
-                    try {Scripting.eval(source);
+                    try {Scripting.eval({}, source);
                     } catch (error) {
                         Assert.fail(error.message);
                     }

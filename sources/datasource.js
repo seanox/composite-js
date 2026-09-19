@@ -116,31 +116,30 @@
          */
         transform(...variants) {
 
-            let xml = undefined;
-            let style = undefined;
-            let meta = undefined;
-            if (!["string"].includes(typeof variants[0])
-                    && !(variants[0] instanceof XMLDocument))
-                throw new TypeError(`Invalid xml locator: ${typeof variants[0]}`);
-            xml = variants[0];
+            let [xml, style, meta] = variants;
+            if (variants.length === 2
+                    && typeof style === "object"
+                    && !(style instanceof XMLDocument)) {
+                meta = style;
+                style = undefined;
+            }
+            if (variants.length <= 1
+                    && typeof xml === "string")
+                style = xml.replaceAll(/(^xml(:))|((\.)xml$)/g, "$4xslt$2");
+            if (typeof xml !== "string"
+                    && !(xml instanceof XMLDocument))
+                throw new TypeError(`Invalid xml locator: ${typeof xml}`);
             if (variants.length >= 3) {
-                if (!["string"].includes(typeof variants[1])
-                        && !(variants[1] instanceof XMLDocument))
-                    throw new TypeError(`Invalid xslt locator: ${typeof variants[1]}`);
-                style = variants[1];
-                if (!["object"].includes(typeof variants[2]))
-                    throw new TypeError(`Invalid meta object: ${typeof variants[2]}`);
-                meta = variants[2];
-            } else if (variants.length >= 2) {
-                if (!["string", "object"].includes(typeof variants[1])
-                        && !(variants[1] instanceof XMLDocument))
-                    throw new TypeError(`Invalid xslt locator or meta object: ${typeof variants[1]}`);
-                if (!["string"].includes(typeof variants[1])
-                        && !(variants[1] instanceof XMLDocument))
-                    meta = variants[1];
-                else style = variants[1];
-            } else if (variants.length >= 1) {
-                style = variants[0].replaceAll(/(^xml(:))|((\.)xml$)/g, "$4xslt$2");
+                if (typeof style !== "string"
+                        && !(style instanceof XMLDocument))
+                    throw new TypeError(`Invalid xslt locator: ${typeof style}`);
+                if (typeof meta !== "object")
+                    throw new TypeError(`Invalid meta object: ${typeof meta}`);
+            } else if (variants.length >= 2
+                    && style !== undefined) {
+                if (typeof style !== "string"
+                        && !(style instanceof XMLDocument))
+                    throw new TypeError(`Invalid xslt locator or meta object: ${typeof style}`);
             }
 
             if (typeof xml === "string") {
@@ -362,25 +361,25 @@
             if (variants.length <= 0)
                 return null;
 
-            let collector = "collection";
-            if (variants.length > 1
-                    && variants[0].match(PATTERN_WORD))
-                collector = variants.shift();
-            variants.forEach(entry => {
+            let [collector, locators] = variants.length > 1
+                    && typeof variants[0] === "string"
+                    && variants[0].match(PATTERN_WORD)
+                ? [variants[0], variants.slice(1)] : ["collection", variants];
+            locators.forEach(entry => {
                 if (typeof entry !== "string")
                     throw new TypeError(`Invalid xml locator: ${typeof entry}`);
                 if (!entry.match(PATTERN_LOCATOR))
                     throw new TypeError(`Invalid xml locator: ${entry}`);
             });
 
-            let hash = collector.hashCode() + ":" + variants.join().hashCode();
-            variants.forEach(entry =>
+            let hash = collector.hashCode() + ":" + locators.join().hashCode();
+            locators.forEach(entry =>
                 hash += ":" + String(entry).hashCode());
             if (_cache.hasOwnProperty(hash))
                 return _cache[hash].clone();
 
             const data = window.document.implementation.createDocument(null, collector, null);
-            variants.forEach(entry => {
+            locators.forEach(entry => {
                 const result = DataSource.fetch(entry);
                 if (result instanceof XMLDocument) {
                     data.documentElement.appendChild(result.documentElement.cloneNode(true));

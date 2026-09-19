@@ -1409,14 +1409,13 @@
             // JavaScript is not inserted as an element, it is executed
             // directly. For this purpose eval is used. Since the method may
             // form its own scope for variables, it is important to use the
-            // macro #export to be able to use variables and/or constants in
-            // the global scope.
+            // macro #export to be able to use variables and/or constants in the
+            // global scope.
 
             // HTML/Markup is preloaded into the render cache if available.
-            // If markup exists for the composite, ATTRIBUTE_IMPORT with the
-            // URL is added to the item. Inserting then takes over the
-            // import implementation, which then also accesses the render
-            // cache.
+            // If markup exists for the composite, ATTRIBUTE_IMPORT with the URL
+            // is added to the item. Inserting then takes over the import
+            // implementation, which then also accesses the render cache.
 
             const content = _render_cache[resource];
             if (resource.match(/\.js(\?.*)?$/i)) {
@@ -1491,13 +1490,13 @@
 
             const context = Composer.MODULES + "/" + resource.join("/");
 
-            // Based on namespace and resource a corresponding JavaScript
-            // object is searched for. Later, it is also decided whether
-            // JavaScript must be loaded. This is only necessary if lookup
-            // cannot determine an application module (undefined or element).
-            // Theoretically an error can occur here with invalid
-            // namespace/composite IDs, but this must already have been noticed
-            // before -- otherwise this is a bug!
+            // Based on namespace and resource a corresponding JavaScript object
+            // is searched for. Later, it is also decided whether JavaScript
+            // must be loaded. This is only necessary if lookup cannot determine
+            // an application module (undefined or element). Theoretically an
+            // error can occur here with invalid namespace/composite IDs, but
+            // this must already have been noticed before -- otherwise this is a
+            // bug!
 
             const lookup = Object.lookup(resource.join("."));
 
@@ -1629,10 +1628,11 @@
                     try {
                         if (context === Composer.render) {
 
-                            // To ensure that on conditions when the lock is created
-                            // for the marker, the children are also mounted, the
-                            // selector must be switched to the element, because the
-                            // marker is a text node without children.
+                            // To ensure that on conditions when the lock is
+                            // created for the marker, the children are also
+                            // mounted, the selector must be switched to the
+                            // element, because the marker is a text node
+                            // without children.
 
                             let selector = this.selector;
                             if (selector instanceof Node
@@ -1645,26 +1645,25 @@
                                     selector = object.condition.element;
                             }
 
-                            // If the selector is a string, several elements must be
-                            // assumed, which may or may not have a relation to the
-                            // DOM. Therefore, they are all considered and mounted
-                            // separately.
+                            // If the selector is a string, several elements
+                            // must be assumed, which may or may not have a
+                            // relation to the DOM. Therefore, they are all
+                            // considered and mounted separately.
 
-                            let nodes = [];
+                            const nodes = new Set();
                             if (typeof selector === "string") {
                                 const scope = document.querySelectorAll(selector);
                                 Array.from(scope).forEach((node) => {
-                                    if (!nodes.includes(node))
-                                        nodes.push(node);
+                                    nodes.add(node);
                                     const scope = node.querySelectorAll("*");
                                     Array.from(scope).forEach((node) => {
-                                        if (!nodes.includes(node))
-                                            nodes.push(node);
+                                        nodes.add(node);
                                     });
                                 });
                             } else if (selector instanceof Element) {
-                                nodes = selector.querySelectorAll("*");
-                                nodes = [selector].concat(Array.from(nodes));
+                                nodes.add(selector);
+                                selector.querySelectorAll("*").forEach((node) =>
+                                    nodes.add(node));
                             }
 
                             // Mount all elements in a composite, including the
@@ -2109,8 +2108,8 @@
                 // conditional element), it can happen that when rendering a
                 // NodeList, the marker is hit first, which then deletes the
                 // element, and the NodeList still contains the element that has
-                // already been deleted. Then this place is also called, but then
-                // the node/element has no parent.
+                // already been deleted. Then this place is also called, but
+                // then the node/element has no parent.
                 if (condition.element
                         && condition.element.parentNode)
                     condition.element.parentNode.removeChild(condition.element);
@@ -2147,8 +2146,8 @@
         }
 
         // If share matches the negated lock, then the content must be rendered
-        // normally, but only once. Therefore, share is finalized by the positive
-        // lock.
+        // normally, but only once. Therefore, share is finalized by the
+        // positive lock.
         if (object.condition.share !== -lock.serial())
             object.condition.share = lock.serial();
 
@@ -2363,8 +2362,8 @@
      *    source via the HTTP method GET
      * 3. DataSource-URL loads and transforms DataSource data.
      * 4. Everything else is output directly as string/text.
-     * The import is exclusive, similar to ATTRIBUTE_OUTPUT, thus overwriting any
-     * existing content. The recursive (re)rendering is initiated via the
+     * The import is exclusive, similar to ATTRIBUTE_OUTPUT, thus overwriting
+     * any existing content. The recursive (re)rendering is initiated via the
      * MutationObserver. If the content can be loaded successfully,
      * ATTRIBUTE_IMPORT is removed.
      * @param {Element} selector Element to be rendered
@@ -2492,8 +2491,8 @@
 
     /**
      * ATTRIBUTE_ITERATE: Iterative rendering based on enumeration, lists and
-     * arrays. If an HTML element is declared iteratively, its initial inner HTML
-     * is used as a template. During iteration, the inner HTML is initially
+     * arrays. If an HTML element is declared iteratively, its initial inner
+     * HTML is used as a template. During iteration, the inner HTML is initially
      * emptied, the template is rendered individually with each iteration cycle
      * and the result is added to the inner HTML.
      * There are some particularities to consider:

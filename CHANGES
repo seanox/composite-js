@@ -6,6 +6,7 @@ BF: Composer: Corrections and optimization
     - Correction of assigning undefined to attribute values
     - Correction of cleanup for moved nodes
     - Validation now ignores unbound/unrendered elements
+    - Optimizing the analysis of nested selectors
 BF: DataSource: Correction of regex precedence error for Booleans
 BF: Expression: Corrections and optimization
     - Correction escaping of quotation marks in text expressions

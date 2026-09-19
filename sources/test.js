@@ -763,10 +763,11 @@
                 }};
 
                 parameters = Array.from(parameters || []);
-                if (parameters.length > size)
-                    assert.message = parameters.shift();
-                while (parameters.length > 0)
-                    assert.values.push(parameters.shift());
+                let [message, values] = parameters.length > size
+                        ? [parameters[0], parameters.slice(1)]
+                        : [null, parameters];
+                assert.message = message;
+                assert.values = values;
     
                 return assert;
             },

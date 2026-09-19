@@ -162,40 +162,6 @@
         },
             
         /**
-         * Creates a namespace with an initial value to the passed object,
-         * strings and numbers, if the namespace contains arrays and the numbers
-         * can be used as index. Levels of the namespace levels are separated by
-         * a dot. Levels can as fragments also contain dots. Namespace and value
-         * are required.
-         *
-         * The method has the following various signatures:
-         *     Namespace.create(string, value);
-         *     Namespace.create(string, ...string|number, value);
-         *     Namespace.create(object, ...string|number, value);
-         *
-         * @param {...(string|number|object)} levels Levels of the namespace
-         * @returns {object} The created or already existing object (level)
-         * @throws {Error} In case of invalid data types or syntax
-         */
-        create(...levels) {
-            if (levels.length < 2)
-                throw new Error("Namespace and/or value is missing");
-            const value = levels.pop();
-            levels = _filter(...levels);
-            if (levels.length === 1
-                    && typeof levels[0] === "object")
-                throw new Error("Namespace level is required");
-            const level = levels.pop();
-            const namespace = levels.length === 1
-                    && typeof levels[0] === "object"
-                ? levels[0] : Namespace.use(...levels);
-            if (namespace === null)
-                return null;
-            namespace[level] = value;
-            return _populate(namespace, level);
-        },
-            
-        /**
          * Resolves a namespace and returns the determined object(-level).
          * If the namespace does not exist, undefined is returned.
          *

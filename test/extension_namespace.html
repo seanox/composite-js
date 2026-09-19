@@ -210,6 +210,11 @@
             Assert.assertFalse(Array.isArray(b));
         }});
 
+        Test.create({test() {
+            const root = {};
+            Assert.assertEquals(root, Namespace.use(root));
+        }});
+
         Test.create({expected:/Invalid namespace at level 1/, test() {
             Namespace.exists("x0003\\a");
         }});

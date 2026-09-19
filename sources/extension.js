@@ -98,6 +98,7 @@
          *     Namespace.use();
          *     Namespace.use(string);
          *     Namespace.use(string, ...string|number);
+         *     Namespace.use(object);
          *     Namespace.use(object, ...string|number);
          *
          * @param {...(string|number|object)} levels Levels of the namespace
@@ -109,14 +110,16 @@
             if (variants.length <= 0)
                 return window;
 
+            if (variants.length === 1
+                    && variants[0] !== null
+                    && typeof variants[0] === "object")
+                return variants[0];
+
             _filter(...variants);
 
             let [namespace, levels] = typeof variants[0] === "object"
                     ? [variants[0], variants.slice(1)] : [null, variants];
             const offset = namespace === null ? 0 : 1;
-            if (namespace !== null
-                    && levels.length <= 0)
-                throw new Error("Namespace level is required");
 
             levels = levels.join(".");
             levels.split(Namespace.PATTERN_NAMESPACE_SEPARATOR).forEach((level, index, array) => {
@@ -352,12 +355,14 @@
     /**
      * Enhancement of the JavaScript API
      * Adds a static function to create and use a namespace for an object.
-     * Without arguments, the method returns the global namespace window.
+     * Without arguments, the method returns the global namespace window. If only
+     * an object is passed, that object is returned unchanged.
      *
      * The method has the following various signatures:
      *     Object.use();
      *     Object.use(string);
      *     Object.use(string, ...string|number);
+     *     Object.use(object);
      *     Object.use(object, ...string|number);
      *
      * @param {...(string|number|object)} levels Levels of the namespace

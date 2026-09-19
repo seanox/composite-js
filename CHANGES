@@ -17,6 +17,8 @@ BF: Extension: Corrections and optimization
       - Empty string returns empty string, not 0x anymore
       - Throws an error if the string does not start with 0x
     - String.prototype.unescape: Correction of literal boundaries
+    - Namespace: Removal of Namespace.create
+      Instead, use Namespace.use(...) and/or Namespace.use(...)[...]
 BF: Routing: Correction of route expression generation
     - Correction when combining routes with conditions
 CR: Scripting: Corrections and optimization

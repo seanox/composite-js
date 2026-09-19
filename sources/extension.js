@@ -104,15 +104,15 @@
          * @returns {object} The created or already existing object (level)
          * @throws {Error} In case of invalid data types or syntax
          */
-        use(...levels) {
+        use(...variants) {
 
-            if (levels.length <= 0)
+            if (variants.length <= 0)
                 return window;
 
-            _filter(...levels);
+            _filter(...variants);
 
-            let [namespace, levels] = typeof levels[0] === "object"
-                    ? [levels[0], levels.slice(1)] : [null, levels];
+            let [namespace, levels] = typeof variants[0] === "object"
+                    ? [variants[0], variants.slice(1)] : [null, variants];
             const offset = namespace === null ? 0 : 1;
             if (namespace !== null
                     && levels.length <= 0)
@@ -176,15 +176,15 @@
          * @returns {object|undefined} The determined object(-level)
          * @throws {Error} In case of invalid data types or syntax
          */
-        lookup(...levels) {
+        lookup(...variants) {
 
-            if (levels.length <= 0)
+            if (variants.length <= 0)
                 return window;
 
-            _filter(...levels);
+            _filter(...variants);
 
-            let [namespace, levels] = typeof levels[0] === "object"
-                    ? [levels[0], levels.slice(1)] : [null, levels];
+            let [namespace, levels] = typeof variants[0] === "object"
+                    ? [variants[0], variants.slice(1)] : [null, variants];
             const offset = namespace === null ? 0 : 1;
 
             levels = levels.join(".");

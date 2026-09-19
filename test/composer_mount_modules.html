@@ -50,24 +50,24 @@
             capture.validate();
         }});
 
-        Namespace.create("model_1_A", ({
+        Namespace.use()["model_1_A"] = ({
             model_1_B: {
               model_1_C: {
               }
             }
-        }).reactive());
-        Namespace.create("model_1_B", ({
-        }).reactive());
-        Namespace.create("model_1_C", ({
+        }).reactive();
+        Namespace.use()["model_1_B"] = ({
+        }).reactive();
+        Namespace.use()["model_1_C"] = ({
             button_1_C: {
                 text: "1: must not change",
                 onClick() {
                     this.text += " 1";
                 }
             }
-        }).reactive());
+        }).reactive();
 
-        Namespace.create("model_2_A", ({
+        Namespace.use()["model_2_A"] = ({
             model_2_B: {
                 model_2_C: {
                     button_2_C: {
@@ -78,8 +78,8 @@
                     }
                 }
             }
-        }).reactive());
-        Namespace.create("model_2_B", ({
+        }).reactive();
+        Namespace.use()["model_2_B"] = ({
             model_2_C: {
                 button_2_C: {
                     text: "2b: must not change",
@@ -88,15 +88,15 @@
                   }
                 }
             }
-        }).reactive());
-        Namespace.create("model_2_C", ({
+        }).reactive();
+        Namespace.use()["model_2_C"] = ({
             button_2_C: {
                 text: "2c: must not change",
                 onClick() {
                     this.text += "2c";
                 }
             }
-        }).reactive());
+        }).reactive();
     </script>
     <script type="text/test">
       1: button_1_C

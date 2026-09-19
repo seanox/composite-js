@@ -14,8 +14,8 @@ window["moduleF"] = {
     test: "F"
 };
 
-Namespace.create("moduleG", {
+Namespace.use()["moduleG"] = {
     test: "G"
-});
+};
 
 Namespace.use("moduleH");

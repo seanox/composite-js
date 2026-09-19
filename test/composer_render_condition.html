@@ -18,7 +18,7 @@
     
         Test.activate();
 
-        Namespace.create("Model", {
+        Namespace.use()["Model"] = {
             onA: false,
             toggleA() {
                 this.onA = !this.onA;
@@ -45,7 +45,7 @@
                 return this.onE;
             },
             listE: ["a", "b", "c"]
-        });
+        };
         
         const testS = (text, index) => {
             const span = document.createElement("span");
@@ -84,8 +84,8 @@
                 Assert.assertEquals("expected {1} steps but was {2}", 5, capture.patterns().length);
         });
 
-        Namespace.create("x1", 0);
-        Namespace.create("x2", 0);
+        Namespace.use()["x1"] = 0;
+        Namespace.use()["x2"] = 0;
         var x3 = 0;
         var x4 = 0;
 

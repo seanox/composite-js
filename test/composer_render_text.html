@@ -27,8 +27,8 @@
                 Test.start();
         });
 
-        Namespace.create("tempA", 0);
-        Namespace.create("tempD", 0);
+        Namespace.use()["tempA"] = 0;
+        Namespace.use()["tempD"] = 0;
     </script>
   </head>
   <body>

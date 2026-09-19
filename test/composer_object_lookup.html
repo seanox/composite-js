@@ -14,7 +14,7 @@
     
         Test.activate();
 
-        Namespace.create("exampleA", {
+        Namespace.use()["exampleA"] = {
             a: null,
             b: "",
             c: 123,
@@ -56,7 +56,7 @@
                     {value: "D"}
                 ]
             }
-        });
+        };
         
         Test.create({test() {
             Assert.assertEquals("object", typeof Object.lookup("exampleA"));

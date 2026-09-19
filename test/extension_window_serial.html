@@ -29,7 +29,7 @@
             }
         }});
 
-        Namespace.create("count", 0);
+        Namespace.use()["count"] = 0;
         const interval = window.setInterval(() => {
             if (count < 10)
                 return;

@@ -125,14 +125,14 @@
             Namespace.use("..x0005.a");
         }});
 
-        Namespace.create("object1", {
+        Namespace.use()["object1"] = {
             a: null,
             b: "",
             c: 123,
             d: new Date(),
             e: {},
             f() {}
-        });
+        };
         Test.create({test() {
             Namespace.use("object1");
             Namespace.use("object1.a");

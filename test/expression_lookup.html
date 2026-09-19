@@ -14,7 +14,7 @@
     
         Test.activate();
 
-        Namespace.create("ModelA", {
+        Namespace.use()["ModelA"] = {
             a: "ma",
             get b() {
                 return "mb";
@@ -22,7 +22,7 @@
             get c() {
                 return true;
             }
-        });
+        };
 
         Test.create({test() {
             let content = Output.textContent;

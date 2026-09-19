@@ -29,9 +29,9 @@
             return span;
         };
 
-        Namespace.create("tempB", () => {
+        Namespace.use()["tempB"] = () => {
             return "123";
-        });
+        };
 
         const objectX = {
             array0: [],

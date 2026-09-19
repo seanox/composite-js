@@ -14,7 +14,7 @@
     
         Test.activate();
 
-        Namespace.create("model", {
+        Namespace.use()["model"] = {
             _textA:[""],    
             set textA(text) {
                 this._textA[0] = text;
@@ -63,7 +63,7 @@
             get textF() {
                 return this._textF.join(" ").trim().replace(/\s+/g, " ");
             }
-        });
+        };
         
         let count = 0;
         Composer.listen(Composer.EVENT_RENDER_END, () => {

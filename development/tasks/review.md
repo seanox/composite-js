@@ -279,7 +279,11 @@ ein Architekturvorhaben.
 
 </details>
 
-### 13. Kein Function-Cache
+### ~~13. Kein Function-Cache~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: scripting.js:219-233; composer.js:59, 1537-1547,
 > Story-Points: 5
 
@@ -287,6 +291,8 @@ Pro Expression-Auswertung `Function(...)` + `eval`, `Composer.render.context`
 kopiert bei jedem Zugriff Scope + Workspace. "Duplicate parameter name“, wenn
 Iterationsvariable `script`, `_import`, `_export`, `_use`, `_tolerate` heisst.
 `_render_context_scope` nie befüllt (toter Code).
+
+</details>
 
 ### 14. Render-Queue-Race
 > Stelle: composer.js:1178-1196, 1679-1681, Story-Points: 3

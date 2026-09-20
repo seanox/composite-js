@@ -42,7 +42,7 @@
      * can follow, but can not end with the - character. Paths are separated by
      * the / character.
      * - group 1: Locator without optional XPath
-     * - group 2: Protocol
+     * - group 2: Schema
      * - group 3: Path complete incl. file and file extension
      * - group 4: file extension (optional)
      * - group 5: XPath without question mark (optional)

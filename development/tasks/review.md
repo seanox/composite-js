@@ -402,13 +402,19 @@ Trotz dokumentierter Signatur kaputt (`"".split` ->
 
 </details>
 
-### 25. Override von `Element.prototype.appendChild`
+### ~~25. Override von `Element.prototype.appendChild`~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: extension.js:326-342; composer.js:2366, Story-Points: 3
 
 Ändert nativen Vertrag (2. Param `exclusive` löscht Kinder, Array statt Node als
 Rückgabe). `typeof node[Symbol.iterator]` ist immer truthy -> `appendChild({})`
 liefert still `[]` statt TypeError. Nur `Element`, nicht
 `Node`/`DocumentFragment`.
+
+</details>
 
 ### ~~26. `decodeHex` nutzt `text.substring(loop, 2)`~~
 
@@ -475,22 +481,39 @@ totes Public-API.
 
 </details>
 
-### 32. `object.statics.hasOwnProperty[attribute]`
+### ~~32. `object.statics.hasOwnProperty[attribute]`~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:1078, Story-Points: 1
 
 Index statt Aufruf -> Bedingung immer false, Guard wirkungslos.
 
-### 33. `listen()` und `interval()`
+</details>
+
+### ~~33. `listen()` und `interval()`~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:324-335, 2458-2461, Story-Points: 1
 
 `listen()` akzeptiert `null`/`undefined` als Callback, wirft erst in `fire`.
 `interval` akzeptiert `""`/`0` -> `setInterval(fn, NaN)` Tight-Loop.
 
+> Die JavaScript-API unterstützt bei Timeout und Interval ebenfalls den Wert 0.
+> Daher wird der Punkt so belassen.
+
+</details>
+
 ### 34. Getter `PATTERN_*`/`EVENT_FILTER/NAMES`
 > Stelle: composer.js:168-308, 1909-1919, Story-Points: 2
 
-Erzeugen bei jedem Zugriff neue RegExp/Arrays in Hot-Paths. Custom Selectors per
-`parentNode.querySelectorAll` + `includes` statt `matches()`.
+Erzeugen bei jedem Zugriff neue RegExp/Arrays in Hot-Paths.
+
+~~Custom Selectors per `parentNode.querySelectorAll` + `includes` statt
+`matches()`.~~
 
 ### 35. `forward()` und `Routing.locate()`
 > Stelle: routing.js:106, 145-158, 245-259, 359-370, Story-Points: 3

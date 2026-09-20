@@ -75,9 +75,16 @@
         
         Test.create({test() {
             const text = document.body.textContent.replace(/^\s+/mg, "");
-            Assert.assertTrue(text.indexOf("Summer-A") >= 0);
-            Assert.assertTrue(text.indexOf("Summer-C") >= 0);
-            Assert.assertTrue(text.indexOf("Summer-X") >= 0);
+            Assert.assertTrue(text.includes("Summer-A"));
+            Assert.assertTrue(text.includes("Summer-C"));
+            Assert.assertFalse(text.includes("Summer-X"));
+        }});
+        Test.create({test() {
+            const text = document.body.textContent.replace(/^\s+/mg, "");
+            Assert.assertTrue(text.includes("resources/__import_a.htmlx"));
+            Assert.assertTrue(text.includes("resources/__import_b.htmlx"));
+            Assert.assertTrue(text.includes("resources/__import_o.htmlx"));
+            Assert.assertTrue(text.includes("https://raw.githubusercontent.com/seanox/composite-js/master/CHANGES"));
         }});
         Test.create({test() {
             Assert.assertNotNull(document.querySelector("img"));
@@ -139,7 +146,7 @@
             try {Assert.assertSameTo("script[type='text/test']", result);
             } catch (error) {
                 console.log(result);
-                throw  error;
+                throw error;
             }
         }});
 
@@ -162,6 +169,10 @@
       /modules/common.xml 404 X
       /modules/common.js 200 X
       /modules/common.css 404 X
+      /resources/import_a.htmlx 200 X
+      /resources/import_b.htmlx 200 X
+      /resources/import_c.htmlx 200 X
+      /resources/import_o.htmlx 404 X
       /modules/moduleA.xml 404 X
       /modules/moduleA.js 200 X
       /modules/moduleB.js 200 X
@@ -187,25 +198,23 @@
       /modules/nix/nix/nix.js 404 X
       /modules/moduleJ.css 404 X
       /modules/moduleJ.html 404 X
-      /resources/import_a.htmlx 200 X
-      /resources/import_b.htmlx 200 X
-      /resources/import_o.htmlx 404 XXX
-      https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_x.htmlx 200 X
-      /resources/import_c.htmlx 200 X
       /nix.xxx 404 XXX
     </script>
   </head>
   <body>
-    <div id="A" import="resources/import_a.htmlx"></div>
-    <div id="B" import="resources/import_b.htmlx"></div>
-    <div id="O" import="resources/import_o.htmlx"></div>
+    <div id="Ax" import="resources/__import_a.htmlx"></div>
+    <div id="Bx" import="resources/__import_b.htmlx"></div>
+    <div id="Ox" import="resources/__import_o.htmlx"></div>
+    <div id="A" import="context://resources/import_a.htmlx"></div>
+    <div id="B" import="context://resources/import_b.htmlx"></div>
+    <div id="O" import="context://resources/import_o.htmlx"></div>
     <article import="{{aModel.publishImg()}}">
       loading image...  
     </article>
     <article import="{{aModel.publishForm()}}">
       loading form...  
     </article>
-    <article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_x.htmlx'}}">
+    <article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/CHANGES'}}">
       loading resource...  
     </article>
     <section iterate="{{x:[1,2,3]}}">

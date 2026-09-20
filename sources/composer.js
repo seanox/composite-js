@@ -328,9 +328,7 @@
             
             if (typeof event !== "string")
                 throw new TypeError("Invalid event: " + typeof event);
-            if (typeof callback !== "function"
-                    && callback !== null
-                    && callback !== undefined)
+            if (typeof callback !== "function")
                 throw new TypeError("Invalid callback: " + typeof callback);        
             if (!event.match(Composer.PATTERN_EVENT))
                 throw new Error(`Invalid event${event.trim() ? ": " + event : ""}`);
@@ -1090,7 +1088,7 @@
                         return;
                     changes.forEach((attribute) => {
                         object.statics = object.statics || {};
-                        if (object.statics.hasOwnProperty[attribute]
+                        if (object.statics.hasOwnProperty(attribute)
                                 && object.statics[attribute] !== undefined)
                             return;
                         if (element.hasAttribute(attribute))
@@ -1926,13 +1924,10 @@
     const _render_element_selectors = (selector) => {
         if (!selector.parentNode)
             return false;
-        for (const [key, macro] of _selectors) {
-            const nodes = selector.parentNode.querySelectorAll(macro.selector);
-            if (Array.from(nodes).includes(selector)) {
-                if (macro.callback(selector) === false)
-                    return true;
-            }
-        }
+        for (const [key, macro] of _selectors)
+            if (selector.matches(macro.selector)
+                    && macro.callback(selector) === false)
+                return true;
         return false;
     };
 

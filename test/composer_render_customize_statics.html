@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            Composer.customize("@ATTRIBUTES-STATICS", "title1");
+            const element = document.querySelector("#example");
+            element.setAttribute("title1", "changed");
+            Test.start();
+        });
+
+        Test.create({test() {
+            const element = document.querySelector("#example");
+            Assert.assertEquals("initial", element.getAttribute("title1"));
+        }});
+    </script>
+  </head>
+  <body>
+    <div id="example" composite title1="initial">Test</div>
+  </body>
+</html>

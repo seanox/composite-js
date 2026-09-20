@@ -75,8 +75,8 @@ with the language declared as default.
 
 ## Locator
 Data in the data storage is addressed through a locator URL (`xml://...` or
-`xslt://...`). Single and double slashes are supported. A locator can be used
-contextually or explicitly.
+`xslt://...`), supporting percent-encoded URLs. Single and double slashes are
+supported. A locator can be used contextually or explicitly.
 
 - __Contextual locator__: Uses an absolute path without a file extension
   relative to the DataSource directory and does not contain a locale (language 

@@ -54,6 +54,10 @@ CR: Composer: Refactoring ordinal/serial/uid
 CR: Extensions: Removal of Math.unique
     The method wasn't unique enough, wasn't used anyway, and crypto.randomUUID()
     is the better solution.
+CR: Resources: Refine the trust boundary
+    Refine the trust boundary by restricting resources to paths below the
+    application context path. External resources can be addressed in a
+    deliberate and controlled manner through reverse proxies.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

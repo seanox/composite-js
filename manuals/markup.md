@@ -167,10 +167,10 @@ no effect.
 Loads the content for the HTML element at runtime and inserts it as inner HTML.
 The behavior is similar to the [output](#output) attribute, except that the
 import is done once and the import attribute is removed after successful
-loading. As value one or more elements are supported as NodeList or Array, as
-well as absolute or relative URLs to a remote resource and also the [DataSource
-    URL (locator)](datasource.md#locator) for transformed content from the
-[DataSource](datasource.md).
+loading. As value, one or more elements are supported as NodeList,
+DocumentFragments, strings, which are inserted as content/markup, and URLs
+(Locators) with the `context:`, `xml:` or `xslt:` schemes. DataSource Locators
+can be used for transformed content from the DataSource.
 
 The import attribute can be combined with the condition attribute and will then
 only be executed if the condition is `true`.
@@ -208,14 +208,15 @@ const example = {
 </article>
 ```
 
-Example of importing a remote resource using the HTTP method GET.
+Example of importing a resource below the application context path using the
+HTTP method GET.
 
 ```html
-<article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx'}}">
+<article import="{{'context://resources/import_c.htmlx'}}">
   loading resource...
 </article>
 
-<article import="https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/import_c.htmlx">
+<article import="context://resources/import_c.htmlx">
   loading resource...
 </article>
 ```
@@ -239,8 +240,9 @@ for data and transformation are derived from it.
 
 Example of importing a DataSource-URL with a specific data URL (locator) and
 transformation URL. As a value, the data URL (locator of the XML file) and the
-transformation URL (locator of the XSLT template) are is specified, separated by
-a blank character. 
+transformation URL (locator of the XSLT template) are specified, separated by
+` + `. Reserved characters in either locator can be percent-encoded as usual
+for URLs.
 
 ```html
 <article import="{{'xml://example/data + xslt://example/style'}}">

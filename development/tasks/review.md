@@ -529,13 +529,77 @@ SecurityError in Cross-Origin-iframe bei jedem `console.log` nach
 `Test.activate()`.
 
 ### 37. Diverse Fehler im Test-Framework
-> Stelle: test.js:164, 367-368, 379-380, 643-662, 740, 826-873,
-> Story-Points: 2
+> Stelle: test.js:164-166, 288-312, 363-368, 379-380, 419-420, 643-713,
+> 739-757, 827-895, Story-Points: 2
 
-`assertEquals` ≡ `assertSame` (beide `===`) trotz Doku; `typeof meta == null`
-immer false; Off-by-one in `Assert.create` (`index > values.length`);
-`clearTimeout` für `setInterval`-Handles; String-basierter Kontrollfluss auf
-`Timeout occurred...`; `typeValue` dispatcht `input` mit `bubbles=false`.
+#### ~~37.1 `assertSame` verwendet dieselbe Vergleichsart wie `assertEquals`~~
+
+<details>
+  <summary>Details</summary>
+
+`assertEquals` soll strikt mit `===` vergleichen, `assertSame` als Alternative
+mit Typkonvertierung über `==`. Die Implementierungen von `assertSame` und
+`assertNotSame` verwendeten zunächst ebenfalls `===`/`!==`; dadurch waren die
+beiden API-Paare funktional nicht unterscheidbar. Korrigiert auf `==`/`!=`.
+
+</details>
+
+#### ~~37.2 Ungültige Meta-Objekte werden nicht sauber geprüft~~
+
+<details>
+  <summary>Details</summary>
+
+`typeof meta == null` ist grundsätzlich immer `false`, weil `typeof` einen
+String liefert. Bei `null` wurde dadurch erst beim Zugriff auf `meta.test` ein
+indirekter Fehler ausgelöst. `Test.create` erwartet ein Meta-Objekt und prüft
+dies jetzt direkt mit `meta == null || typeof meta !== "object"`.
+
+</details>
+
+#### ~~37.3 Off-by-one bei `Assert.create`-Platzhaltern~~
+
+<details>
+  <summary>Details</summary>
+
+Die Grenzen der Platzhalterwerte wurden mit `index > length` geprüft. Der
+Index `length` ist bereits außerhalb des Arrays; dadurch konnte ein ungültiger
+Platzhalter als `undefined` statt als `[null]` erscheinen. Beide Prüfungen
+verwenden jetzt `index >= length`.
+
+</details>
+
+#### ~~37.4 Falsche Timer-Aufräumfunktion~~
+
+<details>
+  <summary>Details</summary>
+
+`Test.worker.interval` und `Test.worker.timeout` werden beide mit `setInterval`
+erzeugt, aber mit `clearTimeout` beendet. Browser tolerieren diese Handle-
+Verwechslung meist, sie ist jedoch semantisch falsch und nicht für jede
+Timer-Implementierung portabel. Alle vier Aufräumstellen verwenden jetzt
+`clearInterval`.
+
+</details>
+
+#### 37.5 Timeout-Kontrollfluss basiert auf Fehlermeldungstext
+In `test.js:367-368` wird anhand des Präfixes `Timeout occurred` entschieden,
+ob die Antwort bereits ausgelöst wurde. Eine beliebige Test- oder
+Assertion-Exception mit derselben Nachricht kann dadurch als interner Timeout
+behandelt werden; Antwort- und Fehlerzählung werden dann unterdrückt. Die
+robuste Lösung ist ein separates Timeout-Flag oder ein eigener Fehlertyp.
+
+#### ~~37.6 Simuliertes `input`-Event bubbelt nicht~~
+
+<details>
+  <summary>Details</summary>
+
+`typeValue` löste `input` zunächst über `trigger("input")` aus. Der Default von
+`trigger` ist `bubbles=false`, daher erreichten simulierte Eingaben keine
+delegierten Listener auf übergeordneten Elementen. `typeValue` verwendet jetzt
+`trigger("input", true)` und entspricht damit dem Bubbling-Verhalten eines
+nativen `input`-Events.
+
+</details>
 
 ### ~~38. `Math.unique` und `RegExp`-Erweiterungen~~
 

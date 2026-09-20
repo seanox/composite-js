@@ -161,7 +161,7 @@
              */
             create(meta) {
                 
-                if (typeof meta == null
+                if (meta == null
                         || typeof meta !== "object")
                     throw new TypeError("Invalid object type");
 
@@ -376,8 +376,8 @@
                         return;
                     }
                     
-                    window.clearTimeout(Test.worker.interval);
-                    window.clearTimeout(Test.worker.timeout);
+                    window.clearInterval(Test.worker.interval);
+                    window.clearInterval(Test.worker.timeout);
                     Test.fire(Test.EVENT_FINISH, Test.status());
                     delete Test.worker;
                 }, 25);
@@ -416,8 +416,8 @@
             interrupt() {
                 if (Test.worker === undefined)
                     throw new Error("Interrupt is not available"); 
-                window.clearTimeout(Test.worker.interval);
-                window.clearTimeout(Test.worker.timeout);
+                window.clearInterval(Test.worker.interval);
+                window.clearInterval(Test.worker.timeout);
                 Test.fire(Test.EVENT_INTERRUPT, Test.status());
                 delete Test.worker;
             },
@@ -658,7 +658,7 @@
                 element.value = (element.value || "") + digit;
                 element.trigger("keyup");
             });
-            this.trigger("input");
+            this.trigger("input", true);
         });
 
         /**
@@ -737,7 +737,7 @@
                 const assert = {message:null, values:[], error(...variants) {
                     variants.forEach((parameter, index, array) => {
                         array[index] = String(parameter).replace(/\{(\d+)\}/g, (match, index) => {
-                            if (index > assert.values.length)
+                            if (index >= assert.values.length)
                                 return "[null]";
                             match = String(assert.values[index]);
                             match = match.replace(/\s*[\r\n]+\s*/g, " "); 
@@ -753,7 +753,7 @@
                     }
                     message = "{0} failed, " + message;
                     message = message.replace(/\{(\d+)\}/g, (match, index) => {
-                        if (index > variants.length)
+                        if (index >= variants.length)
                             return "[null]";
                         match = String(variants[index]);
                         match = match.replace(/\s*[\r\n]+\s*/g, " "); 
@@ -868,7 +868,7 @@
              */      
             assertSame(...variants) {
                 const assert = Assert.create(variants, 2);
-                if (assert.values[0] === assert.values[1])
+                if (assert.values[0] == assert.values[1])
                     return;
                 throw assert.error("Assert.assertSame", "{0}", "{1}");
             },
@@ -889,7 +889,7 @@
              */
             assertNotSame(...variants) {
                 const assert = Assert.create(variants, 2);
-                if (assert.values[0] !== assert.values[1])
+                if (assert.values[0] != assert.values[1])
                     return;
                 throw assert.error("Assert.assertNotSame", "not {0}", "{1}");
             },

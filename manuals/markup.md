@@ -164,13 +164,13 @@ analysed for the first time, and is then cached. Later changes at runtime have
 no effect.
 
 ### import
-Loads the content for the HTML element at runtime and inserts it as inner HTML.
-The behavior is similar to the [output](#output) attribute, except that the
-import is done once and the import attribute is removed after successful
-loading. As value, one or more elements are supported as NodeList,
-DocumentFragments, strings, which are inserted as content/markup, and URLs
-(Locators) with the `context:`, `xml:` or `xslt:` schemes. DataSource Locators
-can be used for transformed content from the DataSource.
+Sets the value or result of an expression as the content of the HTML element and
+replaces its existing inner HTML. The behavior is similar to the
+[output](#output) attribute, except that the import is done once and the import
+attribute is removed after rendering. DOM values such as `Document`,
+`DocumentFragment`, `NodeList` and `Node` are inserted as DOM content. Other
+values are inserted as text/markup. URLs (locators) with the `raw:`, `xml:` or
+`xslt:` schemes and datasource locators are also supported.
 
 The import attribute can be combined with the condition attribute and will then
 only be executed if the condition is `true`.
@@ -212,11 +212,11 @@ Example of importing a resource below the application context path using the
 HTTP method GET.
 
 ```html
-<article import="{{'context://resources/import_c.htmlx'}}">
+<article import="{{'raw://resources/import_c.htmlx'}}">
   loading resource...
 </article>
 
-<article import="context://resources/import_c.htmlx">
+<article import="raw://resources/import_c.htmlx">
   loading resource...
 </article>
 ```
@@ -258,10 +258,10 @@ for URLs.
 </article>
 ```
 
-If only _xslt_ is specified without a locator, a corresponding XSLT locator with
-the same name is derived from the XML locator.
+If only _xslt_ is specified without a locator, a corresponding XSLT locator is
+derived from the name of the XML locator.
 
-When inserting content from the DataSource, the type of JavaScript blocks is
+When inserting content from the datasource, the type of JavaScript blocks is
 automatically changed to `composite/javascript` and only executed by the
 composite. This results in JavaScript being executed depending on the enclosing
 condition attribute.

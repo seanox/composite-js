@@ -62,7 +62,7 @@ The language is selected automatically from the browser language setting. If
 that language is not supported, the language declared as `default` is used.
 
 At runtime, JavaScript can change the language with the locale. Only locales
-available in the DataSource are accepted. Other values cause an error when the
+available in the datasource are accepted. Other values cause an error when the
 method is called.
 
 ```javascript
@@ -79,10 +79,10 @@ Data in the data storage is addressed through a locator URL (`xml://...` or
 supported. A locator can be used contextually or explicitly.
 
 - __Contextual locator__: Uses an absolute path without a file extension
-  relative to the DataSource directory and does not contain a locale (language 
+  relative to the datasource directory and does not contain a locale (language 
   specification) in the path. The locale is determined automatically based on
   the browser's language setting or, if not supported, the default locale from
-  the `locales.xml` in the DataSource data storage.
+  the `locales.xml` in the datasource data storage.
 
 - __Explicit locator__: Uses a fully qualified URL with a file extension
   (`xml://....xml` or `xslt://....xslt`). This locator addresses an absolute
@@ -298,7 +298,7 @@ The result is the same as before, but with `articles` as the root element
 instead of `collector`.
 
 ## Notes
-The DataSource can also be used directly in the markup with the attributes
+The datasource can also be used directly in the markup with the attributes
 [import](markup.md#import) and [output](markup.md#output).
 
 ```html
@@ -310,11 +310,19 @@ The DataSource can also be used directly in the markup with the attributes
   loading resource...
 </article>
 
+<article import="xml://example/data + xslt">
+  loading resource...
+</article>
+
 <article output="xml://example/content">
   loading resource...
 </article>
 
 <article output="xml://example/data + xslt://example/style">
+  loading resource...
+</article>
+
+<article output="xml://example/data + xslt">
   loading resource...
 </article>
 ```

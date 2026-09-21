@@ -69,7 +69,7 @@
          * Only locales from locales.xml can be used, other values cause an
          * error.
          * @param {string} locale Locale to be set
-         * @throws {TypeError} In case of invalid locale type
+         * @throws {TypeError} In case of invalid locale data type
          * @throws {Error} In case of missing DataSource data or locales
          * @throws {Error} In case of invalid locales
          */
@@ -270,12 +270,12 @@
                 return {
                     source:   locator,
                     location: location,
-                    type:     matches[2],
+                    schema:   matches[2],
                     xpath:    matches[5]
                 };
             })(locator);
 
-            if (locator.type === "xslt"
+            if (locator.schema === "xslt"
                     && locator.xpath !== undefined)
                 throw new Error("Invalid xslt locator: " + locator.source);
 

@@ -58,8 +58,18 @@
         }});
         Test.create({test() {
             Assert.assertEquals(2, targets["SCRIPT"]);
-        }});        
-        
+        }});
+        Test.create({test() {
+            const content = document.body.innerText;
+            const pattern = "A:A0\n"
+                + "B:B4B5B6B7B8B9\n"
+                + "C:C0C1C2\n"
+                + "D:D0D2D4D6D8\n"
+                + "E:\n"
+                + "importAv = 100; importAx++;"
+            Assert.assertSame(pattern, content);
+        }});
+
         let count = 0;
         let targets = {};
         Composer.listen(Composer.EVENT_RENDER_END, (event, target) => {

@@ -58,6 +58,7 @@ CR: Resources: Refine the trust boundary
     Refine the trust boundary by restricting resources to paths below the
     application context path. External resources can be addressed in a
     deliberate and controlled manner through reverse proxies.
+    This directly affects the import and output attributes in the markup.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

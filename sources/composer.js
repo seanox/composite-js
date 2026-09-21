@@ -74,35 +74,89 @@
     const _view_scope_workspace = [];
 
     /**
-     * Pattern for a DataSource XML locator, based on the URL syntax but only
-     * schema, path, file and query are used. A path segment begins with a word
-     * character _ a-z 0-9, optionally more word characters and additionally -
-     * can follow, but can not end with the - character. Paths are separated by
-     * the / character.
-     * - group 1: Locator without optional XPath
-     * - group 2: Protocol
-     * - group 3: Path complete incl. file and file extension
-     * - group 4: file extension (optional)
-     * - group 5: XPath without question mark (optional)
+     * Decodes a locator value repeatedly until it is no longer encoded.
+     * @param {string} value Encoded locator value
+     * @returns {string} The decoded locator value
      */
-    const PATTERN_DATASOURCE_LOCATOR_XML = /^((xml):(?:\/)?((?:\/\w+(?:[\w-]*\w)?)+(?:\.(\2))?))(?:\?(\S*))?$/;
+    const _locator_decode = value => {
+        while (true) {
+            const decoded = decodeURIComponent(value);
+            if (decoded === value)
+                return value;
+            value = decoded;
+        }
+    };
 
     /**
-     * Pattern for a DataSource XSLT locator, based on the URL syntax but only
-     * the schema, path and fileare used. A path segment begins with a word
-     * character _ a-z 0-9, optionally more word characters and additionally -
-     * can follow, but can not end with the - character. Paths are separated by
-     * the / character.
-     * - group 1: Locator without optional XPath
-     * - group 2: Protocol
-     * - group 3: Path complete incl. file and file extension
-     * - group 4: file extension (optional)
+     * Normalizes a locator path by removing redundant separators and segments.
+     * @param {string} value Locator path
+     * @returns {string} The canonical absolute locator path
      */
-    const PATTERN_DATASOURCE_LOCATOR_XSLT = /^((xslt):(?:\/)?((?:\/\w+(?:[\w-]*\w)?)+(?:\.(\2))?))$/;
+    const _locator_normalize_path = value => {
+        const parts = [];
+        _locator_decode(value).replace(/^\/+/, "").split("/").forEach(part => {
+            if (!part || part === ".")
+                return;
+            if (part === "..")
+                parts.pop();
+            else parts.push(part);
+        });
+        return "/" + parts.join("/");
+    };
 
-    /** Pattern for DataSource locator XML with transformation */
-    const PATTERN_DATASOURCE_LOCATOR_XML_XSLT = new RegExp(PATTERN_DATASOURCE_LOCATOR_XML.source.slice(0, -1)
-            + "\\s+\\+\\s+" + "(xslt|" + PATTERN_DATASOURCE_LOCATOR_XSLT.source.substring(1).slice(0, -1).replace("\\2", "\\8") + ")$");
+    /**
+     * Parses a supported locator string or URL for renderer dispatching.
+     * Query values are retained only for XML, where they represent XPath.
+     * For URL objects, search and hash are joined before decoding.
+     * @param {string|URL} value Locator string or URL
+     * @returns {{uri:string, schema:string, path:string, query:string|null}} Parsed locator
+     */
+    const _locator_parse = value => {
+
+        let source = value;
+        if (value instanceof URL) {
+            source = value.href;
+            if (!value.search
+                    && value.hash)
+                source = source.substring(0, source.length -value.hash.length);
+        }
+
+        if (typeof source !== "string"
+                || !source.trim())
+            throw new Error(`Invalid locator: ${String(value)}`);
+
+        const match = source.match(/^([a-z][a-z0-9+.-]*):/i);
+        const schema = match && match[1].toLowerCase();
+        if (!schema || !["xml", "xslt", "raw"].includes(schema))
+            throw new Error(`Unsupported schema: ${schema || source}`);
+
+        const tail = source.substring(match[0].length);
+        if (!tail.startsWith("/"))
+            throw new Error(`Invalid locator: ${source}`);
+        const separator = schema === "xml"
+            ? tail.indexOf("?") : tail.search(/[?#]/);
+        const resource = separator < 0
+            ? tail : tail.substring(0, separator);
+        const path = _locator_normalize_path(resource);
+        if (path === "/")
+            throw new Error(`Invalid locator: ${source}`);
+        const query = schema === "xml" && separator >= 0
+            ? _locator_decode(tail.substring(separator + 1)) : null;
+        const uri = `${schema}:${path}${query ? `?${query}` : ""}`;
+
+        return Object.freeze({uri, schema, path, query});
+    };
+
+    const _locator_fetch_content = locator => {
+        const url = window.location.combine(window.location.contextPath, locator.path);
+        const request = new XMLHttpRequest();
+        request.overrideMimeType("text/plain");
+        request.open("GET", url, false);
+        request.send();
+        if (request.status !== 200)
+            throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
+        return request.responseText.trim();
+    };
 
     compliant("Composer");
     compliant(null, window.Composer = {
@@ -2331,13 +2385,22 @@
      * @returns {NodeList|Node} The determined data as node(s)
      */
     const _render_datasource_collect = (value) => {
-        let data = "";
-        if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
-            const parts = String(value).split(/\s+\+\s+/);
+
+        const source = value instanceof URL ? value.href : String(value);
+        const match = source.match(/^(xml):\/.*$/i);
+        const schema = match && match[1].toLowerCase();
+        if (!schema || !["xml"].includes(schema))
+            throw new Error(`Unsupported schema: ${schema || source}`);
+
+        let data = ""
+        const parts = source.split(/\s+\+\s+/);
+        if (parts.length > 1) {
             if (parts[1] === "xslt")
                 parts[1] = parts[0].replaceAll(/(^xml(:))|((\.)xml$)/g, "$4xslt$2");
-            data = DataSource.transform(...parts);
-        } else data = DataSource.fetch(String(value));
+            if (!parts[1].toLowerCase().startsWith("xslt:/"))
+                throw new Error(`Invalid stylesheet locator: ${source}`);
+            data = DataSource.transform(_locator_parse(parts[0]).uri, _locator_parse(parts[1]).uri);
+        } else data = DataSource.fetch(_locator_parse(source).uri);
 
         if (data instanceof XMLDocument)
             data = data.documentElement.childNodes;
@@ -2346,6 +2409,18 @@
         else if (!(data instanceof NodeList))
             data = window.document.createTextNode(String(data));
         return data;
+    };
+
+    const _render_append_renderable = (selector, value, exclusive = false) => {
+        if (value instanceof Document
+                || value instanceof DocumentFragment
+                || value instanceof NodeList)
+            Array.from(value.childNodes || value).forEach((node, index) =>
+                _render_append_nodes(selector, node.cloneNode(true),
+                    exclusive && index === 0));
+        else if (value instanceof Node)
+            _render_append_nodes(selector, value.cloneNode(true), exclusive);
+        else throw new TypeError("Invalid render value");
     };
 
     const _render_append_nodes = (selector, value, exclusive = false) => {
@@ -2357,112 +2432,77 @@
             selector.appendChild(node));
     };
 
-    /**
-     * ATTRIBUTE_IMPORT: This declaration loads the content and replaces the
-     * inner HTML of an element with the content.
-     * The following data types are supported:
-     * 1. Node and NodeList as the result of an expression.
-     * 2. URL (relative or absolute) loads markup/content from a remote data
-     *    source via the HTTP method GET
-     * 3. DataSource-URL loads and transforms DataSource data.
-     * 4. Everything else is output directly as string/text.
-     * The import is exclusive, similar to ATTRIBUTE_OUTPUT, thus overwriting
-     * any existing content. The recursive (re)rendering is initiated via the
-     * MutationObserver. If the content can be loaded successfully,
-     * ATTRIBUTE_IMPORT is removed.
-     * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
-     * @param {number} serial Serial of the element
-     * @param {object} lock Lock of the render cycle
-     */
-    const _render_attribute_import = (selector, object, serial, lock) => {
+    const _render_append_locator_content = (selector, object, serial, attribute) => {
 
-        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_IMPORT))
+        if (!object.attributes.hasOwnProperty(attribute))
             return;
 
-        selector.innerHTML = "";
-        let value = object.attributes[Composer.ATTRIBUTE_IMPORT];
+        let value = object.attributes[attribute];
         if ((value || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_IMPORT,
+            value = Expression.eval(serial + ":" + attribute,
                 _execution_context(), String(value));
-        if (!value) {
-            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
-        } else if (value instanceof Element
-                || value instanceof NodeList) {
-            _render_append_nodes(selector, value, true);
-            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
-        } else if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
-                || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
-            _render_append_nodes(selector, _render_datasource_collect(value), true);
-            const serial = selector.serial();
-            const object = _render_meta[serial];
-            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
-        } else if (_render_cache[value] !== undefined) {
-            selector.innerHTML = _render_cache[value];
-            const serial = selector.serial();
-            const object = _render_meta[serial];
-            delete object.attributes[Composer.ATTRIBUTE_IMPORT];
-        } else {
-            Composer.asynchronous((selector, lock, url) => {
-                try {
-                    const request = new XMLHttpRequest();
-                    request.overrideMimeType("text/plain");
-                    request.open("GET", url, false);
-                    request.send();
-                    if (request.status !== 200)
-                        throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
-                    const content = request.responseText.trim();
-                    _render_cache[request.responseURL] = content;
-                    selector.innerHTML = content;
-                    const serial = selector.serial();
-                    const object = _render_meta[serial];
-                    delete object.attributes[Composer.ATTRIBUTE_IMPORT];
-                } catch (error) {
-                    Composer.fire(Composer.EVENT_HTTP_ERROR, error);
-                    throw error;
-                } finally {
-                    lock.release();
-                }
-            }, selector, lock.share(), value);
+
+        if (value instanceof Document
+                || value instanceof DocumentFragment
+                || value instanceof NodeList
+                || value instanceof Node) {
+            _render_append_renderable(selector, value, true);
+            return;
+        }
+
+        value = value instanceof URL ? value.href : String(value);
+        const match = value.match(/^([a-z][a-z0-9+.-]*):/i);
+        const schema = match && match[1].toLowerCase();
+        switch (schema) {
+            case "raw":
+                selector.innerHTML = _locator_fetch_content(_locator_parse(value));
+                return;
+            case "xml":
+                _render_append_nodes(selector, _render_datasource_collect(value), true);
+                return;
+            default:
+                selector.innerHTML = String(value);
         }
     };
 
     /**
-     * ATTRIBUTE_OUTPUT: This declaration sets the value or result of an
-     * expression as the content of an element.
+     * ATTRIBUTE_IMPORT: This declaration sets the value or result of an
+     * expression as the content of an element and replaces the inner HTML.
      * The following data types are supported:
-     * 1. Node and NodeList as the result of an expression.
-     * 2. DataSource-URL loads and transforms DataSource data.
-     * 3. Everything else is output directly as string/text.
-     * The output is exclusive, thus overwriting any existing content. The
-     * recursive (re)rendering is initiated via the MutationObserver.
+     * 1. Locator, URL, String, Node, NodeList and DocumentFragment.
+     * 2. DataSource locators load and transform DataSource data.
+     * The rendering is exclusive, thus overwriting any existing content.
+     * The recursive rendering is initiated via the MutationObserver.
+     * After successful rendering, ATTRIBUTE_IMPORT is removed and the
+     * rendering is not repeated.
+     * @param {Element} selector Element to be rendered
+     * @param {object} object Meta-object of the element
+     * @param {number} serial Serial of the element
+     */
+    const _render_attribute_import = (selector, object, serial) => {
+        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_IMPORT))
+            return;
+        _render_append_locator_content(selector, object, serial, Composer.ATTRIBUTE_IMPORT);
+        delete object.attributes[Composer.ATTRIBUTE_IMPORT];
+    };
+
+    /**
+     * ATTRIBUTE_OUTPUT: This declaration sets the value or result of an
+     * expression as the content of an element and replaces the inner HTML.
+     * The following data types are supported:
+     * 1. Locator, URL, String, Node, NodeList and DocumentFragment.
+     * 2. DataSource locators load and transform DataSource data.
+     * The rendering is exclusive, thus overwriting any existing content.
+     * The recursive rendering is initiated via the MutationObserver and
+     * repeated on every render because ATTRIBUTE_OUTPUT remains present.
      * @param {Element} selector Element to be rendered
      * @param {object} object Meta-object of the element
      * @param {number} serial Serial of the element
      */
     const _render_attribute_output = (selector, object, serial) => {
-
         if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_OUTPUT))
             return;
-
-        selector.innerHTML = "";
-        let value = object.attributes[Composer.ATTRIBUTE_OUTPUT];
-        if ((value || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + Composer.ATTRIBUTE_OUTPUT,
-                _execution_context(), String(value));
-        if (String(value).match(PATTERN_DATASOURCE_LOCATOR_XML)
-                || String(value).match(PATTERN_DATASOURCE_LOCATOR_XML_XSLT)) {
-            _render_append_nodes(selector, _render_datasource_collect(value), true);
-        } else if (value instanceof XMLDocument
-                || value instanceof DocumentFragment)
-            Array.from(value.childNodes).forEach((node, index) =>
-                _render_append_nodes(selector, node.cloneNode(true), index === 0));
-        else if (value instanceof Node)
-            _render_append_nodes(selector, value.cloneNode(true), true);
-        else if (value instanceof NodeList)
-            Array.from(value).forEach((node, index) =>
-                _render_append_nodes(selector, node.cloneNode(true), index === 0));
-        else selector.innerHTML = String(value);
+        _render_append_locator_content(selector, object, serial, Composer.ATTRIBUTE_OUTPUT);
     };
 
     /**

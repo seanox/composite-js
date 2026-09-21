@@ -3,4 +3,4 @@
 B:{{xB}}<br>
 {{xC:parseInt(xC)+1}}
 C:{{xC}}
-<div id="C" import="context://resources/import_c.htmlx"></div>
+<div id="C" import="raw://resources/import_c.htmlx"></div>

@@ -57,7 +57,7 @@
             Assert.assertEquals(10, targets["BODY"]);
         }});
         Test.create({test() {
-            Assert.assertEquals(2, targets["SCRIPT"]);
+            Assert.assertUndefined(targets["SCRIPT"]);
         }});
         Test.create({test() {
             const content = document.body.innerText;
@@ -136,6 +136,6 @@
       </script>
     </div>
     <div id="OutputE">E:</div>
-    <div import="composer_render_script.import"></div>    
+    <div import="raw://composer_render_script.import"></div>
   </body>
 </html>

@@ -73,80 +73,6 @@
      */
     const _view_scope_workspace = [];
 
-    /**
-     * Decodes a locator value repeatedly until it is no longer encoded.
-     * @param {string} value Encoded locator value
-     * @returns {string} The decoded locator value
-     */
-    const _locator_decode = value => {
-        while (true) {
-            const decoded = decodeURIComponent(value);
-            if (decoded === value)
-                return value;
-            value = decoded;
-        }
-    };
-
-    /**
-     * Normalizes a locator path by removing redundant separators and segments.
-     * @param {string} value Locator path
-     * @returns {string} The canonical absolute locator path
-     */
-    const _locator_normalize_path = value => {
-        const parts = [];
-        _locator_decode(value).replace(/^\/+/, "").split("/").forEach(part => {
-            if (!part || part === ".")
-                return;
-            if (part === "..")
-                parts.pop();
-            else parts.push(part);
-        });
-        return "/" + parts.join("/");
-    };
-
-    /**
-     * Parses a supported locator string or URL for renderer dispatching.
-     * Query values are retained only for XML, where they represent XPath.
-     * For URL objects, search and hash are joined before decoding.
-     * @param {string|URL} value Locator string or URL
-     * @returns {{uri:string, schema:string, path:string, query:string|null}} Parsed locator
-     */
-    const _locator_parse = value => {
-
-        let source = value;
-        if (value instanceof URL) {
-            source = value.href;
-            if (!value.search
-                    && value.hash)
-                source = source.substring(0, source.length -value.hash.length);
-        }
-
-        if (typeof source !== "string"
-                || !source.trim())
-            throw new Error(`Invalid locator: ${String(value)}`);
-
-        const match = source.match(/^([a-z][a-z0-9+.-]*):/i);
-        const schema = match && match[1].toLowerCase();
-        if (!schema || !["xml", "xslt", "raw"].includes(schema))
-            throw new Error(`Unsupported schema: ${schema || source}`);
-
-        const tail = source.substring(match[0].length);
-        if (!tail.startsWith("/"))
-            throw new Error(`Invalid locator: ${source}`);
-        const separator = schema === "xml"
-            ? tail.indexOf("?") : tail.search(/[?#]/);
-        const resource = separator < 0
-            ? tail : tail.substring(0, separator);
-        const path = _locator_normalize_path(resource);
-        if (path === "/")
-            throw new Error(`Invalid locator: ${source}`);
-        const query = schema === "xml" && separator >= 0
-            ? _locator_decode(tail.substring(separator + 1)) : null;
-        const uri = `${schema}:${path}${query ? `?${query}` : ""}`;
-
-        return Object.freeze({uri, schema, path, query});
-    };
-
     const _locator_fetch_content = locator => {
         const url = window.location.combine(window.location.contextPath, locator.path);
         const request = new XMLHttpRequest();
@@ -2387,20 +2313,21 @@
     const _render_datasource_collect = (value) => {
 
         const source = value instanceof URL ? value.href : String(value);
-        const match = source.match(/^(xml):\/.*$/i);
+        const match = source.match(/^([a-z][a-z0-9+.-]*):/i);
         const schema = match && match[1].toLowerCase();
-        if (!schema || !["xml"].includes(schema))
+        if (!schema || ![Locator.SCHEMA_XML].includes(schema))
             throw new Error(`Unsupported schema: ${schema || source}`);
 
         let data = ""
         const parts = source.split(/\s+\+\s+/);
         if (parts.length > 1) {
-            if (parts[1] === "xslt")
-                parts[1] = parts[0].replaceAll(/(^xml(:))|((\.)xml$)/g, "$4xslt$2");
-            if (!parts[1].toLowerCase().startsWith("xslt:/"))
-                throw new Error(`Invalid stylesheet locator: ${source}`);
-            data = DataSource.transform(_locator_parse(parts[0]).uri, _locator_parse(parts[1]).uri);
-        } else data = DataSource.fetch(_locator_parse(source).uri);
+            parts[0] = Locator.parse(Locator.SCHEMA_XML, parts[0]).uri;
+            if (parts[1] !== Locator.SCHEMA_XSLT) {
+                parts[1] = Locator.parse(Locator.SCHEMA_XSLT, parts[1]).uri;
+                data = DataSource.transform(parts[0], parts[1]);
+            } else data = DataSource.transform(parts[0]);
+        } else data = DataSource.fetch(
+            Locator.parse(Locator.SCHEMA_XML, source).uri);
 
         if (data instanceof XMLDocument)
             data = data.documentElement.childNodes;
@@ -2454,10 +2381,11 @@
         const match = value.match(/^([a-z][a-z0-9+.-]*):/i);
         const schema = match && match[1].toLowerCase();
         switch (schema) {
-            case "raw":
-                selector.innerHTML = _locator_fetch_content(_locator_parse(value));
+            case Locator.SCHEMA_RAW:
+                selector.innerHTML = _locator_fetch_content(
+                    Locator.parse(Locator.SCHEMA_RAW, value));
                 return;
-            case "xml":
+            case Locator.SCHEMA_XML:
                 _render_append_nodes(selector, _render_datasource_collect(value), true);
                 return;
             default:

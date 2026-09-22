@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+    
+        Test.activate();
+
+        Test.create({test() {
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw://foo/bar").uri);
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw://foo/./bar").uri);
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw:/foo/bar/").uri);
+            Assert.assertEquals("raw:/foo", Locator.parse("raw://foo/bar/..").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw:/foo/../bar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo/bar/../../bar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw:/../bar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo/../../bar").uri);
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw://foo/%2e/bar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo/%2e%2e/bar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo/%252e%252e/bar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo/%25252e%25252e/bar").uri);
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw://foo%2fbar").uri);
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw://foo%2Fbar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo%2f..%2fbar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo%2f%2e%2e%2fbar").uri);
+            Assert.assertEquals("raw:/bar", Locator.parse("raw://foo%252f%252e%252e%252fbar").uri);
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw:///foo//bar").uri);
+            Assert.assertEquals("raw:/foo/bar", Locator.parse("raw://foo/./bar/../bar").uri);
+            Assert.assertEquals("raw:/foo/.hidden", Locator.parse("raw://foo/.hidden").uri);
+            Assert.assertEquals("raw:/foo/..hidden", Locator.parse("raw://foo/..hidden").uri);
+            Assert.assertEquals("raw:/foo/.../bar", Locator.parse("raw://foo/.../bar").uri);
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("raw:/foo bar", Locator.parse("raw://foo%20bar").uri);
+            Assert.assertEquals("raw:/foo bar", Locator.parse("raw://foo%2520bar").uri);
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

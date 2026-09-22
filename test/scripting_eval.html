@@ -331,11 +331,11 @@
                     )
             );
             Assert.assertEquals(
-                    "const value = 42;\n\n//# sourceURL=scripting_eval.html\n",
+                    "const value = 123;\n\n//# sourceURL=scripting_eval.html\n",
                     Scripting.eval(
                             "scripting_eval.html",
                             {},
-                            "const value = 42;",
+                            "const value = 123;",
                             true
                     )
             );
@@ -346,7 +346,7 @@
             Assert.assertEquals(3, Scripting.eval("scripting_eval.html", {}, "1 + 2"));
             Assert.assertEquals(3, Scripting.eval("scripting_eval.html", {}, "(? 1 + 2)"));
             Assert.assertEquals(undefined, Scripting.eval("scripting_eval.html", {}, "(? unknownVariable)"));
-            Assert.assertEquals(42, Scripting.eval("scripting_eval.html", {}, "(? unknownVariable) || 42"));
+            Assert.assertEquals(123, Scripting.eval("scripting_eval.html", {}, "(? unknownVariable) || 123"));
         }});
 
         Test.start({auto:true});

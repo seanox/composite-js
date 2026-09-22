@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        Test.create({name: "API", test() {
+            Assert.assertEquals("object", typeof Arguments);
+            Assert.assertEquals("function", typeof Arguments.bind);
+        }});
+
+        [
+            ["name", String], ["", String], [123, Number], [0, Number],
+            [-1, Number], [Infinity, Number], [false, Boolean], [true, Boolean],
+            [() => {}, Function], [function() {}, Function],
+            [{}, Object], [Object.create(null), Object], [[], Object],
+            [new Date(), Object], [[], Array], [new Date(), Date],
+            [document.createElement("div"), Element],
+            [document.createTextNode("text"), Node]
+        ].forEach(([value, type], index) => {
+            Test.create({name: "Accepted type #" + (index +1), test() {
+                const result = Arguments.bind([value], [{value: [type]}]);
+                Assert.assertEquals(value, result.value);
+                Assert.assertTrue(Object.isFrozen(result));
+            }});
+        });
+
+        Test.create({name: "NaN is a number", test() {
+            Assert.assertTrue(Number.isNaN(Arguments.bind([NaN], [{value: [Number]}]).value));
+        }});
+
+        Test.create({name: "Constructor inheritance", test() {
+            class Parent {}
+            class Child extends Parent {}
+            const value = new Child();
+            Assert.assertEquals(value, Arguments.bind([value], [{value: [Parent]}]).value);
+            Assert.assertEquals(value, Arguments.bind([value], [{value: [Child]}]).value);
+            Assert.assertEquals(value, Arguments.bind([value], [{value: [Object]}]).value);
+        }});
+
+        ["name", 123].forEach(value => {
+            Test.create({name: "Union of primitive types: " + typeof value, test() {
+                Assert.assertEquals(value,
+                    Arguments.bind([value], [{value: [String, Number]}]).value);
+            }});
+        });
+
+        Test.create({name: "Union of constructors", test() {
+            const value = new Date();
+            Assert.assertEquals(value,
+                Arguments.bind([value], [{value: [Array, Date]}]).value);
+        }});
+
+        [
+            [undefined, [{}]], [null, [{}]], [{}, [{}]], ["name", [{}]],
+            [[], undefined], [[], null], [[], {}],
+            [[], [null]], [[], [123]], [[], ["signature"]],
+            [[], [{value: String}]], [[], [{value: null}]],
+            [[], [{value: ["String"]}]], [[], [{value: [null]}]]
+        ].forEach(([values, signatures], index) => {
+            Test.create({name: "Invalid definition #" + (index +1),
+                    expected: TypeError, test() {
+                Arguments.bind(values, signatures);
+            }});
+        });
+
+        Test.create({name: "Validate even signatures with a different count",
+                expected: /^TypeError: Invalid argument types$/, test() {
+            Arguments.bind(["name"], [
+                {name: [String]}, {name: [String], count: Number}
+            ]);
+        }});
+
+        [
+            [null, Object], [undefined, Object], ["name", Object],
+            [123, Object], [false, Object], [() => {}, Object],
+            [new String("name"), String], [new Number(123), Number],
+            [new Boolean(false), Boolean], ["123", Number], [0, Boolean],
+            [true, Number], [{}, Function], [{}, Array]
+        ].forEach(([value, type], index) => {
+            Test.create({name: "Rejected type without coercion #" + (index +1),
+                    expected: TypeError, test() {
+                Arguments.bind([value], [{value: [type]}]);
+            }});
+        });
+
+        Test.create({name: "Empty type list",
+                expected: /^TypeError: Invalid name: string$/, test() {
+            Arguments.bind(["name"], [{name: []}]);
+        }});
+
+        Test.create({name: "Frozen result preserves object references", test() {
+            const value = {count: 1};
+            const result = Arguments.bind([value], [{value: [Object]}]);
+            Assert.assertTrue(Object.isFrozen(result));
+            Assert.assertEquals(value, result.value);
+            Assert.assertFalse(Object.isFrozen(value));
+            value.count = 2;
+            Assert.assertEquals(2, result.value.count);
+        }});
+
+        Test.create({name: "Fresh result for each call", test() {
+            const signatures = [{name: [String]}];
+            const first = Arguments.bind(["name"], signatures);
+            const second = Arguments.bind(["name"], signatures);
+            Assert.assertNotEquals(first, second);
+            Assert.assertEquals(first.name, second.name);
+        }});
+
+        Test.create({name: "Surplus arguments and unchanged frozen inputs", test() {
+            const values = Object.freeze(["name", 123, false]);
+            const signatures = Object.freeze([
+                Object.freeze({short: Object.freeze([String])}),
+                Object.freeze({name: Object.freeze([String]), count: Object.freeze([Number])})
+            ]);
+            const result = Arguments.bind(values, signatures);
+            Assert.assertEquals('{"name":"name","count":123}', JSON.stringify(result));
+            Assert.assertTrue(Object.isFrozen(result));
+            Assert.assertEquals('["name",123,false]', JSON.stringify(values));
+            Assert.assertEquals(2, signatures.length);
+        }});
+
+        Test.create({name: "Surplus argument values are not inspected", test() {
+            const values = ["name"];
+            Object.defineProperty(values, 1, {get() {
+                Assert.fail("Surplus argument accessed");
+            }});
+            Assert.assertEquals("name", Arguments.bind(values, [{name: [String]}]).name);
+        }});
+
+        Test.create({name: "Exact count selects shorter signature", test() {
+            const result = Arguments.bind(["name"], [
+                {name: [String], count: [Number]}, {short: [String]}
+            ]);
+            Assert.assertEquals('{"short":"name"}', JSON.stringify(result));
+        }});
+
+        Test.create({name: "Zero arguments select empty signature", test() {
+            const result = Arguments.bind([], [{name: [String]}, {}]);
+            Assert.assertEquals("{}", JSON.stringify(result));
+            Assert.assertTrue(Object.isFrozen(result));
+        }});
+
+        Test.create({name: "All values ignored when maximum count is zero", test() {
+            Assert.assertEquals("{}", JSON.stringify(Arguments.bind(["ignored"], [{}])));
+        }});
+
+        Test.create({name: "First matching signature wins", test() {
+            const result = Arguments.bind(["name", 123], [
+                {first: [String], count: [Number]},
+                {second: [String], amount: [Number]}
+            ]);
+            Assert.assertEquals('{"first":"name","count":123}', JSON.stringify(result));
+        }});
+
+        Test.create({name: "Declaration order wins over type specificity", test() {
+            const value = new Date();
+            Assert.assertEquals(value,
+                Arguments.bind([value], [{object: [Object]}, {date: [Date]}]).object);
+        }});
+
+        Test.create({name: "Successive positions eliminate different candidates", test() {
+            const result = Arguments.bind(["name", 123], [
+                {first: [Number], ignored: [Number]},
+                {name: [String], text: [String]},
+                {name: [String], count: [Number]}
+            ]);
+            Assert.assertEquals('{"name":"name","count":123}', JSON.stringify(result));
+        }});
+
+        [
+            [null, "null"], [undefined, "undefined"], [123, "number"],
+            [false, "boolean"], [Symbol(), "symbol"],
+            [() => {}, "function"], [[], "Array"], [new Date(), "Date"],
+            [Object.create(null), "object"],
+            [new String("name"), "String"], [new Number(123), "Number"],
+            [new Boolean(false), "Boolean"], [new class Custom {}, "Custom"],
+            [document.createElement("div"), "Element"]
+        ].forEach(([value, type]) => {
+            Test.create({name: "Type mismatch diagnostic: " + type,
+                    expected: new RegExp("^TypeError: Invalid name: " + type + "$"), test() {
+                Arguments.bind([value], [{name: [String]}, {alternative: [String]}]);
+            }});
+            Test.create({name: "Count mismatch diagnostic: " + type,
+                    expected: new RegExp("^TypeError: Invalid name: " + type + "$"), test() {
+                Arguments.bind([value], [{name: [String], count: [Number]}]);
+            }});
+        });
+
+        Test.create({name: "Primitive string diagnostic",
+                expected: /^TypeError: Invalid name: string$/, test() {
+            Arguments.bind(["name"], [{name: [Number]}]);
+        }});
+
+        Test.create({name: "Error key comes from first surviving candidate",
+                expected: /^TypeError: Invalid count: boolean$/, test() {
+            Arguments.bind(["name", false], [
+                {first: [Number], ignored: [String]},
+                {name: [String], count: [Number]},
+                {name: [String], date: [Date]}
+            ]);
+        }});
+
+        Test.create({name: "No fallback to shorter signature after truncation",
+                expected: /^TypeError: Invalid count: boolean$/, test() {
+            Arguments.bind(["name", false, "ignored"], [
+                {short: [String]},
+                {name: [String], count: [Number]}
+            ]);
+        }});
+
+        Test.create({name: "Count gap uses first key of first signature",
+                expected: /^TypeError: Invalid short: string$/, test() {
+            Arguments.bind(["name", 123], [
+                {short: [String]},
+                {name: [String], count: [Number], flag: [Boolean]}
+            ]);
+        }});
+
+        Test.create({name: "Missing argument diagnostic",
+                expected: /^TypeError: Invalid name: undefined$/, test() {
+            Arguments.bind([], [{name: [String]}]);
+        }});
+
+        Test.create({name: "Empty signatures",
+                expected: /^TypeError: Invalid arguments$/, test() {
+            Arguments.bind([], []);
+        }});
+
+        Test.create({name: "No diagnostic key in first signature",
+                expected: /^TypeError: Invalid arguments$/, test() {
+            Arguments.bind(["name"], [{}, {name: [String], count: [Number]}]);
+        }});
+
+        Test.create({name: "Empty string is a valid diagnostic key",
+                expected: /^TypeError: Invalid : undefined$/, test() {
+            Arguments.bind([], [{"": [String]}]);
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -95,6 +95,8 @@
                 throw new Error(`Invalid locator: ${String(value)}`);
 
             const match = source.match(/^([a-z][a-z0-9+.-]*):/i);
+            if (!match)
+                throw new Error(`Invalid locator: ${source}`);
             const schema = match && match[1].toLowerCase();
             if (![SCHEMA_XML, SCHEMA_XSLT, SCHEMA_RAW].includes(schema))
                 throw new Error(`Unsupported schema: ${schema || source}`);

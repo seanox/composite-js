@@ -35,20 +35,6 @@
     /** Path of the DataSource for: data (sub-directory of work path) */
     const DATA = window.location.combine(window.location.contextPath, "/data");
 
-    /**
-     * Pattern for a DataSource locator, based on the URL syntax but only the
-     * schema, path, file and query are used. A path segment begins with a word
-     * character _ a-z 0-9, optionally more word characters and additionally -
-     * can follow, but can not end with the - character. Paths are separated by
-     * the / character.
-     * - group 1: Locator without optional XPath
-     * - group 2: Schema
-     * - group 3: Path complete incl. file and file extension
-     * - group 4: file extension (optional)
-     * - group 5: XPath without question mark (optional)
-     */
-    const PATTERN_LOCATOR = /^((xml|xslt):(?:\/)?((?:\/\w+(?:[\w-]*\w)?)+(?:\.(\2))?))(?:\?(\S*))?$/;
-
     /** Pattern to detect JavaScript elements */
     const PATTERN_JAVASCRIPT = /^\s*text\s*\/\s*javascript\s*$/i;
 
@@ -103,50 +89,36 @@
          * The method has the following various signatures:
          *     DataSource.transform(xml);
          *     DataSource.transform(xml, meta);
+         *     DataSource.transform(xml, style);
          *     DataSource.transform(xml, style, meta);
          *
          * @param {string|XMLDocument} xml Locator or XML document to be
          *     transformed
          * @param {string|XMLDocument} [style] Optional locator or XMLDocument
          *     that is used as a stylesheet for transformation
-         * @param {Object} [meta] Optional  parameters for the XSLT processor
+         * @param {Object} [meta] Optional parameters for the XSLT processor
          * @returns {DocumentFragment} The transformation result as a
          *     DocumentFragment
          * @throws {Error} In case of invalid arguments
          */
         transform(...variants) {
 
-            let [xml, style, meta] = variants;
-            if (variants.length === 2
-                    && typeof style === "object"
-                    && !(style instanceof XMLDocument)) {
-                meta = style;
-                style = undefined;
-            }
-            if (variants.length <= 1
-                    && typeof xml === "string")
-                style = xml.replaceAll(/(^xml(:))|((\.)xml$)/g, "$4xslt$2");
-            if (typeof xml !== "string"
-                    && !(xml instanceof XMLDocument))
-                throw new TypeError(`Invalid xml locator: ${typeof xml}`);
-            if (variants.length >= 3) {
-                if (typeof style !== "string"
-                        && !(style instanceof XMLDocument))
-                    throw new TypeError(`Invalid xslt locator: ${typeof style}`);
-                if (typeof meta !== "object")
-                    throw new TypeError(`Invalid meta object: ${typeof meta}`);
-            } else if (variants.length >= 2
-                    && style !== undefined) {
-                if (typeof style !== "string"
-                        && !(style instanceof XMLDocument))
-                    throw new TypeError(`Invalid xslt locator or meta object: ${typeof style}`);
-            }
+            let {xml, style, meta} = Arguments.bind(variants, [
+                {xml: [String, XMLDocument]},
+                {xml: [String, XMLDocument], style: [String, XMLDocument]},
+                {xml: [String, XMLDocument], meta: [Object]},
+                {xml: [String, XMLDocument], style: [String, XMLDocument], meta: [Object]}
+            ]);
 
             if (typeof xml === "string") {
-                if (!xml.match(PATTERN_LOCATOR)
-                        || xml.match(PATTERN_LOCATOR)[2] !== "xml")
-                    throw new Error("Invalid xml locator: " + String(xml));
-                xml = DataSource.fetch(xml);
+                const locator = Locator.parse(Locator.SCHEMA_XML, xml);
+                if (style === undefined) {
+                    const path = locator.path.replace(/\.xml$/, ".xslt");
+                    style = Locator.parse(
+                        Locator.SCHEMA_XSLT, `${Locator.SCHEMA_XSLT}:${path}`).uri;
+                }
+
+                xml = DataSource.fetch(locator.uri);
                 if (!(xml instanceof XMLDocument)) {
                     const document = window.document.implementation.createDocument(null, "data", null);
                     if (xml instanceof NodeList) {
@@ -161,11 +133,10 @@
             }
 
             if (typeof style === "string") {
-                if (!style.match(PATTERN_LOCATOR)
-                        || style.match(PATTERN_LOCATOR)[2] !== "xslt"
-                        || style.match(PATTERN_LOCATOR)[5] !== undefined)
+                const locator = Locator.parse(Locator.SCHEMA_XSLT, style);
+                if (locator.query !== undefined)
                     throw new Error("Invalid xslt locator: " + String(style));
-                style = DataSource.fetch(style);
+                style = DataSource.fetch(locator.uri);
             }
 
             if (!(xml instanceof XMLDocument))
@@ -258,26 +229,18 @@
 
             if (typeof locator !== "string")
                 throw new Error("Invalid locator: " + String(locator));
-            if (!locator.match(PATTERN_LOCATOR))
-                throw new Error("Invalid locator: " + String(locator));
+            const source = locator;
+            locator = Locator.parse(locator);
+            if (locator.schema === Locator.SCHEMA_RAW)
+                throw new Error("Invalid locator: " + source);
+            if (locator.schema === Locator.SCHEMA_XSLT
+                    && locator.query !== undefined)
+                throw new Error("Invalid xslt locator: " + source);
 
-            locator = ((locator) => {
-                const matches = locator.match(PATTERN_LOCATOR);
-                const absolute = matches[4] !== undefined;
-                const location = absolute
-                    ? `${window.location.contextPath}${matches[3]}`
-                    : `${DATA}/${DataSource.locale}${matches[3]}.${matches[2]}`;
-                return {
-                    source:   locator,
-                    location: location,
-                    schema:   matches[2],
-                    xpath:    matches[5]
-                };
-            })(locator);
-
-            if (locator.schema === "xslt"
-                    && locator.xpath !== undefined)
-                throw new Error("Invalid xslt locator: " + locator.source);
+            const explicit = /\.[^/]+$/.test(locator.path);
+            const location = explicit
+                ? `${window.location.contextPath}${locator.path}`
+                : `${DATA}/${DataSource.locale}${locator.path}.${locator.schema}`;
 
             const data = ((locator) => {
                 const hash = locator.hashCode();
@@ -292,13 +255,13 @@
                 const data = request.responseXML;
                 _cache[hash] = data;
                 return data.clone();
-            })(locator.location);
+            })(location);
 
-            if (locator.xpath === undefined
-                    || locator.xpath === "")
+            if (locator.query === undefined
+                    || locator.query === "")
                 return data;
 
-            const result = data.evaluate(locator.xpath, data, null, XPathResult.ANY_TYPE, null);
+            const result = data.evaluate(locator.query, data, null, XPathResult.ANY_TYPE, null);
             switch (result.resultType) {
                 case XPathResult.BOOLEAN_TYPE:
                     return result.booleanValue;
@@ -370,8 +333,7 @@
             locators.forEach(entry => {
                 if (typeof entry !== "string")
                     throw new TypeError(`Invalid xml locator: ${typeof entry}`);
-                if (!entry.match(PATTERN_LOCATOR))
-                    throw new TypeError(`Invalid xml locator: ${entry}`);
+                Locator.parse(Locator.SCHEMA_XML, entry);
             });
 
             let hash = collector.hashCode() + ":" + locators.join().hashCode();

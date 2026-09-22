@@ -49,16 +49,10 @@
          */
         eval(...variants) {
 
-            let [identifier, context, expression] = variants.length > 2
-                    ? variants : [undefined, variants[0], variants[1]];
-
-            if (identifier != null
-                    && typeof identifier !== "string")
-                throw new TypeError("Invalid identifier: " + typeof identifier)
-            if (typeof context !== "object")
-                throw new TypeError("Invalid context: " + typeof context)
-            if (typeof expression !== "string")
-                throw new TypeError("Invalid expression: " + typeof expression)
+            const {identifier, context, expression} = Arguments.bind(variants, [
+                {context: [Object], expression: [String]},
+                {identifier: [String], context: [Object], expression: [String]}
+            ]);
 
             let script = identifier ? _cache.get(identifier) : null;
             if (!script)

@@ -252,6 +252,100 @@
         }
     });
 
+    /**
+     * Automatically binds arguments to the first matching named signature
+     * pattern, using the signature's argument names and types to determine the
+     * mapping. Signatures are matched in order, first by argument count and
+     * then by argument types. Values beyond the signature length are ignored.
+     * @param {Array} values Values to bind
+     * @param {Array<Object>} signatures Ordered signatures with allowed types
+     * @returns {Object} Frozen values assigned to the signature names
+     * @throws {TypeError} In case of invalid definitions, no signature with
+     * the effective count, or a positional type mismatch
+     */
+    compliant("Arguments");
+    compliant(null, window.Arguments = {
+        bind(values, signatures) {
+
+            if (!Array.isArray(values))
+                throw new TypeError(`Invalid values: ${typeof values}`);
+            if (!Array.isArray(signatures))
+                throw new TypeError(`Invalid signatures: ${typeof signatures}`);
+
+            const signatureNames = signatures.map(signature => {
+                if (signature === null
+                        || typeof signature !== "object")
+                    throw new TypeError(`Invalid signature: ${typeof signature}`);
+                const names = Object.keys(signature);
+                names.forEach(name => {
+                    const types = signature[name];
+                    if (!Array.isArray(types))
+                        throw new TypeError("Invalid argument types");
+                    types.forEach(type => {
+                        if (typeof type !== "function")
+                            throw new TypeError("Invalid argument type");
+                    });
+                });
+                return names;
+            });
+
+            const maximum = signatureNames.reduce((length, names) =>
+                Math.max(length, names.length), 0);
+            const length = Math.min(values.length, maximum);
+            let candidates = signatureNames.map((names, index) =>
+                ({names, signature: signatures[index]}))
+                .filter(candidate => candidate.names.length === length);
+
+            if (candidates.length === 0) {
+                const name = signatureNames[0] && signatureNames[0][0];
+                if (name === undefined)
+                    throw new TypeError("Invalid arguments");
+                const value = values[0];
+                const type = value === null ? "null"
+                    : value instanceof Element ? "Element"
+                    : typeof value === "object"
+                            && typeof value.constructor === "function"
+                            && value.constructor.name
+                        ? value.constructor.name : typeof value;
+                throw new TypeError(`Invalid ${name}: ${type}`);
+            }
+
+            for (let index = 0; index < length; index++) {
+                const name = candidates[0].names[index];
+                const value = values[index];
+                candidates = candidates.filter(candidate =>
+                    candidate.signature[candidate.names[index]]
+                        .some(type => {
+                            if (type === String)
+                                return typeof value === "string";
+                            if (type === Number)
+                                return typeof value === "number";
+                            if (type === Boolean)
+                                return typeof value === "boolean";
+                            if (type === Function)
+                                return typeof value === "function";
+                            if (type === Object)
+                                return value !== null && typeof value === "object";
+                            return value instanceof type;
+                        }));
+                if (candidates.length === 0) {
+                    const type = value === null ? "null"
+                        : value instanceof Element ? "Element"
+                        : typeof value === "object"
+                                && typeof value.constructor === "function"
+                                && value.constructor.name
+                            ? value.constructor.name : typeof value;
+                    throw new TypeError(`Invalid ${name}: ${type}`);
+                }
+            }
+
+            const result = {};
+            candidates[0].names.forEach((name, index) =>
+                result[name] = values[index]);
+            return Object.freeze(result);
+        }
+    });
+
     const _filter = (...levels) => {
         const chain = [];
         levels.forEach((level, index) => {

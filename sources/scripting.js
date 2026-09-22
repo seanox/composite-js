@@ -75,19 +75,11 @@
          */
         eval(...variants) {
 
-            let [url, context, script, debug = false] = variants.length > 2
-                    ? variants : [undefined, variants[0], variants[1]];
-
-            if (url != null
-                    && typeof url !== "string")
-                throw new TypeError("Invalid url: " + typeof url)
-            if (typeof context !== "object")
-                throw new TypeError("Invalid context: " + typeof context)
-            if (typeof script !== "string")
-                throw new TypeError("Invalid script: " + typeof script)
-            if (debug !== undefined
-                    && typeof debug !== "boolean")
-                throw new TypeError("Invalid debug: " + typeof debug)
+            let {url, context, script, debug = false} = Arguments.bind(variants, [
+                {context: [Object], script: [String]},
+                {url: [String], context: [Object], script: [String]},
+                {url: [String], context: [Object], script: [String], debug: [Boolean]}
+            ]);
 
             // Performance is important here.
             // The implementation parses and replaces macros in one pass.

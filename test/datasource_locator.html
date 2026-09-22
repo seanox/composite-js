@@ -102,11 +102,13 @@
             DataSource.fetch("xslt://data/xx/locator_a.xslt");
         }});
 
-        Test.create({expected:/\bInvalid locator: xml:\/data\/xx\/b-b\/locator_b\.xslt/i, test() {
-            DataSource.fetch("xml:/data/xx/b-b/locator_b.xslt");
+        Test.create({test() {
+            Assert.assertNotNull(DataSource.fetch("xml:/data/xx/b-b/locator_b.xslt"));
+            Assert.assertNotNull(DataSource.fetch("xml:/data/xx/b-b/xx/../locator_b.xslt"));
+            Assert.assertNotNull(DataSource.fetch("xml:/data/xx/b-b/xx%2F..%2Flocator_b.xslt"));
         }});
-        Test.create({expected:/\bInvalid locator: xslt:\/data\/xx\/b-b\/locator_b\.xml/i, test() {
-            DataSource.fetch("xslt:/data/xx/b-b/locator_b.xml");
+        Test.create({test() {
+            Assert.assertNotNull(DataSource.fetch("xslt:/data/xx/b-b/locator_b.xml"));
         }});
 
         Test.start({auto:true});

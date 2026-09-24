@@ -28,8 +28,8 @@
   <property name="workspace.release" value="${workspace}/release"/>
   <property name="workspace.release.temp" value="${workspace.release}/temp"/>
   <property name="workspace.sources" value="${workspace}/sources"/>
-  <property name="workspace.test" value="${workspace}/test"/>
   <property name="workspace.benchmarks" value="${workspace}/benchmarks"/>
+  <property name="workspace.test" value="${workspace}/test"/>
   <property name="workspace.tutorials" value="${workspace}/tutorials"/>
 
   <property environment="env"/>
@@ -127,8 +127,7 @@
       <replaceregexp file="@{output}" flags="g" byline="false"
           match=" +(\R)" replace="\1"/>
       <replaceregexp file="@{output}" flags="g" byline="false"
-          match="(?si)(\}\)\(\);)\s+(/\*\*).*?\bDESCRIPTION[\s\*\r\n]+----( )*"
-          replace="\1${line.separator}${line.separator}\2"/>
+          match="(?si)(?&lt;=.)(/\*\*)(?:(?!\*/).)*?\bDESCRIPTION[\s\*\r\n]+----( )*" replace="\1"/>
       <replaceregexp file="@{output}" flags="g" byline="false"
           match="(?si)(/\*\*)[\s\r\n\*]+([\r\n]\s+\* \S)"
           replace="\1\2"/>
@@ -222,6 +221,7 @@
     <file-compose output="${release.file.source}">
       <filelist dir="${workspace.sources}">
         <file name="extension.js"/>
+        <file name="locator.js"/>
         <file name="datasource.js"/>
         <file name="scripting.js"/>
         <file name="expression.js"/>
@@ -243,6 +243,7 @@
     <file-compose output="${release.file.source.testing}">
       <filelist dir="${workspace.sources}">
         <file name="extension.js"/>
+        <file name="locator.js"/>
         <file name="datasource.js"/>
         <file name="scripting.js"/>
         <file name="expression.js"/>
@@ -365,14 +366,11 @@
   </target>
 
   <target name="compose" depends="release">
-    <copy file="${release.file.testing}" todir="${workspace.benchmarks}" overwrite="true"/>
     <copy file="${release.file.testing}" todir="${workspace.test}" overwrite="true"/>
     <copy file="${release.file.debug.testing}" todir="${workspace.test}" overwrite="true"/>
   </target>
 
   <target name="compose-max" depends="release">
-    <copy file="${release.file.testing.max}"
-        tofile="${workspace.benchmarks}/${ant.project.name}-testing.js" overwrite="true"/>
     <copy file="${release.file.testing.max}"
         tofile="${workspace.test}/${ant.project.name}-testing.js" overwrite="true"/>
     <copy file="${release.file.debug.testing.max}"

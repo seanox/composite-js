@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Seanox composite-js Benchmark</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script src="benchmark.js"></script>
+    <script type="text/javascript">
+
+        const state = {value: 0}.reactive();
+
+        Benchmark.run(async () => {
+            const count = 100;
+            const cycles = 20;
+            // Warm up rendering and subscription cleanup before measuring.
+            await Benchmark.cycle(state, count);
+            for (let batch = 1; batch <= 5; batch++) {
+                const totals = {mount: 0, update: 0, remove: 0};
+                for (let cycle = 0; cycle < cycles; cycle++) {
+                    const elapsed = await Benchmark.cycle(state, count);
+                    Object.keys(totals).forEach(key => totals[key] += elapsed[key]);
+                }
+                Benchmark.report(`batch ${batch}, ${cycles} mounts of ${count} bindings`, totals.mount);
+                Benchmark.report(`batch ${batch}, ${cycles} reactive updates`, totals.update);
+                Benchmark.report(`batch ${batch}, ${cycles} removals with cleanup`, totals.remove);
+            }
+        });
+    </script>
+  </head>
+  <body>
+
+    ## DOM Lifecycle
+    [composer_lifecycle_benchmark.html](composer_lifecycle_benchmark.html) runs five
+    batches of 20 create/update/remove cycles after one warmup cycle. Each cycle
+    creates 100 text bindings against the same long-lived reactive model.
+    It reports separate accumulated times per batch for mounting/rendering, updating
+    all bindings and removing the view including cleanup.
+
+    This exercises Composer's DOM observation, rendering and cleanup together with
+    reactive subscription registration/release. It does not measure application
+    module `dock`/`undock` hooks or condition toggling. Template construction and
+    pauses between operations are excluded.
+
+    Info: Output is hidden.
+    Repeated DOM creation, reactive update and removal.
+    <pre id="duration"></pre>
+  </body>
+</html>

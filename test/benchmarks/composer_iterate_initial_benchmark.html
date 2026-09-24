@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Seanox composite-js Benchmark</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script src="benchmark.js"></script>
+    <script type="text/javascript">
+
+        const state = {items: []};
+
+        Benchmark.run(async () => {
+            for (const count of [100, 1000, 10000]) {
+                state.items = Benchmark.items(count);
+                const root = document.createElement("div");
+                root.style.display = "none";
+                root.setAttribute("iterate", "{{entry:state.items}}");
+                root.innerHTML = "<span>{{entry.item.value}}</span>";
+                try {
+                    const elapsed = await Benchmark.measure(root,
+                        () => document.body.appendChild(root),
+                        () => Benchmark.verifyItems(root, count, index => index));
+                    Benchmark.report(`initial iteration, ${count} items`, elapsed);
+                } finally {
+                    if (root.isConnected)
+                        await Benchmark.remove(root);
+                    state.items = [];
+                }
+            }
+        });
+    </script>
+  </head>
+  <body>
+
+    ## Flat Iteration: Initial Rendering
+    [composer_iterate_initial_benchmark.html](composer_iterate_initial_benchmark.html)
+    renders flat lists of 100, 1,000 and 10,000 items. Model and template preparation
+    are excluded. Unlike Deep Iteration Rendering, this isolates a single iteration
+    level and does not use a reactive model.
+
+    Info: Output is hidden.
+    Initial flat iteration, excluding model/template setup.
+    <pre id="duration"></pre>
+  </body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Seanox composite-js Benchmark</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script src="benchmark.js"></script>
+    <script type="text/javascript">
+
+        const state = {root: null}.reactive();
+
+        Benchmark.run(async () => {
+            for (const depth of [1, 5, 10, 25]) {
+                let model = {value: 0};
+                for (let index = 0; index < depth; index++)
+                    model = {child: model};
+                state.root = model;
+                let leaf = state.root;
+                for (let index = 0; index < depth; index++)
+                    leaf = leaf.child;
+                const root = document.createElement("div");
+                root.style.display = "none";
+                root.textContent = "{{state.root" + ".child".repeat(depth) + ".value}}";
+                try {
+                    await Benchmark.measure(root, () => document.body.appendChild(root),
+                        () => Assert.assertEquals("0", root.textContent));
+                    let elapsed = 0;
+                    for (let update = 1; update <= 100; update++)
+                        elapsed += await Benchmark.measure(root, () => leaf.value++,
+                            () => Assert.assertEquals(String(update), root.textContent));
+                    Benchmark.report(`reactive depth ${depth}, 100 sequential updates`, elapsed);
+                } finally {
+                    if (root.isConnected)
+                        await Benchmark.remove(root);
+                    state.root = null;
+                }
+            }
+        });
+    </script>
+  </head>
+  <body>
+
+    ## Reactive: Data Model Depth
+    [reactive_depth_benchmark.html](reactive_depth_benchmark.html) updates one leaf
+    through a reactive proxy at 1, 5, 10 and 25 nested `child` properties beneath
+    `state.root`. Each case has just one text binding, isolating model depth from
+    DOM size. It accumulates the times of 100 sequential updates per depth so that
+    sub-millisecond operations do not simply round to zero in the summary.
+    Model construction, proxy traversal for the write, initial rendering and pauses
+    between updates are excluded; re-evaluation of the complete expression path is
+    included.
+
+    Info: Output is hidden.
+    100 sequential leaf updates per data model depth.
+    <pre id="duration"></pre>
+  </body>
+</html>

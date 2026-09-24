@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Seanox composite-js Memory Diagnostic</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script src="benchmark.js"></script>
+    <script type="text/javascript">
+
+        const state = {value: 0}.reactive();
+
+        Benchmark.run(async () => {
+            const output = document.querySelector("#duration");
+            const memoryAvailable = performance.memory
+                && Number.isFinite(performance.memory.usedJSHeapSize);
+            const sample = label => {
+                const bytes = performance.memory.usedJSHeapSize;
+                Assert.assertTrue(Number.isFinite(bytes) && bytes > 0);
+                console.log(`Memory: ${bytes} bytes (${label})`);
+                output.appendChild(document.createTextNode(`${label}: ${bytes} bytes\n`));
+                return bytes;
+            };
+
+            // Keep the model alive while views and their subscriptions come and go.
+            for (let cycle = 0; cycle < 20; cycle++)
+                await Benchmark.cycle(state, 100);
+            const baseline = memoryAvailable ? sample("after warmup") : null;
+            if (!memoryAvailable) {
+                const message = "Memory: unavailable; this browser does not expose performance.memory. "
+                    + "Lifecycle correctness still runs.";
+                console.warn(message);
+                output.appendChild(document.createTextNode(message + "\n"));
+            }
+            for (let batch = 1; batch <= 5; batch++) {
+                for (let cycle = 0; cycle < 20; cycle++)
+                    await Benchmark.cycle(state, 100);
+                if (memoryAvailable) {
+                    const bytes = sample(`after ${batch * 20} cycles`);
+                    const message = `Memory delta: ${bytes - baseline} bytes from warmup`;
+                    console.log(message);
+                    output.appendChild(document.createTextNode(message + "\n"));
+                }
+            }
+        });
+    </script>
+  </head>
+  <body>
+
+    ## Reactive: Lifecycle Memory Diagnostic
+    [reactive_lifecycle_memory_benchmark.html](reactive_lifecycle_memory_benchmark.html)
+    keeps a reactive model alive while repeatedly creating, updating and removing
+    views of 100 bindings. After 20 warmup cycles, it samples heap usage after each
+    of five batches of 20 cycles, following DOM cleanup.
+
+    Where available, `performance.memory.usedJSHeapSize` is reported in bytes with
+    the difference from the warmup baseline. Otherwise the page explicitly reports
+    that heap measurement is unavailable and still exercises lifecycle correctness.
+    Memory output is separate from the runner's millisecond benchmark summary.
+
+    These are browser-specific heap observations, **not a leak test or a pass/fail
+    memory limit**. Samples may be coarse, include benchmark/runtime allocations and
+    depend on when garbage collection runs. Neither growth proves a leak nor a
+    stable sample proves its absence. For retention analysis, compare DevTools heap
+    snapshots after garbage collection with the page still open and the model alive.
+    Open this diagnostic on its own for memory investigations: heap samples can
+    include other pages sharing the renderer, including the benchmark runner and
+    previous iframe workloads. The benchmark does not force garbage collection.
+
+
+
+
+    ---
+
+    Memory diagnostic, not a leak verdict: heap samples include allocations and
+    depend on garbage collection. The API is browser-specific and may be coarse.
+    Compare heap snapshots after garbage collection for retention analysis.
+    <pre id="duration"></pre>
+  </body>
+</html>

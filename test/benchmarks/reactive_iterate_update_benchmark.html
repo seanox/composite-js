@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Seanox composite-js Benchmark</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script src="benchmark.js"></script>
+    <script type="text/javascript">
+
+        const state = {items: []}.reactive();
+
+        Benchmark.run(async () => {
+            for (const count of [100, 1000, 10000]) {
+                state.items = Benchmark.items(count);
+                const root = document.createElement("div");
+                root.style.display = "none";
+                root.setAttribute("iterate", "{{entry:state.items}}");
+                root.innerHTML = "<span>{{entry.item.value}}</span>";
+                try {
+                    await Benchmark.measure(root, () => document.body.appendChild(root),
+                        () => Benchmark.verifyItems(root, count, index => index));
+                    const replacement = Benchmark.items(count, count);
+                    const elapsed = await Benchmark.measure(root,
+                        () => state.items = replacement,
+                        () => Benchmark.verifyItems(root, count, index => count + index));
+                    Benchmark.report(`collection replacement, ${count} items`, elapsed);
+                } finally {
+                    if (root.isConnected)
+                        await Benchmark.remove(root);
+                    state.items = [];
+                }
+            }
+        });
+    </script>
+  </head>
+  <body>
+
+    ## Reactive: Collection Replacement
+    [reactive_iterate_update_benchmark.html](reactive_iterate_update_benchmark.html)
+    replaces a list with a new, equally sized list of new objects and changed values.
+    Sizes and templates match Iteration Splice, making their scaling comparable.
+    Initial rendering and replacement-array construction are excluded.
+
+    Info: Output is hidden.
+    Replace a list with new objects, preserving its length.
+    <pre id="duration"></pre>
+  </body>
+</html>

@@ -117,6 +117,15 @@
         reactive_worst_case_benchmark.html
         scripting_parse_benchmark.html
     </script>
+    <!-- Prepared and fully implemented, but not yet in use. -->
+    <script type="text/test-cases-extras">
+        composer_iterate_initial_benchmark.html
+        composer_lifecycle_benchmark.html
+        reactive_depth_benchmark.html
+        reactive_iterate_splice_benchmark.html
+        reactive_iterate_update_benchmark.html
+        reactive_lifecycle_memory_benchmark.html
+    </script>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
       (() => {
@@ -185,9 +194,11 @@
                         outputMessage("error", "Some of the tests failed.");
                     else outputMessage("info", "All tests were successful.");
                     if (benchmarks.length)
-                        outputMessage("info", "Benchmark summary\r\n\t"
-                                + benchmarks.map(value => value.padStart(7)).join("\r\n\t")
-                                + "\r\n\r\n---");
+                        outputMessage("info",
+                                "Benchmark for " + compliant.version + " with " + locateEngine()
+                                + "\r\n---\r\n"
+                                + formatBenchmarkSummary()
+                                + "\r\n\r\n---\r\n\r\n");
                   } else loadTest(queue.shift());
 
                   window.focus();
@@ -221,7 +232,10 @@
 
                   const match = message.match(/Benchmark(?:\s+\d+)?:\s*(\d+)\s*(ms)/i);
                   if (match)
-                      benchmarks.push(match[1] + " " + match[2]);
+                      benchmarks.push({
+                          test: locateTest(),
+                          value: match[1] + " " + match[2]
+                      });
               });
           };
 
@@ -236,6 +250,31 @@
 
           const locateTest = () => {
               return String(iframeElement.getAttribute("src").match(/^[^\?]+/));
+          };
+
+          const locateEngine = () => {
+              if (navigator.engine !== "webkit")
+                  return navigator.engine;
+              const userAgent = navigator.userAgent;
+              if (!/iPhone|iPad|iPod/i.test(userAgent))
+                  return navigator.engine;
+              return navigator.engine + " (iOS)";
+          };
+
+          const padBenchmarkValue = (length, value) =>
+                  String(value).padStart(length);
+
+          const formatBenchmarkSummary = () => {
+              const summary = [];
+              const names = benchmarks.map(benchmark =>
+                  benchmark.test.replace(/^.*[\/\\]/, ""));
+              const nameWidth = Math.max(...names.map(name => name.length));
+              for (let index = 0; index < benchmarks.length; index++) {
+                  const benchmark = benchmarks[index];
+                  const name = names[index].padEnd(nameWidth);
+                  summary.push(name + "  " + padBenchmarkValue(8, benchmark.value));
+              }
+              return summary.join("\r\n");
           };
 
           const loadTest = (test) => {

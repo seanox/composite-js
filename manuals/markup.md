@@ -259,7 +259,7 @@ for URLs.
 ```
 
 If only _xslt_ is specified without a locator, a corresponding XSLT locator is
-derived from the name of the XML locator.
+derived from the name of the XML locator and used for the transformation.
 
 When inserting content from the datasource, the type of JavaScript blocks is
 automatically changed to `composite/javascript` and only executed by the

@@ -327,6 +327,9 @@ The datasource can also be used directly in the markup with the attributes
 </article>
 ```
 
+If only _xslt_ is specified without a locator, a corresponding XSLT locator is
+derived from the name of the XML locator and used for the transformation.
+
 
 
 - - -

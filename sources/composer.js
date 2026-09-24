@@ -52,6 +52,182 @@
 
     "use strict";
 
+    /** Shadow constant for locator schemas */
+    const LOCATOR_SCHEMA_XML = Locator.SCHEMA_XML;
+    const LOCATOR_SCHEMA_XSLT = Locator.SCHEMA_XSLT;
+    const LOCATOR_SCHEMA_RAW = Locator.SCHEMA_RAW;
+
+    /** Constant for attributes */
+    const ATTRIBUTE_COMPOSITE = "composite";
+    const ATTRIBUTE_CONDITION = "condition";
+    const ATTRIBUTE_EVENTS = "events";
+    const ATTRIBUTE_ID = "id";
+    const ATTRIBUTE_IMPORT = "import";
+    const ATTRIBUTE_INTERVAL = "interval";
+    const ATTRIBUTE_ITERATE = "iterate";
+    const ATTRIBUTE_MESSAGE = "message";
+    const ATTRIBUTE_NAME = "name";
+    const ATTRIBUTE_OUTPUT = "output";
+    const ATTRIBUTE_RENDER = "render";
+    const ATTRIBUTE_RELEASE = "release";
+    const ATTRIBUTE_TEXT = "text";
+    const ATTRIBUTE_TYPE = "type";
+    const ATTRIBUTE_VALIDATE = "validate";
+    const ATTRIBUTE_VALUE = "value";
+
+    /**
+     * Pattern for all accepted attributes.
+     * Accepted attributes are all attributes, even without an expression
+     * that is cached in the meta-object. Other attributes are only cached
+     * if they contain an expression.
+     */
+    const PATTERN_ATTRIBUTE_ACCEPT = /^(composite|condition|events|id|import|interval|iterate|message|output|release|render|validate)$/i;
+
+    /**
+     * Pattern for all static attributes.
+     * Static attributes are not removed from the element during rendering,
+     * but are also set in the meta-object like non-static attributes. These
+     * attributes are also intended for direct use in JavaScript and CSS.
+     */
+    const PATTERN_ATTRIBUTE_STATIC = /^(composite|id)$/i;
+
+    /**
+     * Pattern to detect if a string contains an expression.
+     * Escaping characters via slash is supported.
+     */
+    const PATTERN_EXPRESSION_CONTAINS = /\{\{(.|\r|\n)*?\}\}/g;
+
+    /**
+     * Patterns for condition expressions.
+     * Conditions are explicitly a single expression and not a variable
+     * expression.
+     */
+    const PATTERN_EXPRESSION_CONDITION = /^\s*\{\{\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;
+
+    /**
+     * Patterns for expressions with variable.
+     * Variables are at the beginning of the expression and are separated
+     * from the expression by a colon. The variable name must conform to the
+     * usual JavaScript conditions and starts with _ or a letter, other word
+     * characters (_ 0-9 a-z A-Z) may follow.
+     * - group 1: variable
+     * - group 2: expression
+     */
+    const PATTERN_EXPRESSION_VARIABLE = /^\s*\{\{\s*((?:(?:_*[a-z])|(?:_\w*))\w*)\s*:\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;
+
+    /** Pattern for all to ignore (script-)elements */
+    const PATTERN_ELEMENT_IGNORE = /script|style/i;
+
+    /** Pattern for all script elements */
+    const PATTERN_SCRIPT = /script/i;
+
+    /**
+     * Pattern for all composite-script elements.
+     * These elements are not automatically executed by the browser but must
+     * be triggered by rendering. Therefore, these scripts can be combined
+     * and controlled with ATTRIBUTE_CONDITION.
+     */
+    const PATTERN_COMPOSITE_SCRIPT = /^composite\/javascript$/i;
+
+    /**
+     * Pattern for a composite id (based on a word e.g. name@namespace:...)
+     * - group 1: name
+     * - group 2: namespace (optional)
+     */
+    const PATTERN_COMPOSITE_ID = /^([_a-z]\w*)(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;
+
+    /**
+     * Pattern for an element id (e.g. name:qualifier...@namespace:...)
+     * - group 1: name
+     * - group 2: qualifier(s) (optional)
+     * - group 3: unique identifier (optional)
+     * - group 4: (namespace+)application module (optional)
+     */
+    const PATTERN_ELEMENT_ID = /^([_a-z]\w*)(?::(\w+(?::\w+)*))?(?:#(\w+))?(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;
+
+    /** Pattern for a scope (custom tag, based on a word) */
+    const PATTERN_CUSTOMIZE_SCOPE = /[_a-z]([\w-]*\w)?$/i;
+
+    /** Constants of events for changes at the DOM */
+    const EVENT_DOM_ADDED = "EVENT_DOM_ADDED";
+    const EVENT_DOM_REMOVED = "EVENT_DOM_REMOVED";
+    const EVENT_DOM_MOVED = "EVENT_DOM_MOVED";
+
+    /** Constants of events during rendering */
+    const EVENT_RENDER_START = "EVENT_RENDER_START";
+    const EVENT_RENDER_NEXT = "EVENT_RENDER_NEXT";
+    const EVENT_RENDER_END = "EVENT_RENDER_END";
+
+    /** Constants of events during mounting */
+    const EVENT_MOUNT_START = "EVENT_MOUNT_START";
+    const EVENT_MOUNT_NEXT = "EVENT_MOUNT_NEXT";
+    const EVENT_MOUNT_END = "EVENT_MOUNT_END";
+
+    /** Constants of events when using modules */
+    const EVENT_MODULE_LOAD = "EVENT_MODULE_LOAD";
+    const EVENT_MODULE_DOCK = "EVENT_MODULE_DOCK";
+    const EVENT_MODULE_READY = "EVENT_MODULE_READY";
+    const EVENT_MODULE_UNDOCK = "EVENT_MODULE_UNDOCK";
+
+    /** Constants of events when using HTTP */
+    const EVENT_HTTP_START = "EVENT_HTTP_START";
+    const EVENT_HTTP_PROGRESS = "EVENT_HTTP_PROGRESS";
+    const EVENT_HTTP_RECEIVE = "EVENT_HTTP_RECEIVE";
+    const EVENT_HTTP_LOAD = "EVENT_HTTP_LOAD";
+    const EVENT_HTTP_ABORT = "EVENT_HTTP_ABORT";
+    const EVENT_HTTP_TIMEOUT = "EVENT_HTTP_TIMEOUT";
+    const EVENT_HTTP_ERROR = "EVENT_HTTP_ERROR";
+    const EVENT_HTTP_END = "EVENT_HTTP_END";
+
+    /** Constants of events when errors occur */
+    const EVENT_ERROR = "EVENT_ERROR";
+
+    /**
+     * List of possible DOM events
+     * see also https://www.w3schools.com/jsref/dom_obj_event.asp
+     */
+    const EVENTS = "abort after|print animation|end animation|iteration animation|start"
+            + " before|print before|unload blur"
+            + " can|play can|play|through change click context|menu copy cut"
+            + " dbl|click drag drag|end drag|enter drag|leave drag|over drag|start drop duration|change"
+            + " ended error"
+            + " focus focus|in focus|out"
+            + " hash|change"
+            + " input invalid"
+            + " key|down key|press key|up"
+            + " load loaded|data loaded|meta|data load|start"
+            + " message mouse|down mouse|enter mouse|leave mouse|move mouse|over mouse|out mouse|up mouse|wheel"
+            + " offline online open"
+            + " page|hide page|show paste pause play playing popstate progress"
+            + " rate|change resize reset"
+            + " scroll search seeked seeking select show stalled storage submit suspend"
+            + " time|update toggle touch|cancel touch|end touch|move touch|start transition|end"
+            + " unload"
+            + " volume|change"
+            + " waiting wheel";
+
+    /** Pattern for all accepted Composite events */
+    const PATTERN_EVENT = /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/;
+
+    /** Patterns with the supported events */
+    const PATTERN_EVENT_FUNCTIONS = (() => {
+        const pattern = EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
+           letter.toUpperCase());
+        return new RegExp("^on(" + pattern.replace(/\s+/g, "|") + ")");
+    })();
+
+    /** Patterns with the supported events as plain array */
+    const PATTERN_EVENT_NAMES = (() => {
+        return EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
+            letter.toUpperCase()).split(/\s+/);
+    })();
+
+    /** Patterns with the supported events as plain array (lower case) */
+    const PATTERN_EVENT_FILTER = (() => {
+        return EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
+            letter.toUpperCase()).toLowerCase().split(/\s+/);
+    })();
+
     /** Internal queue for pending asynchronous callback executions */
     const _asynchronous_queue = [];
 
@@ -87,212 +263,73 @@
     compliant("Composer");
     compliant(null, window.Composer = {
 
-        // Against the trend, the constants of the composite are public so that
-        // they can be used by extensions.
-            
         /** Composite-modules directory (subdirectory of the working directory) */
         get MODULES() {return window.location.combine(window.location.contextPath, "/modules");},
 
-        /** Constant for attribute composite */
-        get ATTRIBUTE_COMPOSITE() {return "composite";},
+        get ATTRIBUTE_COMPOSITE() {return ATTRIBUTE_COMPOSITE;},
+        get ATTRIBUTE_CONDITION() {return ATTRIBUTE_CONDITION;},
+        get ATTRIBUTE_EVENTS() {return ATTRIBUTE_EVENTS;},
+        get ATTRIBUTE_ID() {return ATTRIBUTE_ID;},
+        get ATTRIBUTE_IMPORT() {return ATTRIBUTE_IMPORT;},
+        get ATTRIBUTE_INTERVAL() {return ATTRIBUTE_INTERVAL;},
+        get ATTRIBUTE_ITERATE() {return ATTRIBUTE_ITERATE;},
+        get ATTRIBUTE_MESSAGE() {return ATTRIBUTE_MESSAGE;},
+        get ATTRIBUTE_NAME() {return ATTRIBUTE_NAME;},
+        get ATTRIBUTE_OUTPUT() {return ATTRIBUTE_OUTPUT;},
+        get ATTRIBUTE_RENDER() {return ATTRIBUTE_RENDER;},  
+        get ATTRIBUTE_RELEASE() {return ATTRIBUTE_RELEASE;},
+        get ATTRIBUTE_TEXT() {return ATTRIBUTE_TEXT;},
+        get ATTRIBUTE_TYPE() {return ATTRIBUTE_TYPE;},
+        get ATTRIBUTE_VALIDATE() {return ATTRIBUTE_VALIDATE;},
+        get ATTRIBUTE_VALUE() {return ATTRIBUTE_VALUE;},
+
+        get PATTERN_ATTRIBUTE_ACCEPT() {return PATTERN_ATTRIBUTE_ACCEPT;},
+        get PATTERN_ATTRIBUTE_STATIC() {return PATTERN_ATTRIBUTE_STATIC;},
+        get PATTERN_EXPRESSION_CONTAINS() {return PATTERN_EXPRESSION_CONTAINS;},
+        get PATTERN_EXPRESSION_CONDITION() {return PATTERN_EXPRESSION_CONDITION;},
+        get PATTERN_EXPRESSION_VARIABLE() {return PATTERN_EXPRESSION_VARIABLE;},
+        get PATTERN_ELEMENT_IGNORE() {return PATTERN_ELEMENT_IGNORE;},
+        get PATTERN_SCRIPT() {return PATTERN_SCRIPT;},
+        get PATTERN_COMPOSITE_SCRIPT() {return PATTERN_COMPOSITE_SCRIPT;},
+        get PATTERN_COMPOSITE_ID() {return PATTERN_COMPOSITE_ID;},
+        get PATTERN_ELEMENT_ID() {return PATTERN_ELEMENT_ID;},
+        get PATTERN_CUSTOMIZE_SCOPE() {return PATTERN_CUSTOMIZE_SCOPE;},
+
+        get EVENT_DOM_ADDED() {return EVENT_DOM_ADDED;},
+        get EVENT_DOM_REMOVED() {return EVENT_DOM_REMOVED;},
+        get EVENT_DOM_MOVED() {return EVENT_DOM_MOVED;},
+
+        get EVENT_RENDER_START() {return EVENT_RENDER_START;},
+        get EVENT_RENDER_NEXT() {return EVENT_RENDER_NEXT;},
+        get EVENT_RENDER_END() {return EVENT_RENDER_END;},
+
+        get EVENT_MOUNT_START() {return EVENT_MOUNT_START;},
+        get EVENT_MOUNT_NEXT() {return EVENT_MOUNT_NEXT;},
+        get EVENT_MOUNT_END() {return EVENT_MOUNT_END;},
+
+        get EVENT_MODULE_LOAD() {return EVENT_MODULE_LOAD;},
+        get EVENT_MODULE_DOCK() {return EVENT_MODULE_DOCK;},
+        get EVENT_MODULE_READY() {return EVENT_MODULE_READY;},
+        get EVENT_MODULE_UNDOCK() {return EVENT_MODULE_UNDOCK;},
+
+        get EVENT_HTTP_START() {return EVENT_HTTP_START;},
+        get EVENT_HTTP_PROGRESS() {return EVENT_HTTP_PROGRESS;},
+        get EVENT_HTTP_RECEIVE() {return EVENT_HTTP_RECEIVE;},
+        get EVENT_HTTP_LOAD() {return EVENT_HTTP_LOAD;},
+        get EVENT_HTTP_ABORT() {return EVENT_HTTP_ABORT;},
+        get EVENT_HTTP_TIMEOUT() {return EVENT_HTTP_TIMEOUT;},
+        get EVENT_HTTP_ERROR() {return EVENT_HTTP_ERROR;},
+        get EVENT_HTTP_END() {return EVENT_HTTP_END;},
+
+        get EVENT_ERROR() {return EVENT_ERROR;},
         
-        /** Constant for attribute condition */
-        get ATTRIBUTE_CONDITION() {return "condition";},
+        get EVENTS() {return EVENTS;},
 
-        /** Constant for attribute events */
-        get ATTRIBUTE_EVENTS() {return "events";},
+        get PATTERN_EVENT() {return PATTERN_EVENT;},
 
-        /** Constant for attribute id */
-        get ATTRIBUTE_ID() {return "id";},
-        
-        /** Constant for attribute import */
-        get ATTRIBUTE_IMPORT() {return "import";},
-
-        /** Constant for attribute interval */
-        get ATTRIBUTE_INTERVAL() {return "interval";},
-
-        /** Constant for attribute iterate */
-        get ATTRIBUTE_ITERATE() {return "iterate";},
-
-        /** Constant for attribute message */
-        get ATTRIBUTE_MESSAGE() {return "message";},
-
-        /** Constant for attribute name */
-        get ATTRIBUTE_NAME() {return "name";},
-
-        /** Constant for attribute output */
-        get ATTRIBUTE_OUTPUT() {return "output";},
-        
-        /** Constant for attribute render */
-        get ATTRIBUTE_RENDER() {return "render";},  
-        
-        /** Constant for attribute release */
-        get ATTRIBUTE_RELEASE() {return "release";},
-
-        /** Constant for attribute text */
-        get ATTRIBUTE_TEXT() {return "text";},
-
-        /** Constant for attribute type */
-        get ATTRIBUTE_TYPE() {return "type";},
-        
-        /** Constant for attribute validate */
-        get ATTRIBUTE_VALIDATE() {return "validate";},
-        
-        /** Constant for attribute value */
-        get ATTRIBUTE_VALUE() {return "value";},
-
-        /**
-         * Pattern for all accepted attributes.
-         * Accepted attributes are all attributes, even without an expression
-         * that is cached in the meta-object. Other attributes are only cached
-         * if they contain an expression.
-         */
-        get PATTERN_ATTRIBUTE_ACCEPT() {return /^(composite|condition|events|id|import|interval|iterate|message|output|release|render|validate)$/i;},
-        
-        /**
-         * Pattern for all static attributes.
-         * Static attributes are not removed from the element during rendering,
-         * but are also set in the meta-object like non-static attributes. These
-         * attributes are also intended for direct use in JavaScript and CSS.
-         */
-        get PATTERN_ATTRIBUTE_STATIC() {return /^(composite|id)$/i;},
-
-        /** 
-         * Pattern to detect if a string contains an expression.
-         * Escaping characters via slash is supported.
-         */
-        get PATTERN_EXPRESSION_CONTAINS() {return /\{\{(.|\r|\n)*?\}\}/g;},
-
-        /**
-         * Patterns for condition expressions.
-         * Conditions are explicitly a single expression and not a variable
-         * expression.
-         */
-        get PATTERN_EXPRESSION_CONDITION() {return /^\s*\{\{\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;},
-
-        /**
-         * Patterns for expressions with variable.
-         * Variables are at the beginning of the expression and are separated
-         * from the expression by a colon. The variable name must conform to the
-         * usual JavaScript conditions and starts with _ or a letter, other word
-         * characters (_ 0-9 a-z A-Z) may follow.
-         * - group 1: variable
-         * - group 2: expression
-         */
-        get PATTERN_EXPRESSION_VARIABLE() {return /^\s*\{\{\s*((?:(?:_*[a-z])|(?:_\w*))\w*)\s*:\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;},
-        
-        /** Pattern for all to ignore (script-)elements */
-        get PATTERN_ELEMENT_IGNORE() {return /script|style/i;},
-
-        /** Pattern for all script elements */
-        get PATTERN_SCRIPT() {return /script/i;},
-
-        /** 
-         * Pattern for all composite-script elements.
-         * These elements are not automatically executed by the browser but must
-         * be triggered by rendering. Therefore, these scripts can be combined
-         * and controlled with ATTRIBUTE_CONDITION.
-         */
-        get PATTERN_COMPOSITE_SCRIPT() {return /^composite\/javascript$/i;},
-
-        /**
-         * Pattern for a composite id (based on a word e.g. name@namespace:...)
-         * - group 1: name
-         * - group 2: namespace (optional)
-         */
-        get PATTERN_COMPOSITE_ID() {return /^([_a-z]\w*)(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;},
-
-        /**
-         * Pattern for an element id (e.g. name:qualifier...@namespace:...)
-         * - group 1: name
-         * - group 2: qualifier(s) (optional)
-         * - group 3: unique identifier (optional)
-         * - group 4: (namespace+)application module (optional)
-         */
-        get PATTERN_ELEMENT_ID() {return /^([_a-z]\w*)(?::(\w+(?::\w+)*))?(?:#(\w+))?(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;},
-
-        /** Pattern for a scope (custom tag, based on a word) */
-        get PATTERN_CUSTOMIZE_SCOPE() {return /[_a-z]([\w-]*\w)?$/i;},
-
-        /** Pattern for all accepted Composite events */
-        get PATTERN_EVENT() {return /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/;},
-
-        /** Constants of events for changes at the DOM */
-        get EVENT_DOM_ADDED() {return "EVENT_DOM_ADDED";},
-        get EVENT_DOM_REMOVED() {return "EVENT_DOM_REMOVED";},
-        get EVENT_DOM_MOVED() {return "EVENT_DOM_MOVED";},
-
-        /** Constants of events during rendering */
-        get EVENT_RENDER_START() {return "EVENT_RENDER_START";},
-        get EVENT_RENDER_NEXT() {return "EVENT_RENDER_NEXT";},
-        get EVENT_RENDER_END() {return "EVENT_RENDER_END";},
-
-        /** Constants of events during mounting */
-        get EVENT_MOUNT_START() {return "EVENT_MOUNT_START";},
-        get EVENT_MOUNT_NEXT() {return "EVENT_MOUNT_NEXT";},
-        get EVENT_MOUNT_END() {return "EVENT_MOUNT_END";},
-
-        /** Constants of events when using modules */
-        get EVENT_MODULE_LOAD() {return "EVENT_MODULE_LOAD";},
-        get EVENT_MODULE_DOCK() {return "EVENT_MODULE_DOCK";},
-        get EVENT_MODULE_READY() {return "EVENT_MODULE_READY";},
-        get EVENT_MODULE_UNDOCK() {return "EVENT_MODULE_UNDOCK";},
-
-        /** Constants of events when using HTTP */
-        get EVENT_HTTP_START() {return "EVENT_HTTP_START";},
-        get EVENT_HTTP_PROGRESS() {return "EVENT_HTTP_PROGRESS";},
-        get EVENT_HTTP_RECEIVE() {return "EVENT_HTTP_RECEIVE";},
-        get EVENT_HTTP_LOAD() {return "EVENT_HTTP_LOAD";},
-        get EVENT_HTTP_ABORT() {return "EVENT_HTTP_ABORT";},
-        get EVENT_HTTP_TIMEOUT() {return "EVENT_HTTP_TIMEOUT";},
-        get EVENT_HTTP_ERROR() {return "EVENT_HTTP_ERROR";},
-        get EVENT_HTTP_END() {return "EVENT_HTTP_END";},
-
-        /** Constants of events when errors occur */
-        get EVENT_ERROR() {return "EVENT_ERROR";},
-        
-        /** 
-         * List of possible DOM events
-         * see also https://www.w3schools.com/jsref/dom_obj_event.asp
-         */
-        get EVENTS() {return "abort after|print animation|end animation|iteration animation|start"
-                + " before|print before|unload blur"
-                + " can|play can|play|through change click context|menu copy cut"
-                + " dbl|click drag drag|end drag|enter drag|leave drag|over drag|start drop duration|change"
-                + " ended error"
-                + " focus focus|in focus|out"
-                + " hash|change"
-                + " input invalid"
-                + " key|down key|press key|up"
-                + " load loaded|data loaded|meta|data load|start"
-                + " message mouse|down mouse|enter mouse|leave mouse|move mouse|over mouse|out mouse|up mouse|wheel"
-                + " offline online open"
-                + " page|hide page|show paste pause play playing popstate progress"
-                + " rate|change resize reset"
-                + " scroll search seeked seeking select show stalled storage submit suspend"
-                + " time|update toggle touch|cancel touch|end touch|move touch|start transition|end"
-                + " unload"
-                + " volume|change"
-                + " waiting wheel";},
-        
-        /** Patterns with the supported events */
-        get PATTERN_EVENT_FUNCTIONS() {return (() => {
-            const pattern = Composer.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
-               letter.toUpperCase());
-            return new RegExp("^on(" + pattern.replace(/\s+/g, "|") + ")");
-        })();},
-        
-        /** Patterns with the supported events as plain array */
-        get PATTERN_EVENT_NAMES() {return (() => {
-            return Composer.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
-                letter.toUpperCase()).split(/\s+/);
-        })();},
-        
-        /** Patterns with the supported events as plain array (lower case) */
-        get PATTERN_EVENT_FILTER() {return (() => {
-            return Composer.EVENTS.replace(/(?:\||\b)(\w)/g, (match, letter) =>
-                letter.toUpperCase()).toLowerCase().split(/\s+/);
-        })();},
+        get PATTERN_EVENT_FUNCTIONS() {return PATTERN_EVENT_FUNCTIONS;},
+        get PATTERN_EVENT_NAMES() {return PATTERN_EVENT_NAMES;},
+        get PATTERN_EVENT_FILTER() {return PATTERN_EVENT_FILTER;},
 
         /**
          * Registers a callback function for composite events.
@@ -310,7 +347,7 @@
                 throw new TypeError("Invalid event: " + typeof event);
             if (typeof callback !== "function")
                 throw new TypeError("Invalid callback: " + typeof callback);        
-            if (!event.match(Composer.PATTERN_EVENT))
+            if (!event.match(PATTERN_EVENT))
                 throw new Error(`Invalid event${event.trim() ? ": " + event : ""}`);
             
             event = event.toLowerCase();
@@ -521,19 +558,19 @@
                         value = selector.selectedIndex >= 0
                             ? selector.options[selector.selectedIndex].value
                             : value;
-                    else if (Composer.ATTRIBUTE_VALUE in selector)
-                        value = selector[Composer.ATTRIBUTE_VALUE];
+                    else if (ATTRIBUTE_VALUE in selector)
+                        value = selector[ATTRIBUTE_VALUE];
                 }        
                 
                 // Implicit validation via the application module, if a
                 // corresponding validate method is implemented. The validation
                 // through the application module only works if the
                 // corresponding composite is active/present in the DOM!
-                if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_VALIDATE)
+                if (object.attributes.hasOwnProperty(ATTRIBUTE_VALIDATE)
                         && valid === true
                         && lock !== true
-                        && typeof meta.model[Composer.ATTRIBUTE_VALIDATE] === "function") {
-                    const validate = meta.model[Composer.ATTRIBUTE_VALIDATE];
+                        && typeof meta.model[ATTRIBUTE_VALIDATE] === "function") {
+                    const validate = meta.model[ATTRIBUTE_VALIDATE];
                     if (value !== undefined)
                         valid = validate.call(meta.model, selector, value);
                     else valid = validate.call(meta.model, selector);
@@ -568,10 +605,10 @@
                             && valid.trim())
                         message = valid.trim();
                     if (typeof message !== "string") {
-                        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_MESSAGE))
-                            message = String(object.attributes[Composer.ATTRIBUTE_MESSAGE] || "");
-                        if ((message || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-                            message = String(Expression.eval(serial + ":" + Composer.ATTRIBUTE_MESSAGE,
+                        if (object.attributes.hasOwnProperty(ATTRIBUTE_MESSAGE))
+                            message = String(object.attributes[ATTRIBUTE_MESSAGE] || "");
+                        if ((message || "").match(PATTERN_EXPRESSION_CONTAINS))
+                            message = String(Expression.eval(serial + ":" + ATTRIBUTE_MESSAGE,
                                 _execution_context(),  message));
                     }
 
@@ -581,7 +618,7 @@
                         if (redirect) {
                             const attribute = redirect[1];
                             if (!(object.statics || {}).hasOwnProperty(attribute.toLowerCase())
-                                    && !Composer.PATTERN_ATTRIBUTE_STATIC.test(attribute)) {
+                                    && !PATTERN_ATTRIBUTE_STATIC.test(attribute)) {
                                 object.message = {attribute:attribute};
                                 selector.setAttribute(attribute, redirect[2]);
                             }
@@ -715,7 +752,7 @@
                 // and script and style elements are not supported 
                 if (!(selector instanceof Element)
                         || Composer.mount.queue.includes(selector)
-                        || selector.nodeName.match(Composer.PATTERN_ELEMENT_IGNORE))
+                        || selector.nodeName.match(PATTERN_ELEMENT_IGNORE))
                     return;
 
                 // An element/selector should only be mounted once.
@@ -731,18 +768,18 @@
                 if (!(object instanceof Object))
                     return;
 
-                const identifier = object.attributes[Composer.ATTRIBUTE_ID];
+                const identifier = object.attributes[ATTRIBUTE_ID];
                 
                 // The explicit events are declared by ATTRIBUTE_EVENTS. The
                 // application module can, but does not have to, implement the
                 // corresponding method. Explicit events are mainly used to
                 // synchronize view and application module and to trigger
                 // targets of ATTRIBUTE_RENDER.
-                let events = object.attributes.hasOwnProperty(Composer.ATTRIBUTE_EVENTS)
-                        ? object.attributes[Composer.ATTRIBUTE_EVENTS] : "";
+                let events = object.attributes.hasOwnProperty(ATTRIBUTE_EVENTS)
+                        ? object.attributes[ATTRIBUTE_EVENTS] : "";
                 events = String(events || "");
                 events = events.toLowerCase().split(/\s+/);
-                events = events.filter((event, index, array) => Composer.PATTERN_EVENT_FILTER.includes(event)
+                events = events.filter((event, index, array) => PATTERN_EVENT_FILTER.includes(event)
                         && array.indexOf(event) === index);
                 
                 // There must be a corresponding application module.
@@ -779,7 +816,7 @@
 
                     for (let entry in model)
                         if (typeof model[entry] === "function"
-                                && entry.match(Composer.PATTERN_EVENT_FUNCTIONS)) {
+                                && entry.match(PATTERN_EVENT_FUNCTIONS)) {
                             entry = entry.substring(2).toLowerCase();
                             if (!events.includes(entry))
                                 events.push(entry);
@@ -789,7 +826,7 @@
                     while (prototype) {
                         Object.getOwnPropertyNames(prototype).forEach(entry => {
                             if (typeof model[entry] === "function"
-                                    && entry.match(Composer.PATTERN_EVENT_FUNCTIONS)) {
+                                    && entry.match(PATTERN_EVENT_FUNCTIONS)) {
                                 entry = entry.substring(2).toLowerCase();
                                 if (!events.includes(entry))
                                     events.push(entry);
@@ -809,10 +846,10 @@
                         const object = _render_meta[serial];
 
                         let action = event.type.toLowerCase();
-                        if (!Composer.PATTERN_EVENT_FILTER.includes(action))
+                        if (!PATTERN_EVENT_FILTER.includes(action))
                             return;
-                        action = Composer.PATTERN_EVENT_FILTER.indexOf(action);
-                        action = Composer.PATTERN_EVENT_NAMES[action];
+                        action = PATTERN_EVENT_FILTER.indexOf(action);
+                        action = PATTERN_EVENT_NAMES[action];
                         
                         let result;
                         
@@ -834,8 +871,8 @@
                                     value = target.selectedIndex >= 0
                                         ? target.options[target.selectedIndex].value
                                         : value;
-                                else if (Composer.ATTRIBUTE_VALUE in target)
-                                    value = target[Composer.ATTRIBUTE_VALUE];
+                                else if (ATTRIBUTE_VALUE in target)
+                                    value = target[ATTRIBUTE_VALUE];
                             }
 
                             // Validation works strictly by default. This means
@@ -849,7 +886,7 @@
                             // and the input data is then always synchronized
                             // with the application module. The effects of
                             // validation are then only optional.
-                            if (String(object.attributes[Composer.ATTRIBUTE_VALIDATE]).toLowerCase() === "optional"
+                            if (String(object.attributes[ATTRIBUTE_VALIDATE]).toLowerCase() === "optional"
                                     || valid === true) {
         
                                 // Step 2: Synchronisation
@@ -880,11 +917,11 @@
                                 if (accept(meta.target)) {
                                     meta.target = value;
                                 } else if (typeof meta.target === "object") {
-                                    if (accept(meta.target[Composer.ATTRIBUTE_VALUE]))
-                                        meta.target[Composer.ATTRIBUTE_VALUE] = value;
+                                    if (accept(meta.target[ATTRIBUTE_VALUE]))
+                                        meta.target[ATTRIBUTE_VALUE] = value;
                                 } else if (meta.target === undefined) {
-                                    if (accept(meta.model[Composer.ATTRIBUTE_VALUE]))
-                                        meta.model[Composer.ATTRIBUTE_VALUE] = value;
+                                    if (accept(meta.model[ATTRIBUTE_VALUE]))
+                                        meta.model[ATTRIBUTE_VALUE] = value;
                                 }
                                 
                                 // Step 3: Invocation
@@ -916,16 +953,16 @@
                         // Rendering is performed in all cases. When an event
                         // occurs, all elements that correspond to the query
                         // selector rendering are updated. 
-                        let events = object.attributes.hasOwnProperty(Composer.ATTRIBUTE_EVENTS)
-                                ? object.attributes[Composer.ATTRIBUTE_EVENTS] : "";
+                        let events = object.attributes.hasOwnProperty(ATTRIBUTE_EVENTS)
+                                ? object.attributes[ATTRIBUTE_EVENTS] : "";
                         events = String(events || "");
                         events = events.toLowerCase().split(/\s+/);
                         if (events.includes(action.toLowerCase())) {
-                            let render = object.attributes.hasOwnProperty(Composer.ATTRIBUTE_RENDER)
-                                    ? object.attributes[Composer.ATTRIBUTE_RENDER] : "";
+                            let render = object.attributes.hasOwnProperty(ATTRIBUTE_RENDER)
+                                    ? object.attributes[ATTRIBUTE_RENDER] : "";
                             render = String(render || "");
-                            if ((render || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
-                                render = Expression.eval(serial + ":" + Composer.ATTRIBUTE_RENDER,
+                            if ((render || "").match(PATTERN_EXPRESSION_CONTAINS))
+                                render = Expression.eval(serial + ":" + ATTRIBUTE_RENDER,
                                     _execution_context(), render);
                             Composer.render(render);
                         }
@@ -950,13 +987,13 @@
                 if (meta && meta.target && identifier) {
                     let value = meta.target;
                     if (meta.target instanceof Object)
-                        value = Composer.ATTRIBUTE_VALUE in meta.target ? meta.target.value : undefined;
+                        value = ATTRIBUTE_VALUE in meta.target ? meta.target.value : undefined;
                     if (value !== undefined) {
                         if (selector.tagName.match(/^input$/i)
                                 && selector.type.match(/^radio|checkbox/i))
                             selector.checked = value;
-                        else if (Composer.ATTRIBUTE_VALUE in selector)
-                            selector[Composer.ATTRIBUTE_VALUE] = value;
+                        else if (ATTRIBUTE_VALUE in selector)
+                            selector[ATTRIBUTE_VALUE] = value;
                     }
                 }
             } finally {
@@ -1055,7 +1092,7 @@
                 statics.forEach((entry) => {
                     entry = entry.toLowerCase();
                     if (!_statics.has(entry)
-                            && !entry.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)) {
+                            && !entry.match(PATTERN_ATTRIBUTE_ACCEPT)) {
                         _statics.add(entry);
                         changes.push(entry); 
                     }
@@ -1106,7 +1143,7 @@
             if (scope.length <= 0)
                 throw new Error("Invalid scope");
                 
-            if (scope.match(Composer.PATTERN_CUSTOMIZE_SCOPE)) {
+            if (scope.match(PATTERN_CUSTOMIZE_SCOPE)) {
                 if (callback === null)
                     _macros.delete(scope.toLowerCase());
                 else _macros.set(scope.toLowerCase(), callback);
@@ -1197,11 +1234,11 @@
             if (selector instanceof Element
                     && !_render_meta[selector.serial()]) {
                 _view_scope_workspace.push(..._view_scope_stack);
-                let identifier = selector.getAttribute(Composer.ATTRIBUTE_ID) || "";
-                if (identifier.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
-                    identifier = Expression.eval(selector.serial() + ":" + Composer.ATTRIBUTE_ID,
+                let identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
+                if (identifier.match(PATTERN_EXPRESSION_CONTAINS)) {
+                    identifier = Expression.eval(selector.serial() + ":" + ATTRIBUTE_ID,
                         _execution_context(), identifier);
-                    selector.setAttribute(Composer.ATTRIBUTE_ID, identifier);
+                    selector.setAttribute(ATTRIBUTE_ID, identifier);
                 }
                 _view_scope_workspace.length = 0;
             }
@@ -1265,7 +1302,7 @@
                             return;
 
                         // Load the composite module resources.
-                        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
+                        if (object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
                             Composer.include(selector);
                     }
                 }
@@ -1302,13 +1339,13 @@
                 _render_element_script(selector);
                 _render_element_children(selector, object, lock);
 
-                if (selector.hasAttribute(Composer.ATTRIBUTE_RELEASE))
-                    selector.removeAttribute(Composer.ATTRIBUTE_RELEASE);
+                if (selector.hasAttribute(ATTRIBUTE_RELEASE))
+                    selector.removeAttribute(ATTRIBUTE_RELEASE);
 
             } catch (error) {
 
                 console.error(error);
-                Composer.fire(Composer.EVENT_ERROR, error);
+                Composer.fire(EVENT_ERROR, error);
                 if (origin instanceof Element)
                     origin.innerText = "Error: " + (error.message.match(/(\{\{|\}\})/)
                         ? "Invalid expression" : error.message);
@@ -1454,7 +1491,7 @@
 
             let object = null;
             if (composite instanceof Element) {
-                if (!composite.hasAttribute(Composer.ATTRIBUTE_ID))
+                if (!composite.hasAttribute(ATTRIBUTE_ID))
                     throw new Error("Unknown composite without id");
                 object = _render_meta[composite.uid];
                 if (!object)
@@ -1483,7 +1520,7 @@
             // Was the composite module already loaded?
             // Initially EVENT_MODULE_LOAD is triggered.
             if (_render_cache[context + ".composite"] === undefined)
-                Composer.fire(Composer.EVENT_MODULE_LOAD, composite, resource);
+                Composer.fire(EVENT_MODULE_LOAD, composite, resource);
             _render_cache[context + ".composite"] = null;
 
             // The sequence of loading is strictly defined: JS, CSS, HTML
@@ -1511,8 +1548,8 @@
             // will not be filled with ATTRIBUTE_IMPORT or ATTRIBUTE_OUTPUT.
             if (composite instanceof Element
                     && !composite.innerHTML.trim()
-                    && !object.attributes.hasOwnProperty(Composer.ATTRIBUTE_IMPORT)
-                    && !object.attributes.hasOwnProperty(Composer.ATTRIBUTE_OUTPUT)) {
+                    && !object.attributes.hasOwnProperty(ATTRIBUTE_IMPORT)
+                    && !object.attributes.hasOwnProperty(ATTRIBUTE_OUTPUT)) {
                 const content = this.load(context + ".html");
                 if (content === undefined)
                     return;
@@ -1649,9 +1686,9 @@
                             nodes.forEach((node) =>
                                 Composer.mount(node));
 
-                            Composer.fire(Composer.EVENT_RENDER_END, this.selector);
+                            Composer.fire(EVENT_RENDER_END, this.selector);
                         } else if (context === Composer.mount) {
-                            Composer.fire(Composer.EVENT_MOUNT_END, this.selector);
+                            Composer.fire(EVENT_MOUNT_END, this.selector);
                         } else throw new Error("Invalid context: " + context);
                         const selector = context.queue.shift();
                         if (selector)
@@ -1662,15 +1699,15 @@
                 }};
 
             if (context === Composer.render)
-                Composer.fire(Composer.EVENT_RENDER_START, selector);
+                Composer.fire(EVENT_RENDER_START, selector);
             else if (context === Composer.mount)
-                Composer.fire(Composer.EVENT_MOUNT_START, selector);
+                Composer.fire(EVENT_MOUNT_START, selector);
             else throw new Error("Invalid context: " + context);
         } else {
             if (context === Composer.render)
-                Composer.fire(Composer.EVENT_RENDER_NEXT, selector);
+                Composer.fire(EVENT_RENDER_NEXT, selector);
             else if (context === Composer.mount)
-                Composer.fire(Composer.EVENT_MOUNT_NEXT, selector);
+                Composer.fire(EVENT_MOUNT_NEXT, selector);
             else throw new Error("Invalid context: " + context);
         }
 
@@ -1683,8 +1720,8 @@
         while (pattern && element instanceof Element) {
             element = element.parentNode;
             if (element instanceof Element
-                    && element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
-                    && element.hasAttribute(Composer.ATTRIBUTE_ID)
+                    && element.hasAttribute(ATTRIBUTE_COMPOSITE)
+                    && element.hasAttribute(ATTRIBUTE_ID)
                     && (element.id || "").toLowerCase().trim() === pattern)
                 throw new Error("Recursion detected for composite: " + id);
         }
@@ -1738,9 +1775,9 @@
         // Composite-ID can contain a namespace, which is then taken into
         // consideration.
 
-        const identifier = (element.getAttribute(Composer.ATTRIBUTE_ID) || "").trim();
-        if (element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)) {
-            const composite = identifier.match(Composer.PATTERN_COMPOSITE_ID);
+        const identifier = (element.getAttribute(ATTRIBUTE_ID) || "").trim();
+        if (element.hasAttribute(ATTRIBUTE_COMPOSITE)) {
+            const composite = identifier.match(PATTERN_COMPOSITE_ID);
             if (!composite)
                 throw new Error(`Invalid composite id${identifier ? ": " + identifier : ""}`);
             if (!composite[2])
@@ -1749,10 +1786,10 @@
         }
 
         const locate = _mount_locate(element.parentNode);
-        if (!element.hasAttribute(Composer.ATTRIBUTE_ID))
+        if (!element.hasAttribute(ATTRIBUTE_ID))
             return locate;
 
-        const matches = identifier.match(Composer.PATTERN_ELEMENT_ID);
+        const matches = identifier.match(PATTERN_ELEMENT_ID);
         if (!matches)
             throw new Error(`Invalid element id${identifier ? ": " + identifier : ""}`);
 
@@ -1879,7 +1916,7 @@
      */
     const _render_element_ignore = (node) =>
         node && node.parentNode
-            ? Composer.PATTERN_ELEMENT_IGNORE.test(node.parentNode.nodeName)
+            ? PATTERN_ELEMENT_IGNORE.test(node.parentNode.nodeName)
                     || _render_element_ignore(node.parentNode) : false;
 
     /**
@@ -1939,16 +1976,16 @@
     const _render_attributes_initialize = (selector, object) => {
         Array.from(selector.attributes).forEach((attribute) => {
             attribute = {name:attribute.name.toLowerCase(), value:(attribute.value || "").trim()};
-            if (attribute.value.match(Composer.PATTERN_EXPRESSION_CONTAINS)
-                    || attribute.name.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
+            if (attribute.value.match(PATTERN_EXPRESSION_CONTAINS)
+                    || attribute.name.match(PATTERN_ATTRIBUTE_ACCEPT)
                     || _statics.has(attribute.name)) {
 
                 // Remove all internal attributes but not the statics. Static
                 // attributes are still used in the markup or for the rendering.
-                if (attribute.name.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
-                        && !attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
+                if (attribute.name.match(PATTERN_ATTRIBUTE_ACCEPT)
+                        && !attribute.name.match(PATTERN_ATTRIBUTE_STATIC)
                         && !_statics.has(attribute.name)
-                        && attribute.name !== Composer.ATTRIBUTE_RELEASE)
+                        && attribute.name !== ATTRIBUTE_RELEASE)
                     selector.removeAttribute(attribute.name);
 
                 object.attributes[attribute.name] = attribute.value;
@@ -1959,10 +1996,10 @@
                 // hardening. Expressions are supported for these attributes,
                 // but are only resolved initially during the first rendering.
 
-                if (attribute.value.match(Composer.PATTERN_EXPRESSION_CONTAINS)
-                        && (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
-                                || attribute.name === Composer.ATTRIBUTE_ID
-                                || attribute.name === Composer.ATTRIBUTE_EVENTS
+                if (attribute.value.match(PATTERN_EXPRESSION_CONTAINS)
+                        && (attribute.name.match(PATTERN_ATTRIBUTE_STATIC)
+                                || attribute.name === ATTRIBUTE_ID
+                                || attribute.name === ATTRIBUTE_EVENTS
                                 || _statics.has(attribute.name)))
                     attribute.value = Expression.eval(selector.serial() + ":" + attribute.name,
                         _execution_context(), attribute.value);
@@ -1970,9 +2007,9 @@
                 // The resolved value is written back to the meta-object, so
                 // that the object and event binding use the value of the
                 // expression and not the expression itself.
-                if (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
-                        || attribute.name === Composer.ATTRIBUTE_ID
-                        || attribute.name === Composer.ATTRIBUTE_EVENTS)
+                if (attribute.name.match(PATTERN_ATTRIBUTE_STATIC)
+                        || attribute.name === ATTRIBUTE_ID
+                        || attribute.name === ATTRIBUTE_EVENTS)
                     object.attributes[attribute.name] = attribute.value;
 
                 // The initial value of the static attribute is registered for
@@ -1984,9 +2021,9 @@
 
                 // The result of the expression must be written back to the
                 // static attributes.
-                if (attribute.name.match(Composer.PATTERN_ATTRIBUTE_STATIC)
-                        || attribute.name === Composer.ATTRIBUTE_ID
-                        || attribute.name === Composer.ATTRIBUTE_EVENTS
+                if (attribute.name.match(PATTERN_ATTRIBUTE_STATIC)
+                        || attribute.name === ATTRIBUTE_ID
+                        || attribute.name === ATTRIBUTE_EVENTS
                         || _statics.has(attribute.name))
                     selector.setAttribute(attribute.name, attribute.value);
             }
@@ -2009,11 +2046,11 @@
      */
     const _render_attribute_condition_initialize = (selector, object, serial, lock) => {
 
-        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_CONDITION))
+        if (!object.attributes.hasOwnProperty(ATTRIBUTE_CONDITION))
             return false;
 
-        const expression = (object.attributes[Composer.ATTRIBUTE_CONDITION] || "").trim();
-        if (!expression.match(Composer.PATTERN_EXPRESSION_CONDITION))
+        const expression = (object.attributes[ATTRIBUTE_CONDITION] || "").trim();
+        if (!expression.match(PATTERN_EXPRESSION_CONDITION))
             throw new Error(`Invalid condition${expression ? ": " + expression : ""}`);
 
         // The marker and its meta-object are created. This prevents the
@@ -2075,7 +2112,7 @@
             // The condition must be explicitly true, otherwise the output is
             // removed from the DOM and the rendering ends. The cleanup will be
             // done by the MutationObserver.
-            const expression = Expression.eval(serial + ":" + Composer.ATTRIBUTE_CONDITION,
+            const expression = Expression.eval(serial + ":" + ATTRIBUTE_CONDITION,
                 _execution_context(), condition.expression);
             selector.nodeValue = expression instanceof Error ? expression : "";
             if (expression !== true) {
@@ -2111,7 +2148,7 @@
             // Load the composite module resources.
             // That no resources are loaded more than once is taken care of by
             // the include method of Composer.
-            if (attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
+            if (attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
                 Composer.include(element);
 
             selector.parentNode.insertBefore(element, selector);
@@ -2163,13 +2200,13 @@
 
         // Text nodes are only analyzed once. Pure text is completely ignored,
         // only text nodes with an expression as value are updated.
-        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_TEXT))
+        if (object.attributes.hasOwnProperty(ATTRIBUTE_TEXT))
             return;
 
         // New/unknown text nodes must be analyzed and prepared. If the
         // meta-object for text nodes Composer.ATTRIBUTE_TEXT and
         // Composer.ATTRIBUTE_VALUE are not contained, it must be new.
-        if (object.attributes.hasOwnProperty(Composer.ATTRIBUTE_VALUE)) {
+        if (object.attributes.hasOwnProperty(ATTRIBUTE_VALUE)) {
             object.render();
             return;
         }
@@ -2180,7 +2217,7 @@
         // Composer.ATTRIBUTE_TEXT.
 
         let content = selector.textContent;
-        if (content.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
+        if (content.match(PATTERN_EXPRESSION_CONTAINS)) {
 
             // Step 2:
             // All expressions are determined. A meta-object is created for all
@@ -2197,7 +2234,7 @@
             // with the name of the parameter and are interpreted later, but do
             // not generate any output.
 
-            content = content.replace(Composer.PATTERN_EXPRESSION_CONTAINS, (match) => {
+            content = content.replace(PATTERN_EXPRESSION_CONTAINS, (match) => {
                 if (!match.substring(2, match.length -2).trim())
                     return "";
                 const node = document.createTextNode("");
@@ -2206,24 +2243,24 @@
                     context:[..._view_scope_workspace],
                     render() {
                         let word = "";
-                        if (this.attributes.hasOwnProperty(Composer.ATTRIBUTE_NAME)) {
-                            const name = String(this.attributes[Composer.ATTRIBUTE_NAME] || "").trim();
-                            const value = String(this.attributes[Composer.ATTRIBUTE_VALUE] || "").trim();
-                            _view_scope[name] = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE,
+                        if (this.attributes.hasOwnProperty(ATTRIBUTE_NAME)) {
+                            const name = String(this.attributes[ATTRIBUTE_NAME] || "").trim();
+                            const value = String(this.attributes[ATTRIBUTE_VALUE] || "").trim();
+                            _view_scope[name] = Expression.eval(this.serial + ":" + ATTRIBUTE_VALUE,
                                 _execution_context(), value);
                         } else {
-                            word = String(this.attributes[Composer.ATTRIBUTE_VALUE] || "");
-                            word = Expression.eval(this.serial + ":" + Composer.ATTRIBUTE_VALUE,
+                            word = String(this.attributes[ATTRIBUTE_VALUE] || "");
+                            word = Expression.eval(this.serial + ":" + ATTRIBUTE_VALUE,
                                 _execution_context(), word);
                         }
                         this.value = word;
                         this.element.textContent = word !== undefined ? word : "";
                     }};
-                const param = match.match(Composer.PATTERN_EXPRESSION_VARIABLE);
+                const param = match.match(PATTERN_EXPRESSION_VARIABLE);
                 if (param) {
-                    object.attributes[Composer.ATTRIBUTE_NAME] = param[1];
-                    object.attributes[Composer.ATTRIBUTE_VALUE] = "{{" + param[2] + "}}";
-                } else object.attributes[Composer.ATTRIBUTE_VALUE] = match;
+                    object.attributes[ATTRIBUTE_NAME] = param[1];
+                    object.attributes[ATTRIBUTE_VALUE] = "{{" + param[2] + "}}";
+                } else object.attributes[ATTRIBUTE_VALUE] = match;
                 _render_meta[serial] = object;
                 return "{{" + serial + "}}";
             });
@@ -2234,13 +2271,13 @@
             // placeholders. The result is an array of words. Each word is a new
             // text nodes with static text or dynamic content.
 
-            if (content.match(Composer.PATTERN_EXPRESSION_CONTAINS)) {
+            if (content.match(PATTERN_EXPRESSION_CONTAINS)) {
                 const words = content.split(/(\{\{\d+\}\})/);
                 words.forEach((word, index, array) => {
                     if (word.match(/^\{\{\d+\}\}$/)) {
                         const serial = parseInt(word.substring(2, word.length -2).trim());
                         const object = _render_meta[serial];
-                        Composer.fire(Composer.EVENT_RENDER_NEXT, object.element);
+                        Composer.fire(EVENT_RENDER_NEXT, object.element);
                         object.render();
                         array[index] = object.element;
                     } else {
@@ -2248,9 +2285,9 @@
                         const serial = node.serial();
                         const object = {serial, element:node, attributes:{},
                             context:[..._view_scope_workspace]};
-                        Composer.fire(Composer.EVENT_RENDER_NEXT, object.element);
+                        Composer.fire(EVENT_RENDER_NEXT, object.element);
                         object.element.textContent = word;
-                        object.attributes[Composer.ATTRIBUTE_TEXT] = word;
+                        object.attributes[ATTRIBUTE_TEXT] = word;
                         _render_meta[serial] = object;
                         array[index] = object.element;
                     }
@@ -2278,7 +2315,7 @@
             selector.nodeValue = content;
         }
 
-        object.attributes[Composer.ATTRIBUTE_TEXT] = content;
+        object.attributes[ATTRIBUTE_TEXT] = content;
     };
 
     /**
@@ -2288,7 +2325,7 @@
      * @param {object} object Meta-object of the element
      */
     const _render_attribute_composite = (selector, object) => {
-        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE))
+        if (!object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
             return;
         const locate = _mount_locate(selector);
         let model = (locate.namespace || []).concat(locate.model).join(".");
@@ -2298,9 +2335,9 @@
         model = Object.lookup(model);
         if (model && typeof model.dock === "function") {
             const meta = _mount_lookup(selector);
-            Composer.fire(Composer.EVENT_MODULE_DOCK, meta);
+            Composer.fire(EVENT_MODULE_DOCK, meta);
             model.dock.call(model);
-            Composer.fire(Composer.EVENT_MODULE_READY, meta);
+            Composer.fire(EVENT_MODULE_READY, meta);
         }
     };
 
@@ -2315,19 +2352,19 @@
         const source = value instanceof URL ? value.href : String(value);
         const match = source.match(/^([a-z][a-z0-9+.-]*):/i);
         const schema = match && match[1].toLowerCase();
-        if (!schema || ![Locator.SCHEMA_XML].includes(schema))
+        if (!schema || ![LOCATOR_SCHEMA_XML].includes(schema))
             throw new Error(`Unsupported schema: ${schema || source}`);
 
         let data = ""
         const parts = source.split(/\s+\+\s+/);
         if (parts.length > 1) {
-            parts[0] = Locator.parse(Locator.SCHEMA_XML, parts[0]).uri;
-            if (parts[1] !== Locator.SCHEMA_XSLT) {
-                parts[1] = Locator.parse(Locator.SCHEMA_XSLT, parts[1]).uri;
+            parts[0] = Locator.parse(LOCATOR_SCHEMA_XML, parts[0]).uri;
+            if (parts[1] !== LOCATOR_SCHEMA_XSLT) {
+                parts[1] = Locator.parse(LOCATOR_SCHEMA_XSLT, parts[1]).uri;
                 data = DataSource.transform(parts[0], parts[1]);
             } else data = DataSource.transform(parts[0]);
         } else data = DataSource.fetch(
-            Locator.parse(Locator.SCHEMA_XML, source).uri);
+            Locator.parse(LOCATOR_SCHEMA_XML, source).uri);
 
         if (data instanceof XMLDocument)
             data = data.documentElement.childNodes;
@@ -2365,7 +2402,7 @@
             return;
 
         let value = object.attributes[attribute];
-        if ((value || "").match(Composer.PATTERN_EXPRESSION_CONTAINS))
+        if ((value || "").match(PATTERN_EXPRESSION_CONTAINS))
             value = Expression.eval(serial + ":" + attribute,
                 _execution_context(), String(value));
 
@@ -2381,11 +2418,11 @@
         const match = value.match(/^([a-z][a-z0-9+.-]*):/i);
         const schema = match && match[1].toLowerCase();
         switch (schema) {
-            case Locator.SCHEMA_RAW:
+            case LOCATOR_SCHEMA_RAW:
                 selector.innerHTML = _locator_fetch_content(
-                    Locator.parse(Locator.SCHEMA_RAW, value));
+                    Locator.parse(LOCATOR_SCHEMA_RAW, value));
                 return;
-            case Locator.SCHEMA_XML:
+            case LOCATOR_SCHEMA_XML:
                 _render_append_nodes(selector, _render_datasource_collect(value), true);
                 return;
             default:
@@ -2408,10 +2445,10 @@
      * @param {number} serial Serial of the element
      */
     const _render_attribute_import = (selector, object, serial) => {
-        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_IMPORT))
+        if (!object.attributes.hasOwnProperty(ATTRIBUTE_IMPORT))
             return;
-        _render_append_locator_content(selector, object, serial, Composer.ATTRIBUTE_IMPORT);
-        delete object.attributes[Composer.ATTRIBUTE_IMPORT];
+        _render_append_locator_content(selector, object, serial, ATTRIBUTE_IMPORT);
+        delete object.attributes[ATTRIBUTE_IMPORT];
     };
 
     /**
@@ -2428,9 +2465,9 @@
      * @param {number} serial Serial of the element
      */
     const _render_attribute_output = (selector, object, serial) => {
-        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_OUTPUT))
+        if (!object.attributes.hasOwnProperty(ATTRIBUTE_OUTPUT))
             return;
-        _render_append_locator_content(selector, object, serial, Composer.ATTRIBUTE_OUTPUT);
+        _render_append_locator_content(selector, object, serial, ATTRIBUTE_OUTPUT);
     };
 
     /**
@@ -2445,10 +2482,10 @@
      * @throws {Error} In case of an invalid interval
      */
     const _render_attribute_interval = (selector, object, serial) => {
-        let interval = String(object.attributes[Composer.ATTRIBUTE_INTERVAL] || "").trim();
+        let interval = String(object.attributes[ATTRIBUTE_INTERVAL] || "").trim();
         if (!interval || object.interval)
             return;
-        const identifier = serial + ":" + Composer.ATTRIBUTE_INTERVAL;
+        const identifier = serial + ":" + ATTRIBUTE_INTERVAL;
         interval = String(Expression.eval(identifier, _execution_context(), interval));
         if (!interval.match(/^\d*$/))
             throw new Error("Invalid interval: " + interval);
@@ -2488,12 +2525,12 @@
      */
     const _render_attribute_iterate = (selector, object, serial, lock) => {
 
-        if (!object.attributes.hasOwnProperty(Composer.ATTRIBUTE_ITERATE))
+        if (!object.attributes.hasOwnProperty(ATTRIBUTE_ITERATE))
             return;
 
         if (!object.iterate) {
-            const iterate = String(object.attributes[Composer.ATTRIBUTE_ITERATE] || "").trim();
-            const match = iterate.match(Composer.PATTERN_EXPRESSION_VARIABLE);
+            const iterate = String(object.attributes[ATTRIBUTE_ITERATE] || "").trim();
+            const match = iterate.match(PATTERN_EXPRESSION_VARIABLE);
             if (!match)
                 throw new Error(`Invalid iterate${iterate ? ": " + iterate : ""}`);
             object.iterate = {name:match[1].trim(), expression:"{{" + match[2].trim() + "}}"};
@@ -2501,7 +2538,7 @@
             selector.innerHTML = "";
         }
 
-        const identifier = serial + ":" + Composer.ATTRIBUTE_ITERATE;
+        const identifier = serial + ":" + ATTRIBUTE_ITERATE;
         let iterate = Expression.eval(identifier, _execution_context(), object.iterate.expression);
         if (iterate instanceof Error)
             throw iterate;
@@ -2574,24 +2611,24 @@
      */
     const _render_attributes_update = (selector, object, serial) => {
 
-        if (selector.nodeName.match(Composer.PATTERN_ELEMENT_IGNORE))
+        if (selector.nodeName.match(PATTERN_ELEMENT_IGNORE))
             return;
 
         const attributes = [];
         for (const key in object.attributes)
             if (object.attributes.hasOwnProperty(key))
                 attributes.push(key);
-        if (Composer.ATTRIBUTE_VALUE in selector
-                && object.attributes.hasOwnProperty(Composer.ATTRIBUTE_VALUE)
-                && !attributes.includes(Composer.ATTRIBUTE_VALUE))
-            attributes.push(Composer.ATTRIBUTE_VALUE);
+        if (ATTRIBUTE_VALUE in selector
+                && object.attributes.hasOwnProperty(ATTRIBUTE_VALUE)
+                && !attributes.includes(ATTRIBUTE_VALUE))
+            attributes.push(ATTRIBUTE_VALUE);
         attributes.forEach((attribute) => {
             // Ignore all internal attributes
-            if (attribute.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
-                    && !attribute.match(Composer.PATTERN_ATTRIBUTE_STATIC))
+            if (attribute.match(PATTERN_ATTRIBUTE_ACCEPT)
+                    && !attribute.match(PATTERN_ATTRIBUTE_STATIC))
                 return;
             let value = String(object.attributes[attribute] || "");
-            if (!value.match(Composer.PATTERN_EXPRESSION_CONTAINS))
+            if (!value.match(PATTERN_EXPRESSION_CONTAINS))
                 return;
             const identifier = serial + ":" + attribute;
             value = Expression.eval(identifier, _execution_context(), value);
@@ -2605,8 +2642,8 @@
                 // property must be set, the value of the attribute is optional.
                 // Changing the value does not trigger an event, so no unwanted
                 // recursions occur.
-                if (attribute.toLowerCase() === Composer.ATTRIBUTE_VALUE
-                        && Composer.ATTRIBUTE_VALUE in selector)
+                if (attribute.toLowerCase() === ATTRIBUTE_VALUE
+                        && ATTRIBUTE_VALUE in selector)
                     selector.value = value;
                 // @-ATTRIBUTE: These are attribute templates for the renderer,
                 // which inserts attributes of the same name to them without @.
@@ -2642,10 +2679,10 @@
      * @throws {Error} In case of errors in the composite JavaScript
      */
     const _render_element_script = (selector) => {
-        if (!selector.nodeName.match(Composer.PATTERN_SCRIPT))
+        if (!selector.nodeName.match(PATTERN_SCRIPT))
             return;
-        const type = (selector.getAttribute(Composer.ATTRIBUTE_TYPE) || "").trim();
-        if (!type.match(Composer.PATTERN_COMPOSITE_SCRIPT))
+        const type = (selector.getAttribute(ATTRIBUTE_TYPE) || "").trim();
+        if (!type.match(PATTERN_COMPOSITE_SCRIPT))
             return;
         try {Scripting.eval(_execution_context(), selector.textContent);
         } catch (error) {
@@ -2667,8 +2704,8 @@
      */
     const _render_element_children = (selector, object, lock) => {
         if (!selector.childNodes
-                || selector.nodeName.match(Composer.PATTERN_ELEMENT_IGNORE)
-                || object.attributes.hasOwnProperty(Composer.ATTRIBUTE_ITERATE))
+                || selector.nodeName.match(PATTERN_ELEMENT_IGNORE)
+                || object.attributes.hasOwnProperty(ATTRIBUTE_ITERATE))
             return;
         Array.from(selector.childNodes).forEach((node) => {
             // The rendering is recursive, if necessary the node is then no
@@ -2703,21 +2740,21 @@
                 if (!event)
                     return;
                 if (event.type === "loadstart")
-                    event = [Composer.EVENT_HTTP_START, event];
+                    event = [EVENT_HTTP_START, event];
                 else if (event.type === "progress")
-                    event = [Composer.EVENT_HTTP_PROGRESS, event];
+                    event = [EVENT_HTTP_PROGRESS, event];
                 else if (event.type === "readystatechange")
-                    event = [Composer.EVENT_HTTP_RECEIVE, event];
+                    event = [EVENT_HTTP_RECEIVE, event];
                 else if (event.type === "load")
-                    event = [Composer.EVENT_HTTP_LOAD, event];
+                    event = [EVENT_HTTP_LOAD, event];
                 else if (event.type === "abort")
-                    event = [Composer.EVENT_HTTP_ABORT, event];
+                    event = [EVENT_HTTP_ABORT, event];
                 else if (event.type === "error")
-                    event = [Composer.EVENT_HTTP_ERROR, event];
+                    event = [EVENT_HTTP_ERROR, event];
                 else if (event.type === "timeout")
-                    event = [Composer.EVENT_HTTP_TIMEOUT, event];
+                    event = [EVENT_HTTP_TIMEOUT, event];
                 else if (event.type === "loadend")
-                    event = [Composer.EVENT_HTTP_END, event];
+                    event = [EVENT_HTTP_END, event];
                 else return;
                 Composer.fire(...event);
             };
@@ -2737,7 +2774,7 @@
 
     // Listener when an error occurs and triggers a matching composite-event.
     window.addEventListener("error", (event) =>
-        Composer.fire(Composer.EVENT_ERROR, event));
+        Composer.fire(EVENT_ERROR, event));
     
     // MutationObserver detects changes at the DOM and triggers (re)rendering
     // and cleanup and prevents manipulation of ATTRIBUTE_COMPOSITE.
@@ -2804,7 +2841,7 @@
             if (object && object.condition
                     && object.condition.element === node)
                 object.condition.element = null;
-            if (object && object.attributes.hasOwnProperty(Composer.ATTRIBUTE_COMPOSITE)) {
+            if (object && object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE)) {
                 const meta = _mount_lookup(node);
                 if (meta && meta.meta && meta.meta.model && meta.model) {
                     const model = (meta.meta.namespace || []).concat(meta.meta.model).join(".");
@@ -2812,7 +2849,7 @@
                         _models.delete(model);
                         if (typeof meta.model.undock === "function") {
                             meta.model.undock.call(meta.model);
-                            Composer.fire(Composer.EVENT_MODULE_UNDOCK, meta);
+                            Composer.fire(EVENT_MODULE_UNDOCK, meta);
                         }
                     }
                 }
@@ -2866,7 +2903,7 @@
                 // Manipulations are corrected/restored.
                 if (record.type === "characterData"
                         && record.target.nodeType === Node.TEXT_NODE) {
-                    if (object && object.hasOwnProperty(Composer.ATTRIBUTE_VALUE)) {
+                    if (object && object.hasOwnProperty(ATTRIBUTE_VALUE)) {
                         const value = object.value === undefined ? "" : String(object.value);
                         if (value !== record.target.textContent)
                             record.target.textContent = value;
@@ -2878,13 +2915,13 @@
                 // monitored. Manipulations are corrected/restored.
                 if (object && record.type === "attributes") {
                     const attribute = (record.attributeName || "").toLowerCase().trim();
-                    if (attribute.match(Composer.PATTERN_ATTRIBUTE_ACCEPT)
-                            && !attribute.match(Composer.PATTERN_ATTRIBUTE_STATIC)) {
+                    if (attribute.match(PATTERN_ATTRIBUTE_ACCEPT)
+                            && !attribute.match(PATTERN_ATTRIBUTE_STATIC)) {
                         // Composite internal non-static attributes are managed
                         // by the renderer and are removed.
                         if (record.target.hasAttribute(attribute))
                             record.target.removeAttribute(attribute);
-                    } else if (attribute.match(Composer.PATTERN_ATTRIBUTE_STATIC)) {
+                    } else if (attribute.match(PATTERN_ATTRIBUTE_STATIC)) {
                         // Without an initial value registered by the renderer,
                         // the assumption is that the attribute was subsequently
                         // added and it is removed. Otherwise, a removed or
@@ -2987,11 +3024,11 @@
             // state. Only the nodes from the mutation records are passed, the
             // affected child nodes are implied and not resolved.
             if (added.size > 0)
-                Composer.fire(Composer.EVENT_DOM_ADDED, Array.from(added));
+                Composer.fire(EVENT_DOM_ADDED, Array.from(added));
             if (removed.size > 0)
-                Composer.fire(Composer.EVENT_DOM_REMOVED, Array.from(removed));
+                Composer.fire(EVENT_DOM_REMOVED, Array.from(removed));
             if (moved.size > 0)
-                Composer.fire(Composer.EVENT_DOM_MOVED, Array.from(moved));
+                Composer.fire(EVENT_DOM_MOVED, Array.from(moved));
 
         })).observe(document.body, {childList:true, subtree:true, attributes:true, attributeOldValue:true, characterData:true});
 

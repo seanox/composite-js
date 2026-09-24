@@ -44,6 +44,11 @@
     /** Constant for attribute type */
     const ATTRIBUTE_TYPE = "type";
 
+    /** Shadow constant for locator schemas */
+    const LOCATOR_SCHEMA_XML = Locator.SCHEMA_XML;
+    const LOCATOR_SCHEMA_XSLT = Locator.SCHEMA_XSLT;
+    const LOCATOR_SCHEMA_RAW = Locator.SCHEMA_RAW;
+
     compliant("DataSource");
     compliant(null, window.DataSource = {
 
@@ -111,11 +116,11 @@
             ]);
 
             if (typeof xml === "string") {
-                const locator = Locator.parse(Locator.SCHEMA_XML, xml);
+                const locator = Locator.parse(LOCATOR_SCHEMA_XML, xml);
                 if (style === undefined) {
                     const path = locator.path.replace(/\.xml$/, ".xslt");
                     style = Locator.parse(
-                        Locator.SCHEMA_XSLT, `${Locator.SCHEMA_XSLT}:${path}`).uri;
+                        LOCATOR_SCHEMA_XSLT, `${LOCATOR_SCHEMA_XSLT}:${path}`).uri;
                 }
 
                 xml = DataSource.fetch(locator.uri);
@@ -133,7 +138,7 @@
             }
 
             if (typeof style === "string") {
-                const locator = Locator.parse(Locator.SCHEMA_XSLT, style);
+                const locator = Locator.parse(LOCATOR_SCHEMA_XSLT, style);
                 if (locator.query !== undefined)
                     throw new Error("Invalid xslt locator: " + String(style));
                 style = DataSource.fetch(locator.uri);
@@ -231,9 +236,9 @@
                 throw new Error("Invalid locator: " + String(locator));
             const source = locator;
             locator = Locator.parse(locator);
-            if (locator.schema === Locator.SCHEMA_RAW)
+            if (locator.schema === LOCATOR_SCHEMA_RAW)
                 throw new Error("Invalid locator: " + source);
-            if (locator.schema === Locator.SCHEMA_XSLT
+            if (locator.schema === LOCATOR_SCHEMA_XSLT
                     && locator.query !== undefined)
                 throw new Error("Invalid xslt locator: " + source);
 
@@ -333,7 +338,7 @@
             locators.forEach(entry => {
                 if (typeof entry !== "string")
                     throw new TypeError(`Invalid xml locator: ${typeof entry}`);
-                Locator.parse(Locator.SCHEMA_XML, entry);
+                Locator.parse(LOCATOR_SCHEMA_XML, entry);
             });
 
             let hash = collector.hashCode() + ":" + locators.join().hashCode();

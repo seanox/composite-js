@@ -63,6 +63,17 @@
     };
 
     /**
+     * Property to get the version of Seanox composite-js.
+     * @returns {string} The version of Seanox composite-js
+     */
+    Object.defineProperty(compliant, "version", {
+        value: "0.0.0",
+        writable: false,
+        configurable: false,
+        enumerable: true
+    });
+
+    /**
      * Comparable to packages in other programming languages, namespaces can be
      * used for hierarchical structuring of components, resources and business
      * logic. Although packages are not a feature of JavaScript, they can be

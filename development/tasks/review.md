@@ -14,7 +14,8 @@ Umfang (~6.000 Zeilen):
 
 Aufwand in Story Points (1/2/3/5/8/13).  
 Alle Findings wurden im Code verifiziert; modulübergreifende Dubletten sind
-zusammengefasst.
+zusammengefasst.  
+Erledigte Punkte sind durchgestrichen: ~~der Punnkt ist erledigt~~
 
 ## Hoch
 
@@ -129,22 +130,22 @@ Keys). `_lock.release` mountet bei jedem Render-Ende alle
 #### ~~6.7. Kein zentraler Cleanup-Lifecycle für Composer, Expression und Reactive~~
 - Ein gemeinsamer Cleanup-Pfad sollte alle elementbezogenen Ressourcen freigeben.
 
-| Komponente         | Ressource, die bereinigt werden muss                                                             |
-|--------------------|--------------------------------------------------------------------------------------------------|
-| __Composer__       | `Composer.mount.stack` - entfernte DOM-Elemente aus dem Mount-Stack entfernen                    |
-| __Composer__       | `_render_meta` - Render-Metadaten des entfernten Elements freigeben                              |
-| __Composer__       | Composite-/Undock-State - zugehörige Composite-Instanz sauber und genau einmal undocken          |
-| __Composer__       | Template-/Render-Referenzen, soweit sie ausschließlich zum Composer-Lifecycle gehören            |
-| ~~__Expression__~~ | ~~`Expression._cache` - __alle__ Cache-Einträge des entfernten `serial` entfernen~~              |
-| __Reactive__       | `Reactive.notifications` - __alle__ DOM-Subscriptions des entfernten `serial` entfernen          |
-| __Reactive__       | Zugehörige Notification-/Observer-Strukturen entfernen, wenn sie dadurch leer werden             |
-| __Alle__           | Keine langlebige Referenz auf den entfernten DOM-Knoten bzw. dessen Lifecycle-State zurücklassen |
+| Komponente     | Ressource, die bereinigt werden muss                                                             |
+|----------------|--------------------------------------------------------------------------------------------------|
+| __Composer__   | `Composer.mount.stack` - entfernte DOM-Elemente aus dem Mount-Stack entfernen                    |
+| __Composer__   | `_render_meta` - Render-Metadaten des entfernten Elements freigeben                              |
+| __Composer__   | Composite-/Undock-State - zugehörige Composite-Instanz sauber und genau einmal undocken          |
+| __Composer__   | Template-/Render-Referenzen, soweit sie ausschließlich zum Composer-Lifecycle gehören            |
+| __Expression__ | `Expression._cache` - __alle__ Cache-Einträge des entfernten `serial` entfernen                  |
+| __Reactive__   | `Reactive.notifications` - __alle__ DOM-Subscriptions des entfernten `serial` entfernen          |
+| __Reactive__   | Zugehörige Notification-/Observer-Strukturen entfernen, wenn sie dadurch leer werden             |
+| __Alle__       | Keine langlebige Referenz auf den entfernten DOM-Knoten bzw. dessen Lifecycle-State zurücklassen |
 
-| Komponente         | Hauptverantwortung           |
-|--------------------|------------------------------|
-| __Composer__       | DOM-/Render-/Mount-Lifecycle |
-| ~~__Expression__~~ | ~~Expression-Cache~~         |
-| __Reactive__       | Reactive-Subscriptions       |
+| Komponente     | Hauptverantwortung           |
+|----------------|------------------------------|
+| __Composer__   | DOM-/Render-/Mount-Lifecycle |
+| __Expression__ | Expression-Cache             |
+| __Reactive__   | Reactive-Subscriptions       |
 
 > Die Komponenten verwalten ihre jeweiligen Ressourcen eigenständig. Das
 > gemeinsame Composer.EVENT_DOM_REMOVED dient lediglich als Lifecycle-Signal und
@@ -309,12 +310,9 @@ pushen.
 
 > Stelle: composer.js:2841-2861, 3015, Story-Points: 2
 
-Das Fehlen von `common.js` oder `common.css` ist kein Fehler. `Composer.load()`
-behandelt HTTP 404 bei nicht-striktem Laden als optional, sodass der Bootstrap
-fortgesetzt wird.
-
-> Unerwartete HTTP- oder Netzwerkfehler können den Bootstrap weiterhin abbrechen,
-> dies ist jedoch kein Fehler der optionalen Common-Ressourcen selbst.
+> Das Fehlen von `common.js` oder `common.css` ist kein Fehler. `Composer.load()`
+> behandelt HTTP 404 bei nicht-striktem Laden als optional, sodass der Bootstrap
+> fortgesetzt wird.
 
 </details>
 
@@ -334,7 +332,7 @@ Listener-Exceptions propagieren bis in MutationObserver/Event-Handler;
 `window[name]` kann `Composer`, `Expression`, `location` überschreiben; kein
 Scope.
 
-> Mit der Überarbeitung der Scopes ist der Punkt erledigt.
+> Mit der Überarbeitung der Scopes ist der Punkt erledigt.  
 > Das mögliche Überschreiben innerhalb des View-Scopes ist beabsichtigt und kein Fehler.
 
 </details>
@@ -507,13 +505,19 @@ Index statt Aufruf -> Bedingung immer false, Guard wirkungslos.
 
 </details>
 
-### 34. Getter `PATTERN_*`/`EVENT_FILTER/NAMES`
+### ~~34. Getter `PATTERN_*`/`EVENT_FILTER/NAMES`~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:168-308, 1909-1919, Story-Points: 2
 
 Erzeugen bei jedem Zugriff neue RegExp/Arrays in Hot-Paths.
 
 ~~Custom Selectors per `parentNode.querySelectorAll` + `includes` statt
 `matches()`.~~
+
+</details>
 
 ### 35. `forward()` und `Routing.locate()`
 > Stelle: routing.js:106, 145-158, 245-259, 359-370, Story-Points: 3
@@ -649,7 +653,6 @@ TypeError bei Nicht-Error-Werten; Fehlerausgabe ersetzt Container-Inhalt.
 
 ## Einschätzung
 Drei konzeptionelle Kernprobleme, aus denen viele Einzel-Findings folgen:
-
 1. __eval als Laufzeitfundament__ (#1, #4, #13): Jede `{{}}`-Sequenz ist Code,
    keine CSP-Fähigkeit, keine Trennung von Daten und Code. Das ist eine bewusste
    Design-Entscheidung aus aspect-js, macht aber Datenquellen (i18n, XML,

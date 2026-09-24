@@ -269,6 +269,7 @@
   - [window](extensions.md#window)
     - [window.serial](extensions.md#windowserial)
     - [window.compliant](extensions.md#windowcompliant)
+    - [window.compliant.version](extensions.md#windowcompliantversion)
     - [window.location.combine](extensions.md#windowlocationcombine)
     - [window.location.contextPath](extensions.md#windowlocationcontextpath)
   - [XMLHttpRequest](extensions.md#xmlhttprequest)

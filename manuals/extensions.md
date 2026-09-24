@@ -34,6 +34,7 @@ functions.
 - [window](#window)
   - [window.serial](#windowserial)
   - [window.compliant](#windowcompliant)
+  - [window.compliant.version](#windowcompliantversion)
   - [window.location.combine](#windowlocationcombine)
   - [window.location.contextPath](#windowlocationcontextpath)
 - [XMLHttpRequest](#xmlhttprequest)
@@ -326,6 +327,14 @@ window.compliant("example.function", (param1, param2, param3) => {...});
 Creates the method `example.function`. The method causes errors if the base
 object `example` does not exist or the object `example` already contains an
 entry `function`.
+
+### window.compliant.version
+Property to get the version of Seanox composite-js.
+
+```javascript
+window.compliant.version
+// returns string e.g. "2.1.0"
+```
 
 ### window.location.combine
 Combines text elements to a path. The method has an optimizing effect in the use

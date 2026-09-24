@@ -231,6 +231,8 @@
         <file name="routing.js"/>
       </filelist>
     </file-compose>
+    <replaceregexp file="${release.file.source}" flags="g" byline="false"
+        match="(value:\s*&quot;)0[\.0]*(&quot;)" replace="\1${release.version}\2"/>
     <copy file="${release.file.source}" tofile="${release.file.debug.max}"/>
     <replaceregexp file="${release.file.debug.max}" flags="g" byline="false"
         match="(\R\s+const )(_\w+)" replace="\1\2 = window.__\2"/>
@@ -254,6 +256,8 @@
         <file name="test.js"/>
       </filelist>
     </file-compose>
+    <replaceregexp file="${release.file.source.testing}" flags="g" byline="false"
+        match="(value:\s*&quot;)0[\.0]*(&quot;)" replace="\1${release.version}\2"/>
     <copy file="${release.file.source.testing}" tofile="${release.file.testing.max}"/>
     <copy file="${release.file.source.testing}" tofile="${release.file.debug.testing.max}"/>
     <replaceregexp file="${release.file.debug.testing.max}" flags="g" byline="false"

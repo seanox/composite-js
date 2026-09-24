@@ -60,6 +60,8 @@ CR: Resources: Refine the trust boundary
     deliberate and controlled manner through reverse proxies.
     This directly affects the import and output attributes in the markup.
     Resources are loaded via raw://... and no longer via http://.... or https://...
+CR: Build: API access to the version
+    The version can  be queried via the property compliant.version.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

@@ -70,105 +70,97 @@ Renders a four-level nested view with 10×10×10×10 iterations, producing 11,11
 loop instances in total (10 + 100 + 1,000 + 10,000).
 
 Each iteration evaluates reactive expressions, updates a shared application
-module value, and creates the corresponding DOM structure. The benchmark
-measures the total time required until the runtime signals that the complete
-rendering process has finished.
+module value, and creates its corresponding DOM structure. The benchmark
+measures end-to-end rendering time until the runtime signals completion.
 
-The benchmark evaluates the efficiency of view expansion, expression evaluation,
-and DOM creation under a large number of nested iterations.
+It evaluates the efficiency of view expansion, expression evaluation, and DOM
+creation across a large number of nested iterations.
 
 ## Expression Evaluation
-Evaluates a complex expression repeatedly against an application module
+Repeatedly evaluates a complex expression against an application module
 containing nested object and array access, property reads, string operations,
-arithmetic operations, and type conversion.
+arithmetic, and type conversion.
 
-The benchmark measures the performance of expression parsing and evaluation
-under repeated execution. It verifies that expressions can resolve deep property
-paths efficiently without unnecessary overhead during high-frequency evaluation.
+The benchmark measures expression parsing and evaluation performance under
+high-frequency execution, with a focus on efficient resolution of deep property
+paths without unnecessary overhead.
 
 ## Reactive: Batching
-Performs 1000 synchronous updates to a single reactive value.
+Performs 1,000 synchronous updates to a single reactive value.
 
-The benchmark primarily measures the efficiency of the reactivity system, the
-scheduler and the batching strategy. In an optimized rendering process,
-individual updates should be combined into a single (or very few) rendering
-passes, rather than performing a render after every assignment.
+The benchmark measures the efficiency of the reactivity system, scheduler, and
+batching strategy. An optimized renderer should coalesce individual updates into
+a single or few rendering passes instead of rendering after every assignment.
 
-This benchmark is intentionally focused on update coalescing. It does not
-measure DOM complexity, diffing performance, layout, paint, composite structure,
-or overall application rendering performance.
-
-Modern frameworks/runtimes optimize this case.
+The benchmark focuses on update coalescing and excludes DOM complexity, diffing,
+layout, paint, composite structure, and overall application rendering
+performance.
 
 ## Reactive: Granular Update
-Renders 10,000 flat DOM nodes and then updates exactly one reactive value in the
+Renders 10,000 flat DOM nodes and updates exactly one reactive value in the
 middle of the view (index 5000).
 
-The benchmark measures whether the reactive system invalidates only the affected
-binding or unnecessarily re-evaluates unrelated nodes in the view.
+The benchmark measures whether the reactive system updates only the affected
+binding or unnecessarily re-evaluates unrelated nodes.
 
-Ideal:  
+__Ideal:__  
 State change &rarr; one dependency &rarr; one text node update.
 
-Poor implementations:  
-State change &rarr; view re-evaluation &rarr; many expression evaluations &rarr;
-many DOM updates.
+__Poor implementations:__  
+State change &rarr; view re-evaluation &rarr; many expression evaluations &rarr; many DOM updates.
 
-This benchmark primarily evaluates:
-- dependency tracking
-- update granularity
-- scheduler overhead
-- incremental DOM update performance
+The benchmark primarily measures:
+- Dependency tracking
+- Update granularity
+- Scheduler overhead
+- Incremental DOM update performance
 
 ## Reactive: Leaf Update
-Renders a static 10×10×10×10 DOM tree (10,000 nodes) and then updates exactly
-one reactive value bound to #target.
+Renders a static 10×10×10×10 DOM tree (10,000 nodes) and updates exactly one
+reactive value bound to `#target`.
 
-The benchmark verifies that a reactive renderer invalidates only the affected
-binding instead of traversing or re-rendering unrelated parts of the DOM. The
-size of the surrounding tree serves solely to detect unnecessary work during the
+The benchmark measures whether the reactive renderer invalidates and updates
+only the affected binding without traversing or re-rendering unrelated DOM
+nodes. The surrounding tree size is used to expose unnecessary work during the
 update phase.
 
 ## Reactive: Root-Update
-Renders a view whose entire structure depends on state.x. Updating state.x at
-the root invalidates almost the complete render structure.
+Renders a view whose entire structure depends on `state.x`. Updating `state.x`
+at the root invalidates and regenerates nearly the complete render tree.
 
 The benchmark measures:
-- Reactive invalidation from the root
+- Root-level reactive invalidation
 - Expression evaluation
 - Rendering throughput
 - DOM creation and insertion
-- End-to-end rendering latency until rendering has finished
+- End-to-end rendering latency
 
-Increasing state.x from 10 to 11 expands every nesting level, growing the tree
-from 10^4 (10,000) to 11^4 (14,641) rendered nodes. This represents a worst-case
-full rendering update where nearly every node must be regenerated.
+Increasing `state.x` from 10 to 11 expands each nesting level, growing the tree
+from 10⁴ (10,000) to 11⁴ (14,641) nodes. This represents a worst-case
+full-render update in which nearly every node is regenerated.
 
 ## Reactive: Worst Case
 Creates 10,000 DOM bindings that depend on the same application module value.
-When the value changes, all dependent bindings are invalidated and must be
-processed by the reactive update pipeline.
+When the value changes, all bindings are invalidated and processed by the
+reactive update pipeline.
 
-This benchmark measures the throughput and overhead of dependency tracking,
-change propagation, expression evaluation, and binding updates under a
-worst-case full invalidation scenario.
+The benchmark measures the throughput and overhead of dependency tracking,
+change propagation, expression evaluation, and binding updates under full
+invalidation.
 
-It intentionally represents a case where every binding is affected, so the
-benchmark evaluates the runtime's raw update capacity rather than its ability
-to optimize away unchanged work.
+This intentionally represents a worst-case scenario where every binding is
+affected, measuring the runtime's raw update capacity without optimization from
+unchanged bindings.
 
 ## Script Parsing and Evaluation
 Processes a JavaScript source file containing 1,765 expression elements 2,500
-times through the composite script processing and measures the total processing
-and evaluation time.
+times and measures total processing and evaluation time.
 
-The benchmark measures the performance of the complete composite script
-pipeline, including preprocessing, macro detection and expansion, script
-preparation, parsing and runtime execution. It supports additional composite
-script macros such as `#import`, `#export`, `#use`, and tolerant expressions
-while correctly ignoring JavaScript literals and comments during preprocessing.
+The benchmark covers the complete composite script pipeline, including
+preprocessing, macro detection and expansion, script preparation, parsing, and
+runtime execution. It supports macros such as `#import`, `#export`, and `#use`,
+as well as tolerant expressions, while correctly ignoring JavaScript literals
+and comments during preprocessing.
 
-By repeatedly processing identical source code, the benchmark evaluates the
-stability and efficiency of the entire composite script loading and execution
-path, helping identify unnecessary overhead in preprocessing, parsing, and
-evaluation.
+Repeated processing of identical source code measures pipeline stability and
+helps identify unnecessary overhead in preprocessing, parsing, and evaluation.

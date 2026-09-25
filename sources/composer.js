@@ -2658,10 +2658,16 @@
                     attribute = attribute.replace(/^@+/, "");
                 }
                 selector.setAttribute(attribute, value);
-                // Attribute values must also be set in the JavaScript so that it
-                // remains synchronized with the DOM!
-                selector[attribute] = value;
             } else selector.removeAttribute(attribute);
+
+            // DOM attributes and properties are distinct and are not generally
+            // synchronized by the browser. The renderer explicitly synchronizes
+            // the corresponding property with the evaluated attribute value. If
+            // the expression evaluates to undefined, the attribute is removed
+            // and the corresponding property is assigned undefined. No browser
+            // default value is restored. The developer is responsible for the
+            // values used and their assignment to the attributes.
+            selector[attribute] = value;
         });
     };
 

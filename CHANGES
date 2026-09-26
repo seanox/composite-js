@@ -63,6 +63,7 @@ CR: Resources: Refine the trust boundary
 CR: Build: API access to the version
     The version can be queried via the property compliant.version.
 CR: Build: Update of eslint to major 10.x
+CR: Build: Improve OS independence of build.xml
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

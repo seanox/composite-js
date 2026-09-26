@@ -12,6 +12,7 @@
     <echo>                 Synchronizes README.md with CHANGES             </echo>
     <echo>                 Publishes the version to the npm repository     </echo>
     <echo>                                                                 </echo>
+    <echo>  compose        Prepare the environment for testing             </echo>
     <echo>                 Combinable with the task start.                 </echo>
     <echo>                                                                 </echo>
     <echo>  compose-max    Prepare the environment for testing with max    </echo>
@@ -33,7 +34,24 @@
   <property name="workspace.tutorials" value="${workspace}/tutorials"/>
 
   <property environment="env"/>
- 
+
+  <condition property="npx" value="npx.cmd" else="npx">
+    <os family="windows"/>
+  </condition>
+
+  <condition property="npm" value="npm.cmd" else="npm">
+    <os family="windows"/>
+  </condition>
+
+  <macrodef name="replaceregexp-all">
+    <attribute name="file"/>
+    <attribute name="match"/>
+    <attribute name="replace"/>
+    <sequential>
+      <replaceregexp file="@{file}" match="@{match}" replace="@{replace}" flags="g" byline="false"/>
+    </sequential>
+  </macrodef>
+
   <macrodef name="release-locate">
     <sequential>
       <copy file="CHANGES" tofile="CHANGES.tmp" overwrite="true"/>
@@ -48,9 +66,7 @@
       <replaceregexp file="CHANGES.tmp"
           match="(?s)^\s*(\d+)\.(\d+)\.(\d+)\s+(\d{4})([\dx]+).*$" byline="false"
           replace="${replace}"/>
-      <replaceregexp file="CHANGES.tmp"
-          match="x+" flags="g" byline="false"
-          replace="0000"/>
+      <replaceregexp-all file="CHANGES.tmp" match="x+" replace="0000"/>
       <loadproperties>
         <file file="CHANGES.tmp"/>
       </loadproperties>
@@ -66,12 +82,12 @@
   <target name="changes">
     <release-locate/>
 
-    <replaceregexp file="${workspace}/CHANGES" match="&#x00E4;" replace="ae" flags="g"/>
-    <replaceregexp file="${workspace}/CHANGES" match="&#x00C4;" replace="Ae" flags="g"/>
-    <replaceregexp file="${workspace}/CHANGES" match="&#x00F6;" replace="oe" flags="g"/>
-    <replaceregexp file="${workspace}/CHANGES" match="&#x00D6;" replace="Oe" flags="g"/>
-    <replaceregexp file="${workspace}/CHANGES" match="&#x00FC;" replace="ue" flags="g"/>
-    <replaceregexp file="${workspace}/CHANGES" match="&#x00DC;" replace="Ue" flags="g"/>
+    <replaceregexp-all file="${workspace}/CHANGES" match="&#x00E4;" replace="ae"/>
+    <replaceregexp-all file="${workspace}/CHANGES" match="&#x00C4;" replace="Ae"/>
+    <replaceregexp-all file="${workspace}/CHANGES" match="&#x00F6;" replace="oe"/>
+    <replaceregexp-all file="${workspace}/CHANGES" match="&#x00D6;" replace="Oe"/>
+    <replaceregexp-all file="${workspace}/CHANGES" match="&#x00FC;" replace="ue"/>
+    <replaceregexp-all file="${workspace}/CHANGES" match="&#x00DC;" replace="Ue"/>
       
     <copy file="${workspace}/CHANGES" tofile="${workspace}/CHANGES.tmp" overwrite="true"/>
     <replaceregexp file="${workspace}/CHANGES.tmp" match="^\s+" replace="" byline="false"/>
@@ -86,8 +102,8 @@
       <file file="${workspace}/CHANGES.tmp"/>
     </loadresource>
     <delete file="${workspace}/CHANGES.tmp"/>
-    <replaceregexp file="${workspace}/README.md"
-        match="(?si)(# Changes\s+).*?(\[Read more\])" flags="g" byline="false"
+    <replaceregexp-all file="${workspace}/README.md"
+        match="(?si)(# Changes\s+).*?(\[Read more\])"
         replace="\1${changes}${line.separator}${line.separator}\2"/>
     <tstamp>
       <format property="now.year" pattern="yyyy"/>
@@ -98,8 +114,8 @@
         <include name="**/*.js"/>
       </fileset>
     </replaceregexp>
-    <replaceregexp file="${workspace}/README.md"
-        match="(?si)(?&lt;=\(C\)\s)\d{4}\b" flags="g" byline="true"
+    <replaceregexp-all file="${workspace}/README.md"
+        match="(?si)(?&lt;=\(C\)\s)\d{4}\b"
         replace="${now.year}"/>
     <replaceregexp file="${workspace}/README.md"
         match="^(\s*#+\s*version\s+)\d+(\.\d)+\s*$" flags="gi" byline="true"
@@ -122,19 +138,25 @@
       <concat destfile="@{output}" append="false">
         <filelist refid="@{filelist}"/>
       </concat>
-      <replaceregexp file="@{output}" flags="g" byline="false"
-          match="(?s)(\r\n)|(\n\r)|\r" replace="&#10;"/>
-      <replaceregexp file="@{output}" flags="g" byline="false"
-          match="\b(compliant\(\x22([\w\.]+)\x22)\);\s*compliant\(\s*null,\s*(window\.)?\2\s*=\s*" replace="\1, "/>
-      <replaceregexp file="@{output}" flags="g" byline="false"
-          match="(?s)(?&lt;=\S)(/\*\*)" replace="${line.separator}${line.separator}\1"/>
-      <replaceregexp file="@{output}" flags="g" byline="false"
-          match="(?s)(?&lt;=.)(?:(/\*(?:\*\s+)+)LIZENZBEDINGUNGEN.*?----\s+(?:\s*\*\s+)*)" replace="\1"/>
-      <replaceregexp file="@{output}" flags="g" byline="false"
-          match=" +(\R)" replace="\1"/>
-      <replaceregexp file="@{output}" flags="g" byline="false"
-          match="(?si)(?&lt;=.)(/\*\*)(?:(?!\*/).)*?\bDESCRIPTION[\s\*\r\n]+----( )*" replace="\1"/>
-      <replaceregexp file="@{output}" flags="g" byline="false"
+      <replaceregexp-all file="@{output}"
+          match="(?s)(\r\n)|(\n\r)|\r"
+          replace="&#10;"/>
+      <replaceregexp-all file="@{output}"
+          match="\b(compliant\(\x22([\w\.]+)\x22)\);\s*compliant\(\s*null,\s*(window\.)?\2\s*=\s*"
+          replace="\1, "/>
+      <replaceregexp-all file="@{output}"
+          match="(?s)(?&lt;=\S)(/\*\*)"
+          replace="${line.separator}${line.separator}\1"/>
+      <replaceregexp-all file="@{output}"
+          match="(?s)(?&lt;=.)(?:(/\*(?:\*\s+)+)LIZENZBEDINGUNGEN.*?----\s+(?:\s*\*\s+)*)"
+          replace="\1"/>
+      <replaceregexp-all file="@{output}"
+          match=" +(\R)"
+          replace="\1"/>
+      <replaceregexp-all file="@{output}"
+          match="(?si)(?&lt;=.)(/\*\*)(?:(?!\*/).)*?\bDESCRIPTION[\s\*\r\n]+----( )*"
+          replace="\1"/>
+      <replaceregexp-all file="@{output}"
           match="(?si)(/\*\*)[\s\r\n\*]+([\r\n]\s+\* \S)"
           replace="\1\2"/>
     </sequential>
@@ -143,8 +165,11 @@
   <macrodef name="file-es6-lint">
     <attribute name="input"/>
     <sequential>
-      <exec executable="cmd.exe" dir="${workspace.release}" failonerror="true">
-        <arg value="/c npx eslint --config ${workspace.development}\eslint.config.js @{input}"/>
+      <exec executable="${npx}" dir="${workspace.release}" failonerror="true">
+        <arg value="eslint"/>
+        <arg value="--config"/>
+        <arg value="${workspace.development}/eslint.config.js"/>
+        <arg value="@{input}"/>
       </exec>
     </sequential>
   </macrodef>
@@ -153,8 +178,14 @@
     <attribute name="input"/>
     <attribute name="output"/>
     <sequential>
-      <exec executable="cmd.exe" dir="${workspace.development}">
-        <arg value="/c npx uglifyjs @{input} -c -m --no-module -o @{output}"/>
+      <exec executable="${npx}" dir="${workspace.development}" failonerror="true">
+        <arg value="uglifyjs"/>
+        <arg value="@{input}"/>
+        <arg value="-c"/>
+        <arg value="-m"/>
+        <arg value="--no-module"/>
+        <arg value="-o"/>
+        <arg value="@{output}"/>
       </exec>
     </sequential>
   </macrodef>
@@ -194,8 +225,8 @@
     <delete dir="${workspace.release}"/>
     <mkdir dir="${workspace.release}"/>
 
-    <exec executable="cmd.exe" dir="${workspace.development}">
-      <arg value="/c npm install"/>
+    <exec executable="${npm}" dir="${workspace.development}" failonerror="true">
+      <arg value="install"/>
     </exec>
 
     <!--
@@ -224,11 +255,13 @@
         <file name="routing.js"/>
       </filelist>
     </file-compose>
-    <replaceregexp file="${release.file.source}" flags="g" byline="false"
-        match="(value:\s*&quot;)0[\.0]*(&quot;)" replace="\1${release.version}\2"/>
+    <replaceregexp-all file="${release.file.source}"
+        match="(value:\s*&quot;)0[\.0]*(&quot;)"
+        replace="\1${release.version}\2"/>
     <copy file="${release.file.source}" tofile="${release.file.debug.max}"/>
-    <replaceregexp file="${release.file.debug.max}" flags="g" byline="false"
-        match="(\R\s+const )(_\w+)" replace="\1\2 = window.__\2"/>
+    <replaceregexp-all file="${release.file.debug.max}"
+        match="(\R\s+const )(_\w+)"
+        replace="\1\2 = window.__\2"/>
     <copy file="${release.file.source}" tofile="${release.file.max}"/>
     <copy file="${release.file.max}" tofile="${release.file}"/>
     <file-minimize input="${release.file.max}" output="${release.file}"/>
@@ -249,12 +282,14 @@
         <file name="test.js"/>
       </filelist>
     </file-compose>
-    <replaceregexp file="${release.file.source.testing}" flags="g" byline="false"
-        match="(value:\s*&quot;)0[\.0]*(&quot;)" replace="\1${release.version}\2"/>
+    <replaceregexp-all file="${release.file.source.testing}"
+        match="(value:\s*&quot;)0[\.0]*(&quot;)"
+        replace="\1${release.version}\2"/>
     <copy file="${release.file.source.testing}" tofile="${release.file.testing.max}"/>
     <copy file="${release.file.source.testing}" tofile="${release.file.debug.testing.max}"/>
-    <replaceregexp file="${release.file.debug.testing.max}" flags="g" byline="false"
-        match="(\R\s+const )(_\w+)" replace="\1\2 = window.__\2"/>
+    <replaceregexp-all file="${release.file.debug.testing.max}"
+        match="(\R\s+const )(_\w+)"
+        replace="\1\2 = window.__\2"/>
     <file-minimize input="${release.file.debug.testing.max}" output="${release.file.debug.testing}"/>
     <file-es6-lint input="${release.file.debug.testing.max}"/>
     <file-es6-lint input="${release.file.debug.testing}"/>
@@ -325,23 +360,26 @@
     <zip destfile="${workspace.release}/${ant.project.name}-${release.version}.zip">
       <fileset dir="${workspace.release.temp}" includes="**/*"/>
     </zip>
-    <touch datetime="${release.date}" pattern="yyyyMMdd" file="${workspace.release}/${ant.project.name}-${release.version}.zip"/>
+    <touch datetime="${release.date}" pattern="yyyyMMdd"
+        file="${workspace.release}/${ant.project.name}-${release.version}.zip"/>
     <delete dir="${workspace.release.temp}"/>
     
     <zip destfile="${workspace.release}/${ant.project.name}-tutorials-${release.version}.zip">
       <fileset dir="${workspace.tutorials}" includes="**/*"/>
       <fileset dir="${workspace}" includes="LICENSE"/>
     </zip>
-    <touch datetime="${release.date}" pattern="yyyyMMdd" file="${workspace.release}/${ant.project.name}-tutorials-${release.version}.zip"/>
+    <touch datetime="${release.date}" pattern="yyyyMMdd"
+        file="${workspace.release}/${ant.project.name}-tutorials-${release.version}.zip"/>
     
-    <replaceregexp file="${workspace}/README.md"
-        match="(Seanox ${ant.project.name} )\d+(\.\d+)*" flags="g" byline="false"
+    <replaceregexp-all file="${workspace}/README.md"
+        match="(Seanox ${ant.project.name} )\d+(\.\d+)*"
         replace="\1${release.version}"/>
-    <replaceregexp file="${workspace}/README.md"
-        match="(seanox/${ant.project.name}/releases/download/)\d+(?:\.\d+)*(/${ant.project.name}-)\d+(?:\.\d+)*(\.zip)" flags="g" byline="false"
+    <replaceregexp-all file="${workspace}/README.md"
+        match="(seanox/${ant.project.name}/releases/download/)\d+(?:\.\d+)*(/${ant.project.name}-)\d+(?:\.\d+)*(\.zip)"
         replace="\1${release.version}\2${release.version}\3"/>
-    <replaceregexp file="${workspace}/README.md"
-        match="(seanox/${ant.project.name}/archive/refs/tags/)\d+(?:\.\d+)*(\.zip)" flags="g" byline="false" replace="\1${release.version}\2"/>
+    <replaceregexp-all file="${workspace}/README.md"
+        match="(seanox/${ant.project.name}/archive/refs/tags/)\d+(?:\.\d+)*(\.zip)"
+        replace="\1${release.version}\2"/>
   </target>
   
   <target name="publish" depends="release">
@@ -352,14 +390,18 @@
         </not>
       </condition>
     </fail>
-    <replaceregexp file="${workspace}/package.json" match="(&quot;version&quot;: &quot;)\d+(?:\.\d+)+(\&quot;)" flags="g" replace="\1${release.version}\2" byline="false"/>
-    <exec executable="cmd.exe">
-      <arg value="/c echo //registry.npmjs.org/:_authToken=%NPM_TOKEN% &gt; .npmrc"/>
+    <replaceregexp-all file="${workspace}/package.json"
+        match="(&quot;version&quot;: &quot;)\d+(?:\.\d+)+(\&quot;)"
+        replace="\1${release.version}\2"/>
+    <echo file="${workspace}/.npmrc">//registry.npmjs.org/:_authToken=${env.NPM_TOKEN}</echo>
+    <exec executable="${npm}" failonerror="true">
+      <arg value="publish"/>
+      <arg value="--access"/>
+      <arg value="public"/>
     </exec>
-    <exec executable="cmd.exe">
-      <arg value="/c npm publish --access public"/>
-    </exec>
-    <replaceregexp file="${workspace}/package.json" match="(&quot;version&quot;: &quot;)\d+(?:\.\d+)+(\&quot;)" flags="g" replace="\10.0.0\2" byline="false"/>
+    <replaceregexp-all file="${workspace}/package.json"
+        match="(&quot;version&quot;: &quot;)\d+(?:\.\d+)+(\&quot;)"
+        replace="\10.0.0\2"/>
   </target>
 
   <target name="compose" depends="release">

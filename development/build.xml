@@ -37,23 +37,29 @@
   <macrodef name="release-locate">
     <sequential>
       <copy file="CHANGES" tofile="CHANGES.tmp" overwrite="true"/>
+      <property name="replace">
+        release.version=\1.\2.\3&#x000D;
+        release.major=\1&#x000D;
+        release.minor=\2&#x000D;
+        release.patch=\3&#x000D;
+        release.year=\4&#x000D;
+        release.date=\4\5&#x000D;
+      </property>
       <replaceregexp file="CHANGES.tmp"
-          match="(?s)^\s*([\d\.x]+) (\d{4})([\dx]+).*$" flags="g" byline="false"
-          replace="release.version=\1&#x000D;release.year=\2&#x000D;release.date=\2\3&#x000D;"/>
-      <replaceregexp file="CHANGES.tmp" match="x+" replace="0000" flags="g" byline="false"/>
+          match="(?s)^\s*(\d+)\.(\d+)\.(\d+)\s+(\d{4})([\dx]+).*$" byline="false"
+          replace="${replace}"/>
+      <replaceregexp file="CHANGES.tmp"
+          match="x+" flags="g" byline="false"
+          replace="0000"/>
       <loadproperties>
         <file file="CHANGES.tmp"/>
       </loadproperties>
       <delete file="CHANGES.tmp"/>
-      <echo file="CHANGES.tmp" message="release.major=${release.version}"/>
-      <replaceregexp file="CHANGES.tmp"
-          match="(?&lt;=\d+)\." byline="true" replace="&#x000D;release.minor="/>
-      <replaceregexp file="CHANGES.tmp"
-          match="(?&lt;=\d+)\." byline="true" replace="&#x000D;release.patch="/>
-      <loadproperties>
-        <file file="CHANGES.tmp"/>
-      </loadproperties>
-      <delete file="CHANGES.tmp"/>
+      <echo>
+        release.version: ${release.version} [major:${release.major} / minor:${release.minor} / patch:${release.patch}]
+        release.year: ${release.year}
+        release.date: ${release.date}
+      </echo>
     </sequential>
   </macrodef>
 

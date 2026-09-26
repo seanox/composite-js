@@ -134,24 +134,11 @@
     </sequential>
   </macrodef>
 
-  <macrodef name="file-es6">
-    <attribute name="input"/>
-    <attribute name="output"/>
-    <sequential>
-      <exec executable="cmd.exe" dir="${workspace.development}">
-        <arg value="/c npx babel @{input} -o @{output} --presets=@babel/preset-env"/>
-      </exec>
-      <exec executable="cmd.exe" dir="${workspace.development}">
-        <arg value="/c npx prettier --write --tab-width 2 --use-tabs @{output}"/>
-      </exec>
-    </sequential>
-  </macrodef>
-
   <macrodef name="file-es6-lint">
     <attribute name="input"/>
     <sequential>
       <exec executable="cmd.exe" dir="${workspace.release}" failonerror="true">
-        <arg value="/c npx eslint --config ${workspace.development}\.eslintrc @{input}"/>
+        <arg value="/c npx eslint --config ${workspace.development}\eslint.config.js @{input}"/>
       </exec>
     </sequential>
   </macrodef>

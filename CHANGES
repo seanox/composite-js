@@ -62,6 +62,7 @@ CR: Resources: Refine the trust boundary
     Resources are loaded via raw://... and no longer via http://.... or https://...
 CR: Build: API access to the version
     The version can be queried via the property compliant.version.
+CR: Build: Update of eslint to major 10.x
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

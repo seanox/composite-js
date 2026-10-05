@@ -208,9 +208,7 @@
     </sequential>
   </macrodef>
   
-  <target name="release" depends="changes">
-    <release-locate/>
-
+  <target name="compose">
     <property name="release.file.source" value="${workspace.release}/${ant.project.name}-source.js"/>
     <property name="release.file.source.testing" value="${workspace.release}/${ant.project.name}-source-testing.js"/>
     <property name="release.file" value="${workspace.release}/${ant.project.name}.js"/>
@@ -222,8 +220,12 @@
     <property name="release.file.debug.testing" value="${workspace.release}/${ant.project.name}-debug-testing.js"/>
     <property name="release.file.debug.testing.max" value="${workspace.release}/${ant.project.name}-debug-testing-max.js"/>
 
-    <delete dir="${workspace.release}"/>
     <mkdir dir="${workspace.release}"/>
+    <delete>
+      <fileset dir="${workspace.release}">
+        <include name="${ant.project.name}*.js"/>
+      </fileset>
+    </delete>
 
     <exec executable="${npm}" dir="${workspace.development}" failonerror="true">
       <arg value="install"/>
@@ -255,9 +257,6 @@
         <file name="routing.js"/>
       </filelist>
     </file-compose>
-    <replaceregexp-all file="${release.file.source}"
-        match="(value:\s*&quot;)0[\.0]*(&quot;)"
-        replace="\1${release.version}\2"/>
     <copy file="${release.file.source}" tofile="${release.file.debug.max}"/>
     <replaceregexp-all file="${release.file.debug.max}"
         match="(\R\s+const )(_\w+)"
@@ -282,9 +281,6 @@
         <file name="test.js"/>
       </filelist>
     </file-compose>
-    <replaceregexp-all file="${release.file.source.testing}"
-        match="(value:\s*&quot;)0[\.0]*(&quot;)"
-        replace="\1${release.version}\2"/>
     <copy file="${release.file.source.testing}" tofile="${release.file.testing.max}"/>
     <copy file="${release.file.source.testing}" tofile="${release.file.debug.testing.max}"/>
     <replaceregexp-all file="${release.file.debug.testing.max}"
@@ -303,6 +299,18 @@
 
     <delete dir="${workspace.development}/node_modules"/>
     <delete file="${workspace.development}/package-lock.json"/>
+
+    <copy file="${release.file.testing}" todir="${workspace.test}" overwrite="true"/>
+    <copy file="${release.file.debug.testing}" todir="${workspace.test}" overwrite="true"/>
+  </target>
+
+  <target name="release" depends="changes,compose">
+    <replaceregexp match="(value:\s*&quot;)0[\.0]*(&quot;)"
+        replace="\1${release.version}\2" flags="g" byline="false">
+      <fileset dir="${workspace.release}">
+        <include name="${ant.project.name}*.js"/>
+      </fileset>
+    </replaceregexp>
 
     <delete>
       <fileset dir="${workspace.tutorials}">
@@ -337,6 +345,7 @@
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_15 Testing - Activation/assets"/>
     <copy file="${release.file.testing.max}" todir="${workspace.tutorials}/single-page-application/Step_16 Testing - UI Test/assets"/>
 
+    <delete dir="${workspace.release.temp}"/>
     <mkdir dir="${workspace.release.temp}"/>
     <copy todir="${workspace.release.temp}">
       <fileset dir="${workspace.release}">
@@ -404,12 +413,7 @@
         replace="\10.0.0\2"/>
   </target>
 
-  <target name="compose" depends="release">
-    <copy file="${release.file.testing}" todir="${workspace.test}" overwrite="true"/>
-    <copy file="${release.file.debug.testing}" todir="${workspace.test}" overwrite="true"/>
-  </target>
-
-  <target name="compose-max" depends="release">
+  <target name="compose-max" depends="compose">
     <copy file="${release.file.testing.max}"
         tofile="${workspace.test}/${ant.project.name}-testing.js" overwrite="true"/>
     <copy file="${release.file.debug.testing.max}"

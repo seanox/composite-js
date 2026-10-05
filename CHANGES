@@ -71,6 +71,7 @@ CR: Test: Optimization and extension
     - Events: Faulty callbacks no longer cause the event queue to be aborted.
     - Events: Reflection of the events (Test API and Composer) as window events.
       Requires Test.activate() -- for example, for use in test automation.
+    - Expanding test automation with Playwright.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access

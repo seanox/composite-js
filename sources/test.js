@@ -33,6 +33,15 @@
 
     "use strict";
 
+    const PATTERN_EVENT = /^(?:test[A-Z][A-Za-z0-9]*|[a-z]+)$/;
+    const EVENT_FINISH = "testFinish";
+    const EVENT_INTERRUPT = "testInterrupt";
+    const EVENT_PERFORM = "testPerform";
+    const EVENT_RESPONSE = "testResponse";
+    const EVENT_RESUME = "testResume";
+    const EVENT_START = "testStart";
+    const EVENT_SUSPEND = "testSuspend";
+
     compliant("Test");
     compliant(null, window.Test = {
 
@@ -48,19 +57,27 @@
 
     const _activate = () => {
 
+        const _composer_fire = Composer.fire;
+        Composer.fire = function(event, ...variants) {
+            const type = (event || "").trim();
+            if (type)
+                window.dispatchEvent(new CustomEvent(type, {detail: variants}));
+            return _composer_fire.call(this, event, ...variants);
+        };
+
         window["Test"] = {
 
             /** Pattern for all accepted events */
-            get PATTERN_EVENT() {return /^[a-z]+$/;},
+            get PATTERN_EVENT() {return PATTERN_EVENT;},
 
             /** Constants of events */
-            get EVENT_FINISH() {return "finish";},
-            get EVENT_INTERRUPT() {return "interrupt";},
-            get EVENT_PERFORM() {return "perform";},
-            get EVENT_RESPONSE() {return "response";},
-            get EVENT_RESUME() {return "resume";},
-            get EVENT_START() {return "start";},
-            get EVENT_SUSPEND() {return "suspend";},
+            get EVENT_FINISH() {return EVENT_FINISH;},
+            get EVENT_INTERRUPT() {return EVENT_INTERRUPT;},
+            get EVENT_PERFORM() {return EVENT_PERFORM;},
+            get EVENT_RESPONSE() {return EVENT_RESPONSE;},
+            get EVENT_RESUME() {return EVENT_RESUME;},
+            get EVENT_START() {return EVENT_START;},
+            get EVENT_SUSPEND() {return EVENT_SUSPEND;},
 
             /** Constants for a current timestamp */
             get TIMESTAMP() {return new Date().toUTCString();},
@@ -87,7 +104,7 @@
                 if (typeof event !== "string"
                         || typeof callback !== "function")
                     throw new TypeError("Invalid data type");
-                if (!event.match(Test.PATTERN_EVENT))
+                if (!event.match(PATTERN_EVENT))
                     throw new Error("Invalid event");
                 
                 event = event.toLowerCase();
@@ -99,11 +116,9 @@
             
             /**
              * Internal method to trigger an event. All callback functions for
-             * this event are called. If the script is in a frame, at the parent
-             * object it will also try to trigger this method. The parent object
-             * is always triggered after the current object. If an error occurs
-             * when calling the current object, the parent object is not
-             * triggered.
+             * this event are called. Listener errors are reported asynchronously.
+             * If the script is in a frame, the parent object is triggered after
+             * the current object.
              * @param {string} event  see Test.EVENT_***
              * @param {Object} status meta-object with information about the
              *     test execution
@@ -113,10 +128,12 @@
                 if (typeof Test.worker === "object")
                     Test.worker.status = event;
 
+                const monitorEvent = event.replace(/^test([A-Z])/, (match, letter) =>
+                    letter.toLowerCase()).toLowerCase();
                 if (typeof Test.worker === "object"
                         && typeof Test.worker.monitor === "object"
-                        && typeof Test.worker.monitor[event] === "function")
-                    try {Test.worker.monitor[event](status);
+                        && typeof Test.worker.monitor[monitorEvent] === "function")
+                    try {Test.worker.monitor[monitorEvent](status);
                     } catch (error) {
                         console.error(error);
                     }
@@ -124,10 +141,15 @@
                 event = (event || "").trim();
                 if (!event)
                     return;
+                window.dispatchEvent(new CustomEvent(event, {detail: status}));
                 const listeners = _listeners.get(event.toLowerCase());
                 if (Array.isArray(listeners))
-                    listeners.forEach(callback =>
-                        callback(event, status));
+                    listeners.forEach(callback => {
+                        try {callback(event, status);
+                        } catch (error) {
+                            Composer.asynchronous(() => {throw error;});
+                        }
+                    });
 
                 if (parent && parent !== window)
                     try {parent.Test.fire(event, status);
@@ -287,7 +309,7 @@
                 // Timer for controlling test tasks with timeout
                 Test.worker.timeout = window.setInterval(() => {
                 
-                    if (Test.worker.status === Test.EVENT_SUSPEND)
+                    if (Test.worker.status === EVENT_SUSPEND)
                         return;
                     
                     if (Test.worker.task === undefined
@@ -302,7 +324,7 @@
                     
                     task.duration = Date.now() -task.timing;
                     task.error = new Error(`Timeout occurred, expected ${task.timeout} ms but was ${task.duration} ms`);
-                    Test.fire(Test.EVENT_RESPONSE, Test.status());
+                    Test.fire(EVENT_RESPONSE, Test.status());
                     Test.worker.queue.faults++;
                     Test.worker.queue.lock = false;
                 }, 25);
@@ -311,12 +333,12 @@
                 // Timer for processing the queue
                 Test.worker.interval = window.setInterval(() => {
 
-                    if (Test.worker.status === Test.EVENT_SUSPEND)
+                    if (Test.worker.status === EVENT_SUSPEND)
                         return;
                     
                     if (!Test.worker.queue.lock
                             && Test.worker.queue.progress <= 0)
-                        Test.fire(Test.EVENT_START, Test.status());
+                        Test.fire(EVENT_START, Test.status());
                     
                     if (Test.worker.queue.lock)
                         return;
@@ -334,7 +356,7 @@
                         if (typeof meta.name === "string"
                                 && meta.name.trim().length > 0)
                             Test.worker.task.title += " " + meta.name.replace(/[\x00-\x20]+/g, " ").trim();
-                        Test.fire(Test.EVENT_PERFORM, Test.status());
+                        Test.fire(EVENT_PERFORM, Test.status());
                         Composer.asynchronous(() => {
                             const task = Test.worker.task;
                             try {task.meta.test();
@@ -361,14 +383,14 @@
                                         && task.timeout < Date.now()
                                         && !task.error) {
                                     task.error = new Error(`Timeout occurred, expected ${task.meta.timeout} ms but was ${task.duration} ms`);
-                                    Test.fire(Test.EVENT_RESPONSE, Test.status());
+                                    Test.fire(EVENT_RESPONSE, Test.status());
                                     Test.worker.queue.faults++;
                                 }
                                 if (!task.error
                                         || !String(task.error.message).match(/^Timeout occurred/)) {
                                     if (task.error)
                                         Test.worker.queue.faults++;
-                                    Test.fire(Test.EVENT_RESPONSE, Test.status());
+                                    Test.fire(EVENT_RESPONSE, Test.status());
                                 }
                                 Test.worker.queue.lock = false;
                             }
@@ -378,7 +400,7 @@
                     
                     window.clearInterval(Test.worker.interval);
                     window.clearInterval(Test.worker.timeout);
-                    Test.fire(Test.EVENT_FINISH, Test.status());
+                    Test.fire(EVENT_FINISH, Test.status());
                     delete Test.worker;
                 }, 25);
             },
@@ -392,7 +414,7 @@
             suspend() {
                 if (Test.worker === undefined)
                     throw new Error("Suspend is not available"); 
-                Test.fire(Test.EVENT_SUSPEND, Test.status());
+                Test.fire(EVENT_SUSPEND, Test.status());
             },
             
             /** 
@@ -402,9 +424,9 @@
              */
             resume() {
                 if (Test.worker === undefined
-                        || Test.worker.status !== Test.EVENT_SUSPEND)
+                        || Test.worker.status !== EVENT_SUSPEND)
                     throw new Error("Resume is not available"); 
-                Test.fire(Test.EVENT_RESUME, Test.status());
+                Test.fire(EVENT_RESUME, Test.status());
             },
             
             /**
@@ -418,7 +440,7 @@
                     throw new Error("Interrupt is not available"); 
                 window.clearInterval(Test.worker.interval);
                 window.clearInterval(Test.worker.timeout);
-                Test.fire(Test.EVENT_INTERRUPT, Test.status());
+                Test.fire(EVENT_INTERRUPT, Test.status());
                 delete Test.worker;
             },
 

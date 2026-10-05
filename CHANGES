@@ -64,6 +64,10 @@ CR: Scripting: Corrections and optimization
       with JavaScript syntax: (? expression). If the expression throws an error,
       the operator now returns undefined instead of false.
     - Addition of a dynamic cache with an active cleanup function
+CR: Test: Optimization and extension
+    - Events: Faulty callbacks no longer cause the event queue to be aborted.
+    - Events: Reflection of the events (Test API and Composer) as window events.
+      Requires Test.activate() -- for example, for use in test automation.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access
@@ -401,7 +405,7 @@ BF: Composite: Correction for a URL without a file
     The paths of the modules were composed incorrectly.
 BF: DataSource: Correction for a URL without a file
     The paths of the data files were composed incorrectly.
-BF: MVC SiteMap: Correction of the method customize when using variable paths
+BF: SiteMap: Correction of the method customize when using variable paths
 BF: Review: Correction/optimization JavaScript (no functional change)
 BF: Test: Correction in determining the browser engine for WebKit and Blink
 CR: Composite Expression Language: Added keywords eeq (===), nee (!==)
@@ -432,14 +436,14 @@ BF: DataSource Collect: Correction of the cache usage with a collector
     Error example: DataSource.collect("data", ["xml://a", "xml://b", "xml://c"]);
 BF: DataSource Fetch: Correction of the pattern of schema switching
 BF: DataSource Fetch: Optimization of the language determination
-BF: MVC SiteMap: Optimization to focus from the current target after changing the path
+BF: SiteMap: Optimization to focus from the current target after changing the path
 BF: Modules: Optimization of JavaScript processing to support import and export
 BF: Composite Render: Optimization of JavaScript processing to support import and export
 BF: Composite Events: Correction of the callback of HTTP events
 BF: Composite Mount: Correction to find event methods also in prototypes
 BF: Composite Modules: Correction of the script processing of the #import macro
 BF: Composite MutationObserver: Correction for recognition of expressions in text nodes
-CR: MVC Path: Simplification of the syntax restrictions
+CR: SiteMap Path: Simplification of the syntax restrictions
     The syntax is more consistently based on XML entities (DOM).
     A path can now begin with any word character (_ a-z A-Z 0-9).
 CR: DataSource Locator: Simplification of the syntax restrictions
@@ -491,8 +495,8 @@ BF: Composite Render Include: Loading and inserting HTML content for elements
 BF: Composite Expression Parse: Correction of the detection of value- and method-expressions
 BF: Composite Lock Managment: Queue progress only after release functionality
 BF: Extension Capitalize: Correction for use with empty strings
-BF: MVC: Correction of the embedded use of SiteMap.accept(path)
-BF: MVC: Correction of initial forwarding from / to /#
+BF: SiteMap: Correction of the embedded use of SiteMap.accept(path)
+BF: SiteMap: Correction of initial forwarding from / to /#
 CR: Test: (Re)Move of Assert.assertEqualsTo as Assert.assertSameTo in /test/modules/common.js
 CR: Test: Enhancement of console output monitoring
 CR: Test: Optimization of console forwarding
@@ -536,14 +540,14 @@ CR: Composite Release: Addition of the CSS rule when the page is loaded
 CR: Composite Hardening: Added optional hardening from markup
     Hardening makes it difficult to manipulate the attributes in the markup.
 CR: Composite Include: Modules with a condition are only reloaded if the condition is true
-CR: MVC Path: Support paths with beginning numbers
+CR: SiteMap Path: Support paths with beginning numbers
     Any word character (alphanumeric character) and underscore can be used.
-CR: MVC SiteMap: Omission of autofocus, since the use scrollIntoView can be too individual
+CR: SiteMap: Omission of autofocus, since the use scrollIntoView can be too individual
     The own implementation is very simple and much flexible.
-CR: MVC SiteMap: Added variable paths for faces and facets
+CR: SiteMap: Added variable paths for faces and facets
     The character sequence ... at the end of a facet in the SiteMap configuration defines a variable path for a face(t).
     The path can be of any length and can be used to pass parameters and is comparable to PATH_INFO in CGI.
-CR: MVC SiteMap: Added the forward method
+CR: SiteMap: Added the forward method
     In difference to navigate, forwarding is executed directly and without triggers.
 CR: DataSource Locales: As standard marked are at the beginning
 CR: Extension Uncapitalize: Adds a uncapitalize function to the String objects

@@ -46,6 +46,9 @@ CR: Composer: Redesign of the scope model
 CR: Composer: Refactoring ordinal/serial/uid
     For greater technical accuracy, the uid property and serial() method are now
     used -- analogous to serial number.
+CR: Composer: Optimization and extension
+    - Events: Extending HTTP Events to the fetch() Method
+    - Events: Faulty callbacks no longer cause the event queue to be aborted.
 CR: Extensions: Removal of Math.unique
     The method wasn't unique enough, wasn't used anyway, and crypto.randomUUID()
     is the better solution.

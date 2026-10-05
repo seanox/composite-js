@@ -149,38 +149,38 @@
     const PATTERN_CUSTOMIZE_SCOPE = /[_a-z]([\w-]*\w)?$/i;
 
     /** Constants of events for changes at the DOM */
-    const EVENT_DOM_ADDED = "EVENT_DOM_ADDED";
-    const EVENT_DOM_REMOVED = "EVENT_DOM_REMOVED";
-    const EVENT_DOM_MOVED = "EVENT_DOM_MOVED";
+    const EVENT_DOM_ADDED = "composerDomAdded";
+    const EVENT_DOM_REMOVED = "composerDomRemoved";
+    const EVENT_DOM_MOVED = "composerDomMoved";
 
     /** Constants of events during rendering */
-    const EVENT_RENDER_START = "EVENT_RENDER_START";
-    const EVENT_RENDER_NEXT = "EVENT_RENDER_NEXT";
-    const EVENT_RENDER_END = "EVENT_RENDER_END";
+    const EVENT_RENDER_START = "composerRenderStart";
+    const EVENT_RENDER_NEXT = "composerRenderNext";
+    const EVENT_RENDER_END = "composerRenderEnd";
 
     /** Constants of events during mounting */
-    const EVENT_MOUNT_START = "EVENT_MOUNT_START";
-    const EVENT_MOUNT_NEXT = "EVENT_MOUNT_NEXT";
-    const EVENT_MOUNT_END = "EVENT_MOUNT_END";
+    const EVENT_MOUNT_START = "composerMountStart";
+    const EVENT_MOUNT_NEXT = "composerMountNext";
+    const EVENT_MOUNT_END = "composerMountEnd";
 
     /** Constants of events when using modules */
-    const EVENT_MODULE_LOAD = "EVENT_MODULE_LOAD";
-    const EVENT_MODULE_DOCK = "EVENT_MODULE_DOCK";
-    const EVENT_MODULE_READY = "EVENT_MODULE_READY";
-    const EVENT_MODULE_UNDOCK = "EVENT_MODULE_UNDOCK";
+    const EVENT_MODULE_LOAD = "composerModuleLoad";
+    const EVENT_MODULE_DOCK = "composerModuleDock";
+    const EVENT_MODULE_READY = "composerModuleReady";
+    const EVENT_MODULE_UNDOCK = "composerModuleUndock";
 
     /** Constants of events when using HTTP */
-    const EVENT_HTTP_START = "EVENT_HTTP_START";
-    const EVENT_HTTP_PROGRESS = "EVENT_HTTP_PROGRESS";
-    const EVENT_HTTP_RECEIVE = "EVENT_HTTP_RECEIVE";
-    const EVENT_HTTP_LOAD = "EVENT_HTTP_LOAD";
-    const EVENT_HTTP_ABORT = "EVENT_HTTP_ABORT";
-    const EVENT_HTTP_TIMEOUT = "EVENT_HTTP_TIMEOUT";
-    const EVENT_HTTP_ERROR = "EVENT_HTTP_ERROR";
-    const EVENT_HTTP_END = "EVENT_HTTP_END";
+    const EVENT_HTTP_START = "composerHttpStart";
+    const EVENT_HTTP_PROGRESS = "composerHttpProgress";
+    const EVENT_HTTP_RECEIVE = "composerHttpReceive";
+    const EVENT_HTTP_LOAD = "composerHttpLoad";
+    const EVENT_HTTP_ABORT = "composerHttpAbort";
+    const EVENT_HTTP_TIMEOUT = "composerHttpTimeout";
+    const EVENT_HTTP_ERROR = "composerHttpError";
+    const EVENT_HTTP_END = "composerHttpEnd";
 
     /** Constants of events when errors occur */
-    const EVENT_ERROR = "EVENT_ERROR";
+    const EVENT_ERROR = "composerError";
 
     /**
      * List of possible DOM events
@@ -206,8 +206,8 @@
             + " volume|change"
             + " waiting wheel";
 
-    /** Pattern for all accepted Composite events */
-    const PATTERN_EVENT = /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$/;
+    /** Pattern for accepted camelCase events */
+    const PATTERN_EVENT = /^[a-z][a-zA-Z0-9]*$/;
 
     /** Patterns with the supported events */
     const PATTERN_EVENT_FUNCTIONS = (() => {
@@ -373,8 +373,14 @@
             if (!Array.isArray(listeners))
                 return;
             variants = [event, ...variants];
-            listeners.forEach((callback) =>
-                callback(...variants));
+            listeners.forEach(callback => {
+                try {callback(...variants);
+                } catch (error) {
+                    if (event.toLowerCase() === EVENT_ERROR.toLowerCase())
+                        Composer.asynchronous(() => console.error(error));
+                    else Composer.asynchronous(() => {throw error;});
+                }
+            });
         },
 
         /**
@@ -2776,6 +2782,43 @@
         }
 
         _request_open.call(this, ...variants);
+    };
+
+    /**
+     * Enhancement of the JavaScript API
+     * Exposes the events that can be mapped to the native fetch lifecycle.
+     * Events without a fetch equivalent are not synthesized.
+     */
+    const _request_fetch = window.fetch;
+    const _request_fetch_event = (...variants) => {
+        const callback = () => Composer.fire(...variants);
+        if (typeof window.queueMicrotask === "function")
+            window.queueMicrotask(callback);
+        else Promise.resolve().then(callback);
+    };
+
+    window.fetch = function(...variants) {
+        let request;
+        try {request = _request_fetch.apply(this, variants);
+        } catch (error) {
+            _request_fetch_event(EVENT_HTTP_START);
+            _request_fetch_event(EVENT_HTTP_ERROR, error);
+            _request_fetch_event(EVENT_HTTP_END);
+            throw error;
+        }
+        _request_fetch_event(EVENT_HTTP_START);
+        return request.then(
+            response => {
+                _request_fetch_event(EVENT_HTTP_RECEIVE, response);
+                _request_fetch_event(EVENT_HTTP_END);
+                return response;
+            },
+            error => {
+                _request_fetch_event(EVENT_HTTP_ERROR, error);
+                _request_fetch_event(EVENT_HTTP_END);
+                throw error;
+            }
+        );
     };
 
     // Listener when an error occurs and triggers a matching composite-event.

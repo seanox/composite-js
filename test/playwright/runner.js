@@ -62,16 +62,16 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
     try {
         const page = await context.newPage();
         page.on("console", message => {
-            output.push(`${message.text()}`);
+            output.push(`[${message.type()}] ${message.text()}`);
         });
         page.on("page-error", error => {
-            output.push(`[page-error] ${error.message}`);
+            output.push(`[error] ${error.message}`);
         });
         await page.exposeBinding("__playwrightTestEvent", (_source, event, tasks, faults) => {
             if (event === "start") {
                 startCount++;
                 if (startCount > 1)
-                    rejectTestEventFailure(new Error("Unexpected test start status"));
+                    rejectTestEventFailure(new Error("Unexpected test start"));
                 return;
             }
             if (event !== "finish")
@@ -80,7 +80,7 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
                     || tasks < 0
                     || !Number.isSafeInteger(faults)
                     || faults < 0) {
-                rejectTestEventFailure(new Error("Unexpected test finished status"));
+                rejectTestEventFailure(new Error("Unexpected test finished"));
                 return;
             }
             const result = {tasks, faults};
@@ -100,7 +100,7 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
             });
             if (!response
                     || !response.ok())
-                throw new Error(`Navigation failed: HTTP ${response?.status() || "no response"}`);
+                throw new Error(`Unexpected response status: ${response?.status() || "no response"}`);
             const result = await testResult;
             if (result.faults) {
                 const error = new Error(`${result.faults} test fault(s) detected`);
@@ -113,7 +113,7 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
             execution(),
             testEventFailure,
             new Promise((resolve, reject) => {
-                timer = setTimeout(() => reject(new Error(`Test did not finish within ${timeout} ms`)), timeout);
+                timer = setTimeout(() => reject(new Error(`Timeout after ${timeout} ms`)), timeout);
             })
         ]);
     } catch (error) {
@@ -181,12 +181,7 @@ const main = async ({env = process.env, runtime, serverFactory = createServer} =
         const listening = once(server, "listening");
         server.listen({port: config.server.port, host: config.server.address});
         await listening;
-        const address = server.address();
-        if (!address
-                || typeof address === "string")
-            throw new Error("Unable to determine test server address");
-        const host = config.server.address.includes(":") ? `[${config.server.address}]` : config.server.address;
-        const url = `${config.server.protocol}://${host}:${address.port}`;
+        const url = `${config.server.protocol}://${config.server.address}:${config.server.port}`;
         let browser;
         try {
             browser = await engines[config.engine].launch({headless: true, timeout: config.timeout});
@@ -201,7 +196,7 @@ const main = async ({env = process.env, runtime, serverFactory = createServer} =
                     failed = true;
                     results.push({engine: config.engine, test, ...(error.result || {}), duration: Date.now() - start, status: "failed",
                         error: error.message, output: error.output});
-                    console.error(`[${config.engine}] ${test}: ${error.message}\n ${error.output || ""}`);
+                    console.error(`[${config.engine}] ${test}: ${error.message}\n${error.output || ""}`);
                 }
             }
         } catch (error) {

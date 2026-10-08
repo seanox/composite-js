@@ -1,8 +1,8 @@
 "use strict";
 
 const fs = require("node:fs");
-const {isIP} = require("node:net");
 const http = require("node:http");
+const net = require("node:net");
 const path = require("node:path");
 
 const STATUS_OK = Object.freeze([200, "OK"]);
@@ -19,8 +19,22 @@ const DEFAULT_PORT = 8000;
 const isLoopbackAddress = address => typeof address === "string"
         && (address === "localhost"
                 || address === "::1"
-                || (isIP(address) === 4
+                || (net.isIP(address) === 4
                         && Number(address.split(".")[0]) === 127));
+
+const isValidAddress = (address) => {
+    if (net.isIP(address))
+        return true;
+    if (address.length > 253)
+        return false;
+    return hostname
+        .split('.')
+        .every(label =>
+            label.length >= 1
+            && label.length <= 63
+            && /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$/.test(label)
+        );
+}
 
 const isValidDefaultDocument = document => typeof document === "string"
         && /^[\w.-]+$/.test(document)
@@ -126,7 +140,8 @@ const createServer = ({
 } = {}) => {
     if (!isValidDefaultDocument(defaultDocument))
         throw new TypeError("Invalid default document");
-    if (!isLoopbackAddress(address))
+    if (!isValidAddress(address)
+            && !isLoopbackAddress(address))
         throw new Error("Invalid server address");
     if (protocol !== "http")
         throw new Error("Invalid server protocol");

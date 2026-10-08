@@ -15,14 +15,14 @@
         Test.activate();
         
         const urlMap = new Map();
-        Composer.listen(Composer.EVENT_HTTP_END, (ignore, event) => {
-            let responseURL = event.target.responseURL;
+        Composer.listen(Composer.EVENT_HTTP_END, (event, meta) => {
+            let responseURL = meta.request.responseURL;
             let sourceLocation = window.location.protocol + "//" + window.location.host + "/";
             if (responseURL.startsWith(sourceLocation)) {
                 const filter = new RegExp("^.*?" + RegExp.quote(window.location.contextPath));
                 responseURL = ("/" + responseURL.substring(sourceLocation.length -1).replace(filter, "")).replace(/^\/{2,}/, "/");
             }
-            const key = responseURL + " " + event.target.status;
+            const key = responseURL + " " + meta.request.status;
             if (!urlMap.has(key)
                     || !Array.isArray(urlMap.get(key)))
                 urlMap.set(key, []);

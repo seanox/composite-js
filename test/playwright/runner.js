@@ -62,7 +62,7 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
     try {
         const page = await context.newPage();
         page.on("console", message => {
-            output.push(`[${message.type()}] ${message.text()}`);
+            output.push(`${message.text()}`);
         });
         page.on("page-error", error => {
             output.push(`[page-error] ${error.message}`);
@@ -70,7 +70,6 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
         await page.exposeBinding("__playwrightTestEvent", (_source, event, tasks, faults) => {
             if (event === "start") {
                 startCount++;
-                output.push(`[test-start] #${startCount}`);
                 if (startCount > 1)
                     rejectTestEventFailure(new Error("Unexpected test start status"));
                 return;
@@ -85,7 +84,6 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
                 return;
             }
             const result = {tasks, faults};
-            output.push(`[test-finish] ${tasks} tasks, ${faults} faults`);
             resolveTestResult(result);
         });
         await page.addInitScript(bindingName => {
@@ -131,13 +129,12 @@ const configuration = (env = process.env) => {
     const timeout = Number(env.TEST_TIMEOUT || DEFAULT_TIMEOUT);
     if (!Number.isSafeInteger(timeout) || timeout <= 0 || timeout > 2147483647)
         throw new Error(`Invalid timeout: ${timeout}`);
-    const selected = (env.TEST_ENGINES || "blink,gecko,webkit").split(",").map(value => value.trim());
-    if (selected.some(engine => !["blink", "gecko", "webkit"].includes(engine)))
-        throw new Error(`Invalid engines: ${env.TEST_ENGINES}`);
+    const engine = env.TEST_ENGINE || "blink";
+    if (!["blink", "gecko", "webkit"].includes(engine))
+        throw new Error(`Invalid engine: ${env.TEST_ENGINE}`);
     const docRoot = path.resolve(env.TEST_SERVER_DOCROOT || path.join(__dirname, "..", "..", "test"));
     const defaultDocument = env.TEST_SERVER_DEFAULT_DOCUMENT || DEFAULT_DOCUMENT;
     return {
-        reportDirectory: path.resolve(env.TEST_REPORT_DIR || env.RESULTS_DIR || path.join(__dirname, "results")),
         tempDirectory: path.resolve(__dirname, env.TEST_TEMP_DIR || "./tmp"),
         server: {
             docRoot,
@@ -148,7 +145,7 @@ const configuration = (env = process.env) => {
             defaultDocument
         },
         timeout,
-        engines: [...new Set(selected)]
+        engine
     };
 };
 
@@ -190,35 +187,33 @@ const main = async ({env = process.env, runtime, serverFactory = createServer} =
             throw new Error("Unable to determine test server address");
         const host = config.server.address.includes(":") ? `[${config.server.address}]` : config.server.address;
         const url = `${config.server.protocol}://${host}:${address.port}`;
-        for (const engine of config.engines) {
-            let browser;
-            try {
-                browser = await engines[engine].launch({headless: true, timeout: config.timeout});
-                const contextOptions = await testRuntime.browserContextOptions(browser);
-                for (const test of tests) {
-                    const start = Date.now();
-                    try {
-                        const result = await testRuntime.runTest(browser, test, config.timeout, url, contextOptions);
-                        results.push({engine, test, ...result, duration: Date.now() - start, status: "passed"});
-                        console.log(`[${engine}] ${test}: ${result.tasks} task(s), 0 faults`);
-                    } catch (error) {
-                        failed = true;
-                        results.push({engine, test, ...(error.result || {}), duration: Date.now() - start, status: "failed",
-                            error: error.message, output: error.output});
-                        console.error(`[${engine}] ${test}: ${error.message}\n${error.output || ""}`);
-                    }
+        let browser;
+        try {
+            browser = await engines[config.engine].launch({headless: true, timeout: config.timeout});
+            const contextOptions = await testRuntime.browserContextOptions(browser);
+            for (const test of tests) {
+                const start = Date.now();
+                try {
+                    const result = await testRuntime.runTest(browser, test, config.timeout, url, contextOptions);
+                    results.push({engine: config.engine, test, ...result, duration: Date.now() - start, status: "passed"});
+                    console.log(`[${config.engine}] ${test}: ${result.tasks} task(s), 0 faults`);
+                } catch (error) {
+                    failed = true;
+                    results.push({engine: config.engine, test, ...(error.result || {}), duration: Date.now() - start, status: "failed",
+                        error: error.message, output: error.output});
+                    console.error(`[${config.engine}] ${test}: ${error.message}\n ${error.output || ""}`);
                 }
-            } catch (error) {
-                failed = true;
-                results.push({engine, status: "failed", error: error.message});
-                console.error(`[${engine}] ${error.stack || error}`);
-            } finally {
-                if (browser)
-                    await browser.close();
             }
+        } catch (error) {
+            failed = true;
+            results.push({engine: config.engine, status: "failed", error: error.message});
+            console.error(`[${config.engine}] ${error.stack || error}`);
+        } finally {
+            if (browser)
+                await browser.close();
         }
         const failures = results.filter(result => result.status === "failed").length;
-        console.log(`[runner] Finished: ${results.length - failures} passed, ${failures} failed`);
+        console.log(`[${config.engine}] Finished: ${results.length - failures} passed, ${failures} failed`);
     } catch (error) {
         failed = true;
         results.push({status: "failed", error: error.message});
@@ -231,8 +226,6 @@ const main = async ({env = process.env, runtime, serverFactory = createServer} =
                     server.close(error => error ? reject(error) : resolve());
                 });
         } finally {
-            fs.mkdirSync(config.reportDirectory, {recursive: true});
-            fs.writeFileSync(path.join(config.reportDirectory, "results.json"), JSON.stringify(results, null, 2) + "\n");
         }
     }
     return {results, failed};

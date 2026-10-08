@@ -2744,6 +2744,9 @@
 
     XMLHttpRequest.prototype.open = function(...variants) {
 
+        const [method, url, async, username, password] = variants;
+        const meta =  {method, url, async, username, password, request: this};
+
         if (!_request_monitoring.has(this)) {
 
             _request_monitoring.add(this);
@@ -2752,23 +2755,21 @@
                 if (!event)
                     return;
                 if (event.type === "loadstart")
-                    event = [EVENT_HTTP_START, event];
+                    Composer.fire(EVENT_HTTP_START, meta);
                 else if (event.type === "progress")
-                    event = [EVENT_HTTP_PROGRESS, event];
+                    Composer.fire(EVENT_HTTP_PROGRESS, meta);
                 else if (event.type === "readystatechange")
-                    event = [EVENT_HTTP_RECEIVE, event];
+                    Composer.fire(EVENT_HTTP_RECEIVE, meta);
                 else if (event.type === "load")
-                    event = [EVENT_HTTP_LOAD, event];
+                    Composer.fire(EVENT_HTTP_LOAD, meta);
                 else if (event.type === "abort")
-                    event = [EVENT_HTTP_ABORT, event];
+                    Composer.fire(EVENT_HTTP_ABORT, meta);
                 else if (event.type === "error")
-                    event = [EVENT_HTTP_ERROR, event];
+                    Composer.fire(EVENT_HTTP_ERROR, meta);
                 else if (event.type === "timeout")
-                    event = [EVENT_HTTP_TIMEOUT, event];
+                    Composer.fire(EVENT_HTTP_TIMEOUT, meta);
                 else if (event.type === "loadend")
-                    event = [EVENT_HTTP_END, event];
-                else return;
-                Composer.fire(...event);
+                    Composer.fire(EVENT_HTTP_END, meta);
             };
 
             this.addEventListener("loadstart", callback);
@@ -2797,25 +2798,24 @@
         else Promise.resolve().then(callback);
     };
 
-    window.fetch = function(...variants) {
+    window.fetch = function(resource, ...options) {
+        Composer.fire(EVENT_HTTP_START);
         let request;
-        try {request = _request_fetch.apply(this, variants);
+        try {request = _request_fetch.call(this, resource, ...options);
         } catch (error) {
-            _request_fetch_event(EVENT_HTTP_START);
-            _request_fetch_event(EVENT_HTTP_ERROR, error);
-            _request_fetch_event(EVENT_HTTP_END);
+            _request_fetch_event(EVENT_HTTP_ERROR, {resource, options, error});
+            _request_fetch_event(EVENT_HTTP_END, {resource, options, error});
             throw error;
         }
-        _request_fetch_event(EVENT_HTTP_START);
         return request.then(
             response => {
-                _request_fetch_event(EVENT_HTTP_RECEIVE, response);
-                _request_fetch_event(EVENT_HTTP_END);
+                _request_fetch_event(EVENT_HTTP_RECEIVE, {resource, options, response});
+                _request_fetch_event(EVENT_HTTP_END, {resource, options, response});
                 return response;
             },
             error => {
-                _request_fetch_event(EVENT_HTTP_ERROR, error);
-                _request_fetch_event(EVENT_HTTP_END);
+                _request_fetch_event(EVENT_HTTP_ERROR, {resource, options, error});
+                _request_fetch_event(EVENT_HTTP_END, {resource, options, error});
                 throw error;
             }
         );

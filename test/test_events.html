@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const collector = [];
+
+        [
+            Test.EVENT_FINISH,
+            Test.EVENT_INTERRUPT,
+            Test.EVENT_PERFORM,
+            Test.EVENT_RESPONSE,
+            Test.EVENT_RESUME,
+            Test.EVENT_START,
+            Test.EVENT_SUSPEND
+        ].forEach(name => {
+            Test.listen(name, (event, status) => {
+                if (status.queue)
+                    collector.push("test " + event);
+            });
+            window.addEventListener(name, (event) => {
+                if (event.type && event.type.startsWith("test"))
+                    collector.push("window " + event.type);
+            });
+        });
+
+        Test.create({test() {
+            Assert.assertTrue(Test.EVENT_FINISH === "testFinish");
+            Assert.assertTrue(Test.PATTERN_EVENT.test(Test.EVENT_FINISH));
+            Assert.assertTrue(Test.PATTERN_EVENT.test("probe"));
+        }});
+
+        Test.create({test() {
+            Assert.assertFalse(Test.PATTERN_EVENT.test("pr.be"));
+            Assert.assertFalse(Test.PATTERN_EVENT.test("9robe"));
+        }});
+
+        Test.create({test() {
+            console.debug(collector.join("\n"));
+            Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
+        }});
+
+        Test.start({auto:true});
+    </script>
+    <script type="text/test">
+      window testStart
+      test testStart
+      window testPerform
+      test testPerform
+      window testResponse
+      test testResponse
+      window testPerform
+      test testPerform
+      window testResponse
+      test testResponse
+      window testPerform
+      test testPerform
+    </script>
+  <head>
+  <body>
+  </body>
+</html>

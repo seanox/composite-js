@@ -60,8 +60,11 @@
         const _composer_fire = Composer.fire;
         Composer.fire = function(event, ...variants) {
             const type = (event || "").trim();
-            if (type)
-                window.dispatchEvent(new CustomEvent(type, {detail: variants}));
+            if (type) {
+                const customEvent = new CustomEvent(type);
+                customEvent[type] = Object.assign({}, ...variants);
+                window.dispatchEvent(customEvent);
+            }
             return _composer_fire.call(this, event, ...variants);
         };
 
@@ -141,7 +144,11 @@
                 event = (event || "").trim();
                 if (!event)
                     return;
-                window.dispatchEvent(new CustomEvent(event, {detail: status}));
+
+                const customEvent = new CustomEvent(event);
+                customEvent[event] = status;
+                window.dispatchEvent(customEvent);
+
                 const listeners = _listeners.get(event.toLowerCase());
                 if (Array.isArray(listeners))
                     listeners.forEach(callback => {

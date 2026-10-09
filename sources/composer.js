@@ -2729,23 +2729,22 @@
         });
     };
 
-    /**
-     * Enhancement of the JavaScript API
-     * Implements an own open method for event management.
-     * The original method is reused in the background.
-     */ 
-    const _request_open = XMLHttpRequest.prototype.open;
-
     // Requests whose events are already monitored. Because open can be called
     // more than once for a request, the registration of the listeners must be
     // unique, otherwise the events are fired more than once. The state of the
     // request cannot be used for this, because it returns to UNSENT with abort.
     const _request_monitoring = new WeakSet();
 
+    /**
+     * Enhancement of the JavaScript API
+     * Implements an own open method for event management.
+     * The original method is reused in the background.
+     */ 
+    const _request_open = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function(...variants) {
 
         const [method, url, async, username, password] = variants;
-        const meta =  {method, url, async, username, password, request: this};
+        const meta =  {type: "XMLHttpRequest", method, url, async, username, password, request: this};
 
         if (!_request_monitoring.has(this)) {
 
@@ -2785,12 +2784,6 @@
         _request_open.call(this, ...variants);
     };
 
-    /**
-     * Enhancement of the JavaScript API
-     * Exposes the events that can be mapped to the native fetch lifecycle.
-     * Events without a fetch equivalent are not synthesized.
-     */
-    const _request_fetch = window.fetch;
     const _request_fetch_event = (...variants) => {
         const callback = () => Composer.fire(...variants);
         if (typeof window.queueMicrotask === "function")
@@ -2798,24 +2791,34 @@
         else Promise.resolve().then(callback);
     };
 
-    window.fetch = function(resource, ...options) {
-        Composer.fire(EVENT_HTTP_START);
+    /**
+     * Enhancement of the JavaScript API
+     * Exposes the events that can be mapped to the native fetch lifecycle.
+     * Events without a fetch equivalent are not synthesized.
+     */
+    const _request_fetch = window.fetch;
+    window.fetch = function(resource, options) {
+        const meta = {type: "fetch", resource, options};
+        Composer.fire(EVENT_HTTP_START, meta);
         let request;
-        try {request = _request_fetch.call(this, resource, ...options);
+        try {request = _request_fetch.call(this, resource, options);
         } catch (error) {
-            _request_fetch_event(EVENT_HTTP_ERROR, {resource, options, error});
-            _request_fetch_event(EVENT_HTTP_END, {resource, options, error});
+            const errorMeta = Object.assign({}, meta, {error});
+            _request_fetch_event(EVENT_HTTP_ERROR, errorMeta);
+            _request_fetch_event(EVENT_HTTP_END, errorMeta);
             throw error;
         }
         return request.then(
             response => {
-                _request_fetch_event(EVENT_HTTP_RECEIVE, {resource, options, response});
-                _request_fetch_event(EVENT_HTTP_END, {resource, options, response});
+                const responseMeta = Object.assign({}, meta, {response});
+                _request_fetch_event(EVENT_HTTP_RECEIVE, responseMeta);
+                _request_fetch_event(EVENT_HTTP_END, responseMeta);
                 return response;
             },
             error => {
-                _request_fetch_event(EVENT_HTTP_ERROR, {resource, options, error});
-                _request_fetch_event(EVENT_HTTP_END, {resource, options, error});
+                const errorMeta = Object.assign({}, meta, {error});
+                _request_fetch_event(EVENT_HTTP_ERROR, errorMeta);
+                _request_fetch_event(EVENT_HTTP_END, errorMeta);
                 throw error;
             }
         );

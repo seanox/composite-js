@@ -135,6 +135,7 @@
     <attribute name="output"/>
     <element name="filelist" implicit="true"/>
     <sequential>
+      <echo>Macro: file-compose</echo>
       <concat destfile="@{output}" append="false">
         <filelist refid="@{filelist}"/>
       </concat>
@@ -165,6 +166,7 @@
   <macrodef name="file-es6-lint">
     <attribute name="input"/>
     <sequential>
+      <echo>Macro: file-es6-lint</echo>
       <exec executable="${npx}" dir="${workspace.release}" failonerror="true">
         <arg value="eslint"/>
         <arg value="--config"/>
@@ -178,6 +180,7 @@
     <attribute name="input"/>
     <attribute name="output"/>
     <sequential>
+      <echo>Macro: file-minimize</echo>
       <exec executable="${npx}" dir="${workspace.development}" failonerror="true">
         <arg value="uglifyjs"/>
         <arg value="@{input}"/>

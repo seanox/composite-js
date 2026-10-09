@@ -2746,6 +2746,16 @@
         const [method, url, async, username, password] = variants;
         const meta =  {type: "XMLHttpRequest", method, url, async, username, password, request: this};
 
+        // loadstart is deliberately not used as the HTTP start signal here, as
+        // it is tied to the native XMLHttpRequest lifecycle. Instead, the HTTP
+        // event chain follows the lifecycle of the composite-js runtime and
+        // therefore differs from the native XMLHttpRequest lifecycle. The
+        // events are consequently intercepted centrally and forwarded via
+        // Composer.fire() to integrate them into the runtime lifecycle, rather
+        // than handling them directly through XMLHttpRequest.addEventListener().
+
+        Composer.fire(EVENT_HTTP_START, meta);
+
         if (!_request_monitoring.has(this)) {
 
             _request_monitoring.add(this);
@@ -2753,8 +2763,6 @@
             const callback = (event = null) => {
                 if (!event)
                     return;
-                if (event.type === "loadstart")
-                    Composer.fire(EVENT_HTTP_START, meta);
                 else if (event.type === "progress")
                     Composer.fire(EVENT_HTTP_PROGRESS, meta);
                 else if (event.type === "readystatechange")

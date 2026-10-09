@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const collector = [];
+
+        [
+            Composer.EVENT_HTTP_START,
+            Composer.EVENT_HTTP_PROGRESS,
+            Composer.EVENT_HTTP_RECEIVE,
+            Composer.EVENT_HTTP_LOAD,
+            Composer.EVENT_HTTP_ABORT,
+            Composer.EVENT_HTTP_TIMEOUT,
+            Composer.EVENT_HTTP_ERROR,
+            Composer.EVENT_HTTP_END
+        ].forEach(name => {
+            Composer.listen(name, (event, meta) => {
+                if (meta.type === "fetch")
+                    collector.push("composer " + event + " " + meta.resource.replace(/\?.*$/, ""));
+            });
+            window.addEventListener(name, (event) => {
+                const type = event.type;
+                if (!type || !type.match(/^composer[A-Z]\w+$/i))
+                    return;
+                const meta = event[type];
+                if (!meta.type || meta.type !== "fetch")
+                    return;
+                collector.push("window " + type + " " + meta.resource.replace(/\?.*$/, ""));
+            });
+        });
+
+        window.fetch("/resources/smile.png?timing=" + Date.now());
+
+        Test.create({test() {
+            console.debug(collector.join("\n"));
+            Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
+        }});
+
+        Test.start({auto: true});
+    </script>
+    <script type="text/test">
+      window composerHttpStart /resources/smile.png
+      composer composerHttpStart /resources/smile.png
+      window composerHttpReceive /resources/smile.png
+      composer composerHttpReceive /resources/smile.png
+      window composerHttpEnd /resources/smile.png
+      composer composerHttpEnd /resources/smile.png
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

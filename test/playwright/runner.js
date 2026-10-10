@@ -59,7 +59,7 @@ const discoverTests = docRootDefaultDocument => {
 const runTest = async (browser, test, timeout, url, contextOptions = {}, routePrefix = "") => {
     if (typeof url !== "string"
             || !url)
-        throw new TypeError(`Invalid server URL: ${url || "<empty>"}`);
+        throw new TypeError(`Invalid server URL: ${url || "[empty]"}`);
     const context = await browser.newContext(contextOptions);
     const output = [];
     let startCount = 0;
@@ -143,10 +143,10 @@ const configuration = (options = {}) => {
     if (!Number.isSafeInteger(timeout)
             || timeout <= 0
             || timeout > 60 *60 *1000)
-        throw new Error(`Invalid timeout: ${timeout || "<empty>"}`);
+        throw new Error(`Invalid timeout: ${timeout || "[empty]"}`);
     const engine = options.engine ?? "";
     if (!["blink", "gecko", "webkit"].includes(engine))
-        throw new Error(`Invalid engine: ${engine || "<empty>"}`);
+        throw new Error(`Invalid engine: ${engine || "[empty]"}`);
     const docRoot = path.resolve(options.server?.docRoot ?? __dirname);
     const defaultDocument = options.server?.defaultDocument ?? DEFAULT_DOCUMENT;
     return {

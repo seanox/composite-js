@@ -46,7 +46,30 @@
             Assert.assertFalse(Test.PATTERN_EVENT.test("9robe"));
         }});
 
+        // Errors in the listen/fire method must not prevent the following
+        // events from being triggered.
+        Test.listen("testTestEvent", () => {
+            collector.push("test-A");
+            throw new Error("Expected test error listener error");
+        });
+        Test.listen("testTestEvent", () => {
+            collector.push("test-B");
+            (null).substring(1);
+        });
+        Test.listen("testTestEvent", () => {
+            collector.push("test-C");
+            xxx.substring(1);
+        });
+        Test.listen("testTestEvent", () => {
+            collector.push("test-D");
+            if (xxx = xxx) return 123;
+        });
+        Test.listen("testTestEvent", () => {
+            collector.push("test-E");
+        });
+
         Test.create({test() {
+            Test.fire("testTestEvent");
             console.debug(collector.join("\n"));
             Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
         }});
@@ -66,6 +89,11 @@
       test testResponse
       window testPerform
       test testPerform
+      test-A
+      test-B
+      test-C
+      test-D
+      test-E
     </script>
   <head>
   <body>

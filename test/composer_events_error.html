@@ -8,39 +8,59 @@
         font-family: monospace;
         white-space: pre;
       }
-      iframe {
-        height: 2em;
-      }
     </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
     
         Test.activate();
-        
+
         Test.create({test() {
-            for (let loop = 1; loop <= 3; loop++) {
-                let frame = document.querySelector("iframe:nth-child(" + loop + ")");
-                frame = frame.contentDocument || frame.contentWindow.document;
-                const text = frame.body.textContent;
-                Assert.assertTrue(!!text.match(/TypeError|ReferenceError|not defined|undefined or null reference/));
-            }
+            Assert.assertTrue(Composer.EVENT_MODULE_LOAD === "composerModuleLoad");
+            Assert.assertTrue(Composer.PATTERN_EVENT.test(Composer.EVENT_MODULE_LOAD));
         }});
-        
-        // Must be var because the value is accessed from a frame via parent.
-        // This is a window/global property; it is independent of the execution
-        // scope used for expressions and composite scripts.
-        var count = 0;
-        let interval = window.setInterval(() => {
-            if (count < 3)
-                return;
-            window.clearInterval(interval);
-            Test.start();
-        }, 250);
+
+        Test.create({test() {
+            Assert.assertFalse(Composer.PATTERN_EVENT.test("TEST_EVENT"));
+        }});
+
+        // Errors in the listen/fire method must not prevent the following
+        // events from being triggered.
+        const collector = [];
+        Composer.listen("composerTestEvent", () => {
+            collector.push("composer-render-A");
+            throw new Error("Expected composer error listener error");
+        });
+        Composer.listen("composerTestEvent", () => {
+            collector.push("composer-render-B");
+            (null).substring(1);
+        });
+        Composer.listen("composerTestEvent", () => {
+            collector.push("composer-render-C");
+            xxx.substring(1);
+        });
+        Composer.listen("composerTestEvent", () => {
+            collector.push("composer-render-D");
+            if (xxx = xxx) return 123;
+        });
+        Composer.listen("composerTestEvent", () => {
+            collector.push("composer-render-E");
+        });
+        Test.create({test() {
+            Composer.fire("composerTestEvent");
+            console.debug(collector.join("\n"));
+            Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
+        }});
+
+        Test.start({auto:true});
+    </script>
+    <script type="text/test">
+      composer-render-A
+      composer-render-B
+      composer-render-C
+      composer-render-D
+      composer-render-E
     </script>
   </head>
   <body>
-    <iframe src="composer_events_error_1.html"></iframe>
-    <iframe src="composer_events_error_2.html"></iframe>
-    <iframe src="composer_events_error_3.html"></iframe>
   </body>
 </html>

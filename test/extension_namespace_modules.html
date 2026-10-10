@@ -48,7 +48,10 @@
         }});
 
         Test.create({test() {
-            Assert.assertTrue(document.body.innerText.includes("moduleE is not defined"));
+            const content = document.body.innerText;
+            Assert.assertTrue(content, content.includes("moduleE is not defined")
+                    || content.includes("undeclared variable moduleE")
+                    || content.includes("Can't find variable: moduleE"));
         }});
     </script>
   </head>

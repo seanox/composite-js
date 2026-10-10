@@ -132,7 +132,8 @@
 
         const PATTERN_EXPECTED_NON_EXTENSIBLE = new RegExp([
                 "Cannot define property uid, object is not extensible",
-                "can't define property \"uid\": Object is not extensible"].join("|"), "i"
+                "can't define property \"uid\": Object is not extensible",
+                "Attempting to define property on object that is not extensible."].join("|"), "i"
         );
 
         // 10.1. Non-extensible objects (frozen failed)

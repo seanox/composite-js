@@ -776,7 +776,7 @@
                     
                     let message = "expected {1} but was {2}";
                     if (assert.message !== null) {
-                        assert.message = assert.message.trim();
+                        assert.message = String(assert.message).trim();
                         if (assert.message)
                             message = assert.message;
                     }

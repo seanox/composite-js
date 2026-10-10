@@ -14,6 +14,12 @@
             value: _engine
         });
 
+    compliant("navigator.playwright");
+    const _playwright = /\s+\bPlaywright\b/i.test(navigator.userAgent);
+    Object.defineProperty(navigator, "playwright", {
+        value: _playwright
+    });
+
     compliant("Test.read");
     compliant(null, Test.read = (content) => {
         const request = new XMLHttpRequest();

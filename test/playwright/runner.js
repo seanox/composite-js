@@ -3,6 +3,7 @@
 const path = require("node:path");
 const fs = require("node:fs");
 const {once} = require("node:events");
+const {parseArgs, format} = require("node:util");
 const {
     createServer,
     DEFAULT_DOCUMENT,
@@ -15,7 +16,19 @@ const PATTERN_USER_AGENT_HEADLESS_CHROME = /\bHeadlessChrome\//g;
 const PATTERN_TEST_CASES = /<script\b[^>]*\btype\s*=\s*(["'])text\/test-cases\1[^>]*>([\s\S]*?)<\/script>/i;
 const PATTERN_WHITESPACE = /\s+/;
 const PATTERN_HTML_TEST = /^[^/\\]+\.html$/i;
+
 const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TEMP_DIR = "./tmp";
+
+const _console_error = console.error;
+console.error = (...variants) => {
+    _console_error(`\x1b[33m${format(...variants).trim()}\x1b[0m`);
+};
+
+const _console_log = console.log;
+console.log = (...variants) => {
+    _console_log(format(...variants).replace(/^(\[\w+\]\s)(.*)$/, "$1\x1b[32m$2\x1b[0m"));
+};
 
 const browserEngines = () => {
     const {chromium, firefox, webkit} = require("playwright");
@@ -46,7 +59,7 @@ const discoverTests = docRootDefaultDocument => {
 const runTest = async (browser, test, timeout, url, contextOptions = {}, routePrefix = "") => {
     if (typeof url !== "string"
             || !url)
-        throw new TypeError(`Invalid server URL: ${url}`);
+        throw new TypeError(`Invalid server URL: ${url || "<empty>"}`);
     const context = await browser.newContext(contextOptions);
     const output = [];
     let startCount = 0;
@@ -125,23 +138,25 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
     }
 };
 
-const configuration = (env = process.env) => {
-    const timeout = Number(env.TEST_TIMEOUT || DEFAULT_TIMEOUT);
-    if (!Number.isSafeInteger(timeout) || timeout <= 0 || timeout > 2147483647)
-        throw new Error(`Invalid timeout: ${timeout}`);
-    const engine = env.TEST_ENGINE || "blink";
+const configuration = (options = {}) => {
+    const timeout = Number(options.timeout ?? DEFAULT_TIMEOUT);
+    if (!Number.isSafeInteger(timeout)
+            || timeout <= 0
+            || timeout > 60 *60 *1000)
+        throw new Error(`Invalid timeout: ${timeout || "<empty>"}`);
+    const engine = options.engine ?? "";
     if (!["blink", "gecko", "webkit"].includes(engine))
-        throw new Error(`Invalid engine: ${env.TEST_ENGINE}`);
-    const docRoot = path.resolve(env.TEST_SERVER_DOCROOT || path.join(__dirname, "..", "..", "test"));
-    const defaultDocument = env.TEST_SERVER_DEFAULT_DOCUMENT || DEFAULT_DOCUMENT;
+        throw new Error(`Invalid engine: ${engine || "<empty>"}`);
+    const docRoot = path.resolve(options.server?.docRoot ?? __dirname);
+    const defaultDocument = options.server?.defaultDocument ?? DEFAULT_DOCUMENT;
     return {
-        tempDirectory: path.resolve(__dirname, env.TEST_TEMP_DIR || "./tmp"),
+        tempDirectory: path.resolve(__dirname, options.tempDirectory ?? DEFAULT_TEMP_DIR),
         server: {
             docRoot,
             docRootDefaultDocument: path.join(docRoot, defaultDocument),
-            protocol: env.TEST_SERVER_PROTOCOL || DEFAULT_PROTOCOL,
-            address: env.TEST_SERVER_ADDRESS || DEFAULT_ADDRESS,
-            port: Number(env.TEST_SERVER_PORT || DEFAULT_PORT),
+            protocol: options.server?.protocol ?? DEFAULT_PROTOCOL,
+            address: options.server?.address ?? DEFAULT_ADDRESS,
+            port: Number(options.server?.port ?? DEFAULT_PORT),
             defaultDocument
         },
         timeout,
@@ -149,8 +164,7 @@ const configuration = (env = process.env) => {
     };
 };
 
-const main = async ({env = process.env, runtime, serverFactory = createServer} = {}) => {
-    const config = configuration(env);
+const main = async ({config, runtime, serverFactory = createServer} = {}) => {
     process.env.TMPDIR = config.tempDirectory;
     process.env.TMP = config.tempDirectory;
     process.env.TEMP = config.tempDirectory;
@@ -226,8 +240,35 @@ const main = async ({env = process.env, runtime, serverFactory = createServer} =
     return {results, failed};
 };
 
+const parseCommandLine = (args = process.argv.slice(2)) => {
+    const {values} = parseArgs({
+        args,
+        options: {
+            "runner-timeout": {type: "string", short: "t"},
+            "runner-engine": {type: "string", short: "e"},
+            "server-docroot": {type: "string", short: "d"},
+            "server-default-document": {type: "string"},
+            "server-protocol": {type: "string"},
+            "server-address": {type: "string", short: "a"},
+            "server-port": {type: "string", short: "p"}
+        }
+    });
+
+    return {
+        timeout: values["runner-timeout"],
+        engine: values["runner-engine"],
+        server: {
+            docRoot: values["server-docroot"],
+            defaultDocument: values["server-default-document"],
+            protocol: values["server-protocol"],
+            address: values["server-address"],
+            port: values["server-port"]
+        }
+    };
+};
+
 if (require.main === module)
-    main()
+    main({config: configuration(parseCommandLine())})
         .then(({failed}) => {
             if (failed)
                 process.exitCode = 1;

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const assertMessageValue = (value) => {
+            try {Assert.assertTrue(value, false);
+            } catch (error) {
+                const message = String(error);
+                Assert.assertTrue(message, message.includes("Error: Assert.assertTrue failed"));
+            }
+        }
+
+        Test.create({test() {
+            assertMessageValue(10);
+            assertMessageValue({});
+            assertMessageValue(null);
+            assertMessageValue(undefined);
+            assertMessageValue(true);
+        }});
+
+        Test.start({auto:true});
+    </script>
+  <head>
+  <body>
+  </body>
+</html>

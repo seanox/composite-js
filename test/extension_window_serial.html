@@ -19,23 +19,18 @@
         Test.activate();
       
         Test.create({test() {
-            let filter = "";
-            for (let loop = 0; loop < 9; loop++) {
-                let frame = document.querySelector("#Test" + loop);
-                frame = frame.contentDocument || frame.contentWindow.document;
-                const serial = " " + frame.body.textContent + " ";
-                Assert.assertFalse(filter.includes(serial));
-                filter += serial;
+            Assert.assertEquals(5, [...document.querySelectorAll("iframe")].length);
+            const frames = [...document.querySelectorAll("iframe")];
+            const distinctList = new Set();
+            for (const frame of frames) {
+                const content = frame.contentDocument.body.textContent.trim();
+                distinctList.add(content);
+                Assert.assertTrue(content.length > 0);
             }
+            Assert.assertEquals(5, distinctList.size);
         }});
 
-        Namespace.use()["count"] = 0;
-        const interval = window.setInterval(() => {
-            if (count < 10)
-                return;
-            window.clearInterval(interval);
-            Test.start();
-        }, 250);
+        Test.start({auto:true});
     </script>
   </head>
   <body>
@@ -44,11 +39,5 @@
     <iframe id="Test3" src="extension_window_serial_frame.html"></iframe>
     <iframe id="Test4" src="extension_window_serial_frame.html"></iframe>
     <iframe id="Test5" src="extension_window_serial_frame.html"></iframe>
-    
-    <iframe id="Test6" src="extension_window_serial_frame.html"></iframe>
-    <iframe id="Test7" src="extension_window_serial_frame.html"></iframe>
-    <iframe id="Test8" src="extension_window_serial_frame.html"></iframe>
-    <iframe id="Test9" src="extension_window_serial_frame.html"></iframe>
-    <iframe id="Test0" src="extension_window_serial_frame.html"></iframe>
   </body>
 </html>

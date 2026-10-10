@@ -37,13 +37,14 @@ const browserEngines = () => {
 
 // Optional browser customizations:
 // - UserAgent: The engine detection expects as Chrome, not HeadlessChrome
+// - UserAgent: Marking as Playwright
 const browserContextOptions = async browser => {
-    if (browser.browserType().name() !== "chromium")
-        return {};
     const page = await browser.newPage();
     try {
-        const userAgent = await page.evaluate(() => navigator.userAgent);
-        return {userAgent: userAgent.replace(PATTERN_USER_AGENT_HEADLESS_CHROME, "Chrome/")};
+        let userAgent = await page.evaluate(() => navigator.userAgent);
+        if (browser.browserType().name() === "chromium")
+            userAgent = userAgent.replace(PATTERN_USER_AGENT_HEADLESS_CHROME, "Chrome/");
+        return {userAgent: `${userAgent} Playwright`};
     } finally {
         await page.close();
     }

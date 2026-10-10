@@ -64,7 +64,7 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
         page.on("console", message => {
             output.push(`[${message.type()}] ${message.text()}`);
         });
-        page.on("page-error", error => {
+        page.on("pageerror", error => {
             output.push(`[error] ${error.message}`);
         });
         await page.exposeBinding("__playwrightTestEvent", (_source, event, tasks, faults) => {
@@ -92,7 +92,7 @@ const runTest = async (browser, test, timeout, url, contextOptions = {}, routePr
             window.addEventListener("testStart", () =>
                 window[bindingName]("start"));
             window.addEventListener("testFinish", event =>
-                window[bindingName]("finish", event.detail.queue.size, event.detail.queue.faults));
+                window[bindingName]("finish", event.testFinish.queue.size, event.testFinish.queue.faults));
         }, "__playwrightTestEvent");
         const execution = async () => {
             const response = await page.goto(`${url}${routePrefix}/${encodeURIComponent(test)}`, {

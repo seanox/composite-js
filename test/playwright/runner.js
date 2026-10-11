@@ -180,6 +180,15 @@ const main = async ({config, runtime, serverFactory = createServer} = {}) => {
     let failed = false;
     try {
         fs.mkdirSync(config.tempDirectory, {recursive: true});
+
+        console.log({
+            cwd: process.cwd(),
+            dirname: __dirname,
+            docRoot: config.server.docRoot,
+            defaultDocument: config.server.docRootDefaultDocument,
+            exists: fs.existsSync(config.server.docRootDefaultDocument)
+        });
+
         const availableFiles = fs.readdirSync(config.server.docRoot, {withFileTypes: true})
             .filter(file => file.isFile())
             .map(file => file.name);

@@ -29,7 +29,7 @@ jobs:
       - name: Build
         run: ant -f development compose
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: application-build
           path: release/*.js
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout current source
         uses: actions/checkout@v7
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: application-build
           path: release/

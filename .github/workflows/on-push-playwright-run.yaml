@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: '0 4 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build application
@@ -81,8 +85,4 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Run tests
         working-directory: test/playwright
-        run: |
-          pwd
-          ls -la .
-          ls -la ..
-          node runner.js -e ${{ matrix.engine }} -d .. -p ${{ matrix.port }}
+        run: node runner.js -e ${{ matrix.engine }} -d .. -p ${{ matrix.port }}

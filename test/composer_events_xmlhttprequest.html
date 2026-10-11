@@ -22,9 +22,13 @@
             Composer.EVENT_HTTP_END
         ].forEach(name => {
             Composer.listen(name, (event, meta) => {
-                if (meta.type === "XMLHttpRequest"
-                        && meta.url.startsWith(resource))
-                    collector.push("composer " + event + " " + meta.url.replace(/\?.*$/, ""));
+                if (meta.type !== "XMLHttpRequest"
+                        || !meta.url.startsWith(resource))
+                    return;
+                if (event === "composerHttpProgress"
+                        && collector.join(" ").includes("composer " + event))
+                    return;
+                collector.push("composer " + event + " " + meta.url.replace(/\?.*$/, ""));
             });
             window.addEventListener(name, (event) => {
                 const type = event.type;
@@ -32,7 +36,12 @@
                     return;
                 console.debug(event);
                 const meta = event[type];
-                if (!meta.type || meta.type !== "XMLHttpRequest" || !meta.url.startsWith(resource))
+                if (!meta.type
+                        || meta.type !== "XMLHttpRequest"
+                        || !meta.url.startsWith(resource))
+                    return;
+                if (type === "composerHttpProgress"
+                        && collector.join(" ").includes("window " + type))
                     return;
                 collector.push("window " + type + " " + meta.url.replace(/\?.*$/, ""));
             });

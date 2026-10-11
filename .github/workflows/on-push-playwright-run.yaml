@@ -45,6 +45,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: node:24-bookworm
+    env:
+      HOME: /root
     needs: build
 
     strategy:

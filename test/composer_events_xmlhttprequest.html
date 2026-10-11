@@ -25,7 +25,7 @@
                 if (meta.type !== "XMLHttpRequest"
                         || !meta.url.startsWith(resource))
                     return;
-                if (event === "composerHttpProgress"
+                if ((event === "composerHttpProgress" || event === "composerHttpReceive")
                         && collector.join(" ").includes("composer " + event))
                     return;
                 collector.push("composer " + event + " " + meta.url.replace(/\?.*$/, ""));
@@ -40,7 +40,7 @@
                         || meta.type !== "XMLHttpRequest"
                         || !meta.url.startsWith(resource))
                     return;
-                if (type === "composerHttpProgress"
+                if ((type === "composerHttpProgress" || type === "composerHttpReceive")
                         && collector.join(" ").includes("window " + type))
                     return;
                 collector.push("window " + type + " " + meta.url.replace(/\?.*$/, ""));

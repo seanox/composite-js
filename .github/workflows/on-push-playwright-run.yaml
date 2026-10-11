@@ -43,7 +43,7 @@ jobs:
       matrix:
         include:
           - browser: chromium
-            engine: blinks
+            engine: blink
             port: 8001
           - browser: firefox
             engine: gecko

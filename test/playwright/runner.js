@@ -180,15 +180,6 @@ const main = async ({config, runtime, serverFactory = createServer} = {}) => {
     let failed = false;
     try {
         fs.mkdirSync(config.tempDirectory, {recursive: true});
-
-        console.log({
-            cwd: process.cwd(),
-            dirname: __dirname,
-            docRoot: config.server.docRoot,
-            defaultDocument: config.server.docRootDefaultDocument,
-            exists: fs.existsSync(config.server.docRootDefaultDocument)
-        });
-
         const availableFiles = fs.readdirSync(config.server.docRoot, {withFileTypes: true})
             .filter(file => file.isFile())
             .map(file => file.name);
@@ -254,13 +245,13 @@ const parseCommandLine = (args = process.argv.slice(2)) => {
     const {values} = parseArgs({
         args,
         options: {
-            "runner-timeout": {type: "string", short: "t"},
             "runner-engine": {type: "string", short: "e"},
-            "server-docroot": {type: "string", short: "d"},
-            "server-default-document": {type: "string"},
+            "runner-timeout": {type: "string", short: "t"},
             "server-protocol": {type: "string"},
             "server-address": {type: "string", short: "a"},
-            "server-port": {type: "string", short: "p"}
+            "server-port": {type: "string", short: "p"},
+            "server-docroot": {type: "string", short: "d"},
+            "server-default-document": {type: "string"}
         }
     });
 

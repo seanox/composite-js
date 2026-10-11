@@ -2,9 +2,9 @@ name: "Playwright: Tests"
 
 on:
 # disabled for cost reasons (free plan)
-  push:
-    branches:
-      - master
+# push:
+#   branches:
+#     - master
   workflow_dispatch:
   schedule:
     - cron: '0 4 * * *'

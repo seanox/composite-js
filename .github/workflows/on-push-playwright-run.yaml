@@ -78,7 +78,7 @@ jobs:
         run: npm install
       - name: Install Playwright browser
         working-directory: test/playwright
-        run: npx playwright install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Run tests
         working-directory: test/playwright
         run: |

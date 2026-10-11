@@ -1,0 +1,47 @@
+name: "Playwright: Tests"
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    name: Playwright - ${{ matrix.browser }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            engine: blinks
+            port: 8001
+          - browser: firefox
+            engine: gecko
+            port: 8002
+          - browser: webkit
+            engine: webkit
+            port: 8003
+
+    steps:
+      - name: Checkout current source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install npm dependencies
+        working-directory: test/playwright
+        run: npm install
+
+      - name: Install Playwright browser
+        working-directory: test/playwright
+        run: npx playwright install ${{ matrix.browser }}
+
+      - name: Run tests
+        working-directory: test/playwright
+        run: node runner.js -e ${{ matrix.engine }} -d .. -p ${{ matrix.port }}

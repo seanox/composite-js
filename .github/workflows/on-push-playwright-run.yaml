@@ -2,9 +2,9 @@ name: "Playwright: Tests"
 
 on:
 # disabled for cost reasons (free plan)
-# push:
-#   branches:
-#     - master
+  push:
+    branches:
+      - master
   workflow_dispatch:
   schedule:
     - cron: '0 4 * * *'
@@ -70,7 +70,7 @@ jobs:
           cp release/composite-js-debug-testing.js test/
           cp release/composite-js-testing.js test/
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Install npm dependencies
@@ -81,4 +81,7 @@ jobs:
         run: npx playwright install ${{ matrix.browser }}
       - name: Run tests
         working-directory: test/playwright
-        run: node runner.js -e ${{ matrix.engine }} -d .. -p ${{ matrix.port }}
+        run: |
+          pwd
+          ls -la .
+          node runner.js -e ${{ matrix.engine }} -d .. -p ${{ matrix.port }}

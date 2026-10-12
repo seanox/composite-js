@@ -113,14 +113,23 @@ specific language governing permissions and limitations under the License.
 
 # Downloads
 <p>
-  <img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=PLAYWRIGHT&labelColor=555555&color=65b300">
-  https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml
-  <img src="https://img.shields.io/badge/Blink-tested-green?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Gecko-tested-green?style=for-the-badge">
-  <img src="https://img.shields.io/badge/Goanna-tested-green?style=for-the-badge">
-  <img src="https://img.shields.io/badge/WebKit-tested-green?style=for-the-badge">
+  <a href="https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml"
+    ><img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=Playwright&labelColor=555555&color=65b300"
+  ></a>
+  <a href="https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml"
+    ><img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=Blink&labelColor=555555&color=65b300"
+  ></a>
+  <a href="https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml"
+    ><img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=Gecko&labelColor=555555&color=65b300"
+  ></a>
+  <a href="https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml"
+    ><img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=WebKit&labelColor=555555&color=65b300"
+  ></a>
+  <a href="https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml"
+    ><img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=Goanna&labelColor=555555&color=65b300"
+  ></a>
 </p>
-s
+
 [Seanox composite-js 2.0.0](https://github.com/seanox/composite-js/releases/download/2.0.0/composite-js-2.0.0.zip)  
 [Seanox composite-js 2.0.0 Sources](https://github.com/seanox/composite-js/archive/refs/tags/2.0.0.zip)
 

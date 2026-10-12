@@ -436,9 +436,21 @@ Events and their callback methods are another way of monitoring test execution.
 The callback methods are registered at the Test API for corresponding events and
 then work similar to the monitor.
 
+After `Test.activate()`, Test API and Composer events are also dispatched as
+CustomEvents on the current window, enabling test automation tools such as
+Playwright to observe them. The event's type is the event name (e.g.
+`Test.EVENT_START` &rarr; `testStart`), and event data is exposed directly as a
+property with the same name (e.g. `event.testStart`).
+
+When events originate in nested views such as frames or iframes, corresponding
+events are also dispatched on each parent window. Test callbacks are invoked in
+registration order. Synchronous callback errors are reported asynchronously so
+subsequent callbacks and parent-window propagation can continue.
+
 List of available events:
 
 ```javascript
+Test.EVENT_FINISH
 Test.EVENT_INTERRUPT
 Test.EVENT_PERFORM
 Test.EVENT_RESPONSE
@@ -446,6 +458,9 @@ Test.EVENT_RESUME
 Test.EVENT_START
 Test.EVENT_SUSPEND
 ```
+
+The event constants use `testCamelCase` values, for example `Test.EVENT_FINISH`
+is `testFinish`. The pattern also accepts lowercase names for custom events.
 
 Examples of use:
 

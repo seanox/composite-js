@@ -7,6 +7,10 @@
 Seanox composite-js provides events for extensions and for notifying the
 application about runtime state changes during the composite lifecycle.
 
+Event names use camelCase; the predefined names are exposed through `Composer`
+constants. Custom event names passed to `listen` and `fire` must follow the same
+pattern.
+
 ## Contents Overview
 - [DOM](#dom)
   - [Composer.EVENT_DOM_ADDED](#composerevent_dom_added)
@@ -26,6 +30,8 @@ application about runtime state changes during the composite lifecycle.
   - [Composer.EVENT_MODULE_READY](#composerevent_module_ready)
   - [Composer.EVENT_MODULE_UNDOCK](#composerevent_module_undock)
 - [HTTP](#http)
+  - [XMLHttpRequest](#xmlhttprequest)
+  - [window.fetch](#windowfetch)
   - [Composer.EVENT_HTTP_START](#composerevent_http_start)
   - [Composer.EVENT_HTTP_PROGRESS](#composerevent_http_progress)
   - [Composer.EVENT_HTTP_RECEIVE](#composerevent_http_receive)
@@ -36,6 +42,11 @@ application about runtime state changes during the composite lifecycle.
   - [Composer.EVENT_HTTP_END](#composerevent_http_end)
 - [Error](#error)
   - [Composer.EVENT_ERROR](#composerevent_error)
+
+Listeners are called in registration order. If a listener throws synchronously,
+the error is reported asynchronously so the remaining listeners can still be
+called. Errors from `Composer.EVENT_ERROR` listeners are logged instead of
+rethrown, avoiding a recursive error event.
 
 ## DOM
 The runtime monitors structural changes to the DOM. Changes are detected with a
@@ -153,17 +164,9 @@ Composer.listen(Composer.EVENT_MODULE_UNDOCK, function(event, meta) {
 ```
 
 ## HTTP
-The runtime supports application-wide event management for HTTP requests to
-implement request-related application logic, for example, for logging or
-spinners.
-
-The events are described independently of the request API. Currently, only
-requests via XMLHttpRequest are captured. For each event, the corresponding
-XMLHttpRequest event is named as a reference.
-
-The callback method is passed the event of the underlying request, not the
-request object itself. With XMLHttpRequest, this is a `ProgressEvent` whose
-property `target` contains the corresponding XMLHttpRequest.
+The runtime provides application-wide HTTP events for request-related logic,
+such as logging or displaying loading indicators. These events also cover
+requests used to load external resources of composites.
 
 ```javascript
 Composer.listen(Composer.EVENT_HTTP_***, function(event, payload) {
@@ -171,49 +174,83 @@ Composer.listen(Composer.EVENT_HTTP_***, function(event, payload) {
 });
 ```
 
-The events are also triggered by the requests with which the runtime loads the
-outsourced resources of the composites. These requests are synchronous and
-therefore do not dispatch the events `loadstart` and `progress`, and the
-`readyState` values 2 (`HEADERS_RECEIVED`) and 3 (`LOADING`) are skipped, so
-`Composer.EVENT_HTTP_START` and `Composer.EVENT_HTTP_PROGRESS` do not occur for
-them. A spinner is of no use here anyway, because the browser cannot repaint
-during a synchronous request.
+HTTP events follow the composite-js runtime lifecycle rather than the native
+lifecycle of the underlying request API. Requests via `XMLHttpRequest` and
+`fetch` are therefore intercepted centrally and forwarded through
+`Composer.fire()`, independently of their native event mechanisms.
+
+### XMLHttpRequest
+`EVENT_HTTP_START` is triggered when `open()` is called, not on the native
+`loadstart` event. Subsequent native events are mapped to their corresponding
+runtime events: `progress`, `readystatechange`, `load`, `abort`, `error`,
+`timeout`, and `loadend`. Each `readystatechange` triggers `EVENT_HTTP_RECEIVE`,
+regardless of the current `readyState`.
+
+Callbacks receive the native event object, whose `target` references the
+`XMLHttpRequest` instance.
+
+### window.fetch
+`EVENT_HTTP_START` is triggered when `fetch()` is called, `EVENT_HTTP_RECEIVE`
+when its promise fulfills with a response, and `EVENT_HTTP_END` when the promise
+settles. A fulfilled response with an HTTP error status is still a receive, not
+a transport error. Since the promise fulfills when response headers are
+available, the body may still be streaming after `EVENT_HTTP_END`.
+
+Fetch notifications are queued as microtasks so event listeners do not alter the
+fetch promise's result. Rejected promises trigger `EVENT_HTTP_ERROR`, without
+distinguishing the cause, followed by `EVENT_HTTP_END`.
+
+`fetch` does not trigger `EVENT_HTTP_PROGRESS`, `EVENT_HTTP_LOAD`,
+`EVENT_HTTP_ABORT`, or `EVENT_HTTP_TIMEOUT`, as it has no equivalent native
+events that preserve those `XMLHttpRequest` semantics. Since `fetch` has no
+native event objects, callbacks receive the `Response` for `EVENT_HTTP_RECEIVE`
+and the rejection value for `EVENT_HTTP_ERROR`.
 
 ### Composer.EVENT_HTTP_START
-Triggered when a request to load data is started.  
-XMLHttpRequest: `loadstart`
+Triggered when a request to load data is initiated by a method call. The event
+follows the composite-js runtime lifecycle, not the native XMLHttpRequest
+lifecycle.  
+XMLHttpRequest: method call (not `loadstart`)  
+Fetch: method call
 
 ### Composer.EVENT_HTTP_PROGRESS
 Triggered periodically when a request receives further data.  
-XMLHttpRequest: `progress`
+XMLHttpRequest: `progress`  
+Fetch: not available
 
 ### Composer.EVENT_HTTP_RECEIVE
 Triggered when the status of the request/response changes.  
-XMLHttpRequest: `readystatechange`
+XMLHttpRequest: `readystatechange`  
+Fetch: response promise fulfillment (once)
 
 ### Composer.EVENT_HTTP_LOAD
 Triggered when a resource is loaded. This also applies to HTTP status codes that
 indicate an error, because the transfer itself was successful.  
-XMLHttpRequest: `load`
+XMLHttpRequest: `load`  
+Fetch: not available; its promise can fulfill before the response body is read
 
 ### Composer.EVENT_HTTP_ABORT
 Triggered when the loading of a resource is aborted.  
-XMLHttpRequest: `abort`
+XMLHttpRequest: `abort`  
+Fetch: not available
 
 ### Composer.EVENT_HTTP_TIMEOUT
 Triggered when the loading of a resource is aborted because the maximum loading
 time has been exceeded.  
-XMLHttpRequest: `timeout`
+XMLHttpRequest: `timeout`  
+Fetch: not available
 
 ### Composer.EVENT_HTTP_ERROR
 Triggered when the request fails, e.g. due to a network error. HTTP status codes
 that indicate an error do not trigger this event.  
-XMLHttpRequest: `error`
+XMLHttpRequest: `error`  
+Fetch: rejected promise
 
 ### Composer.EVENT_HTTP_END
 Triggered when the request is completed, regardless of any errors or successful
 completion.  
-XMLHttpRequest: `loadend`
+XMLHttpRequest: `loadend`  
+Fetch: promise settlement
 
 ## Error
 The runtime supports application-wide event management for runtime errors to

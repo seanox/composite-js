@@ -41,7 +41,7 @@ jobs:
           retention-days: 1
 
   playwright:
-    name: "Playwright: ${{ matrix.browser }}"
+    name: "Playwright: ${{ matrix.engine }}"
     runs-on: ubuntu-latest
     container:
       image: node:24-bookworm

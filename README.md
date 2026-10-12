@@ -117,6 +117,9 @@ specific language governing permissions and limitations under the License.
   <img src="https://img.shields.io/badge/Gecko-tested-green?style=for-the-badge">
   <img src="https://img.shields.io/badge/Goanna-tested-green?style=for-the-badge">
   <img src="https://img.shields.io/badge/WebKit-tested-green?style=for-the-badge">
+
+  [![Playwright](https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml/badge.svg)](https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml)
+
   [![PLAYWRIGHT](https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=PLAYWRIGHT&labelColor=555555&color=65b300)](
       https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml)
 </p>

@@ -8,6 +8,10 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   github-page:
     uses: seanox/seanox-automation/.github/workflows/github-page-update.yaml@1.x

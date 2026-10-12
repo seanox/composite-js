@@ -13,41 +13,74 @@
     
         Test.activate();
 
-        Object.use("a.b.c");
-        a.b.c.modelA = {
+        // The test demonstrates state transitions when routing between #modelA,
+        // #modelB, and #modelC. Depending on the active path, the corresponding
+        // HTML elements are added to or removed from the DOM.
+        //
+        // Additionally, each model can control access through an optional
+        // permit() method. If the method exists, it is called when the path
+        // matches. Its return value determines whether the element remains in
+        // the DOM.
+        //
+        // A special case is modelB: if an HTML element with the ID modelB
+        // exists, named access on the Window object can cause window.modelB to
+        // reference the HTML element instead of the JavaScript model. In this
+        // case, the model's permit() method may not be called. For this reason,
+        // modelA is explicitly registered on the window object.
+        //
+        // In practice, this conflict rarely occurs because modules generally
+        // assign their exported objects to the window object correctly.
+        //
+        // The test makes routing states, permit() calls, and their effects on
+        // the DOM visible and verifiable.
+        //
+        // Reference: Named access on the Window object
+        // https://html.spec.whatwg.org/multipage/nav-history-apis.html#named-access-on-the-window-object
+
+        let _permits = "";
+
+        window.modelA = {
             permit() {
-                permits += "a";
-                return _snapshots.length < 3 || _snapshots.length > 7;
+                _permits += "a";
+                return _collector.length < 6 || _collector.length > 14;
             }
         };
 
         const modelB = {
             permit() {
-                permits += "b";
+                _permits += "b";
             }
         };
 
-        let count = 0;
-        let permits = "";
-        const _snapshots = [];
-        const _sequence = ["#modelA", "#modelB", "#modelC", "#modelB", "#modelA", "#modelC", "#modelA", "#modelB", "#modelC", "#modelB", "#modelA"];
-        Composer.listen(Composer.EVENT_RENDER_END, () => {
+        let _count = 0;
+        const _collector = [];
+        const collectEventLog = (event) => {
+            const modelA = document.querySelectorAll('[id^="modelA"]');
+            const modelB = document.querySelectorAll('[id^="modelB"]');
+            const modelPresence = `${modelA.length ? "A" : ""}${modelB.length ? "B" : ""}`;
+            const log = [++_count, event, window.location.hash, _permits, modelPresence, _sequence.length].join(" ")
+            console.log(log);
+            if (_sequence)
+                _collector.push(log);
+        }
 
-            console.log(++count, window.location.hash, _snapshots.at(-1), _sequence.length);
+        let _sequence = ["#modelA", "#modelB", "#modelC", "#modelB", "#modelA", "#modelC", "#modelA", "#modelB", "#modelC", "#modelB", "#modelA"];
+        Composer.listen(Composer.EVENT_RENDER_START, (event) => {
+            collectEventLog(event);
+        });
+
+        Composer.listen(Composer.EVENT_RENDER_END, (event) => {
+            collectEventLog(event);
+            if (!_sequence)
+                return;
             if (_sequence.length <= 0) {
-                if (document.body.innerText.includes(_snapshots[0]))
-                    return;
-                document.body.innerText = _snapshots.join("\r\n");
+                _sequence = false;
+                document.body.innerText = _collector.join("\r\n");
                 Test.start();
                 return;
             }
-
-            const content = document.body.innerText
-                    .replace(/([\r\n]+)|(\s{2,})/g, " ")
-                    .replace(/^\s*(.*?)\s*\[\s*(.*?)\s*\]\s*$/, "$2 $1");
-            _snapshots.push(content);
+            _permits = "";
             window.setTimeout(() => {
-                permits = "";
                 Routing.route(_sequence.shift());
             }, 250);
         });
@@ -55,28 +88,43 @@
         // Important are 5-9
         // In which modelB.permit() finds decisions outside the path coverage
         Test.create({test() {
-            const content = _snapshots.join("\r\n");
+            const content = _collector.join("\r\n");
             console.debug(content);
             Assert.assertSameTo("script[type='text/test']", content);
         }});
     </script>
     <script type="text/test">
-      0: ab A
-      1: #modelA ab A
-      2: #modelB ab A B
-      3: #modelC a
-      4: #modelB ab B
-      5: #modelA a
-      6: #modelC ab
-      7: #modelA ab
-      8: #modelB ab A B
-      9: #modelC a A
-      10: #modelB ab A B
+      1 composerRenderStart   AB 11
+      2 composerRenderEnd  ab A 11
+      3 composerRenderStart #modelA  A 10
+      4 composerRenderEnd #modelA ab A 10
+      5 composerRenderStart #modelB  A 9
+      6 composerRenderEnd #modelB ab AB 9
+      7 composerRenderStart #modelC  AB 8
+      8 composerRenderEnd #modelC a  8
+      9 composerRenderStart #modelB   7
+      10 composerRenderEnd #modelB ab B 7
+      11 composerRenderStart #modelA  B 6
+      12 composerRenderEnd #modelA a  6
+      13 composerRenderStart #modelC   5
+      14 composerRenderEnd #modelC ab  5
+      15 composerRenderStart #modelA   4
+      16 composerRenderEnd #modelA ab A 4
+      17 composerRenderStart #modelB  A 3
+      18 composerRenderEnd #modelB ab AB 3
+      19 composerRenderStart #modelC  AB 2
+      20 composerRenderEnd #modelC a A 2
+      21 composerRenderStart #modelB  A 1
+      22 composerRenderEnd #modelB ab AB 1
+      23 composerRenderStart #modelA  AB 0
+      24 composerRenderEnd #modelA a A 0
     </script>
   </head>
   <body route>
-    <div id="modelA@a:b:c" composite route>A</div>
-    <div id="modelB" composite route>B</div>
-    [ {{_snapshots.length}}: {{window.location.hash}} {{permits}} ]
+    <div>
+      <span id="modelA" composite route>A</span>
+      <span id="modelB" composite route>B</span>
+    </div>
+    <div>[ {{_collector.length}}: {{window.location.hash}} {{_permits}} ]</div>
   </body>
 </html>

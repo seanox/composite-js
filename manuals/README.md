@@ -232,6 +232,8 @@
     - [Composer.EVENT_MODULE_READY](events.md#composerevent_module_ready)
     - [Composer.EVENT_MODULE_UNDOCK](events.md#composerevent_module_undock)
   - [HTTP](events.md#http)
+    - [XMLHttpRequest](events.md#xmlhttprequest)
+    - [window.fetch](events.md#windowfetch)
     - [Composer.EVENT_HTTP_START](events.md#composerevent_http_start)
     - [Composer.EVENT_HTTP_PROGRESS](events.md#composerevent_http_progress)
     - [Composer.EVENT_HTTP_RECEIVE](events.md#composerevent_http_receive)

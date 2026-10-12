@@ -219,12 +219,18 @@ ergibt literal `a&lt;b`. Bei `undefined` wird Attribut entfernt, danach aber
 
 </details>
 
-### 10. Test-Framework-Deadlock
+### ~~10. Test-Framework-Deadlock~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: test.js:305-307, 340-374, Story-Points: 2
 
 Wirft ein `Test.listen`-Callback bei `EVENT_RESPONSE`, wird `queue.lock = false`
 nie erreicht -> Testlauf hängt; Timeout-Interval feuert RESPONSE alle 25 ms
 endlos.
+
+</details>
 
 ## Mittel
 
@@ -316,11 +322,17 @@ pushen.
 
 </details>
 
-### 16. Listener-Exceptions in `fire(EVENT_RENDER_END)`
+### ~~16. Listener-Exceptions in `fire(EVENT_RENDER_END)`~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:354-355, 1629-1684, Story-Points: 2
 
 Listener-Exceptions propagieren bis in MutationObserver/Event-Handler;
 `context.queue.shift()` wird übersprungen. Keine Isolation der Listener.
+
+</details>
 
 ### ~~17. `{{name:expr}}` in Textknoten schreibt globale Variablen~~
 
@@ -639,11 +651,17 @@ Setzt `origin.innerText = "Error: ..."` und greift auf `error.message` zu ->
 TypeError bei Nicht-Error-Werten; Fehlerausgabe ersetzt Container-Inhalt.
 `return result` im Event-Callback wirkungslos.
 
-### 41. Toter Codepfad `ANY_TYPE`/`singleNodeValue`
+### ~~41. Toter Codepfad `ANY_TYPE`/`singleNodeValue`~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: datasource.js:143, 314-324, Story-Points: 1
 
 `transform(xmlDocument)` mit einem XMLDocument-Argument ->
 `variants[0].replaceAll` TypeError.
+
+</details>
 
 ## Summe
 - Hoch: 48 SP

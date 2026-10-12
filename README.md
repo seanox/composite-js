@@ -125,9 +125,6 @@ specific language governing permissions and limitations under the License.
   <a href="https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml"
     ><img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=WebKit&labelColor=555555&color=65b300"
   ></a>
-  <a href="https://github.com/seanox/composite-js/actions/workflows/on-push-master-playwright-run.yaml"
-    ><img src="https://img.shields.io/github/actions/workflow/status/seanox/composite-js/on-push-master-playwright-run.yaml?branch=master&style=for-the-badge&label=Goanna&labelColor=555555&color=65b300"
-  ></a>
 </p>
 
 [Seanox composite-js 2.0.0](https://github.com/seanox/composite-js/releases/download/2.0.0/composite-js-2.0.0.zip)  

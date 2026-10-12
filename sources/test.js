@@ -34,6 +34,7 @@
     "use strict";
 
     const PATTERN_EVENT = /^(?:test[A-Z][A-Za-z0-9]*|[a-z]+)$/;
+
     const EVENT_FINISH = "testFinish";
     const EVENT_INTERRUPT = "testInterrupt";
     const EVENT_PERFORM = "testPerform";

@@ -15,3 +15,7 @@
 /release/*source*.js
 /release/*debug*.js
 /test/composite-js*.js
+
+# Runtime specific
+**/temp
+**/tmp

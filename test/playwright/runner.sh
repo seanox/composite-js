@@ -24,5 +24,4 @@ case "$ENGINE" in
 esac
 
 cd "$PLAYWRIGHT_DIR"
-npm install
 exec node runner.js -e "$ENGINE" -d "$TEST_DIR" -p "$PORT"

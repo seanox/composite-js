@@ -17,3 +17,10 @@ ENV NODE_PATH=/usr/local/lib/node_modules
 EXPOSE 8000
 
 ENTRYPOINT ["/bin/bash", "/test/playwright/runner.sh"]
+
+# Usage:
+# docker build -t seanox-composite-js-test .
+#
+# docker run --rm -p 8000:8000 -e ENGINE=blink  -v "../:/test" seanox-composite-js-test
+# docker run --rm -p 8000:8000 -e ENGINE=gecko  -v "../:/test" seanox-composite-js-test
+# docker run --rm -p 8000:8000 -e ENGINE=webkit -v "../:/test" seanox-composite-js-test

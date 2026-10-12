@@ -268,6 +268,43 @@ const parseCommandLine = (args = process.argv.slice(2)) => {
     };
 };
 
+// Usage:
+//     node runner.js [options]
+//
+// Options:
+//     -e, --runtime-engine <engine>
+//           browser engine (blink, gecko, webkit)
+//     -t, --runtime-timeout <ms>
+//           timeout in milliseconds
+//     -d, --server-docroot <path>
+//           document root
+//         --server-default-document <file name>
+//           standard document
+//     -a, --server-address <address>
+//           server address
+//     -p, --server-port <port>
+//           server port
+//
+// Examples:
+//     cd test/playwright
+//     npm install
+//     npx playwright install webkit
+//     node runner.js -e webkit -d ..
+//
+//     cd test/playwright
+//     npm install
+//     npx playwright install chromium
+//     node runner.js -e blinks -d ..
+//
+//     cd test/playwright
+//     npm install
+//     npx playwright install firefox
+//     node runner.js -e gecko -d ..
+
+// Update Playwright Version
+//     ./composite-js/test/playwright/package.json
+//     ./composite-js/test/playwright/Dockerfile
+
 if (require.main === module)
     main({config: configuration(parseCommandLine())})
         .then(({failed}) => {

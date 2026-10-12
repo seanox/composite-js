@@ -87,4 +87,4 @@ jobs:
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Run tests
         working-directory: test/playwright
-        run: node runner.js -e ${{ matrix.engine }} -d .. -p ${{ matrix.port }}
+        run: node runner.js -p ${{ matrix.port }} -e ${{ matrix.engine }} -d ..

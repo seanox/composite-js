@@ -2860,7 +2860,7 @@
         // Initially the common resources are loaded.
         // The common resources are similar to an autostart, they are used to
         // initialize the single page application. They consist of common.js and
-        // common.css. The configuration of the Routing and essential styles
+        // common.css. The configuration of the routing and essential styles
         // can/should be stored here.
         Composer.include("common");
 

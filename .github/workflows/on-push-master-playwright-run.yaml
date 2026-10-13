@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build application
+  compose:
+    name: Compose application
     runs-on: ubuntu-latest
 
     steps:
@@ -30,12 +30,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ant
-      - name: Build
+      - name: Compose
         run: ant -f development compose
-      - name: Upload build artifact
+      - name: Upload application artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: application-build
+          name: application-artifacts
           path: release/*.js
           if-no-files-found: error
           retention-days: 1
@@ -47,7 +47,7 @@ jobs:
       image: node:24-bookworm
     env:
       HOME: /root
-    needs: build
+    needs: compose
 
     strategy:
       fail-fast: false
@@ -66,12 +66,12 @@ jobs:
     steps:
       - name: Checkout current source
         uses: actions/checkout@v7
-      - name: Download build artifacts
+      - name: Download application  artifacts
         uses: actions/download-artifact@v8
         with:
-          name: application-build
+          name: application-artifacts
           path: release/
-      - name: Copy build artifacts to test directory
+      - name: Copy application artifacts to test directory
         run: |
           cp release/composite-js-debug-testing.js test/
           cp release/composite-js-testing.js test/

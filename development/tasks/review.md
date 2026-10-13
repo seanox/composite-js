@@ -644,12 +644,18 @@ Fehlschlag); Export ist Wert-Snapshot (undokumentiert). Verschachtelte
 `(? a + (? b))` nicht unterstützt. Doku-Signatur `eval(script, [url])`
 widerspricht Implementierung.
 
-### 40. Catch in `include`
+### ~~40. Catch in `include`~~
+
+<details>
+  <summary>Details</summary>
+
 > Stelle: composer.js:940-944, 1314-1320, Story-Points: 1
 
 Setzt `origin.innerText = "Error: ..."` und greift auf `error.message` zu ->
 TypeError bei Nicht-Error-Werten; Fehlerausgabe ersetzt Container-Inhalt.
 `return result` im Event-Callback wirkungslos.
+
+</details>
 
 ### ~~41. Toter Codepfad `ANY_TYPE`/`singleNodeValue`~~
 

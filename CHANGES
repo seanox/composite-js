@@ -7,10 +7,12 @@ BF: Composer: Corrections and optimization
     - Correction of cleanup for moved nodes
     - Validation now ignores unbound/unrendered elements
     - Optimizing the analysis of nested selectors
+    - Correction of error handling when throw is used with non-Error objects
 BF: DataSource: Correction of regex precedence error for Booleans
 BF: Expression: Corrections and optimization
     - Correction escaping of quotation marks in text expressions
     - Addition of a dynamic cache with an active cleanup function
+    - Correction of error handling when throw is used with non-Error objects
 BF: Extension: Corrections and optimization
     - String.prototype.encodeHex: Correction for empty strings
     - String.prototype.decodeHex: Correction for empty strings
@@ -25,6 +27,7 @@ BF: Test: Corrections and optimization
     - Assert.assertSame: Correction of the incorrect comparison type (=== / ==)
     - Simulated input events now use bubbles
     - Internet intervals are now cleared correctly
+    - Correction of error handling when throw is used with non-Error objects
 CR: Build: API access to the version
     The version can be queried via the property compliant.version.
 CR: Build: Update of eslint to major 10.x

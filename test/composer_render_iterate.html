@@ -106,7 +106,7 @@
             Assert.assertEquals("ExExEx", OutputE.textContent.replace(/\s+/g, ""));
         }});
         Test.create({test() {
-            Assert.assertEquals("x1x1x1Error:InvalidexpressionError:InvalidexpressionError:Invalidexpression", OutputF.textContent.replace(/\s+/g, ""));
+            Assert.assertEquals("x1x1x1InvalidexpressionInvalidexpressionInvalidexpression", OutputF.textContent.replace(/\s+/g, ""));
         }});
         Test.create({test() {
             Assert.assertEquals("__0:1____1:2____2:3__", OutputG.textContent.replace(/\s+/g, ""));
@@ -219,9 +219,9 @@
       Ex
       Ex
       x1x1x1
-      Error: Invalid expression
-      Error: Invalid expression
-      Error: Invalid expression
+      Invalid expression
+      Invalid expression
+      Invalid expression
       __0:1____1:2____2:3__
       __0:1____1:2____2:3__
       __0:1____1:2____2:3__
@@ -234,7 +234,7 @@
       Summer
       Autumn
       Winter
-      Error: missing ) after argument list in new Array(2
+      SyntaxError: missing ) after argument list in new Array(2
       I:a Error: Invalid iterate: 0
       I:b Error: Invalid iterate: 5
       I:c Error: Invalid iterate: -5
@@ -311,9 +311,9 @@
       Ex
       Ex
       x1x1x1
-      Error: Invalid expression
-      Error: Invalid expression
-      Error: Invalid expression
+      Invalid expression
+      Invalid expression
+      Invalid expression
       __0:1____1:2____2:3__
       __0:1____1:2____2:3__
       __0:1____1:2____2:3__
@@ -326,7 +326,7 @@
       Summer
       Autumn
       Winter
-      Error: Unexpected end of script in new Array(2
+      SyntaxError: Unexpected end of script in new Array(2
       I:a Error: Invalid iterate: 0
       I:b Error: Invalid iterate: 5
       I:c Error: Invalid iterate: -5

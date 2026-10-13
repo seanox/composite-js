@@ -33,8 +33,8 @@ class Capture {
             console.log(`Test based on script #${index +1}`);
             // WebKit: Can't find variable X -> X is not defined
             snapshot = snapshot.replace(/(Can't find variable:\s+)(\w+)/ig, "$2 is not defined");
-            snapshot = snapshot.replace("Unexpected end of input", "expected expression, got end of script");
-            snapshot = snapshot.replace("Unexpected end of script", "expected expression, got end of script");
+            snapshot = snapshot.replace("expected expression, got end of script", "Unexpected end of input");
+            snapshot = snapshot.replace("Unexpected end of script", "Unexpected end of input");
             try {Assert.assertSameText(this._patterns[index], snapshot);
             } catch (error) {
                 this.output(index);

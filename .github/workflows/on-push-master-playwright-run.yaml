@@ -75,10 +75,6 @@ jobs:
         run: |
           cp release/composite-js-debug-testing.js test/
           cp release/composite-js-testing.js test/
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
       - name: Install npm dependencies
         working-directory: test/playwright
         run: npm install

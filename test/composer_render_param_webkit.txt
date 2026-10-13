@@ -1,18 +1,18 @@
 
     webkit
     ----
-    Error: Unexpected token ':' in :
-    Error: Unexpected token ':' in :
-    Error: Unexpected token ':' in :
-    Error: Unexpected token ':' in :
-    A:1: 
-    A:2: Error: Can't find variable: Hallo in Hallo
+    SyntaxError: Unexpected token ':' in :
+    SyntaxError: Unexpected token ':' in :
+    SyntaxError: Unexpected token ':' in :
+    SyntaxError: Unexpected token ':' in :
+    A:1:
+    A:2: ReferenceError: Can't find variable: Hallo in Hallo
     A:3: Hallo
     <article id="AB">
       AA:1: Hallo
-      AB:1:    
+      AB:1:
       AA:2: Hallo
-      AB:2: Error: Can't find variable: Hallo in Hallo
+      AB:2: ReferenceError: Can't find variable: Hallo in Hallo
       AA:3: Hallo
       AB:3: Welt
       AA:4: Hallo

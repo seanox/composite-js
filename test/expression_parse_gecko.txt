@@ -14,8 +14,8 @@
     Method EL 04: m22
     Method EL 05: m22
                     
-    Method EL Error 01: Error: xxx is not defined in xxx.yyy.zzz()
-    
+    Method EL Error 01: ReferenceError: xxx is not defined in xxx.yyy.zzz()
+
     Value EL 00: [object Object]
     Value EL 01: f1
     Value EL 02: f2
@@ -26,36 +26,35 @@
 
     Value EL 11_1: [object Object]
     Value EL 11_2: [object Object]
-    Value EL 11_3: 
+    Value EL 11_3:
     Value EL 11_4: [object Object]
-    Value EL 11_5: Error: can't access property "x", TestModel_1.field_11[1] is undefined in TestModel_1.field_11[1].x
+    Value EL 11_5: TypeError: can't access property "x", TestModel_1.field_11[1] is undefined in TestModel_1.field_11[1].x
     Value EL 11_6: f11[0]->x->y
-    Value EL 11_7: Error: can't access property "x", TestModel_1.field_11[1] is undefined in TestModel_1.field_11[1].x.y
+    Value EL 11_7: TypeError: can't access property "x", TestModel_1.field_11[1] is undefined in TestModel_1.field_11[1].x.y
 
     Value EL 12_1: [object Object]
     Value EL 12_2: [object Object]
-    Value EL 12_3: 
+    Value EL 12_3:
     Value EL 12_4: [object Object]
-    Value EL 12_5: Error: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x
-    Value EL 12_6: 
-    Value EL 12_7: Error: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x.y
+    Value EL 12_5: TypeError: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x
+    Value EL 12_6:
+    Value EL 12_7: TypeError: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x.y
     Value EL 12_8: f12[0]->x->y
-    Value EL 12_9: Error: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x[0].y
-    Value EL 12_A: Error: can't access property "y", TestModel_1.field_12[0].x[1] is undefined in TestModel_1.field_12[0].x[1].y
-    Value EL 12_B: Error: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x[1].y
-                
-    Value EL Error 01: Error: xxx is not defined in xxx.yyy.zzz
-    
+    Value EL 12_9: TypeError: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x[0].y
+    Value EL 12_A: TypeError: can't access property "y", TestModel_1.field_12[0].x[1] is undefined in TestModel_1.field_12[0].x[1].y
+    Value EL 12_B: TypeError: can't access property "x", TestModel_1.field_12[1] is undefined in TestModel_1.field_12[1].x[1].y
+
+    Value EL Error 01: ReferenceError: xxx is not defined in xxx.yyy.zzz
+
     Mix 01: Literal 01m1
-    
+
     Condition 01: false
     Condition 01: true
-    Condition 01: Error: unexpected token: '!' in 1 ! > 2
+    Condition 01: SyntaxError: unexpected token: '!' in 1 ! > 2
     Condition 01: number
-    
-    
-    
-    Error: expected expression, got end of script in -
+
+
+
+    SyntaxError: expected expression, got end of script in -
 
     6
-  

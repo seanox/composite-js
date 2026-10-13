@@ -14,7 +14,7 @@
     Method EL 04: m22
     Method EL 05: m22
                     
-    Method EL Error 01: Error: xxx is not defined in xxx.yyy.zzz()
+    Method EL Error 01: ReferenceError: xxx is not defined in xxx.yyy.zzz()
 
     Value EL 00: [object Object]
     Value EL 01: f1
@@ -28,33 +28,33 @@
     Value EL 11_2: [object Object]
     Value EL 11_3:
     Value EL 11_4: [object Object]
-    Value EL 11_5: Error: Cannot read properties of undefined (reading 'x') in TestModel_1.field_11[1].x
-    Value EL 11_6: f11[0]-&gt;x-&gt;y
-    Value EL 11_7: Error: Cannot read properties of undefined (reading 'x') in TestModel_1.field_11[1].x.y
+    Value EL 11_5: TypeError: Cannot read properties of undefined (reading 'x') in TestModel_1.field_11[1].x
+    Value EL 11_6: f11[0]->x->y
+    Value EL 11_7: TypeError: Cannot read properties of undefined (reading 'x') in TestModel_1.field_11[1].x.y
 
     Value EL 12_1: [object Object]
     Value EL 12_2: [object Object]
     Value EL 12_3:
     Value EL 12_4: [object Object]
-    Value EL 12_5: Error: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x
+    Value EL 12_5: TypeError: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x
     Value EL 12_6:
-    Value EL 12_7: Error: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x.y
-    Value EL 12_8: f12[0]-&gt;x-&gt;y
-    Value EL 12_9: Error: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x[0].y
-    Value EL 12_A: Error: Cannot read properties of undefined (reading 'y') in TestModel_1.field_12[0].x[1].y
-    Value EL 12_B: Error: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x[1].y
+    Value EL 12_7: TypeError: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x.y
+    Value EL 12_8: f12[0]->x->y
+    Value EL 12_9: TypeError: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x[0].y
+    Value EL 12_A: TypeError: Cannot read properties of undefined (reading 'y') in TestModel_1.field_12[0].x[1].y
+    Value EL 12_B: TypeError: Cannot read properties of undefined (reading 'x') in TestModel_1.field_12[1].x[1].y
 
-    Value EL Error 01: Error: xxx is not defined in xxx.yyy.zzz
+    Value EL Error 01: ReferenceError: xxx is not defined in xxx.yyy.zzz
 
     Mix 01: Literal 01m1
 
     Condition 01: false
     Condition 01: true
-    Condition 01: Error: Unexpected token '!' in 1 ! &gt; 2
+    Condition 01: SyntaxError: Unexpected token '!' in 1 ! > 2
     Condition 01: number
 
 
 
-    Error: Unexpected end of input in -
+    SyntaxError: Unexpected end of input in -
 
     6

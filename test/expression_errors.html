@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script src="scripts/capture.js"></script>
+    <script type="text/javascript"> 
+    
+        Test.activate();
+
+        Test.create({test() {
+            const content = document.body.textContent;
+            console.debug(content);
+            Assert.assertSameTo("script[type='text/test']", content);
+        }});
+
+        Test.start({auto:true})
+
+        const model = {
+            throwError1: () => {
+                throw "";
+            },
+            throwError2: () => {
+                throw "Oops";
+            },
+            throwError3: () => {
+                throw {code: 500};
+            },
+            throwError4: () => {
+                throw null;
+            },
+            throwError5: () => {
+                throw new Error("Oops");
+            },
+            throwError6: () => {
+                throw undefined;
+            }
+        };
+    </script>
+    <script type="text/test">
+      Error: in throw ""
+      Error: 123 in throw 123
+      Error: null in throw null
+      Error: [object Object] in throw new Object()
+      Error: Oops in throw "Oops"
+      Error: in throw undefined
+      Error: false in throw false
+      Error: true in throw true
+
+      Error: in model.throwError1()
+      Error: Oops in model.throwError2()
+      Error: [object Object] in model.throwError3()
+      Error: null in model.throwError4()
+      Error: Oops in model.throwError5()
+      Error: in model.throwError6()
+    </script>
+  </head>
+  <body>
+    {{throw ""}}
+    {{throw 123}}
+    {{throw null}}
+    {{throw new Object()}}
+    {{throw "Oops"}}
+    {{throw undefined}}
+    {{throw false}}
+    {{throw true}}
+
+    {{model.throwError1()}}
+    {{model.throwError2()}}
+    {{model.throwError3()}}
+    {{model.throwError4()}}
+    {{model.throwError5()}}
+    {{model.throwError6()}}
+  </body>
+</html>

@@ -33,6 +33,11 @@
          * identifier can optionally be specified to cache this translation.
          * Without an identifier, the expression is translated on every call.
          *
+         * Errors are handled uniformly, regardless of whether they occur during
+         * script interpretation or are explicitly thrown by the expression.
+         * Instead of propagating such errors, the function returns them as
+         * values.
+         *
          * The function uses variable parameters and has the following
          * signatures:
          *
@@ -64,8 +69,11 @@
 
             try {return Scripting.run(context, script);
             } catch (error) {
-                console.error(error.message + "\n\t" + script);
-                return new Error(error.message + " in " + script);
+                if (!(error instanceof Error))
+                    error = new Error(error);
+                error.message = (String(error.message).trim() + " in " + script).trim();
+                console.error(String(error));
+                return error;
             }
         },
 

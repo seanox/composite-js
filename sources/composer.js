@@ -1352,9 +1352,11 @@
 
                 console.error(error);
                 Composer.fire(EVENT_ERROR, error);
-                if (origin instanceof Element)
-                    origin.innerText = "Error: " + (error.message.match(/(\{\{|\}\})/)
-                        ? "Invalid expression" : error.message);
+                if (origin instanceof Element) {
+                    error = String(error);
+                    origin.innerText = (/(\{\{|\}\})/).test(error)
+                        ? "Invalid expression" : error;
+                }
 
             } finally {
 
@@ -1442,7 +1444,7 @@
             if (resource.match(/\.js(\?.*)?$/i)) {
                 try {Scripting.eval(resource, _execution_context(), content);
                 } catch (error) {
-                    console.error(resource, error.name + ": " + error.message);
+                    console.error(resource, String(error));
                     throw error;
                 }
             } else if (resource.match(/\.css(\?.*)?$/i)) {
@@ -2696,10 +2698,7 @@
         const type = (selector.getAttribute(ATTRIBUTE_TYPE) || "").trim();
         if (!type.match(PATTERN_COMPOSITE_SCRIPT))
             return;
-        try {Scripting.eval(_execution_context(), selector.textContent);
-        } catch (error) {
-            throw new Error("Composite JavaScript: " + error.message);
-        }
+        Scripting.eval(_execution_context(), selector.textContent);
     };
 
     /**

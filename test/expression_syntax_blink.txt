@@ -70,21 +70,21 @@
        
     invalid word boundaries:
     ----
-    Error: trueandtrue is not defined in trueandtrue true
-    Error: trueeqtrue is not defined in trueeqtrue true
-    Error: ~~~Error_1~ in 1le2 true
-    Error: ~~~Error_1~ in 1ne2 true
+    ReferenceError: trueandtrue is not defined in trueandtrue true
+    ReferenceError: trueeqtrue is not defined in trueeqtrue true
+    SyntaxError: ~~~Error_1~ in 1le2 true
+    SyntaxError: ~~~Error_1~ in 1ne2 true
 
     true true
-    Error: ~~~Error_1~ in 2ge1 true
-    Error: ~~~Error_1~ in 1lt2 true
+    SyntaxError: ~~~Error_1~ in 2ge1 true
+    SyntaxError: ~~~Error_1~ in 1lt2 true
     true true
-    Error: Unexpected string in notempty'x' true
+    SyntaxError: Unexpected string in notempty'x' true
 
-    Error: ~~~Error_1~ in (25div5)eq5 Error: Unexpected identifier 'eq5' in (25 /5)eq5
-    Error: ~~~Error_1~ in 2gt1 true
-    Error: ~~~Error_1~ in (10mod3)eq1 Error: Unexpected identifier 'eq1' in (10%3)eq1
-    Error: trueorfalse is not defined in trueorfalse true
+    SyntaxError: ~~~Error_1~ in (25div5)eq5 SyntaxError: Unexpected identifier 'eq5' in (25 /5)eq5
+    SyntaxError: ~~~Error_1~ in 2gt1 true
+    SyntaxError: ~~~Error_1~ in (10mod3)eq1 SyntaxError: Unexpected identifier 'eq1' in (10%3)eq1
+    ReferenceError: trueorfalse is not defined in trueorfalse true
 
     lower / upper case:
     ----
@@ -110,34 +110,34 @@
     1
     -12
 
-    Error: unknown is not defined in unknown
-    Error: unknown is not defined in unknown + '123'
+    ReferenceError: unknown is not defined in unknown
+    ReferenceError: unknown is not defined in unknown + '123'
 
-    A1: Error: Peter is not defined in Peter
-    A2: Error: Peter is not defined in Peter.und.der.Wolf
-    A3: Error: Peter is not defined in Peter.und.der()
+    A1: ReferenceError: Peter is not defined in Peter
+    A2: ReferenceError: Peter is not defined in Peter.und.der.Wolf
+    A3: ReferenceError: Peter is not defined in Peter.und.der()
 
     B1: [object HTMLInputElement]
-    B2: Error: document.getElementById(...).value is not a function in document.getElementById("HiddenField").value()
+    B2: TypeError: document.getElementById(...).value is not a function in document.getElementById("HiddenField").value()
     B3: Test-HF
 
-    C1: Error: Private field '#document' must be declared in an enclosing class in #document.getElementById("HiddenField")
-    C2: Error: Private field '#document' must be declared in an enclosing class in #document.getElementById("HiddenField").value()
-    C3: Error: Private field '#document' must be declared in an enclosing class in #document.getElementById("HiddenField").value()
+    C1: SyntaxError: Private field '#document' must be declared in an enclosing class in #document.getElementById("HiddenField")
+    C2: SyntaxError: Private field '#document' must be declared in an enclosing class in #document.getElementById("HiddenField").value()
+    C3: SyntaxError: Private field '#document' must be declared in an enclosing class in #document.getElementById("HiddenField").value()
 
     D1:
 
-    E1: Error: ~~~Error_1~ in #
-    E2: Error: ~~~Error_1~ in # + #
+    E1: SyntaxError: ~~~Error_1~ in #
+    E2: SyntaxError: ~~~Error_1~ in # + #
 
-    F1: Error: document.getElementById(...).value is not a function in '123' + document.getElementById("HiddenField").value() + 'abc'
+    F1: TypeError: document.getElementById(...).value is not a function in '123' + document.getElementById("HiddenField").value() + 'abc'
     F2: 123Test-HFabc
 
     G1: [object HTMLInputElement]
-    G2: Error: Cannot read properties of undefined (reading 'getElementById') in document.getElementById("HiddenField_1").document.getElementById("HiddenField_1")
-    G3: Error: Cannot read properties of undefined (reading 'getElementById') in document.getElementById("HiddenField_1").document.getElementById("HiddenField_2")
-    G4: Error: Unexpected identifier 'document' in document.getElementById("HiddenField_1") document.getElementById("HiddenField_2")
-    G5: Error: Unexpected identifier 'document' in document.getElementById("HiddenField_1")document.getElementById("HiddenField_2")
+    G2: TypeError: Cannot read properties of undefined (reading 'getElementById') in document.getElementById("HiddenField_1").document.getElementById("HiddenField_1")
+    G3: TypeError: Cannot read properties of undefined (reading 'getElementById') in document.getElementById("HiddenField_1").document.getElementById("HiddenField_2")
+    G4: SyntaxError: Unexpected identifier 'document' in document.getElementById("HiddenField_1") document.getElementById("HiddenField_2")
+    G5: SyntaxError: Unexpected identifier 'document' in document.getElementById("HiddenField_1")document.getElementById("HiddenField_2")
 
     X0: <input type="hidden" id="HiddenField" value="Test-HF">
     X1: <input type="hidden" id="HiddenField_1" value="Test-HF_A">

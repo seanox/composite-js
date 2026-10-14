@@ -26,7 +26,7 @@ BF: Routing: Correction of route expression generation
 BF: Test: Corrections and optimization
     - Assert.assertSame: Correction of the incorrect comparison type (=== / ==)
     - Simulated input events now use bubbles
-    - Internet intervals are now cleared correctly
+    - Internal intervals are now cleared correctly
     - Correction of error handling when throw is used with non-Error objects
 CR: Build: API access to the version
     The version can be queried via the property compliant.version.
@@ -35,8 +35,8 @@ CR: Build: Improve OS independence of build.xml
 CR: Composer: Added DOM mutation events
     Composer.EVENT_DOM_ADDED / Composer.EVENT_DOM_REMOVED / Composer.EVENT_DOM_MOVED
     Events are triggered once per mutation cycle with an array of affected nodes.
-CR: Composer: Redesign of the scope model
-    Scopes were reconsidered, defined and reimplemented.
+CR: Composer: Review of the existing scope model
+    Scopes have been optimized for clearer boundaries and improved transitions.
     - Global Scope: window, unchanged, no longer used for expression variables
     - Application Scope: persistent variables of the application instance,
       shared across composites and modules, object application
@@ -75,6 +75,21 @@ CR: Test: Optimization and extension
     - Events: Reflection of the events (Test API and Composer) as window events.
       Requires Test.activate() -- for example, for use in test automation.
     - Expanding test automation with Playwright.
+NT: Compatibility and Migration
+    - Consolidation and maintenance release; internal optimizations with largely
+      unchanged runtime behavior.
+    - Architecture: Refactoring to improve consistency and maintainability.
+    - Review of the existing scope model
+      Explicit view scope for variable expressions; use the view and application
+      objects for scope transitions.
+    - Resources: Paths restricted to the application context; syntax raw:/...
+      External resources must be exposed through controlled mechanisms, e.g. a
+      reverse proxy.
+    - JavaScript Macros: The tolerate operator is now strictly space-delimited:
+      (? expression). Evaluation errors return undefined instead of false.
+    - Breaking API Changes: Namespace.create(), Math.unique(), and legacy object
+      identification APIs removed or replaced. Scripting.eval() and
+      Expression.eval() now require an explicit execution context.
 
 2.0.0 20260829
 BF: Build: Optimizing npm access
@@ -102,6 +117,13 @@ CR: Project: Renamed to composite-js
 CR: Project: Refactoring after renaming to composite-js
     - composite.js and the Composite object become composer.js and the Composer
       object
+NT: Compatibility and Migration
+    - Consolidation and maintenance release
+    - Architecture: Preserve the existing technical design and runtime behavior.
+    - Script Import: Switch from aspect-js.js to composite-js.js.
+    - Terminology: Conceptual clarification of terms and responsibilities
+      without functional changes.
+    - API: Rename Composite to Composer, affecting all API calls and constants.
 
 1.9.0 20260717
 BF: Composite: Validation corrections and optimization

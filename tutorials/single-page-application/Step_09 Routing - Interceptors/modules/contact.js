@@ -10,19 +10,19 @@ const contact = ({
 
     locationLink: {
         onClick(event) {
-            alert("click event on ${event.target.id}");
+            alert(`click event on ${event.target.id}`);
             return false;
         }
     },
     phoneLink: {
         onClick() {
-            alert("click event on ${event.target.id}");
+            alert(`click event on ${event.target.id}`);
             return false;
         }
     },
     mailLink: {
         onClick() {
-            alert("click event on ${event.target.id}");
+            alert(`click event on ${event.target.id}`);
             return false;
         }
     }

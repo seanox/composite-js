@@ -289,17 +289,17 @@ const parseCommandLine = (args = process.argv.slice(2)) => {
 //     cd test/playwright
 //     npm install
 //     npx playwright install webkit
-//     node runner.js -e webkit -d ..
+//     node runner.js -p 8001 -e webkit -d ..
 //
 //     cd test/playwright
 //     npm install
 //     npx playwright install chromium
-//     node runner.js -e blinks -d ..
+//     node runner.js -p 8001 -e blinks -d ..
 //
 //     cd test/playwright
 //     npm install
 //     npx playwright install firefox
-//     node runner.js -e gecko -d ..
+//     node runner.js -p 8001 -e gecko -d ..
 
 // Update Playwright Version
 //     ./composite-js/test/playwright/package.json

@@ -294,7 +294,7 @@ const parseCommandLine = (args = process.argv.slice(2)) => {
 //     cd test/playwright
 //     npm install
 //     npx playwright install chromium
-//     node runner.js -p 8001 -e blinks -d ..
+//     node runner.js -p 8001 -e blink -d ..
 //
 //     cd test/playwright
 //     npm install

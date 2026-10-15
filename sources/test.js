@@ -293,7 +293,9 @@
                     response(status) {
                         const timing = Date.now() -status.task.timing;
                         if (status.task.error)
-                            Test.worker.output.error(`${Test.TIMESTAMP} Test task ${status.task.title} ${status.task.error.message}`);
+                            Test.worker.output.error(`${Test.TIMESTAMP} Test task`
+                                + ` ${status.task.title}`
+                                + ` ${String(status.task.error.message).trim || "unknow error"}`);
                         else Test.worker.output.log(`${Test.TIMESTAMP} Test task ${status.task.title} was successful (${timing} ms)`);
                     },
                     finish(status) {
@@ -370,7 +372,8 @@
                             try {task.meta.test();
                             } catch (error) {
                                 task.error = error;
-                                if (!task.error.message
+                                if (!(task.error instanceof Error)
+                                        || !task.error.message
                                         || !task.error.message.trim())
                                     task.error.message = "failed";
                             } finally {
@@ -394,9 +397,9 @@
                                     Test.fire(EVENT_RESPONSE, Test.status());
                                     Test.worker.queue.faults++;
                                 }
-                                if (!task.error
+                                if (!(task.error instanceof Error)
                                         || !String(task.error.message).match(/^Timeout occurred/)) {
-                                    if (task.error)
+                                    if (task.error instanceof Error)
                                         Test.worker.queue.faults++;
                                     Test.fire(EVENT_RESPONSE, Test.status());
                                 }

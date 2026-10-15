@@ -102,7 +102,7 @@
 
     const PATTERN_KEYWORDS = new RegExp("(^|[^\\w\\.])("
             + KEYWORDS.filter((keyword, index) => index % 2 === 0).join("|")
-            + ")(?=[^\\w\\.]|$)", "ig");
+            + ")(?=[^\\w\\.]|$)", "g");
 
     const _fill = (expression, patches) =>
         expression.replace(/[\t\r](\d+)\n/g, (match, id) => patches[id]);
@@ -208,21 +208,15 @@
                 expression = expression.replace(/\t+/g, " ");
 
                 // mapping of keywords to operators
-                // IMPORTANT: KEYWORDS ARE CASE-INSENSITIVE
+                // IMPORTANT: KEYWORDS ARE CASE-SENSITIVE
                 //     and  &&        empty  !         div  /
                 //     eq   ==        eeq    ===       ge   >=
                 //     gt   >         le     <=        lt   <
                 //     mod  %         ne     !=        nee  !==
                 //     not  !         or     ||
                 expression = expression.replace(PATTERN_KEYWORDS, (match, group1, group2) =>
-                    group1 + KEYWORDS[KEYWORDS.indexOf(group2.toLowerCase()) +1]
+                    group1 + KEYWORDS[KEYWORDS.indexOf(group2) +1]
                 );
-
-                // Keywords must be replaced by placeholders so that they are
-                // not interpreted as variables. Keywords are case-insensitive.
-                expression = expression.replace(/(^|[^\w\.])(true|false|null|undefined|new|instanceof|typeof)(?=[^\w\.]|$)/ig,
-                    (match, group1 = "", group2 = "") =>
-                        group1 + group2.toLowerCase());
 
                 // element expressions are translated into JavaScript
                 //

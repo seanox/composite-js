@@ -74,38 +74,25 @@ quotation marks. They support the usual control characters and escape sequences.
 ```
 
 ### Keyword
-The following standard JavaScript syntax keywords are supported in the
-expression language:
-
-```
-true
-false
-null
-instanceof
-typeof
-undefined
-new
-```
-
 The JavaScript syntax for the expression language has been extended with these
 keywords to support valid markup:
 
-| Keyword | Function                  |
-|---------|---------------------------|
-| `and`   | `&&`                      |
-| `div`   | `/`                       |
-| `empty` | `!`                       |
-| `eeq`   | `===`                     |
-| `eq`    | `==`                      |
-| `ge`    | `>=`                      |
-| `gt`    | `> `                      |
-| `le`    | `<=`                      |
-| `lt`    | `<`                       |
-| `mod`   | `%`                       |  
-| `ne`    | `!=`                      |
-| `nee`   | `!==`                     |
-| `not`   | `!`                       |  
-| `or`    | <code>&#124;&#124;</code> |
+| Keyword | Function |
+|---------|----------|
+| `and`   | `&&`     |
+| `div`   | `/`      |
+| `empty` | `!`      |
+| `eeq`   | `===`    |
+| `eq`    | `==`     |
+| `ge`    | `>=`     |
+| `gt`    | `> `     |
+| `le`    | `<=`     |
+| `lt`    | `<`      |
+| `mod`   | `%`      |  
+| `ne`    | `!=`     |
+| `nee`   | `!==`    |
+| `not`   | `!`      |  
+| `or`    | `\|\|`   |
 
 ### Value
 Anything that is not a literal or keyword is potentially a value. A Value

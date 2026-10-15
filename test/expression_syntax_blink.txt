@@ -88,21 +88,21 @@
 
     lower / upper case:
     ----
-    true true
-    true true
-    true true
-    true true
+    SyntaxError: Unexpected identifier 'AND' in true AND true true
+    SyntaxError: Unexpected identifier 'EQ' in true EQ true true
+    SyntaxError: Unexpected identifier 'LE' in 1 LE 2 true
+    SyntaxError: Unexpected identifier 'NE' in 1 NE 2 true
 
-    true true
-    true true
-    true true
-    true true
-    true true
+    SyntaxError: Unexpected string in EMPTY '' true
+    SyntaxError: Unexpected identifier 'GE' in 2 GE 1 true
+    SyntaxError: Unexpected identifier 'LT' in 1 LT 2 true
+    SyntaxError: Unexpected string in NOT '' true
+    SyntaxError: Unexpected identifier 'EMPTY' in NOT EMPTY 'x' true
 
-    true true
-    true true
-    true true
-    true true
+    SyntaxError: Unexpected identifier 'DIV' in (25 DIV 5) EQ 5 true
+    SyntaxError: Unexpected identifier 'GT' in 2 GT 1 true
+    SyntaxError: Unexpected identifier 'MOD' in (10 MOD 3) EQ 1 true
+    SyntaxError: Unexpected identifier 'OR' in true OR false true
 
     various
     ----

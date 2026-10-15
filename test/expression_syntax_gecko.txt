@@ -88,21 +88,21 @@
 
     lower / upper case:
     ----
-    true true
-    true true
-    true true
-    true true
+    SyntaxError: unexpected token: identifier in true AND true true
+    SyntaxError: unexpected token: identifier in true EQ true true
+    SyntaxError: unexpected token: identifier in 1 LE 2 true
+    SyntaxError: unexpected token: identifier in 1 NE 2 true
 
-    true true
-    true true
-    true true
-    true true
-    true true
+    SyntaxError: unexpected token: string literal in EMPTY '' true
+    SyntaxError: unexpected token: identifier in 2 GE 1 true
+    SyntaxError: unexpected token: identifier in 1 LT 2 true
+    SyntaxError: unexpected token: string literal in NOT '' true
+    SyntaxError: unexpected token: identifier in NOT EMPTY 'x' true
 
-    true true
-    true true
-    true true
-    true true
+    SyntaxError: missing ) in parenthetical in (25 DIV 5) EQ 5 true
+    SyntaxError: unexpected token: identifier in 2 GT 1 true
+    SyntaxError: missing ) in parenthetical in (10 MOD 3) EQ 1 true
+    SyntaxError: unexpected token: identifier in true OR false true
 
     various
     ----

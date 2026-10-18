@@ -16,13 +16,13 @@ const DEFAULT_PROTOCOL = "http";
 const DEFAULT_ADDRESS = "127.0.0.1";
 const DEFAULT_PORT = 8000;
 
-const isLoopbackAddress = address => typeof address === "string"
+const _isLoopbackAddress = address => typeof address === "string"
         && (address === "localhost"
                 || address === "::1"
                 || (net.isIP(address) === 4
                         && Number(address.split(".")[0]) === 127));
 
-const isValidAddress = (address) => {
+const _isValidAddress = (address) => {
     if (net.isIP(address))
         return true;
     if (address.length > 253)
@@ -36,12 +36,12 @@ const isValidAddress = (address) => {
         );
 }
 
-const isValidDefaultDocument = document => typeof document === "string"
+const _isValidDefaultDocument = document => typeof document === "string"
         && /^[\w.-]+$/.test(document)
         && document !== "."
         && document !== "..";
 
-const contentTypes = {
+const _contentTypes = {
     ".css": "text/css; charset=utf-8",
     ".gif": "image/gif",
     ".html": "text/html; charset=utf-8",
@@ -62,7 +62,7 @@ const contentTypes = {
     ".xml": "application/xml; charset=utf-8"
 };
 
-const isWithin = (directory, file) => {
+const _isWithin = (directory, file) => {
     const relative = path.relative(directory, file);
     return relative === ""
             || (!relative.startsWith(`..${path.sep}`)
@@ -70,7 +70,7 @@ const isWithin = (directory, file) => {
                     && !path.isAbsolute(relative));
 };
 
-const respond = (request, response, [status, message], headers = {}) => {
+const _respond = (request, response, [status, message], headers = {}) => {
     const content = Buffer.from(message);
     response.writeHead(status, message, {
         "Content-Length": content.length,
@@ -80,16 +80,16 @@ const respond = (request, response, [status, message], headers = {}) => {
     response.end(request.method === "HEAD" ? undefined : content);
 };
 
-const serveFile = async (request, response, root, pathname, defaultDocument) => {
+const _serveFile = async (request, response, root, pathname, defaultDocument) => {
     const segments = pathname.split("/").filter(Boolean);
     if (segments.includes("..")
             || pathname.includes("\\")
             || pathname.includes("\0"))
-        return respond(request, response, STATUS_NOT_FOUND);
+        return _respond(request, response, STATUS_NOT_FOUND);
 
     let file = path.resolve(root, ...segments);
-    if (!isWithin(root, file))
-        return respond(request, response, STATUS_NOT_FOUND);
+    if (!_isWithin(root, file))
+        return _respond(request, response, STATUS_NOT_FOUND);
 
     let details;
     try {
@@ -101,20 +101,20 @@ const serveFile = async (request, response, root, pathname, defaultDocument) => 
     } catch (error) {
         if (error.code === "ENOENT"
                 || error.code === "ENOTDIR")
-            return respond(request, response, STATUS_NOT_FOUND);
+            return _respond(request, response, STATUS_NOT_FOUND);
         throw error;
     }
 
     if (!details.isFile())
-        return respond(request, response, STATUS_NOT_FOUND);
+        return _respond(request, response, STATUS_NOT_FOUND);
 
     file = await fs.promises.realpath(file);
-    if (!isWithin(root, file))
-        return respond(request, response, STATUS_NOT_FOUND);
+    if (!_isWithin(root, file))
+        return _respond(request, response, STATUS_NOT_FOUND);
 
     response.writeHead(...STATUS_OK, {
         "Content-Length": details.size,
-        "Content-Type": contentTypes[path.extname(file).toLowerCase()] || "application/octet-stream",
+        "Content-Type": _contentTypes[path.extname(file).toLowerCase()] || "application/octet-stream",
         "Last-Modified": details.mtime.toUTCString()
     });
     if (request.method === "HEAD")
@@ -125,7 +125,7 @@ const serveFile = async (request, response, root, pathname, defaultDocument) => 
         console.error(`[server] ${error.message}`);
         if (response.headersSent)
             response.destroy();
-        else respond(request, response, STATUS_INTERNAL_SERVER_ERROR);
+        else _respond(request, response, STATUS_INTERNAL_SERVER_ERROR);
     });
     stream.pipe(response);
 };
@@ -138,10 +138,10 @@ const createServer = ({
     address = DEFAULT_ADDRESS,
     port = DEFAULT_PORT
 } = {}) => {
-    if (!isValidDefaultDocument(defaultDocument))
+    if (!_isValidDefaultDocument(defaultDocument))
         throw new TypeError("Invalid default document");
-    if (!isValidAddress(address)
-            && !isLoopbackAddress(address))
+    if (!_isValidAddress(address)
+            && !_isLoopbackAddress(address))
         throw new Error("Invalid server address");
     if (protocol !== "http")
         throw new Error("Invalid server protocol");
@@ -159,24 +159,24 @@ const createServer = ({
     const handleError = (request, response, error) => {
         console.error(`[server] ${error.stack || error}`);
         if (!response.headersSent)
-            respond(request, response, STATUS_INTERNAL_SERVER_ERROR);
+            _respond(request, response, STATUS_INTERNAL_SERVER_ERROR);
         else response.destroy();
     };
 
     return http.createServer((request, response) => {
         if (request.method !== "GET"
                 && request.method !== "HEAD")
-            return respond(request, response, STATUS_METHOD_NOT_ALLOWED, {Allow: "GET, HEAD"});
+            return _respond(request, response, STATUS_METHOD_NOT_ALLOWED, {Allow: "GET, HEAD"});
 
         let pathname;
         try {
             const queryStart = request.url.indexOf("?");
             const requestPath = queryStart < 0 ? request.url : request.url.slice(0, queryStart);
             if (!requestPath.startsWith("/"))
-                return respond(request, response, STATUS_BAD_REQUEST);
+                return _respond(request, response, STATUS_BAD_REQUEST);
             pathname = decodeURIComponent(requestPath);
         } catch {
-            return respond(request, response, STATUS_BAD_REQUEST);
+            return _respond(request, response, STATUS_BAD_REQUEST);
         }
 
         if (Object.hasOwn(virtualMapping, pathname)) {
@@ -186,15 +186,15 @@ const createServer = ({
                     .catch(error => handleError(request, response, error));
             response.writeHead(...STATUS_OK, {
                 "Content-Length": Buffer.byteLength(page),
-                "Content-Type": contentTypes[path.extname(pathname)] || "application/octet-stream"
+                "Content-Type": _contentTypes[path.extname(pathname)] || "application/octet-stream"
             });
             return response.end(request.method === "HEAD" ? undefined : page);
         }
 
         if (!directory)
-            return respond(request, response, STATUS_NOT_FOUND);
+            return _respond(request, response, STATUS_NOT_FOUND);
 
-        serveFile(request, response, directory, pathname, defaultDocument)
+        _serveFile(request, response, directory, pathname, defaultDocument)
             .catch(error => handleError(request, response, error));
     });
 };

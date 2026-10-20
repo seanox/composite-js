@@ -3,25 +3,27 @@
   <target name="usage">
     <echo>Following targets are available:                                 </echo>
     <echo>                                                                 </echo>
-    <echo>  changes        Synchronizes README.md with CHANGES             </echo>
+    <echo>  changes           Synchronizes README.md with CHANGES          </echo>
     <echo>                                                                 </echo>
-    <echo>  release        Creates the release as archive for distribution </echo>
-    <echo>                 Synchronizes README.md with CHANGES             </echo>
+    <echo>  release           Creates the release for distribution         </echo>
+    <echo>                    Synchronizes README.md with CHANGES          </echo>
     <echo>                                                                 </echo>
-    <echo>  publish        Creates the release as archive for distribution </echo>
-    <echo>                 Synchronizes README.md with CHANGES             </echo>
-    <echo>                 Publishes the version to the npm repository     </echo>
+    <echo>  publish           Creates the release for distribution         </echo>
+    <echo>                    Synchronizes README.md with CHANGES          </echo>
+    <echo>                    Publishes the version to the npm repository  </echo>
     <echo>                                                                 </echo>
-    <echo>  compose        Prepare the environment for testing             </echo>
-    <echo>                 Combinable with the task start.                 </echo>
+    <echo>  compose           Prepare the environment for testing          </echo>
+    <echo>                    Combinable with the task start.              </echo>
     <echo>                                                                 </echo>
-    <echo>  compose-max    Prepare the environment for testing with max    </echo>
-    <echo>                 Combinable with the task start.                 </echo>
+    <echo>  compose-max       Prepare the environment for testing with max </echo>
+    <echo>                    Combinable with the task start.              </echo>
+    <echo>  compose-coverage  Prepare the environment for testing with max </echo>
+    <echo>                    Combinable with the task start.              </echo>
     <echo>                                                                 </echo>
-    <echo>  start          Starts the included development server          </echo>
-    <echo>                 Console output of the access log                </echo>
+    <echo>  start             Starts the included development server       </echo>
+    <echo>                    Console output of the access log             </echo>
     <echo>                                                                 </echo>
-    <echo>  stop           Stops the included development server           </echo>
+    <echo>  stop              Stops the included development server        </echo>
   </target>
   
   <property name="workspace" value="${basedir}"/>
@@ -214,6 +216,8 @@
   <target name="compose">
     <property name="release.file.source" value="${workspace.release}/${ant.project.name}-source.js"/>
     <property name="release.file.source.testing" value="${workspace.release}/${ant.project.name}-source-testing.js"/>
+    <property name="release.file.coverage" value="${workspace.release}/${ant.project.name}-coverage.js"/>
+    <property name="release.file.coverage.mapping" value="${workspace.release}/${ant.project.name}-coverage.mapping"/>
     <property name="release.file" value="${workspace.release}/${ant.project.name}.js"/>
     <property name="release.file.debug" value="${workspace.release}/${ant.project.name}-debug.js"/>
     <property name="release.file.debug.max" value="${workspace.release}/${ant.project.name}-debug-max.js"/>
@@ -229,6 +233,36 @@
         <include name="${ant.project.name}*.js"/>
       </fileset>
     </delete>
+
+    <filelist id="coverage.source.list" dir="${workspace.sources}">
+      <file name="extension.js"/>
+      <file name="locator.js"/>
+      <file name="datasource.js"/>
+      <file name="scripting.js"/>
+      <file name="expression.js"/>
+      <file name="composer.js"/>
+      <file name="messages.js"/>
+      <file name="reactive.js"/>
+      <file name="routing.js"/>
+      <file name="test.js"/>
+    </filelist>
+    <concat destfile="${release.file.coverage}">
+      <filelist refid="coverage.source.list"/>
+    </concat>
+    <echo file="${release.file.coverage}" append="true"
+        message="${line.separator}"/>
+    <echo file="${release.file.coverage}" append="true"
+        message="${line.separator}//# sourceMappingURL=${release.file.coverage.mapping}"/>
+    <echo file="${release.file.coverage}" append="true"
+        message="${line.separator}//# sourceMappingDirectory=${workspace.sources}"/>
+    <pathconvert property="coverage.source.files" pathsep=" ">
+      <filelist refid="coverage.source.list"/>
+      <mapper type="flatten"/>
+    </pathconvert>
+    <echo file="${release.file.coverage}" append="true"
+        message="${line.separator}//# sourceMappingFiles=${coverage.source.files}"/>
+    <echo file="${release.file.coverage}" append="true"
+        message="${line.separator}"/>
 
     <exec executable="${npm}" dir="${workspace.development}" failonerror="true">
       <arg value="install"/>
@@ -421,6 +455,11 @@
         tofile="${workspace.test}/${ant.project.name}-testing.js" overwrite="true"/>
     <copy file="${release.file.debug.testing.max}"
         tofile="${workspace.test}/${ant.project.name}-debug-testing.js" overwrite="true"/>
+  </target>
+
+  <target name="compose-coverage" depends="compose-max">
+    <copy file="${release.file.coverage}"
+        tofile="${workspace.test}/${ant.project.name}-testing.js" overwrite="true"/>
   </target>
 
   <target name="start">

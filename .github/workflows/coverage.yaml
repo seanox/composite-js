@@ -37,11 +37,13 @@ jobs:
       - name: Run test coverage
         working-directory: test/playwright
         run: |
+          
+          # Playwright runs inside a job container, where the workspace path
+          # differs from the host runner. Therefore, the directory used for
+          # source code mapping must be adjusted to match the container's
+          # working directory.
+          
           WORKSPACE="$(cd ../.. && pwd)"
           sed -E -i "s|(//# sourceMappingDirectory=).*(/composite-js/sources)|\1${WORKSPACE}\2|" \
               ../composite-js-testing.js
-  
-          grep -n 'sourceMappingDirectory\|sourceMappingFiles' \
-              ../composite-js-testing.js
-
-#         run: node runner.js -p 8004 -e blink -d ..
+          node runner.js -p 8004 -e blink -d ..

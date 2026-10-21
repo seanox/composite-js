@@ -51,3 +51,4 @@ jobs:
               "s|^//# sourceMappingDirectory=.*|//# sourceMappingDirectory=${WORKSPACE}/sources|" \
               ../composite-js-testing.js
           node runner.js -p 8004 -e blink -d ..
+          cat ../composite-js-testing.md >> "$GITHUB_STEP_SUMMARY"

@@ -188,6 +188,11 @@ const createCoverageRecorder = (engine, coverageFile) => {
             || !coverageMetaInfo.directory
             || coverageMetaInfo.files.length <= 0)
         return;
+    if (!fs.existsSync(coverageMetaInfo.url)
+            || !fs.statSync(coverageMetaInfo.url).isFile()
+            || !fs.existsSync(coverageMetaInfo.directory)
+            || !fs.statSync(coverageMetaInfo.directory).isDirectory())
+        throw new Error("Invalid coverage paths");
 
     const sourceMap = _createSourceMap(coverageMetaInfo);
     const exportBase = path.join(

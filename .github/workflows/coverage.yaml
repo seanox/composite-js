@@ -27,10 +27,7 @@ jobs:
       - name: Copy application artifacts
         run: |
           
-          git rev-parse HEAD
-          git ls-tree -r --name-only HEAD sources/
           ls -la sources/ || true
-          git status --short          
           
           cp release/composite-js-debug-testing.js test/
           cp release/composite-js-coverage.js test/composite-js-testing.js

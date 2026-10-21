@@ -1,4 +1,4 @@
-name: "[on-push-master] Playwright: Tests / Coverage"
+name: "[push] Playwright: Tests / Coverage"
 
 on:
 # disabled for cost reasons (free plan)

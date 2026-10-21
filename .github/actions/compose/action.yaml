@@ -1,0 +1,27 @@
+name: "Compose Application"
+
+inputs:
+  ref:
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout source
+      uses: actions/checkout@v7
+      with:
+        ref: ${{ inputs.ref || '' }}
+    - name: Setup Java
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: "11"
+    - name: Setup Ant
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ant
+    - name: Compose
+      shell: bash
+      run: ant -f development compose

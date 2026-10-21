@@ -26,17 +26,28 @@ jobs:
           path: release/
       - name: Copy application artifacts
         run: |
-          
-          ls -la sources/ || true
-          
           cp release/composite-js-debug-testing.js test/
           cp release/composite-js-coverage.js test/composite-js-testing.js
-#      - name: Install npm dependencies
-#        working-directory: test/playwright
-#        run: npm install
-#      - name: Install Playwright browser
-#        working-directory: test/playwright
-#        run: npx playwright install --with-deps chromium
-#      - name: Run test coverage
-#        working-directory: test/playwright
+      - name: Install npm dependencies
+        working-directory: test/playwright
+        run: npm install
+      - name: Install Playwright browser
+        working-directory: test/playwright
+        run: npx playwright install --with-deps chromium
+      - name: Run test coverage
+        working-directory: test/playwright
+        run: |
+          echo "Working directory:"
+          pwd
+
+          echo "Resolved source path:"
+          realpath ../../sources/extension.js
+
+          echo "Source file:"
+          ls -l ../../sources/extension.js
+
+          echo "Coverage source path references:"
+          grep -n "extension.js\|readFileSync" coverage.js
+
+          node runner.js -p 8004 -e blink -d ..
 #        run: node runner.js -p 8004 -e blink -d ..

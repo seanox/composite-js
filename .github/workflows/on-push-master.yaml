@@ -30,12 +30,12 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  playwright:
-    name: Playwright tests
-    needs: compose
-    uses: ./.github/workflows/playwright.yaml
-    with:
-      artifacts: application-artifacts
+# playwright:
+#   name: Playwright tests
+#   needs: compose
+#   uses: ./.github/workflows/playwright.yaml
+#   with:
+#     artifacts: application-artifacts
 
   coverage:
     name: Playwright test coverage

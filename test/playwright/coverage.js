@@ -46,7 +46,8 @@ const _createSourceMap = (coverageMetaInfo) => {
         coverageMetaInfo.url
     );
     const sourceMap = JSON.parse(map.toString());
-    sourceMap.sourceRoot = path.resolve(coverageMetaInfo.directory).split(path.sep).join("/");
+    sourceMap.sources = sourceMap.sources.map(source =>
+        path.resolve(coverageMetaInfo.directory, source).split(path.sep).join("/"));
     fs.writeFileSync(mappingFile, JSON.stringify(sourceMap));
     return sourceMap;
 };
@@ -84,36 +85,38 @@ const _formatCoverage = ({covered, total}) => total > 0
 const _createCoverageMarkdown = coverage => {
     const files = Object.entries(coverage).map(([source, report]) => ({
         source,
-        statements: _countCoverage(report.s),
+        lines: _countCoverage(report.s),
         functions: _countCoverage(report.f),
         branches: _countCoverage(report.b)
     }));
     const total = files.reduce((result, file) => {
-        for (const metric of ["statements", "functions", "branches"]) {
+        for (const metric of ["lines", "functions", "branches"]) {
             result[metric].covered += file[metric].covered;
             result[metric].total += file[metric].total;
         }
         return result;
     }, {
-        statements: {covered: 0, total: 0},
+        lines: {covered: 0, total: 0},
         functions: {covered: 0, total: 0},
         branches: {covered: 0, total: 0}
     });
     const rows = files.map(file =>
         `| \`${path.basename(file.source).replace(/`/g, "\\`").replace(/\|/g, "\\|")}\` `
-            + `| ${_formatCoverage(file.statements)} `
+            + `| ${_formatCoverage(file.lines)} `
             + `| ${_formatCoverage(file.functions)} `
             + `| ${_formatCoverage(file.branches)} |`
     );
     return [
         "# Code Coverage",
         "",
-        "| Source | Statements | Functions | Branches |",
+        "| Source | Lines | Functions | Branches |",
         "| --- | ---: | ---: | ---: |",
-        `| __Total__ | ${_formatCoverage(total.statements)} `
+        `| __Total__ | ${_formatCoverage(total.lines)} `
             + `| ${_formatCoverage(total.functions)} `
             + `| ${_formatCoverage(total.branches)} |`,
         ...rows,
+        "",
+        "Lines are derived from V8 coverage and include comments and blank lines.",
         ""
     ].join(os.EOL);
 };
@@ -122,9 +125,9 @@ const _createCoverageLcov = report => {
     const records = [];
     for (const file of Object.values(report)) {
         records.push("TN:", `SF:${file.path.split(path.sep).join("/")}`);
-        const functions = Object.entries(file.fnMap).map(([id, fn]) => ({
-            name: `${fn.name || "(anonymous)"}_${id}`.replace(/[\r\n]/g, " "),
-            line: fn.decl.start.line,
+        const functions = Object.entries(file.fnMap).map(([id, functionMapping]) => ({
+            name: `${functionMapping.name || "(anonymous)"}_${id}`.replace(/[\r\n]+/g, " "),
+            line: functionMapping.decl.start.line,
             count: file.f[id]
         }));
         for (const fn of functions)

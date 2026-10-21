@@ -49,5 +49,7 @@ jobs:
           echo "Coverage source path references:"
           grep -n "extension.js\|readFileSync" coverage.js
 
-          node runner.js -p 8004 -e blink -d ..
-#        run: node runner.js -p 8004 -e blink -d ..
+          grep -n 'sourceMappingDirectory\|sourceMappingFiles' \
+          composite-js-testing.js
+
+#         run: node runner.js -p 8004 -e blink -d ..

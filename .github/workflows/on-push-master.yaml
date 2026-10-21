@@ -31,13 +31,13 @@ jobs:
   playwright:
     name: Playwright tests
     needs: compose
-    uses: ./.github/workflows/reusable/playwright.yaml
+    uses: ./.github/workflows/playwright.yaml
     with:
       artifacts: application-artifacts
 
   coverage:
     name: Playwright test coverage
     needs: compose
-    uses: ./.github/workflows/reusable/coverage.yaml
+    uses: ./.github/workflows/coverage.yaml
     with:
       artifacts: application-artifacts

@@ -42,6 +42,6 @@ jobs:
 
           ls -la ../
           grep -n 'sourceMappingDirectory\|sourceMappingFiles' \
-          test/composite-js-testing.js
+          ../composite-js-testing.js
 
 #         run: node runner.js -p 8004 -e blink -d ..

@@ -18,6 +18,8 @@ jobs:
     name: Compose application
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout current source
+        uses: actions/checkout@v7
       - name: Compose application
         uses: ./.github/actions/compose
       - name: Upload application artifacts

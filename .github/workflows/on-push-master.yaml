@@ -1,0 +1,43 @@
+name: "Playwright: Tests"
+
+on:
+# disabled for cost reasons (free plan)
+# push:
+#   branches:
+#     - master
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose:
+    name: Compose application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compose application
+        uses: ./.github/actions/compose
+      - name: Upload application artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: application-artifacts
+          path: release/*.js
+          if-no-files-found: error
+          retention-days: 1
+
+  playwright:
+    name: Playwright tests
+    needs: compose
+    uses: ./.github/workflows/playwright.yaml
+    with:
+      artifacts: application-artifacts
+
+  coverage:
+    name: Playwright test coverage
+    needs: compose
+    uses: ./.github/workflows/coverage.yaml
+    with:
+      artifacts: application-artifacts

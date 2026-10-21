@@ -1,0 +1,39 @@
+name: "Playwright: Test Coverage"
+
+on:
+  workflow_call:
+    inputs:
+      artifacts:
+        required: true
+        type: string
+
+jobs:
+  coverage:
+    name: "Coverage: ${{ matrix.engine }}"
+    runs-on: ubuntu-latest
+    container:
+      image: node:24-bookworm
+    env:
+      HOME: /root
+
+    steps:
+      - name: Checkout current source
+        uses: actions/checkout@v7
+      - name: Download application artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ inputs.artifacts }}
+          path: release/
+      - name: Copy application artifacts
+        run: |
+          cp release/composite-js-debug-testing.js test/
+          cp release/composite-js-coverage.js test/composite-js-testing.js
+      - name: Install npm dependencies
+        working-directory: test/playwright
+        run: npm install
+      - name: Install Playwright browser
+        working-directory: test/playwright
+        run: npx playwright install --with-deps chromium
+      - name: Run test coverage
+        working-directory: test/playwright
+        run: node runner.js -p 8004 -e blink -d ..

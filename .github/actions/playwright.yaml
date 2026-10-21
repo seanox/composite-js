@@ -1,45 +1,13 @@
 name: "Playwright: Tests"
 
 on:
-# disabled for cost reasons (free plan)
-# push:
-#   branches:
-#     - master
-  workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * *'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      artifacts:
+        required: true
+        type: string
 
 jobs:
-  compose:
-    name: Compose application
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v7
-      - name: Setup Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '11'
-      - name: Setup Ant
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ant
-      - name: Compose
-        run: ant -f development compose
-      - name: Upload application artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: application-artifacts
-          path: release/*.js
-          if-no-files-found: error
-          retention-days: 1
-
   playwright:
     name: "Playwright: ${{ matrix.engine }}"
     runs-on: ubuntu-latest
@@ -47,7 +15,6 @@ jobs:
       image: node:24-bookworm
     env:
       HOME: /root
-    needs: compose
 
     strategy:
       fail-fast: false
@@ -66,12 +33,12 @@ jobs:
     steps:
       - name: Checkout current source
         uses: actions/checkout@v7
-      - name: Download application  artifacts
+      - name: Download application artifacts
         uses: actions/download-artifact@v8
         with:
-          name: application-artifacts
+          name: ${{ inputs.artifacts }}
           path: release/
-      - name: Copy application artifacts to test directory
+      - name: Copy application artifacts
         run: |
           cp release/composite-js-debug-testing.js test/
           cp release/composite-js-testing.js test/

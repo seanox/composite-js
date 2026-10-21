@@ -37,18 +37,10 @@ jobs:
       - name: Run test coverage
         working-directory: test/playwright
         run: |
-          
-          # Playwright runs inside a job container, where the workspace path
-          # differs from the host runner. Therefore, the directory used for
-          # source code mapping must be adjusted to match the container's
-          # working directory.
-          
-          WORKSPACE="$(cd ../.. && pwd)"
-          sed -E -i \
-              "s|^//# sourceMappingURL=.*|//# sourceMappingURL=${WORKSPACE}/release/composite-js-coverage.mapping|" \
-              ../composite-js-testing.js
-          sed -E -i \
-              "s|^//# sourceMappingDirectory=.*|//# sourceMappingDirectory=${WORKSPACE}/sources|" \
-              ../composite-js-testing.js
           node runner.js -p 8004 -e blink -d ..
           cat ../composite-js-testing.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload results to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: test/composite-js-testing.lcov

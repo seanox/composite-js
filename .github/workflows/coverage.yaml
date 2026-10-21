@@ -44,6 +44,10 @@ jobs:
           # working directory.
           
           WORKSPACE="$(cd ../.. && pwd)"
-          sed -E -i "s|(//# sourceMappingDirectory=).*(/composite-js/sources)|\1${WORKSPACE}\2|" \
+          sed -E -i \
+              "s|^//# sourceMappingURL=.*|//# sourceMappingURL=${WORKSPACE}/release/composite-js-coverage.mapping|" \
+              ../composite-js-testing.js
+          sed -E -i \
+              "s|^//# sourceMappingDirectory=.*|//# sourceMappingDirectory=${WORKSPACE}/sources|" \
               ../composite-js-testing.js
           node runner.js -p 8004 -e blink -d ..

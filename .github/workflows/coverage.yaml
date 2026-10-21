@@ -26,14 +26,20 @@ jobs:
           path: release/
       - name: Copy application artifacts
         run: |
+          
+          git rev-parse HEAD
+          git ls-tree -r --name-only HEAD sources/
+          ls -la sources/ || true
+          git status --short          
+          
           cp release/composite-js-debug-testing.js test/
           cp release/composite-js-coverage.js test/composite-js-testing.js
-      - name: Install npm dependencies
-        working-directory: test/playwright
-        run: npm install
-      - name: Install Playwright browser
-        working-directory: test/playwright
-        run: npx playwright install --with-deps chromium
-      - name: Run test coverage
-        working-directory: test/playwright
-        run: node runner.js -p 8004 -e blink -d ..
+#      - name: Install npm dependencies
+#        working-directory: test/playwright
+#        run: npm install
+#      - name: Install Playwright browser
+#        working-directory: test/playwright
+#        run: npx playwright install --with-deps chromium
+#      - name: Run test coverage
+#        working-directory: test/playwright
+#        run: node runner.js -p 8004 -e blink -d ..

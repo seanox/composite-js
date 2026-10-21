@@ -1,12 +1,12 @@
 {
   "private": true,
-  "scripts": {
-    "start": "node runner.js"
-  },
   "engines": {
     "node": ">=24"
   },
   "dependencies": {
-    "playwright": "1.55.0"
+    "@bcoe/v8-coverage": "^1.0.2",
+    "magic-string": "^0.30.0",
+    "playwright": "1.55.1",
+    "v8-to-istanbul": "^9.3.0"
   }
 }

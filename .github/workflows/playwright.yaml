@@ -11,6 +11,7 @@ jobs:
   playwright:
     name: "Playwright: ${{ matrix.engine }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     container:
       image: node:24-bookworm
     env:

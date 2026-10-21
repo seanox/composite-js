@@ -123,7 +123,7 @@ const _createCoverageLcov = report => {
     for (const file of Object.values(report)) {
         records.push("TN:", `SF:${file.path.split(path.sep).join("/")}`);
         const functions = Object.entries(file.fnMap).map(([id, functionMapping]) => ({
-            name: `${functionMapping.name || "(anonymous)"}_${id}`.replace(/[\r\n]+/g, " "),
+            name: `${functionMapping.name || "(anonymous)"}_${id}`.replace(/[\r\n]/g, " "),
             line: functionMapping.decl.start.line,
             count: file.f[id]
         }));

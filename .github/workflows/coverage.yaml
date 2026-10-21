@@ -40,16 +40,7 @@ jobs:
           echo "Working directory:"
           pwd
 
-          echo "Resolved source path:"
-          realpath ../../sources/extension.js
-
-          echo "Source file:"
-          ls -l ../../sources/extension.js
-
-          echo "Coverage source path references:"
-          grep -n "extension.js\|readFileSync" coverage.js
-
           grep -n 'sourceMappingDirectory\|sourceMappingFiles' \
-          composite-js-testing.js
+          test/composite-js-testing.js
 
 #         run: node runner.js -p 8004 -e blink -d ..

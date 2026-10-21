@@ -11,6 +11,7 @@ const {
 } = require("./coverage.js");
 const {
     createServer,
+    DEFAULT_DOCROOT,
     DEFAULT_DOCUMENT,
     DEFAULT_PROTOCOL,
     DEFAULT_ADDRESS,
@@ -150,13 +151,14 @@ const _configuration = (options = {}) => {
     const engine = (options.engine ?? "").toLowerCase();
     if (!["blink", "gecko", "webkit"].includes(engine))
         throw new Error(`Invalid engine: ${engine || "[empty]"}`);
-    const docRoot = path.resolve(options.server?.docRoot ?? __dirname);
+    const workingDirectory = path.resolve(options.workingDirectory ?? process.cwd());
     const defaultDocument = options.server?.defaultDocument ?? DEFAULT_DOCUMENT;
     return {
         tempDirectory: path.resolve(__dirname, options.tempDirectory ?? DEFAULT_TEMP_DIR),
+        workingDirectory,
         server: {
-            docRoot,
-            docRootDefaultDocument: path.join(docRoot, defaultDocument),
+            docRoot: workingDirectory,
+            docRootDefaultDocument: path.join(workingDirectory, defaultDocument),
             protocol: options.server?.protocol ?? DEFAULT_PROTOCOL,
             address: options.server?.address ?? DEFAULT_ADDRESS,
             port: Number(options.server?.port ?? DEFAULT_PORT),
@@ -192,6 +194,8 @@ const main = async ({config, runtime, serverFactory = createServer} = {}) => {
         browserContextOptions: _browserContextOptions,
         runTest: _runTest
     };
+
+    process.chdir(config.workingDirectory);
 
     fs.mkdirSync(config.tempDirectory, {recursive: true});
     const availableFiles = fs.readdirSync(config.server.docRoot, {withFileTypes: true})
@@ -292,20 +296,20 @@ const _parseCommandLine = (args = process.argv.slice(2)) => {
         options: {
             "runner-engine": {type: "string", short: "e"},
             "runner-timeout": {type: "string", short: "t"},
+            "runner-working-directory": {type: "string", short: "d"},
             "server-protocol": {type: "string"},
             "server-address": {type: "string", short: "a"},
-            "server-port": {type: "string", short: "p"},
-            "server-docroot": {type: "string", short: "d"},
-            "server-default-document": {type: "string"}
+            "server-port": {type: "string", short: "p"}
         }
     });
 
     return {
         timeout: values["runner-timeout"],
         engine: values["runner-engine"],
+        workingDirectory: values["runner-working-directory"],
         server: {
-            docRoot: values["server-docroot"],
-            defaultDocument: values["server-default-document"],
+            docRoot: DEFAULT_DOCROOT,
+            defaultDocument: DEFAULT_DOCUMENT,
             protocol: values["server-protocol"],
             address: values["server-address"],
             port: values["server-port"]
@@ -317,14 +321,12 @@ const _parseCommandLine = (args = process.argv.slice(2)) => {
 //     node runner.js [options]
 //
 // Options:
-//     -e, --runtime-engine <engine>
+//     -e, --runner-engine <engine>
 //           browser engine (blink, gecko, webkit)
-//     -t, --runtime-timeout <ms>
+//     -t, --runner-timeout <ms>
 //           timeout in milliseconds
-//     -d, --server-docroot <path>
-//           document root
-//         --server-default-document <file name>
-//           standard document
+//     -d, --runner-working-directory <path>
+//           working directory
 //     -a, --server-address <address>
 //           server address
 //     -p, --server-port <port>

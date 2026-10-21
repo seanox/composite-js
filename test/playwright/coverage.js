@@ -124,7 +124,12 @@ const _createCoverageMarkdown = coverage => {
 const _createCoverageLcov = report => {
     const records = [];
     for (const file of Object.values(report)) {
-        records.push("TN:", `SF:${file.path.split(path.sep).join("/")}`);
+        // PROJECT-SPECIFIC WORKAROUND: The execution/working directory is
+        // ./test and is relative to the project root, as is the ./source
+        // directory. The problem is that codecov requires relative paths to the
+        // project root in the LCOV file, but the runner is running in the test
+        // directory.
+        records.push("TN:", `SF:${file.path.split(path.sep).slice(-2).join(path.sep)}`);
         const functions = Object.entries(file.fnMap).map(([id, functionMapping]) => ({
             name: `${functionMapping.name || "(anonymous)"}_${id}`.replace(/[\r\n]+/g, " "),
             line: functionMapping.decl.start.line,

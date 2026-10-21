@@ -11,6 +11,7 @@ const STATUS_NOT_FOUND = Object.freeze([404, "Not found"]);
 const STATUS_METHOD_NOT_ALLOWED = Object.freeze([405, "Method not allowed"]);
 const STATUS_INTERNAL_SERVER_ERROR = Object.freeze([500, "Internal server error"]);
 
+const DEFAULT_DOCROOT = ".";
 const DEFAULT_DOCUMENT = "index.html";
 const DEFAULT_PROTOCOL = "http";
 const DEFAULT_ADDRESS = "127.0.0.1";
@@ -201,6 +202,7 @@ const createServer = ({
 
 module.exports = {
     createServer,
+    DEFAULT_DOCROOT,
     DEFAULT_DOCUMENT,
     DEFAULT_PROTOCOL,
     DEFAULT_ADDRESS,

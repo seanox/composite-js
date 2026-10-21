@@ -251,10 +251,13 @@
     </concat>
     <echo file="${release.file.coverage}" append="true"
         message="${line.separator}"/>
+    <basename property="coverage.release" file="${workspace.release}"/>
+    <basename property="coverage.release.mapping" file="${release.file.coverage.mapping}"/>
     <echo file="${release.file.coverage}" append="true"
-        message="${line.separator}//# sourceMappingURL=${release.file.coverage.mapping}"/>
+        message="${line.separator}//# sourceMappingURL=../${coverage.release}/${coverage.release.mapping}"/>
+    <basename property="coverage.sources" file="${workspace.sources}"/>
     <echo file="${release.file.coverage}" append="true"
-        message="${line.separator}//# sourceMappingDirectory=${workspace.sources}"/>
+        message="${line.separator}//# sourceMappingDirectory=../${coverage.sources}"/>
     <pathconvert property="coverage.source.files" pathsep=" ">
       <filelist refid="coverage.source.list"/>
       <mapper type="flatten"/>

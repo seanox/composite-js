@@ -40,6 +40,7 @@ jobs:
           echo "Working directory:"
           pwd
 
+          ls -la ../
           grep -n 'sourceMappingDirectory\|sourceMappingFiles' \
           test/composite-js-testing.js
 

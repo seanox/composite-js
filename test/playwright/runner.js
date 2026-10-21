@@ -171,12 +171,14 @@ process.on("uncaughtException", (error, origin) => {
     console.error("[error]", {
         message: error.message, stack: error.stack, origin,
     });
+    process.exitCode = 1;
 });
 
 process.on("unhandledRejection", (reason, promise) => {
     console.error("[error]", {
         reason: reason instanceof Error ? reason.stack : reason,
     });
+    process.exitCode = 1;
 });
 
 const main = async ({config, runtime, serverFactory = createServer} = {}) => {

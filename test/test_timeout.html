@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const runIsolated = (source, settle = 0) => new Promise((resolve, reject) => {
+            const frame = document.createElement("iframe");
+            const messages = [];
+            const originalFire = Test.fire;
+            Test.fire = () => {};
+            let finished = false;
+            const timeout = window.setTimeout(() => {
+                window.removeEventListener("message", listener);
+                Test.fire = originalFire;
+                frame.remove();
+                reject(new Error("Isolated test did not finish"));
+            }, 5000);
+            const listener = event => {
+                if (event.source !== frame.contentWindow
+                        || !event.data)
+                    return;
+                messages.push(event.data);
+                if (event.data.type !== "finish"
+                        || finished)
+                    return;
+                finished = true;
+                window.clearTimeout(timeout);
+                window.setTimeout(() => {
+                    window.removeEventListener("message", listener);
+                    Test.fire = originalFire;
+                    frame.remove();
+                    resolve(messages);
+                }, settle);
+            };
+            window.addEventListener("message", listener);
+            frame.addEventListener("load", () =>
+                frame.contentWindow.postMessage({type:"run", source}, "*"), {once:true});
+            frame.src = new URL("test_timeout_frame.html", location.href);
+            document.body.appendChild(frame);
+        });
+
+        const frameFinish = messages =>
+            messages.find(message => message.type === "finish");
+        const frameResponses = messages =>
+            messages.filter(message => message.type === "response");
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                Test.create({expected:/ASYNC_FAIL/, test:async function() {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    Assert.fail("ASYNC_FAIL");
+                }});
+                Test.create({test() {
+                    Assert.assertSame("after-async", "after-async");
+                }});
+                Test.create({test() {
+                    return {then(resolve) {setTimeout(resolve, 50);}};
+                }});
+                Test.create({expected:/ASYNC_REJECT/, test() {
+                    return Promise.reject(new Error("ASYNC_REJECT"));
+                }});
+                const thenable = {};
+                Object.defineProperty(thenable, "then", {
+                    get() {throw new Error("THEN_GETTER");}
+                });
+                Test.create({expected:/THEN_GETTER/, test() {
+                    return thenable;
+                }});
+            `);
+            Assert.assertEquals(0, frameFinish(messages).faults);
+            Assert.assertEquals(5, frameResponses(messages).length);
+            Assert.assertTrue(frameResponses(messages).every(response => !response.error));
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                const values = [
+                    {message:"BOOM"}, null, undefined, false, 0, "STRING",
+                    Object.freeze(new Error("FROZEN"))
+                ];
+                const frame = document.createElement("iframe");
+                document.body.appendChild(frame);
+                const ForeignError = frame.contentWindow.Error;
+                frame.remove();
+                values.push(new ForeignError("CROSS_FRAME"));
+                values.forEach(value => Test.create({test() {throw value;}}));
+            `);
+            const responses = frameResponses(messages);
+            Assert.assertEquals(8, frameFinish(messages).faults);
+            Assert.assertEquals(8, responses.length);
+            Assert.assertSame(
+                "BOOM|null|undefined|false|0|STRING|FROZEN|CROSS_FRAME",
+                responses.map(response => response.error).join("|"));
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                Test.create({test() {
+                    throw new Error("Timeout occurred in business operation");
+                }});
+            `);
+            Assert.assertEquals(1, frameFinish(messages).faults);
+            Assert.assertEquals(
+                "Timeout occurred in business operation",
+                frameResponses(messages)[0].error);
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                Test.create({expected:TypeError, test() {
+                    return Promise.reject(new TypeError("EXPECTED_TYPE"));
+                }});
+                Test.create({expected:/EXPECTED_TEXT/, test() {
+                    return Promise.reject("EXPECTED_TEXT");
+                }});
+                Test.create({expected:Error, test() {}});
+                Test.create({expected:Error, test() {
+                    return Promise.reject(null);
+                }});
+            `);
+            const responses = frameResponses(messages);
+            Assert.assertEquals(2, frameFinish(messages).faults);
+            Assert.assertEquals(4, responses.length);
+            Assert.assertNull(responses[0].error);
+            Assert.assertNull(responses[1].error);
+            Assert.assertEquals("Assert error expected failed", responses[2].error);
+            Assert.assertEquals("null", responses[3].error);
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                let nextRuns = 0;
+                Test.create({timeout:50, test() {
+                    return new Promise(() => {});
+                }});
+                Test.create({timeout:50, test() {
+                    return new Promise((resolve, reject) =>
+                        setTimeout(resolve, 250));
+                }});
+                Test.create({timeout:50, test() {
+                    return new Promise((resolve, reject) =>
+                        setTimeout(() => reject(new Error("LATE_REJECTION")), 300));
+                }});
+                Test.create({timeout:50, test() {
+                    const deadline = Date.now() +100;
+                    while (Date.now() < deadline) {
+                    }
+                }});
+                Test.create({test() {nextRuns++;}});
+            `, 600);
+            const responses = frameResponses(messages);
+            Assert.assertEquals(4, frameFinish(messages).faults);
+            Assert.assertEquals(5, responses.length);
+            Assert.assertTrue(responses.slice(0, 4)
+                .every(response => response.error.startsWith("Timeout occurred")));
+            Assert.assertNull(responses[4].error);
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                let resumedPerform = false;
+                let resumedResponse = false;
+                Test.listen(Test.EVENT_PERFORM, (event, status) => {
+                    if (status.task.meta.name === "pause-perform") {
+                        Test.suspend();
+                        setTimeout(() => {
+                            resumedPerform = true;
+                            Test.resume();
+                        }, 50);
+                    }
+                });
+                Test.listen(Test.EVENT_RESPONSE, (event, status) => {
+                    if (status.task.meta.name === "pause-response") {
+                        Test.suspend();
+                        setTimeout(() => {
+                            resumedResponse = true;
+                            Test.resume();
+                        }, 50);
+                    }
+                });
+                Test.create({name:"pause-perform", test() {
+                    Assert.assertTrue(resumedPerform);
+                }});
+                Test.create({name:"pause-response", test() {}});
+                Test.create({test() {
+                    Assert.assertTrue(resumedResponse);
+                }});
+            `);
+            Assert.assertEquals(0, frameFinish(messages).faults);
+            Assert.assertEquals(3, frameResponses(messages).length);
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                let resumed = false;
+                Test.create({name:"timeout-while-paused", timeout:50, test() {
+                    Test.suspend();
+                    setTimeout(() => {
+                        resumed = true;
+                        Test.resume();
+                    }, 100);
+                    return new Promise(resolve => setTimeout(resolve, 300));
+                }});
+                Test.create({test() {
+                    Assert.assertTrue(resumed);
+                }});
+            `, 400);
+            const responses = frameResponses(messages);
+            Assert.assertEquals(1, frameFinish(messages).faults);
+            Assert.assertEquals(2, responses.length);
+            Assert.assertTrue(responses[0].error.startsWith("Timeout occurred"));
+            Assert.assertNull(responses[1].error);
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                let interrupted = false;
+                let firstRuns = 0;
+                let secondRuns = 0;
+                let finishes = 0;
+                Test.listen(Test.EVENT_PERFORM, () => {
+                    if (interrupted)
+                        return;
+                    interrupted = true;
+                    Test.interrupt();
+                    setTimeout(() => Test.start(), 0);
+                });
+                Test.listen(Test.EVENT_FINISH, () => finishes++);
+                Test.create({name:"first", test() {firstRuns++;}});
+                Test.create({name:"second", test() {secondRuns++;}});
+            `);
+            Assert.assertEquals(0, frameFinish(messages).faults);
+            Assert.assertEquals(2, frameResponses(messages).length);
+            Assert.assertEquals(1, messages.filter(message =>
+                    message.type === "interrupt").length);
+            Assert.assertEquals(1, messages.filter(message =>
+                    message.type === "finish").length);
+            Assert.assertEquals("#1|#2", frameResponses(messages).map(response =>
+                        response.title.split(" ")[0]).join("|"));
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
+                let interrupted = false;
+                let runs = 0;
+                let nextRuns = 0;
+                Test.create({test() {
+                    runs++;
+                    if (interrupted)
+                        return Promise.resolve();
+                    interrupted = true;
+                    Test.interrupt();
+                    setTimeout(() => Test.start(), 0);
+                    return new Promise((resolve, reject) =>
+                        setTimeout(() => reject("STALE_REJECTION"), 250));
+                }});
+                Test.create({test() {nextRuns++;}});
+            `, 300);
+            Assert.assertEquals(0, frameFinish(messages).faults);
+            Assert.assertEquals(2, frameResponses(messages).length);
+            Assert.assertEquals(1, messages.filter(message =>
+                    message.type === "interrupt").length);
+            Assert.assertEquals(1, messages.filter(message =>
+                    message.type === "finish").length);
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.start({auto:true});
+    </script>
+  <head>
+  <body>
+  </body>
+</html>

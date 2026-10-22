@@ -71,7 +71,9 @@
         Test.create({test() {
             Test.fire("testTestEvent");
             console.debug(collector.join("\n"));
-            Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
+            const expected = document.querySelector("script[type='text/test']")
+                .textContent.trim().split(/\r?\n/).map(line => line.trim()).join("\n");
+            Assert.assertEquals(expected, collector.join("\n"));
         }});
 
         Test.start({auto:true});

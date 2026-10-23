@@ -359,28 +359,36 @@
         
         /**
          * Triggers an event.
-         * All callback functions for this event are called.
+         * Registered callbacks are captured and delivered synchronously,
+         * including nested events. New render requests wait in the render queue
+         * until delivery releases its own render start barrier.
          * @param {string} event Event type (see Composer.EVENT_***)
          * @param {...*} variants Up to five additional optional arguments
          *     passed to the callback function
          */
         fire(event, ...variants) {
             event = (event || "").trim();
-            if (_listeners.size <= 0
-                    || !event)
+            if (!event)
                 return;
             const listeners = _listeners.get(event.toLowerCase());
             if (!Array.isArray(listeners))
                 return;
-            variants = [event, ...variants];
-            listeners.forEach(callback => {
-                try {callback(...variants);
-                } catch (error) {
-                    if (event.toLowerCase() === EVENT_ERROR.toLowerCase())
-                        Composer.asynchronous(() => console.error(error));
-                    else Composer.asynchronous(() => {throw error;});
-                }
-            });
+            const callbacks = listeners.slice();
+            const lock = Symbol();
+            if (_render_lock === null)
+                _render_lock = lock;
+            try {
+                for (const callback of callbacks)
+                    try {callback(event, ...variants);
+                    } catch (error) {
+                        if (event.toLowerCase() === EVENT_ERROR.toLowerCase())
+                            Composer.asynchronous(() => console.error(error));
+                        else Composer.asynchronous(() => {throw error;});
+                    }
+            } finally {
+                if (_render_lock === lock)
+                    _render_lock = null;
+            }
         },
 
         /**
@@ -727,15 +735,13 @@
          *     - namespace cannot be created if it already exists as a method
          */
         mount(selector, lock) {
-            
-            Composer.mount.queue = Composer.mount.queue || [];
 
             // The lock locks concurrent mount requests.
             // Concurrent mounting causes unexpected effects.
-            if (Composer.mount.lock
-                    && Composer.mount.lock !== lock) {
-                if (!Composer.mount.queue.includes(selector))
-                    Composer.mount.queue.push(selector);
+            if (_mount_lock
+                    && _mount_lock !== lock) {
+                if (!_mount_queue.includes(selector))
+                    _mount_queue.push(selector);
                 return;
             }
 
@@ -757,13 +763,12 @@
                 // and without multiple object binding
                 // and script and style elements are not supported 
                 if (!(selector instanceof Element)
-                        || Composer.mount.queue.includes(selector)
+                        || _mount_queue.includes(selector)
                         || selector.nodeName.match(PATTERN_ELEMENT_IGNORE))
                     return;
 
                 // An element/selector should only be mounted once.
-                Composer.mount.elements = Composer.mount.elements || new WeakSet();
-                if (Composer.mount.elements.has(selector))
+                if (_mount_elements.has(selector))
                     return;
 
                 const object = _render_meta[selector.uid];
@@ -843,7 +848,7 @@
                 }
 
                 // The determined events are registered.
-                Composer.mount.elements.add(selector);
+                _mount_elements.add(selector);
                 events.forEach((event) => {
                     selector.addEventListener(event.toLowerCase(), (event) => {
 
@@ -1210,9 +1215,8 @@
          */
         render(selector, lock) {
 
-            Composer.render.queue = Composer.render.queue || [];
             if (!selector
-                    && Composer.render.queue.length <= 0)
+                    && _render_queue.length <= 0)
                 return;
 
             // The lock locks concurrent render requests. Concurrent rendering
@@ -1220,16 +1224,16 @@
             // elements that are currently being processed can be omitted or
             // replaced from the DOM. Access to parent and child elements may
             // then no longer be possible.
-            if (Composer.render.lock
-                    && Composer.render.lock !== lock) {
-                if (!Composer.render.queue.includes(selector))
-                    Composer.render.queue.push(selector);
+            if (_render_lock
+                    && _render_lock !== lock) {
+                if (!_render_queue.includes(selector))
+                    _render_queue.push(selector);
                 Composer.asynchronous(Composer.render);
                 return;
             }
 
             if (!selector)
-                selector = Composer.render.queue[0];
+                selector = _render_queue[0];
 
             // Even before rendering, possible expressions in the initial ID
             // should be resolved. As the expression can refer to temporary
@@ -1368,7 +1372,9 @@
                 // for update multiple times during a render cycle when a lock
                 // exists. When the selector is rendered, any queued jobs are
                 // removed.
-                Composer.render.queue = Composer.render.queue.filter(entry => entry !== origin);
+                const index = _render_queue.indexOf(origin);
+                if (index !== -1)
+                    _render_queue.splice(index, 1);
 
                 lock.release();
             }
@@ -1618,6 +1624,15 @@
      */
     const _models = new Set();
 
+    /** Lock on mounting execution as a transaction */
+    let _mount_lock = null;
+
+    /** Queue for deferred mount jobs during a mount lock */
+    const _mount_queue = [];
+
+    /** Elements already mounted and (event-)bound. */
+    const _mount_elements = new WeakSet();
+
     /**
      * Lock mechanism for the methods: render and mount. The lock controls
      * that the methods are not used concurrently and/or asynchronously. Each
@@ -1634,12 +1649,10 @@
      */
     const _lock = (context, selector) => {
 
-        context.queue = context.queue || [];
+        let lock = context === Composer.render ? _render_lock : _mount_lock;
 
-        if (context.lock === undefined
-                || context.lock === false) {
-            context.lock = {ticks:1, selector, queue:[],
-
+        if (!lock) {
+            lock = {ticks:1, selector, queue:[],
                 share() {
                     this.ticks++;
                     return this;
@@ -1698,13 +1711,21 @@
                         } else if (context === Composer.mount) {
                             Composer.fire(EVENT_MOUNT_END, this.selector);
                         } else throw new Error("Invalid context: " + context);
-                        const selector = context.queue.shift();
+                        const selector = (context === Composer.render ? _render_queue : _mount_queue).shift();
                         if (selector)
                             Composer.asynchronous(context, selector);
                     } finally {
-                        context.lock = false;
+                        if (context === Composer.render) {
+                            if (_render_lock === this)
+                                _render_lock = null;
+                        } else if (_mount_lock === this)
+                            _mount_lock = null;
                     }
                 }};
+
+            if (context === Composer.render)
+                _render_lock = lock;
+            else _mount_lock = lock;
 
             if (context === Composer.render)
                 Composer.fire(EVENT_RENDER_START, selector);
@@ -1719,7 +1740,7 @@
             else throw new Error("Invalid context: " + context);
         }
 
-        return context.lock;
+        return lock;
     }
 
     const _recursion_detection = (element) => {
@@ -1906,14 +1927,17 @@
         return context;
     };
 
+    /** Lock on rendering execution as a transaction */
+    let _render_lock = null;
+
+    /** Queue for deferred render jobs during a render lock */
+    const _render_queue = [];
+
     /**
      * Associative array for element-related meta-objects, those which are
      * created during rendering: (key:serial, value:meta)
      */
     const _render_meta = [];
-    Object.defineProperty(Composer.render, "meta", {
-        value: _render_meta
-    });
 
     /**
      * Checks whether a node is contained in an element to be ignored, e.g.

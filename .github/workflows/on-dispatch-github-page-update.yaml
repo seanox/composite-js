@@ -1,4 +1,4 @@
-name: "\u1F7E7 GitHub Page: Build and Deploy"
+name: "\uD83D\uDFE8 GitHub Page: Build and Deploy"
 
 on:
   workflow_dispatch:

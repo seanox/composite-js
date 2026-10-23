@@ -1,4 +1,4 @@
-name: "\u1F7E8 Playwright: Test"
+name: "🟧 \u0001F7E7 Playwright: Test"
 
 on:
 # disabled for cost reasons (free plan)

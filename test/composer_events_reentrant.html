@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script>
+        const renderOrder = [];
+
+        // Register custom listeners before composite-js initializes its
+        // internal listeners. Verify that reentrant event dispatch preserves
+        // synchronous delivery order. When a callback dispatches additional
+        // events during an ongoing event dispatch, these events are delivered
+        // immediately and interleave with the current event chain.
+        //     For example, A1, A2, A3
+        //     becomes A1, A2, B1, B2, A3
+        //     when A2 dispatches B1 and B2.
+
+        Object.defineProperty(window, "Reactive", {
+            configurable: true,
+            set(value) {
+                delete window.Reactive;
+                window.Reactive = value;
+                Composer.listen(Composer.EVENT_RENDER_START, (event, selector) => {
+                    if (selector instanceof Element && selector.id === "reentrantReactive")
+                        renderOrder.push("early");
+                });
+            }
+        });
+    </script>
+    <script src="composite-js-testing.js"></script>
+    <script>
+        Test.activate();
+        const monitor = {};
+
+        Test.create({test() {
+            const order = [];
+            monitor.reentrantinner = function() {
+                Assert.assertTrue(this === monitor);
+                order.push("monitor");
+            };
+            window.addEventListener("composerReentrantOuter", () => {
+                order.push("composer-window");
+                Test.fire("testReentrantInner", {});
+                monitor.reentrantinner = () => order.push("wrong-monitor");
+            }, {once:true});
+            window.addEventListener("testReentrantInner", () =>
+                order.push("test-window"), {once:true});
+            Test.listen("testReentrantInner", () => order.push("test-listener"));
+            console.listen((level, message) => {
+                if (message === "reentrant-output")
+                    order.push("console-listener");
+            });
+            Composer.listen("composerReentrantOuter", () => {
+                order.push("composer-first");
+                console.forward("log", ["reentrant-output"], () => order.push("console-output"));
+                Composer.fire("composerReentrantInner");
+            });
+            Composer.listen("composerReentrantOuter", () => order.push("composer-last"));
+            Composer.listen("composerReentrantInner", () => order.push("composer-inner"));
+            try {
+                Composer.fire("composerReentrantOuter");
+                Assert.assertEquals(
+                    "composer-window,monitor,test-window,test-listener,composer-first,"
+                        + "console-output,console-listener,composer-inner,composer-last",
+                    order.join(","));
+            } finally {
+                delete monitor.reentrantinner;
+            }
+        }});
+
+        Test.create({test() {
+            [Composer, Test].forEach((api, index) => {
+                const event = index ? "testReentrantSnapshot" : "composerReentrantSnapshot";
+                const order = [];
+                const repeated = (event, depth) => order.push("repeat" + depth);
+                api.listen(event, (event, depth) => {
+                    order.push("first" + depth);
+                    if (depth !== 0)
+                        return;
+                    api.listen(event, (event, depth) => order.push("before" + depth));
+                    api.fire(event, 1);
+                    order.push("returned0");
+                    api.listen(event, (event, depth) => order.push("after" + depth));
+                });
+                api.listen(event, repeated);
+                api.listen(event, repeated);
+                api.fire(event, 0);
+                Assert.assertEquals("first0,first1,repeat1,repeat1,before1,returned0,repeat0,repeat0",
+                    order.join(","));
+                order.length = 0;
+                api.fire(event, 2);
+                Assert.assertEquals("first2,repeat2,repeat2,before2,after2", order.join(","));
+            });
+        }});
+
+        Test.create({test() {
+            const order = [];
+            const repeated = (level, message) => {
+                if (message === "reentrant-console")
+                    order.push("last");
+            };
+            console.listen((level, message, depth) => {
+                if (message !== "reentrant-console")
+                    return;
+                order.push("first" + depth);
+                if (depth !== 0)
+                    return;
+                console.forward("log", [message, 1]);
+                console.listen((level, message) => {
+                    if (message === "reentrant-console")
+                        order.push("late");
+                });
+            });
+            console.listen(repeated);
+            console.listen(repeated);
+            console.forward("log", ["reentrant-console", 0]);
+            Assert.assertEquals("first0,first1,last,last", order.join(","));
+        }});
+
+        Test.create({test() {
+            const order = [];
+            Composer.listen("composerReentrantRecursive", (event, depth) => {
+                order.push("enter" + depth);
+                if (depth > 0)
+                    Composer.fire(event, depth -1);
+                order.push("exit" + depth);
+            });
+            Composer.fire("composerReentrantRecursive", 3);
+            Assert.assertEquals("enter3,enter2,enter1,enter0,exit0,exit1,exit2,exit3", order.join(","));
+        }});
+
+        Test.create({async test() {
+            const order = [];
+            const errors = [];
+            const listener = event => {
+                if (event.message.includes("REENTRANT_CALLBACK")) {
+                    errors.push(event.message);
+                    event.preventDefault();
+                }
+            };
+            window.addEventListener("error", listener);
+            Composer.listen("composerReentrantFailure", () => {
+                Composer.fire("composerReentrantAfterFailure");
+                throw new Error("REENTRANT_CALLBACK");
+            });
+            Composer.listen("composerReentrantFailure", () => order.push("remaining"));
+            Composer.listen("composerReentrantAfterFailure", () => order.push("nested"));
+            console.listen((level, message) => {
+                if (message === "reentrant-console-error")
+                    throw new Error("REENTRANT_CONSOLE");
+            });
+            console.listen((level, message) => {
+                if (message === "reentrant-console-error")
+                    order.push("console-remaining");
+            });
+            try {
+                Composer.fire("composerReentrantFailure");
+                console.forward("error", ["reentrant-console-error"]);
+                Composer.fire("composerReentrantAfterFailure");
+                Assert.assertEquals("nested,remaining,console-remaining,nested", order.join(","));
+                await new Promise(resolve => setTimeout(resolve, 50));
+                Assert.assertEquals(1, errors.length);
+            } finally {
+                window.removeEventListener("error", listener);
+            }
+        }});
+
+        Test.create({async test() {
+            window.ReentrantModel = {value:"first"}.reactive();
+            const element = document.createElement("span");
+            element.id = "reentrantReactive";
+            element.textContent = "{{ReentrantModel.value}}";
+            document.body.appendChild(element);
+            Composer.listen(Composer.EVENT_RENDER_START, (event, selector) => {
+                if (selector === element)
+                    renderOrder.push("late");
+            });
+            Composer.listen("composerReentrantRender", () => {
+                renderOrder.push("request");
+                Composer.render(element);
+                renderOrder.push("returned");
+            });
+            Composer.listen("composerReentrantRender", () => renderOrder.push("remaining"));
+            try {
+                Composer.fire("composerReentrantRender");
+                Assert.assertEquals("request,returned,remaining", renderOrder.join(","));
+                Assert.assertEquals("{{ReentrantModel.value}}", element.textContent);
+                await new Promise(resolve => setTimeout(resolve, 0));
+                Assert.assertEquals("request,returned,remaining,early,late", renderOrder.join(","));
+                Assert.assertEquals("first", element.textContent);
+                ReentrantModel.value = "second";
+                await new Promise(resolve => setTimeout(resolve, 50));
+                Assert.assertEquals("second", element.textContent);
+            } finally {
+                element.remove();
+            }
+        }});
+
+        Test.create({test() {
+            const order = [];
+            Composer.listen("composerReentrantInclude", () => {
+                order.push("request");
+                Composer.include("reentrantModule");
+                order.push(reentrantModule.message);
+                order.push("returned");
+            });
+            Composer.listen("composerReentrantInclude", () => order.push("remaining"));
+            Composer.listen(Composer.EVENT_MODULE_LOAD, (event, context, module) => {
+                if (module === "reentrantModule")
+                    order.push("module");
+            });
+            Composer.fire("composerReentrantInclude");
+            Assert.assertEquals("request,module,available-before-module-code,returned,remaining",
+                order.join(","));
+            Assert.assertEquals("available-before-module-code", reentrantModule.message);
+        }});
+
+        Test.create({test() {
+            window.ReentrantBinding = {field:"first"};
+            const element = document.createElement("div");
+            element.id = "ReentrantBinding";
+            element.setAttribute("composite", "");
+            element.innerHTML = '<input id="field">';
+            document.body.appendChild(element);
+            try {
+                Composer.render(element);
+                const input = element.querySelector("input");
+                Assert.assertEquals("first", input.value);
+                const order = [];
+                Composer.listen(Composer.EVENT_MOUNT_START, (event, selector) => {
+                    if (selector === input)
+                        order.push("mount");
+                });
+                Test.listen("testReentrantMount", () => {
+                    order.push("request");
+                    Composer.mount(input);
+                    order.push("returned");
+                });
+                Test.listen("testReentrantMount", () => order.push("remaining"));
+                Test.fire("testReentrantMount", {});
+                Assert.assertEquals("request,mount,returned,remaining", order.join(","));
+                Assert.assertEquals("first", input.value);
+                order.length = 0;
+                Composer.listen("composerReentrantMount", () => {
+                    order.push("request");
+                    Composer.mount(input);
+                    order.push("returned");
+                });
+                Composer.fire("composerReentrantMount");
+                Assert.assertEquals("request,mount,returned", order.join(","));
+            } finally {
+                element.remove();
+            }
+        }});
+
+        Test.create({async test() {
+            const order = [];
+            const frame = document.createElement("iframe");
+            try {
+                await new Promise((resolve, reject) => {
+                    frame.addEventListener("load", resolve, {once:true});
+                    frame.addEventListener("error", reject, {once:true});
+                    frame.src = "test_timeout_frame.html";
+                    document.body.appendChild(frame);
+                });
+                const child = frame.contentWindow;
+                child.Test.listen("testReentrantFrameOuter", () => order.push("child-outer"));
+                child.Test.listen("testReentrantFrameInner", () => order.push("child-inner"));
+                Test.listen("testReentrantFrameOuter", () => {
+                    order.push("parent-first");
+                    child.Test.fire("testReentrantFrameInner", {});
+                });
+                Test.listen("testReentrantFrameOuter", () => order.push("parent-last"));
+                Test.listen("testReentrantFrameInner", () => order.push("parent-inner"));
+                child.Test.fire("testReentrantFrameOuter", {});
+                Assert.assertEquals(
+                    "child-outer,parent-first,child-inner,parent-inner,parent-last", order.join(","));
+            } finally {
+                frame.remove();
+            }
+        }});
+
+        Test.create({test() {
+            const order = [];
+            const target = new EventTarget();
+            target.addEventListener("probe", event => {
+                order.push("first");
+                event.preventDefault();
+                event.stopImmediatePropagation();
+            });
+            target.addEventListener("probe", () => order.push("second"));
+            Composer.listen("composerReentrantNative", () => {
+                const result = target.dispatchEvent(new Event("probe", {cancelable:true}));
+                order.push(String(result));
+            });
+            Composer.fire("composerReentrantNative");
+            Assert.assertEquals("first,false", order.join(","));
+        }});
+
+        const createOutput = () => {
+            const element = document.createElement("span");
+            element.textContent = "{{'rendered'}}";
+            document.body.appendChild(element);
+            return element;
+        };
+
+        Test.create({async test() {
+            const nested = createOutput();
+            const outer = createOutput();
+            const after = createOutput();
+            const observed = [];
+            Composer.listen("composerBarrierInner", () => Composer.render(nested));
+            Composer.listen("composerBarrierOuter", () => {
+                Composer.fire("composerBarrierInner");
+                observed.push(nested.textContent);
+                Composer.render.lock = false;
+                Composer.render(outer);
+                observed.push(outer.textContent);
+            });
+            try {
+                Assert.assertFalse(Object.prototype.hasOwnProperty.call(Composer.render, "lock"));
+                Composer.fire("composerBarrierOuter");
+                Assert.assertEquals("{{'rendered'}},{{'rendered'}}", observed.join(","));
+                Composer.render(after);
+                Assert.assertEquals("rendered", after.textContent);
+                await new Promise(resolve => setTimeout(resolve, 0));
+                Assert.assertEquals("rendered", nested.textContent);
+                Assert.assertEquals("rendered", outer.textContent);
+            } finally {
+                delete Composer.render.lock;
+                [nested, outer, after].forEach(element => element.remove());
+            }
+        }});
+
+        Test.create({async test() {
+            const original = createOutput();
+            const pending = createOutput();
+            const observed = [];
+            Composer.listen("composerTransactionNested", () => {});
+            Composer.listen(Composer.EVENT_RENDER_START, (event, selector) => {
+                if (selector !== original)
+                    return;
+                Composer.fire("composerTransactionNested");
+                Composer.render(pending);
+                observed.push(pending.textContent);
+            });
+            try {
+                Composer.render(original);
+                Assert.assertEquals("{{'rendered'}}", observed.join(","));
+                Assert.assertEquals("rendered", original.textContent);
+                Assert.assertEquals("{{'rendered'}}", pending.textContent);
+                await new Promise(resolve => setTimeout(resolve, 0));
+                Assert.assertEquals("rendered", pending.textContent);
+                Assert.assertFalse(Object.prototype.hasOwnProperty.call(Composer.render, "lock"));
+            } finally {
+                original.remove();
+                pending.remove();
+            }
+        }});
+
+        Test.create({test() {
+            const fromTest = createOutput();
+            const fromConsole = createOutput();
+            const observed = [];
+            Test.listen("testIndependentRender", () => {
+                Composer.render(fromTest);
+                observed.push(fromTest.textContent);
+            });
+            console.listen((level, message) => {
+                if (message !== "independent-render")
+                    return;
+                Composer.render(fromConsole);
+                observed.push(fromConsole.textContent);
+            });
+            try {
+                Test.fire("testIndependentRender", {});
+                console.forward("log", ["independent-render"]);
+                Assert.assertEquals("rendered,rendered", observed.join(","));
+                Assert.assertUndefined(Composer.dispatch);
+            } finally {
+                fromTest.remove();
+                fromConsole.remove();
+            }
+        }});
+
+        Test.create({async test() {
+            const pending = createOutput();
+            const after = createOutput();
+            const errors = [];
+            const listener = event => {
+                if (event.message.includes("RENDER_BARRIER_FAILURE")) {
+                    errors.push(event.message);
+                    event.preventDefault();
+                }
+            };
+            window.addEventListener("error", listener);
+            Composer.listen("composerBarrierFailure", () => {
+                Composer.render(pending);
+                throw new Error("RENDER_BARRIER_FAILURE");
+            });
+            try {
+                Composer.fire("composerBarrierFailure");
+                Assert.assertEquals("{{'rendered'}}", pending.textContent);
+                Composer.render(after);
+                Assert.assertEquals("rendered", after.textContent);
+                await new Promise(resolve => setTimeout(resolve, 50));
+                Assert.assertEquals("rendered", pending.textContent);
+                Assert.assertEquals(1, errors.length);
+            } finally {
+                window.removeEventListener("error", listener);
+                pending.remove();
+                after.remove();
+            }
+        }});
+
+        Test.create({test() {
+            const element = createOutput();
+            try {
+                Composer.render(element);
+                Composer.mount(element);
+                Assert.assertEquals("rendered", element.textContent);
+                Assert.assertTrue(Boolean(Test.status().task.running));
+                [
+                    [Composer.render, ["queue", "meta", "lock"]],
+                    [Composer.mount, ["queue", "elements", "lock"]],
+                    [Test.start, ["auto"]],
+                    [Test, ["worker"]],
+                    [DataSource, ["cache"]]
+                ].forEach(([target, properties]) =>
+                    properties.forEach(property =>
+                        Assert.assertFalse(Object.prototype.hasOwnProperty.call(target, property))));
+            } finally {
+                element.remove();
+            }
+        }});
+
+        Test.start({auto:true, monitor});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

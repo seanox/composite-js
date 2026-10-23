@@ -162,7 +162,7 @@
                     }
                 }});
                 Test.create({test() {nextRuns++;}});
-            `, 600);
+            `, 500);
             const responses = frameResponses(messages);
             Assert.assertEquals(4, frameFinish(messages).faults);
             Assert.assertEquals(5, responses.length);
@@ -223,7 +223,7 @@
                 Test.create({test() {
                     Assert.assertTrue(resumed);
                 }});
-            `, 400);
+            `, 500);
             const responses = frameResponses(messages);
             Assert.assertEquals(1, frameFinish(messages).faults);
             Assert.assertEquals(2, responses.length);
@@ -278,7 +278,7 @@
                         setTimeout(() => reject("STALE_REJECTION"), 250));
                 }});
                 Test.create({test() {nextRuns++;}});
-            `, 300);
+            `, 500);
             Assert.assertEquals(0, frameFinish(messages).faults);
             Assert.assertEquals(2, frameResponses(messages).length);
             Assert.assertEquals(1, messages.filter(message =>

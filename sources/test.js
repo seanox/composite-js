@@ -120,7 +120,8 @@
             
             /**
              * Internal method to trigger an event. All callback functions for
-             * this event are called. Listener errors are reported asynchronously.
+             * this event are captured and delivered synchronously, including
+             * nested events. Listener errors are reported asynchronously.
              * If the script is in a frame, the parent object is triggered after
              * the current object.
              * @param {string} event  see Test.EVENT_***
@@ -128,40 +129,44 @@
              *     test execution
              */
             fire(event, status) {
-                
-                if (typeof Test.worker === "object")
-                    Test.worker.status = event;
-
-                const monitorEvent = event.replace(/^test([A-Z])/, (match, letter) =>
-                    letter.toLowerCase()).toLowerCase();
-                if (typeof Test.worker === "object"
-                        && typeof Test.worker.monitor === "object"
-                        && typeof Test.worker.monitor[monitorEvent] === "function")
-                    try {Test.worker.monitor[monitorEvent](status);
-                    } catch (error) {
-                        console.error(error);
-                    }
-
                 event = (event || "").trim();
                 if (!event)
                     return;
 
-                const customEvent = new CustomEvent(event);
-                customEvent[event] = status;
-                window.dispatchEvent(customEvent);
+                const worker = _worker;
+                if (worker)
+                    worker.status = event;
 
-                const listeners = _listeners.get(event.toLowerCase());
-                if (Array.isArray(listeners))
-                    listeners.forEach(callback => {
-                        try {callback(event, status);
+                const callbacks = [];
+                const monitorEvent = event.replace(/^test([A-Z])/, (match, letter) =>
+                    letter.toLowerCase()).toLowerCase();
+                const monitor = worker && worker.monitor;
+                const callback = monitor && monitor[monitorEvent];
+                if (typeof callback === "function")
+                    callbacks.push(() => {
+                        try {callback.call(monitor, status);
                         } catch (error) {
-                            Composer.asynchronous(() => {throw error;});
+                            console.error(error);
                         }
                     });
 
-                if (parent && parent !== window)
-                    try {parent.Test.fire(event, status);
+                const customEvent = new CustomEvent(event);
+                customEvent[event] = status;
+                callbacks.push(() => window.dispatchEvent(customEvent));
+
+                const listeners = _listeners.get(event.toLowerCase());
+                if (Array.isArray(listeners))
+                    callbacks.push(...listeners.map(callback =>
+                        () => callback(event, status)));
+
+                const context = parentContext("Test");
+                const forward = context && context.fire;
+                if (typeof forward === "function")
+                    callbacks.push(() => forward.call(context, event, status));
+                for (const callback of callbacks)
+                    try {callback();
                     } catch (error) {
+                        Composer.asynchronous(() => {throw error;});
                     }
             },
             
@@ -242,16 +247,14 @@
              */
             start(meta) {
                 
-                if (Test.worker !== undefined)
+                if (_worker !== undefined)
                     return;
 
                 if (meta && meta.auto
                         && (document.readyState === "loading"
                             || document.readyState === "interactive")) {
-                    if (Test.start.auto === undefined) {
-                        Object.defineProperty(Test.start, "auto", {
-                            value: true
-                        });  
+                    if (!_autostart) {
+                        _autostart = true;
                         window.addEventListener("load", () =>
                             Test.start(meta));
                     }
@@ -261,29 +264,32 @@
                 const numerical = (number, text) =>
                     `${number} ${text}${number !== 1 ? "s" : ""}`;
 
-                Test.worker = {};
+                const worker = {
+                    paused: false,
+                    interrupted: false,
+                    started: false,
+                    output: (meta && meta.output) || console,
+                    queue: {timing:Date.now(), stack:Array.from(_stack), size:_stack.size, lock:false, progress:0, faults:0}
+                };
+                worker.queue.size = worker.queue.stack.length;
+                _worker = worker;
 
-                // Test.worker.output
-                // Output to be used for all messages and errors
-                Test.worker.output = (meta && meta.output) || console;
-                
-                // Test.worker.monitor
                 // Monitoring of test processing
-                Test.worker.monitor = (meta && meta.monitor) || {
+                worker.monitor = (meta && meta.monitor) || {
                     start(status) {
-                        Test.worker.output.log(`${Test.TIMESTAMP} Test is started`
+                        worker.output.log(`${Test.TIMESTAMP} Test is started`
                                 + `, ${numerical(status.queue.size, "task")} in the queue`);
                     },
                     suspend(status) {
-                        Test.worker.output.log(`${Test.TIMESTAMP} Test is suspended`
+                        worker.output.log(`${Test.TIMESTAMP} Test is suspended`
                                 + `, ${numerical(status.queue.length, "task")} still outstanding`);
                     },
                     resume(status) {
-                        Test.worker.output.log(`${Test.TIMESTAMP} Test is continued`
+                        worker.output.log(`${Test.TIMESTAMP} Test is continued`
                                 + `, ${numerical(status.queue.size, "task")} in the queue`);
                     },
                     interrupt(status) {
-                        Test.worker.output.log(`${Test.TIMESTAMP} Test is interrupted`
+                        worker.output.log(`${Test.TIMESTAMP} Test is interrupted`
                                 + `\n\t${numerical(status.queue.size -status.queue.progress, "task")} still outstanding`
                                 + `\n\t${numerical(status.queue.faults, "fault")} were detected`
                                 + `\n\ttotal time ${Date.now() -status.queue.timing} ms`);
@@ -293,126 +299,121 @@
                     response(status) {
                         const timing = Date.now() -status.task.timing;
                         if (status.task.error)
-                            Test.worker.output.error(`${Test.TIMESTAMP} Test task`
+                            worker.output.error(`${Test.TIMESTAMP} Test task`
                                 + ` ${status.task.title}`
-                                + ` ${String(status.task.error.message).trim || "unknow error"}`);
-                        else Test.worker.output.log(`${Test.TIMESTAMP} Test task ${status.task.title} was successful (${timing} ms)`);
+                                + ` ${String(status.task.error.message || "unknown error").trim()}`);
+                        else worker.output.log(`${Test.TIMESTAMP} Test task ${status.task.title} was successful (${timing} ms)`);
                     },
                     finish(status) {
-                        Test.worker.output.log(`${Test.TIMESTAMP} Test is finished`
+                        worker.output.log(`${Test.TIMESTAMP} Test is finished`
                                 + `\n\t${numerical(status.queue.size, "task")} were performed`
                                 + `\n\t${numerical(status.queue.faults, "fault")} were detected`
                                 + `\n\ttotal time ${Date.now() -status.queue.timing} ms`);
-                    }            
+                    }
                 };
 
-                // Test.worker.queue
-                // Queue of currently running test tasks
-                Test.worker.queue = Test.worker.queue || {timing:false, stack:[], size:0, lock:false, progress:0, faults:0};
-                if (Test.worker.queue.stack.length <= 0) {
-                    Test.worker.queue.stack = Array.from(_stack);
-                    Test.worker.queue.size = Test.worker.queue.stack.length;
-                    Test.worker.queue.timing = Date.now();
-                }
-                
-                // Test.worker.timeout
-                // Timer for controlling test tasks with timeout
-                Test.worker.timeout = window.setInterval(() => {
-                
-                    if (Test.worker.status === EVENT_SUSPEND)
-                        return;
-                    
-                    if (Test.worker.task === undefined
-                            || !Test.worker.task.running
-                            || !Test.worker.queue.lock)
+                const isCurrent = () =>
+                    _worker === worker && !worker.interrupted;
+
+                const scheduleTask = task => {
+                    if (!isCurrent()
+                            || worker.paused
+                            || task.started
+                            || task.scheduled)
                         return;
 
-                    const task = Test.worker.task;
-                    if (!task.timeout
+                    task.scheduled = true;
+                    Composer.asynchronous(() => {
+                        task.scheduled = false;
+                        if (!isCurrent()
+                                || worker.paused
+                                || task.started)
+                            return;
+
+                        task.started = true;
+                        task.timing = Date.now();
+                        task.timeout = (Number(task.meta.timeout) || 0) > 0
+                                ? task.timing +Number(task.meta.timeout)
+                                : false;
+
+                        let result;
+                        try {result = task.meta.test();
+                        } catch (error) {
+                            completeTask(worker, task, true, error);
+                            return;
+                        }
+                        Promise.resolve(result).then(
+                            () => completeTask(worker, task),
+                            error => completeTask(worker, task, true, error));
+                    });
+                };
+
+                worker.timeout = window.setInterval(() => {
+                    if (!isCurrent())
+                        return;
+
+                    const task = worker.task;
+                    if (!task
+                            || !task.started
+                            || task.completed
+                            || !task.timeout
                             || task.timeout > Date.now())
                         return;
-                    
-                    task.duration = Date.now() -task.timing;
-                    task.error = new Error(`Timeout occurred, expected ${task.timeout} ms but was ${task.duration} ms`);
-                    Test.fire(EVENT_RESPONSE, Test.status());
-                    Test.worker.queue.faults++;
-                    Test.worker.queue.lock = false;
+
+                    const duration = Date.now() -task.timing;
+                    completeTask(worker, task, true,
+                        new Error(`Timeout occurred, expected ${task.meta.timeout} ms but was ${duration} ms`), true);
                 }, 25);
-                
-                // Test.worker.interval
-                // Timer for processing the queue
-                Test.worker.interval = window.setInterval(() => {
 
-                    if (Test.worker.status === EVENT_SUSPEND)
+                worker.interval = window.setInterval(() => {
+                    if (!isCurrent()
+                            || worker.paused)
                         return;
-                    
-                    if (!Test.worker.queue.lock
-                            && Test.worker.queue.progress <= 0)
-                        Test.fire(EVENT_START, Test.status());
-                    
-                    if (Test.worker.queue.lock)
-                        return;
-                    
-                    if (Test.worker.queue.stack.length > 0) {
-                        Test.worker.queue.lock = true;
-                        Test.worker.queue.progress++;
-                        const meta = Test.worker.queue.stack.shift();
-                        let timeout = false;
-                        if ((meta.timeout || 0) > 0)
-                            timeout = Date.now() +meta.timeout;
 
-                        Test.worker.task = {title:null, meta, running:true, timing:Date.now(), timeout, duration:false, error:null};
-                        Test.worker.task.title = "#" + meta.serial;
-                        if (typeof meta.name === "string"
-                                && meta.name.trim().length > 0)
-                            Test.worker.task.title += " " + meta.name.replace(/[\x00-\x20]+/g, " ").trim();
-                        Test.fire(EVENT_PERFORM, Test.status());
-                        Composer.asynchronous(() => {
-                            const task = Test.worker.task;
-                            try {task.meta.test();
-                            } catch (error) {
-                                task.error = error;
-                                if (!(task.error instanceof Error)
-                                        || !task.error.message
-                                        || !task.error.message.trim())
-                                    task.error.message = "failed";
-                            } finally {
-                                if (task.meta.expected) {
-                                    if (task.error) {
-                                        if (typeof task.meta.expected === "function"
-                                                && task.error instanceof(task.meta.expected))
-                                            task.error = null;
-                                        if (typeof task.meta.expected === "object"
-                                                && task.meta.expected instanceof(RegExp)
-                                                && String(task.error).match(task.meta.expected))
-                                            task.error = null;
-                                    } else task.error = Error("Assert error expected failed");
-                                }
-                                task.running = false;
-                                task.duration = Date.now() -task.timing;
-                                if (task.timeout
-                                        && task.timeout < Date.now()
-                                        && !task.error) {
-                                    task.error = new Error(`Timeout occurred, expected ${task.meta.timeout} ms but was ${task.duration} ms`);
-                                    Test.fire(EVENT_RESPONSE, Test.status());
-                                    Test.worker.queue.faults++;
-                                }
-                                if (!(task.error instanceof Error)
-                                        || !String(task.error.message).match(/^Timeout occurred/)) {
-                                    if (task.error instanceof Error)
-                                        Test.worker.queue.faults++;
-                                    Test.fire(EVENT_RESPONSE, Test.status());
-                                }
-                                Test.worker.queue.lock = false;
-                            }
-                        });
+                    if (!worker.started) {
+                        worker.started = true;
+                        Test.fire(EVENT_START, createStatus(worker));
+                        if (!isCurrent()
+                                || worker.paused)
+                            return;
+                    }
+
+                    if (worker.queue.lock) {
+                        if (worker.task)
+                            scheduleTask(worker.task);
                         return;
                     }
-                    
-                    window.clearInterval(Test.worker.interval);
-                    window.clearInterval(Test.worker.timeout);
-                    Test.fire(EVENT_FINISH, Test.status());
-                    delete Test.worker;
+
+                    if (worker.queue.stack.length > 0) {
+                        worker.queue.lock = true;
+                        worker.queue.progress++;
+                        const taskMeta = worker.queue.stack.shift();
+                        worker.task = {
+                            title: "#" +taskMeta.serial,
+                            meta: taskMeta,
+                            running: true,
+                            timing: Date.now(),
+                            timeout: false,
+                            duration: false,
+                            error: null,
+                            started: false,
+                            scheduled: false,
+                            completed: false
+                        };
+                        if (typeof taskMeta.name === "string"
+                                && taskMeta.name.trim().length > 0)
+                            worker.task.title += " " +taskMeta.name.replace(/[\x00-\x20]+/g, " ").trim();
+                        Test.fire(EVENT_PERFORM, createStatus(worker));
+                        scheduleTask(worker.task);
+                        return;
+                    }
+
+                    window.clearInterval(worker.interval);
+                    window.clearInterval(worker.timeout);
+                    worker.finished = true;
+                    Test.fire(EVENT_FINISH, createStatus(worker));
+                    if (_worker === worker)
+                        _worker = undefined;
                 }, 25);
             },
 
@@ -423,9 +424,13 @@
              *     - No worker is present or cannot be suspended
              */
             suspend() {
-                if (Test.worker === undefined)
+                const worker = _worker;
+                if (worker === undefined
+                        || worker.interrupted
+                        || worker.paused)
                     throw new Error("Suspend is not available"); 
-                Test.fire(EVENT_SUSPEND, Test.status());
+                worker.paused = true;
+                Test.fire(EVENT_SUSPEND, createStatus(worker));
             },
             
             /** 
@@ -434,10 +439,13 @@
              *     - No worker is present or cannot be resumed
              */
             resume() {
-                if (Test.worker === undefined
-                        || Test.worker.status !== EVENT_SUSPEND)
+                const worker = _worker;
+                if (worker === undefined
+                        || worker.interrupted
+                        || !worker.paused)
                     throw new Error("Resume is not available"); 
-                Test.fire(EVENT_RESUME, Test.status());
+                worker.paused = false;
+                Test.fire(EVENT_RESUME, createStatus(worker));
             },
             
             /**
@@ -447,12 +455,21 @@
              *     - No worker is present or cannot be interrupted
              */
             interrupt() {
-                if (Test.worker === undefined)
+                const worker = _worker;
+                if (worker === undefined
+                        || worker.interrupted)
                     throw new Error("Interrupt is not available"); 
-                window.clearInterval(Test.worker.interval);
-                window.clearInterval(Test.worker.timeout);
-                Test.fire(EVENT_INTERRUPT, Test.status());
-                delete Test.worker;
+                worker.interrupted = true;
+                window.clearInterval(worker.interval);
+                window.clearInterval(worker.timeout);
+                if (worker.task) {
+                    worker.task.running = false;
+                    worker.task.scheduled = false;
+                }
+                worker.queue.lock = false;
+                Test.fire(EVENT_INTERRUPT, createStatus(worker));
+                if (_worker === worker)
+                    _worker = undefined;
             },
 
             /**
@@ -488,82 +505,143 @@
              * @returns {object} an object with status information, otherwise false
              */
             status() {
-
-                const status = {};
-                if (typeof Test.worker === "object"
-                        && typeof Test.worker.task === "object") {
-                    status.task = {};
-                    Object.defineProperty(status.task, "title", {
-                        value: Test.worker.task.title,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.task, "meta", {
-                        value: Test.worker.task.meta,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.task, "running", {
-                        value: Test.worker.task.running,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.task, "timing", {
-                        value: Test.worker.task.timing,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.task, "timeout", {
-                        value: Test.worker.task.timeout,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.task, "duration", {
-                        value: Test.worker.task.duration,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.task, "error", {
-                        value: Test.worker.task.error,
-                        enumerable: true
-                    });
-                }
-                
-                if (typeof Test.worker === "object"
-                        && typeof Test.worker.queue === "object") {
-                    status.queue = {};
-                    Object.defineProperty(status.queue, "timing", {
-                        value: Test.worker.queue.timing,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.queue, "size", {
-                        value: Test.worker.queue.size,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.queue, "length", {
-                        value: Test.worker.queue.stack.length,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.queue, "progress", {
-                        value: Test.worker.queue.progress,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.queue, "lock", {
-                        value: Test.worker.queue.lock,
-                        enumerable: true
-                    });
-                    Object.defineProperty(status.queue, "faults", {
-                        value: Test.worker.queue.faults,
-                        enumerable: true
-                    });
-                }
-                
-                if (status.task === undefined
-                        && status.queue === undefined)
-                    return false;
-                return status;
-            }    
+                return createStatus(_worker);
+            }
         };
+
+        const parentContext = name => {
+            if (!parent || parent === window)
+                return;
+            try {return parent[name];
+            } catch (error) {
+                if (error.name !== "SecurityError")
+                    throw error;
+            }
+        };
+
+        const isCurrentWorker = worker =>
+            _worker === worker && !worker.interrupted;
+
+        const createStatus = worker => {
+            const status = {};
+            if (worker && typeof worker.task === "object") {
+                status.task = {};
+                ["title", "meta", "running", "timing", "timeout", "duration", "error"]
+                    .forEach(name => Object.defineProperty(status.task, name, {
+                        value: worker.task[name],
+                        enumerable: true
+                    }));
+            }
+            if (worker && typeof worker.queue === "object") {
+                status.queue = {};
+                [
+                    ["timing", worker.queue.timing],
+                    ["size", worker.queue.size],
+                    ["length", worker.queue.stack.length],
+                    ["progress", worker.queue.progress],
+                    ["lock", worker.queue.lock],
+                    ["faults", worker.queue.faults]
+                ].forEach(([name, value]) => Object.defineProperty(status.queue, name, {
+                    value,
+                    enumerable: true
+                }));
+            }
+            if (status.task === undefined
+                    && status.queue === undefined)
+                return false;
+            return status;
+        };
+
+        const errorText = value => {
+            try {return String(value);
+            } catch (error) {
+                return "Unprintable thrown value";
+            }
+        };
+
+        const normalizeError = value => {
+            try {
+                if (value instanceof Error) {
+                    if (String(value.message || "").trim())
+                        return value;
+                }
+            } catch (error) {
+            }
+
+            let message;
+            if (value != null
+                    && (typeof value === "object" || typeof value === "function"))
+                try {
+                    if (value.message != null)
+                        message = String(value.message).trim();
+                } catch (error) {
+                }
+            if (!message) {
+                message = errorText(value).trim();
+                if (!message)
+                    message = "failed";
+            }
+            return new Error(message);
+        };
+
+        const matchesExpected = (expected, value) => {
+            if (typeof expected === "function")
+                try {return value instanceof expected;
+                } catch (error) {
+                    return false;
+                }
+            try {
+                if (expected instanceof RegExp)
+                    return errorText(value).match(expected) !== null;
+            } catch (error) {
+                return false;
+            }
+            return false;
+        };
+
+        const completeTask = (worker, task, thrown = false, value = undefined, timedOut = false) => {
+            if (!isCurrentWorker(worker)
+                    || worker.task !== task
+                    || task.completed)
+                return;
+
+            task.completed = true;
+            task.running = false;
+            task.duration = Date.now() -task.timing;
+            if (timedOut)
+                task.error = normalizeError(value);
+            else if (thrown) {
+                if (!task.meta.expected
+                        || !matchesExpected(task.meta.expected, value))
+                    task.error = normalizeError(value);
+            } else if (task.meta.expected)
+                task.error = new Error("Assert error expected failed");
+
+            if (!task.error
+                    && task.timeout
+                    && task.timeout < Date.now())
+                task.error = taskTimeoutError(task);
+
+            if (task.error)
+                worker.queue.faults++;
+            worker.queue.lock = false;
+            Test.fire(EVENT_RESPONSE, createStatus(worker));
+        };
+
+        const taskTimeoutError = task =>
+            new Error(`Timeout occurred, expected ${task.meta.timeout} ms but was ${task.duration} ms`);
 
         /** Backlog of created/registered test tasks */
         const _stack = new Set();
 
         /** Map with events and their registered listeners */
         const _listeners = new Map();
+
+        /** Currently running worker instance */
+        let _worker;
+
+        /** Flag for automatic launch when the page loads */
+        let _autostart = false;
 
         (() => {
 
@@ -607,8 +685,9 @@
              * General method for redirecting console levels. If the script is
              * in a frame, at the parent object it will also try to trigger this
              * method. The parent object is always triggered after the current
-             * object. If an error occurs when calling the current object, the
-             * parent object is not triggered.
+             * object. Captured callbacks are delivered synchronously, including
+             * nested output. Listener errors are logged directly to the original
+             * console to avoid recursive error notifications.
              * @param {string} level
              * @param {Array} variants
              * @param {Object} [output]
@@ -621,17 +700,21 @@
                         && typeof output !== "function")
                     throw new TypeError("Invalid data type");
 
-                _output[level] += Array.from(variants).join(", ");
+                variants = Array.from(variants);
+                _output[level] += variants.join(", ");
+                const callbacks = Array.from(_listeners, callback =>
+                    () => callback(level, ...variants));
                 if (output)
-                    output(...variants);
-                _listeners.forEach((callback) =>
-                    callback(...([level, ...variants])));
-                if (!parent
-                        || parent === window
-                        || !parent.console
-                        || typeof parent.console.forward !== "function")
-                    return;
-                parent.console.forward(...(Array.from(arguments).slice(0, 2)));
+                    callbacks.unshift(() => output(...variants));
+                const context = parentContext("console");
+                const forward = context && context.forward;
+                if (typeof forward === "function")
+                    callbacks.push(() => forward.call(context, level, variants));
+                for (const callback of callbacks)
+                    try {callback();
+                    } catch (error) {
+                        Composer.asynchronous(() => _error(error));
+                    }
             };
 
             /** Redirect for the level: LOG */

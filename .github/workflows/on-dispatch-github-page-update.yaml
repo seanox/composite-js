@@ -1,4 +1,4 @@
-name: "🟨 🟩 GitHub Page: Build and Deploy"
+name: "🟨 GitHub Page: Build and Deploy"
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   github-page:
-    uses: seanox/seanox-automation/workflows/github-page-update.yaml@1.x
+    uses: seanox/seanox-automation/.github/workflows/github-page-update.yaml@1.x
     with:
       includes: |
         manuals

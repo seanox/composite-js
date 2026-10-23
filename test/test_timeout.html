@@ -289,6 +289,58 @@
                     message.type === "error" || message.type === "unhandled"));
         }});
 
+        Test.create({timeout:5000, async test() {
+            for (const phase of ["monitor", "window", "listener"]) {
+                const messages = await runIsolated(`
+                    const order = [];
+                    let restarted = false;
+                    const replacement = {
+                        perform() {order.push("new-monitor");}
+                    };
+                    const restart = () => {
+                        if (restarted)
+                            return;
+                        restarted = true;
+                        Test.interrupt();
+                        Test.start({monitor:replacement});
+                    };
+                    window.addEventListener(Test.EVENT_PERFORM, () => {
+                        order.push("window");
+                        if ("${phase}" === "window")
+                            restart();
+                    });
+                    Test.listen(Test.EVENT_PERFORM, () => {
+                        order.push("first");
+                        if ("${phase}" === "listener")
+                            restart();
+                    });
+                    Test.listen(Test.EVENT_PERFORM, () => order.push("last"));
+                    Test.listen(Test.EVENT_INTERRUPT, () => order.push("interrupt-listener"));
+                    Test.listen(Test.EVENT_FINISH, () =>
+                        parent.postMessage({type:"order", order}, "*"));
+                    Test.create({test() {order.push("task");}});
+                    Test.start({monitor:{
+                        perform() {
+                            order.push("old-monitor");
+                            if ("${phase}" === "monitor")
+                                restart();
+                        },
+                        interrupt() {order.push("old-interrupt-monitor");}
+                    }});
+                `, 50);
+                Assert.assertEquals(0, frameFinish(messages).faults);
+                const expected = ["old-monitor", "window", "first", "last"];
+                expected.splice(["monitor", "window", "listener"].indexOf(phase) +1, 0,
+                    "old-interrupt-monitor", "interrupt-listener");
+                expected.push("new-monitor", "window", "first", "last", "task");
+                Assert.assertEquals(expected.join(","),
+                    messages.find(message => message.type === "order").order.join(","));
+                Assert.assertEquals(1, frameResponses(messages).length);
+                Assert.assertFalse(messages.some(message =>
+                        message.type === "error" || message.type === "unhandled"));
+            }
+        }});
+
         Test.start({auto:true});
     </script>
   <head>

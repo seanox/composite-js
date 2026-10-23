@@ -49,11 +49,13 @@
     const LOCATOR_SCHEMA_XSLT = Locator.SCHEMA_XSLT;
     const LOCATOR_SCHEMA_RAW = Locator.SCHEMA_RAW;
 
+    let _locales_selection = null;
+
     compliant("DataSource");
     compliant(null, window.DataSource = {
 
         /** The currently used language. */
-        get locale() {return DataSource.locales ? DataSource.locales.selection : null;},
+        get locale() {return DataSource.locales ? _locales_selection : null;},
 
         /**
          * Changes the localization of the DataSource.
@@ -78,7 +80,7 @@
                     || !DataSource.locales.includes(locale))
                 throw new Error("Locale not available");
 
-            DataSource.locales.selection = locale;
+            _locales_selection = locale;
         },
         
         /**
@@ -381,9 +383,6 @@
 
     // XML/XSLT data cache
     const _cache = {};
-    Object.defineProperty(DataSource, "cache", {
-        value: {}
-    });
 
     // DataSource.locales
     // List of available locales (as standard marked are at the beginning)
@@ -441,5 +440,5 @@
     locales = locales.filter((locale) =>
         DataSource.locales.includes(locale));
     
-    DataSource.locales.selection = locales.length ? locales[0] : DataSource.locales[0];
+    _locales_selection = locales.length ? locales[0] : DataSource.locales[0];
 })();

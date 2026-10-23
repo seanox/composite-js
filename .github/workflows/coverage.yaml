@@ -1,4 +1,4 @@
-name: "Playwright: Coverage"
+name: "&#11036; Playwright: Coverage"
 
 on:
   workflow_call:

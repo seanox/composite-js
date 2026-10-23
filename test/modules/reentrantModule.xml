@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<locales>
+  <xx>
+    <label key="reentrant.module" value="available-before-module-code"/>
+  </xx>
+</locales>

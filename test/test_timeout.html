@@ -122,6 +122,30 @@
 
         Test.create({timeout:5000, async test() {
             const messages = await runIsolated(`
+                Test.create({timeout:1, test() {
+                    const deadline = Date.now() +10;
+                    while (Date.now() < deadline) {
+                    }
+                }});
+                Test.create({timeout:50, test() {
+                    return new Promise(resolve => setTimeout(resolve, 200));
+                }});
+                Test.create({test() {}});
+            `, 300);
+            const responses = frameResponses(messages);
+            Assert.assertEquals(2, frameFinish(messages).faults);
+            Assert.assertEquals(3, responses.length);
+            Assert.assertSame("1|2|2",
+                responses.map(response => response.faults).join("|"));
+            Assert.assertTrue(responses.slice(0, 2)
+                .every(response => response.error.startsWith("Timeout occurred")));
+            Assert.assertNull(responses[2].error);
+            Assert.assertFalse(messages.some(message =>
+                    message.type === "error" || message.type === "unhandled"));
+        }});
+
+        Test.create({timeout:5000, async test() {
+            const messages = await runIsolated(`
                 Test.create({expected:TypeError, test() {
                     return Promise.reject(new TypeError("EXPECTED_TYPE"));
                 }});

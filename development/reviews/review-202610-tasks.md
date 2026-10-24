@@ -1993,10 +1993,10 @@ einer eindeutig beschriebenen Form nutzbar sind.
 
 **Backslashes vor Ressourcenaufloesung normalisieren und Kontextgrenze pruefen**
 
-**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R31](#r31), [R35](#r35)
-**Fundstellen:** `sources\locator.js:32, 43-52`;
-`sources\datasource.js:245-256`
+**Fundstellen:** `sources\locator.js:34-53, 115`;
+`sources\datasource.js:247-275`
 
 **Konkreter Loesungsansatz**
 
@@ -2035,9 +2035,10 @@ Es geht um den Ressourcenvertrag, nicht um eine Sandbox fuer Anwendungsscripts.
 
 **Regression und Abnahme**
 
-- [ ] Unter `/app/index.html` loest `xml:/..%5Coutside.xml` keinen Request nach `/outside.xml` aus.
-- [ ] Literale Backslashes, `%5C`, mehrfach kodierte Varianten, gemischte Separatoren und Punktsegmente sind abgedeckt.
-- [ ] Gueltige Ressourcen innerhalb von `/app`, Kontext `/` und aehnliche Praefixe wie `/app2` werden korrekt unterschieden.
+- [x] Unter `/app/index.html` loest `xml:/..%5Coutside.xml` keinen Request nach `/outside.xml` aus.
+- [x] Literale Backslashes, `%5C`, mehrfach kodierte Varianten, gemischte Separatoren und Punktsegmente sind abgedeckt.
+- [x] Gueltige Ressourcen innerhalb von `/app`, Kontext `/` und aehnliche Praefixe wie `/app2` werden korrekt unterschieden.
+- [x] Fremde Origins und kanonisch ausserhalb liegende Pfade werden vor dem Request mit Locator-Referenz abgelehnt.
 
 **Testansatz:** `test\locator_canonical_path.html`,
 `test\datasource_locator.html`.
@@ -2049,9 +2050,10 @@ Kontextpfad-Normalisierung einhaelt.
 
 **Prozentliterale bei Locator-Dekodierung erhalten**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R34](#r34)
-**Fundstellen:** `sources\locator.js:34-40, 118-119`
+**Fundstellen:** `sources\locator.js:34-53, 119-123`;
+`sources\datasource.js:247-251`
 
 **Konkreter Loesungsansatz**
 
@@ -2101,9 +2103,10 @@ Locator kann dadurch mit `URIError` scheitern.
 
 **Regression und Abnahme**
 
-- [ ] `xml:/item?contains(., "100%25")` liefert das XPath `contains(., "100%")` ohne `URIError`.
-- [ ] Kodierte Prozentliterale in Dateinamen, Unicode und kodierte Query-Zeichen bleiben verwendbar.
-- [ ] Bestehende Mehrfachkodierungsfaelle fuer Separatoren bleiben normalisiert; tatsaechlich fehlerhafte Escapes bleiben Fehler.
+- [x] `xml:/item?contains(., "100%25")` liefert das XPath `contains(., "100%")` ohne `URIError`.
+- [x] Kodierte Prozentliterale in Dateinamen, Unicode und kodierte Query-Zeichen bleiben verwendbar.
+- [x] Bestehende Mehrfachkodierungsfaelle fuer Separatoren bleiben normalisiert; tatsaechlich fehlerhafte Escapes bleiben Fehler.
+- [x] Erneutes Parsen von `uri` behaelt Ressourcenpfad und XPath; der DataSource-Abruf wertet die Query korrekt aus.
 
 **Testansatz:** `test\locator_canonical_path.html`,
 `test\datasource_locator.html`.
@@ -2918,7 +2921,7 @@ und nachvollziehbar sind.
 
 **Optionale Parent-Console-Weiterleitung gegen Origin-Sperren absichern**
 
-**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** erledigt
 **Paket:** `sprache_api` | **Abstimmung:** [R47](#r47)
 **Fundstellen:** `sources\test.js:629-634`
 
@@ -2956,9 +2959,9 @@ dadurch keinen gewoehnlichen lokalen Console-Aufruf unterbrechen.
 
 **Regression und Abnahme**
 
-- [ ] Eine Seite von Origin A bettet die Runtime von Origin B ein; nach `Test.activate()` wirft `console.log("child output")` im Frame nicht.
-- [ ] Lokale Ausgabe, Buffer und Listener bleiben im Frame funktionsfaehig.
-- [ ] Same-Origin-Weiterleitung funktioniert weiter; Top-Level-Aufrufe erzeugen keine Weiterleitungsrekursion.
+- [x] Eine Seite von Origin A bettet die Runtime von Origin B ein; nach `Test.activate()` wirft `console.log("child output")` im Frame nicht.
+- [x] Lokale Ausgabe, Buffer und Listener bleiben im Frame funktionsfaehig.
+- [x] Same-Origin-Weiterleitung funktioniert weiter; Top-Level-Aufrufe erzeugen keine Weiterleitungsrekursion.
 
 **Testansatz:** `test\test_events.html`; fuer den Cross-Origin-Fall einen
 kontrollierten Aufbau mit zwei lokalen Origins und unabhaengiger Beobachtung nutzen.

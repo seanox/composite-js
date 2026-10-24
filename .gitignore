@@ -12,9 +12,17 @@
 
 # Build specific
 /release/*.zip
+/release/*.list
+/release/*.map
+/release/*coverage*.js
 /release/*source*.js
 /release/*debug*.js
+
+# Test specific
+/test/composite-js*.coverage
 /test/composite-js*.js
+/test/composite-js*.lcov
+/test/composite-js*.md
 
 # Runtime specific
 **/temp

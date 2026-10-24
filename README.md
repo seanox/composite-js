@@ -77,6 +77,7 @@ rendering, component lifecycle or application state.
   for automated execution and simulated user input.
   
 # Manuals
+- [Motivation](https://seanox.github.io/composite-js/manuals/motivation.html)
 - [Getting Started](https://seanox.github.io/composite-js/manuals/getting-started.html)
 - [Tutorials](https://seanox.github.io/composite-js/tutorials/)
 - [Manuals](https://seanox.github.io/composite-js/manuals/)

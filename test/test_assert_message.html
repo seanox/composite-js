@@ -22,12 +22,46 @@
             }
         }
 
+        const monitorErrors = [];
+        const originalConsoleError = console.error;
+        console.error = function(...variants) {
+            monitorErrors.push(variants.map(value => String(value)).join(" "));
+            return originalConsoleError.apply(console, variants);
+        };
+        Test.listen(Test.EVENT_FINISH, () => {
+            console.error = originalConsoleError;
+        });
+        const captureMonitorError = message => {
+            const index = monitorErrors.length;
+            Test.fire(Test.EVENT_RESPONSE, {
+                task: {
+                    title: "#monitor",
+                    timing: Date.now(),
+                    error: {message}
+                }
+            });
+            return monitorErrors[index];
+        };
+
         Test.create({test() {
             assertMessageValue(10);
             assertMessageValue({});
             assertMessageValue(null);
             assertMessageValue(undefined);
             assertMessageValue(true);
+        }});
+
+        Test.create({test() {
+            const direct = captureMonitorError("BOOM");
+            Assert.assertTrue(direct.endsWith(" BOOM"));
+            Assert.assertFalse(direct.includes("function trim()"));
+
+            const padded = captureMonitorError("  PADDED  ");
+            Assert.assertTrue(padded.endsWith(" PADDED"));
+
+            const blank = captureMonitorError("   ");
+            Assert.assertTrue(blank.endsWith(" unknown error"));
+            Assert.assertEquals(3, monitorErrors.length);
         }});
 
         Test.start({auto:true});

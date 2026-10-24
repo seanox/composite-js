@@ -301,7 +301,7 @@
                         if (status.task.error)
                             worker.output.error(`${Test.TIMESTAMP} Test task`
                                 + ` ${status.task.title}`
-                                + ` ${String(status.task.error.message || "unknown error").trim()}`);
+                                + ` ${String(status.task.error.message).trim() || "unknown error"}`);
                         else worker.output.log(`${Test.TIMESTAMP} Test task ${status.task.title} was successful (${timing} ms)`);
                     },
                     finish(status) {

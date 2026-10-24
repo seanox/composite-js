@@ -31,6 +31,7 @@ BF: Test: Corrections and optimization
     - Simulated input events now use bubbles
     - Internal intervals are now cleared correctly
     - Correction of error handling when throw is used with non-Error objects
+    - Optimization of the error output
 CR: Build: API access to the version
     The version can be queried via the property compliant.version.
 CR: Build: Update of eslint to major 10.x

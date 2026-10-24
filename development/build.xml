@@ -342,6 +342,13 @@
 
     <copy file="${release.file.testing}" todir="${workspace.test}" overwrite="true"/>
     <copy file="${release.file.debug.testing}" todir="${workspace.test}" overwrite="true"/>
+
+    <basename file="${release.file}" property="release.file.name"/>
+    <length file="${release.file}" property="release.file.size"/>
+    <echo message="${release.file.name}: ${release.file.size} bytes"/>
+    <basename file="${release.file.testing}" property="release.file.testing.name"/>
+    <length file="${release.file.testing}" property="release.file.testing.size"/>
+    <echo message="${release.file.testing.name}: ${release.file.testing.size} bytes"/>
   </target>
 
   <target name="release" depends="changes,compose">

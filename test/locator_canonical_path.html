@@ -52,8 +52,57 @@
         }});
 
         Test.create({test() {
-            Assert.assertEquals("raw:/foo bar", Locator.parse("raw://foo%20bar").uri);
-            Assert.assertEquals("raw:/foo bar", Locator.parse("raw://foo%2520bar").uri);
+            Assert.assertEquals("raw:/foo%20bar", Locator.parse("raw://foo%20bar").uri);
+            Assert.assertEquals("raw:/foo%20bar", Locator.parse("raw://foo%2520bar").uri);
+        }});
+
+        Test.create({test() {
+            const locator = Locator.parse("raw:/caf%C3%A9%25name");
+            Assert.assertEquals("/café%name", locator.path);
+            Assert.assertEquals("raw:/caf%C3%A9%25name", locator.uri);
+            const repeated = Locator.parse(locator.uri);
+            Assert.assertEquals(locator.path, repeated.path);
+            Assert.assertEquals(locator.uri, repeated.uri);
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("/bar",
+                Locator.parse("raw:/foo%255c..%255cbar").path);
+            Assert.assertEquals("/bar",
+                Locator.parse("raw:/foo\\..\\bar").path);
+            Assert.assertEquals("/outside.xml",
+                Locator.parse("xml:/..%5Coutside.xml").path);
+            Assert.assertEquals("/bar",
+                Locator.parse("raw:/foo%5c..%2Fbar").path);
+            Assert.assertEquals("/bar",
+                Locator.parse("raw:/foo%255c..%2Fbar").path);
+            Assert.assertEquals("/bar",
+                Locator.parse("raw:/foo\\..%2Fbar").path);
+        }});
+
+        Test.create({expected:/URIError/, test() {
+            Locator.parse("raw:/invalid%");
+        }});
+
+        Test.create({expected:/URIError/, test() {
+            Locator.parse("xml:/item?invalid%");
+        }});
+
+        Test.create({test() {
+            const locator = Locator.parse('xml:/item?contains(., "100%25")');
+            Assert.assertEquals('contains(., "100%")', locator.query);
+            Assert.assertEquals(
+                'xml:/item?contains(.%2C%20%22100%25%22)', locator.uri);
+            const repeated = Locator.parse(locator.uri);
+            Assert.assertEquals(locator.query, repeated.query);
+            Assert.assertEquals(locator.uri, repeated.uri);
+        }});
+
+        Test.create({test() {
+            const locator = Locator.parse("xml:/item?");
+            Assert.assertEquals("", locator.query);
+            Assert.assertEquals("xml:/item?", locator.uri);
+            Assert.assertEquals("", Locator.parse(locator.uri).query);
         }});
 
         Test.start({auto:true});

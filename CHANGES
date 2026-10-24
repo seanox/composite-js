@@ -9,7 +9,9 @@ BF: Composer: Corrections and optimization
     - Optimizing the analysis of nested selectors
     - Correction of error handling when throw is used with non-Error objects
     - Restrict custom selector matching to elements
-BF: DataSource: Correction of regex precedence error for Booleans
+BF: DataSource: Corrections and optimization
+    - Correction of regex precedence error for Booleans
+    - Correction of path encoding and decoding
 BF: Expression: Corrections and optimization
     - Correction escaping of quotation marks in text expressions
     - Correction of error handling when throw is used with non-Error objects
@@ -24,6 +26,7 @@ BF: Extension: Corrections and optimization
     - String.prototype.unescape: Correction of literal boundaries
     - Namespace: Removal of Namespace.create
       Instead, use Namespace.use(...) and/or Namespace.use(...)[...]
+BF: Locator: Correction of path encoding and decoding
 BF: Routing: Correction of route expression generation
     - Correction when combining routes with conditions
 BF: Test: Corrections and optimization

@@ -111,6 +111,77 @@
             Assert.assertNotNull(DataSource.fetch("xslt:/data/xx/b-b/locator_b.xml"));
         }});
 
+        Test.create({test() {
+            const locator = Locator.parse(
+                'xml:/data/xx/locator_a.xml?contains(., "100%25")');
+            Assert.assertEquals(false, DataSource.fetch(locator.uri));
+        }});
+
+        Test.create({test() {
+            Assert.assertEquals("percent literal", DataSource.fetch(
+                "xml:/data/xx/locator%25literal.xml?string(/data)"));
+        }});
+
+        Test.create({test() {
+            const source = "xml:/external.xml";
+            const parse = Locator.parse;
+            const open = XMLHttpRequest.prototype.open;
+            const send = XMLHttpRequest.prototype.send;
+            const requests = [];
+            Locator.parse = () => ({
+                schema: Locator.SCHEMA_XML,
+                path: "/external.xml",
+                uri: "xml:https://example.invalid/outside.xml",
+                query: undefined
+            });
+            XMLHttpRequest.prototype.open = function(method, url, ...variants) {
+                requests.push(String(url));
+                return open.call(this, method, url, ...variants);
+            };
+            XMLHttpRequest.prototype.send = () => {};
+            try {
+                let error;
+                try {
+                    DataSource.fetch(source);
+                } catch (exception) {
+                    error = exception;
+                }
+                Assert.assertTrue(error instanceof Error);
+                Assert.assertTrue(error.message.includes(source));
+                Assert.assertEquals(0, requests.length);
+            } finally {
+                Locator.parse = parse;
+                XMLHttpRequest.prototype.open = open;
+                XMLHttpRequest.prototype.send = send;
+            }
+        }});
+
+        Test.create({timeout:10000, async test() {
+            const frame = document.createElement("iframe");
+            document.body.appendChild(frame);
+            try {
+                await new Promise(resolve => {
+                    frame.addEventListener("load", resolve, {once:true});
+                    frame.src = "/app/datasource_context.html";
+                });
+                const probe = frame.contentWindow.__contextProbe;
+                Assert.assertNotNull(probe);
+                Assert.assertEquals("/app", probe.contextPath);
+                Assert.assertEquals("inside application context", probe.resource);
+                Assert.assertTrue(probe.traversalError.includes(
+                    "xml:/attempted-traversal.xml"));
+                Assert.assertTrue(probe.prefixError.includes(
+                    "xml:/attempted-prefix.xml"));
+                const paths = probe.requests.map(entry =>
+                    new URL(entry.response || entry.request,
+                        frame.contentWindow.location.href).pathname);
+                Assert.assertTrue(paths.every(path =>
+                    path === "/app" || path.startsWith("/app/")));
+            } finally {
+                frame.remove();
+            }
+        }});
+
         Test.start({auto:true});
     </script>
   </head>

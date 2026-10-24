@@ -31,18 +31,17 @@
 
     const PATTERN_PATH = /^\/[^\u0000-\u001f\/?#]+(?:\/[^\u0000-\u001f\/?#]+)*$/;
 
-    const _decode = value => {
-        while (true) {
-            const decoded = decodeURIComponent(value);
-            if (decoded === value)
-                return value;
-            value = decoded;
-        }
+    const _decode_path = value => {
+        const pattern = /%(?:25)*(?:2e|2f|5c|20)/i;
+        while (pattern.test(value))
+            value = value.replace(pattern, escape =>
+                decodeURIComponent(escape));
+        return decodeURIComponent(value).replace(/[\\/]+/g, "/");
     };
 
     const _normalize_path = value => {
         const parts = [];
-        _decode(value).replace(/^\/+/, "").split("/").forEach(part => {
+        _decode_path(value).split("/").forEach(part => {
             if (!part || part === ".")
                 return;
             if (part === "..")
@@ -51,6 +50,10 @@
         });
         return "/" + parts.join("/");
     };
+
+    const _encode_path = value =>
+        value.split("/").map(segment =>
+            encodeURIComponent(segment)).join("/");
 
     compliant("Locator");
     compliant(null, window.Locator = {
@@ -116,9 +119,10 @@
                     || !PATTERN_PATH.test(path))
                 throw new Error(`Invalid locator: ${source}`);
             const query = separator >= 0
-                ? _decode(tail.substring(separator + 1)) : undefined;
-            const uri = `${schema}:${path}${schema === SCHEMA_XML && query
-                ? `?${query}` : ""}`;
+                ? decodeURIComponent(tail.substring(separator +1)) : undefined;
+            const uri = `${schema}:${_encode_path(path)}${schema === SCHEMA_XML
+                    && query !== undefined
+                ? `?${encodeURIComponent(query)}` : ""}`;
 
             return Object.freeze({uri, schema, path, query});
         }

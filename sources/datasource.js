@@ -245,9 +245,20 @@
                 throw new Error("Invalid xslt locator: " + source);
 
             const explicit = /\.[^/]+$/.test(locator.path);
+            const path = locator.uri.substring(locator.schema.length + 1).split("?")[0];
             const location = explicit
-                ? `${window.location.contextPath}${locator.path}`
-                : `${DATA}/${DataSource.locale}${locator.path}.${locator.schema}`;
+                ? `${window.location.contextPath}${path}`
+                : `${DATA}/${DataSource.locale}${path}.${locator.schema}`;
+            const application = new URL(window.location.href);
+            const context = new URL(
+                `${window.location.contextPath.replace(/\/+$/, "")}/`,
+                application).pathname.replace(/\/+$/, "") || "/";
+            const address = new URL(location, application);
+            if (address.origin !== application.origin
+                    || (context !== "/"
+                            && address.pathname !== context
+                            && !address.pathname.startsWith(`${context}/`)))
+                throw new Error(`Invalid locator outside application context: ${source}`);
 
             const data = ((locator) => {
                 const hash = locator.hashCode();
@@ -255,14 +266,14 @@
                     return _cache[hash].clone();;
                 const request = new XMLHttpRequest();
                 request.overrideMimeType("application/xslt+xml");
-                request.open("GET", locator, false);
+                request.open("GET", address.href, false);
                 request.send();
                 if (request.status !== 200)
                     throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
                 const data = request.responseXML;
                 _cache[hash] = data;
                 return data.clone();
-            })(location);
+            })(address.href);
 
             if (locator.query === undefined
                     || locator.query === "")

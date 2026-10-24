@@ -2713,7 +2713,7 @@ gemeinsame Segmentfolge ist.
 
 **Symbol-Werte in der aktivierten Test-Console sicher formatieren**
 
-**Prioritaet:** niedrig | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `sprache_api` | **Abstimmung:** [R51](#r51)
 **Fundstellen:** `sources\test.js:624-628`
 
@@ -2748,9 +2748,9 @@ Ausgabe noch alle Listener. Zusaetzliches Logging darf diesen Aufruf nicht brech
 
 **Regression und Abnahme**
 
-- [ ] Nach `Test.activate()` wirft `console.log(Symbol("x"))` nicht; der Buffer enthaelt eine lesbare Symbol-Darstellung.
-- [ ] Mehrere Argumente mit String, Symbol, `null` und `undefined` funktionieren.
-- [ ] Native Ausgabe und Listener erhalten weiterhin die vorgesehenen Aufrufe und Originalargumente.
+- [x] Nach `Test.activate()` wirft `console.log(Symbol("x"))` nicht; der Buffer enthaelt eine lesbare Symbol-Darstellung.
+- [x] Mehrere Argumente mit String, Symbol, `null` und `undefined` funktionieren.
+- [x] Native Ausgabe und Listener erhalten weiterhin die vorgesehenen Aufrufe und Originalargumente.
 
 **Testansatz:** `test\test_assert_message.html`, `test\test_events.html`;
 Console und Listener auch unabhaengig vom betroffenen Wrapper beobachten.

@@ -87,8 +87,13 @@ erneut parallel implementierte Helfer zu ersetzen.
 1. Lies den zugehoerigen Review-Befund, den aktuellen betroffenen Quelltext und
    die angegebenen Tests. Die Testdateien sind Ansatzpunkte, keine Zusage, dass
    sie den Fehler bereits abdecken.
-2. Reproduziere den Fehler und sichere ihn als gezielten Regressionstest ab.
-   Halte bereits vorhandene, unabhaengige Probleme getrennt fest.
+2. Erstelle vor jeder Implementierung zuerst einen gezielten Regressionstest,
+   der den gemeldeten Fehler reproduziert. Fuehre ihn gegen den unveraenderten
+   Quelltext aus und bestaetige, dass er aus dem erwarteten Grund fehlschlaegt.
+   Erst danach korrigiere die Implementierung. Schlaegt der Test aus einem
+   anderen Grund fehl oder laesst sich der Befund nicht reproduzieren, klaere
+   zuerst die Reproduktion, statt eine vermutete Korrektur einzubauen. Halte
+   unabhaengige Probleme getrennt fest.
 3. Pruefe Voraussetzungen und abgestimmte Aufgaben. Veraendere gemeinsam genutzte
    Helfer nicht nur fuer den gerade betrachteten Spezialfall.
 4. Klaere als Entscheidung markierte API-Fragen vor der Implementierung.
@@ -2756,7 +2761,7 @@ unterbrechen.
 
 **Fehlermeldung im Standardmonitor tatsaechlich trimmen**
 
-**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** erledigt
 **Paket:** `fehlererkennung` | **Abstimmung:** [R40](#r40)
 **Fundstellen:** `sources\test.js:293-299`
 
@@ -2790,9 +2795,9 @@ Die Ausgabe muss den bereinigten Meldungstext oder den Ersatztext verwenden.
 
 **Regression und Abnahme**
 
-- [ ] Ein Fehler `BOOM` erscheint als `BOOM`, nicht als `function trim()`.
-- [ ] Fuehrende und nachfolgende Leerzeichen werden entfernt.
-- [ ] Eine leere oder reine Whitespace-Meldung verwendet den vorgesehenen Ersatztext.
+- [x] Ein Fehler `BOOM` erscheint als `BOOM`, nicht als `function trim()`.
+- [x] Fuehrende und nachfolgende Leerzeichen werden entfernt.
+- [x] Eine leere oder reine Whitespace-Meldung verwendet den vorgesehenen Ersatztext.
 
 **Testansatz:** `test\test_assert_message.html`; die reale Monitorausgabe
 unabhaengig erfassen.
@@ -2802,7 +2807,7 @@ unabhaengig erfassen.
 
 **Timeout-Zaehler vor dem RESPONSE-Snapshot aktualisieren**
 
-**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** erledigt
 **Paket:** `fehlererkennung` | **Abstimmung:** [R38](#r38), [R39](#r39), [R41](#r41)
 **Fundstellen:** `sources\test.js:335-339, 393-398`
 
@@ -2836,9 +2841,9 @@ bereits enthaltenen Fehler und dem spaeteren FINISH-Zaehler.
 
 **Regression und Abnahme**
 
-- [ ] Ein synchroner Test mit `timeout:1` und etwa 10 ms Laufzeit liefert bereits in RESPONSE `faults:1`.
-- [ ] Ein timerbasierter Timeout eines ausstehenden Tasks meldet ebenfalls den aktuellen Zaehler.
-- [ ] RESPONSE und FINISH stimmen ueberein; ein spaeter Abschluss erhoeht den Zaehler nicht erneut.
+- [x] Ein synchroner Test mit `timeout:1` und etwa 10 ms Laufzeit liefert bereits in RESPONSE `faults:1`.
+- [x] Ein timerbasierter Timeout eines ausstehenden Tasks meldet ebenfalls den aktuellen Zaehler.
+- [x] RESPONSE und FINISH stimmen ueberein; ein spaeter Abschluss erhoeht den Zaehler nicht erneut.
 
 **Testansatz:** `test\test_events.html`; die Snapshots von aussen vergleichen.
 **Erledigt, wenn:** Jeder Timeout-RESPONSE den bereits verbuchten Fehler enthaelt.

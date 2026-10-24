@@ -701,7 +701,9 @@
                     throw new TypeError("Invalid data type");
 
                 variants = Array.from(variants);
-                _output[level] += variants.join(", ");
+                _output[level] += variants
+                    .map(value => value == null ? "" : String(value))
+                    .join(", ");
                 const callbacks = Array.from(_listeners, callback =>
                     () => callback(level, ...variants));
                 if (output)

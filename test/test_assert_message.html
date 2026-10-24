@@ -14,6 +14,12 @@
 
         Test.activate();
 
+        const consoleArguments = ["value", Symbol("x"), null, undefined];
+        const consoleCalls = [];
+        console.listen((level, ...variants) => {
+            consoleCalls.push({level, variants});
+        });
+
         const assertMessageValue = (value) => {
             try {Assert.assertTrue(value, false);
             } catch (error) {
@@ -44,6 +50,23 @@
         };
 
         Test.create({test() {
+            console.output.clear();
+            const start = consoleCalls.length;
+            const levels = ["log", "warn", "error", "info"];
+            levels.forEach(level => console[level](...consoleArguments));
+
+            levels.forEach((level, index) => {
+                Assert.assertEquals("value, Symbol(x), , ", console.output[level]);
+                const call = consoleCalls[start + index];
+                Assert.assertEquals(level, call.level);
+                Assert.assertEquals(consoleArguments.length, call.variants.length);
+                consoleArguments.forEach((value, index) =>
+                    Assert.assertSame(value, call.variants[index]));
+            });
+            Assert.assertEquals(levels.length, consoleCalls.length - start);
+        }});
+
+        Test.create({test() {
             assertMessageValue(10);
             assertMessageValue({});
             assertMessageValue(null);
@@ -52,6 +75,7 @@
         }});
 
         Test.create({test() {
+            const start = monitorErrors.length;
             const direct = captureMonitorError("BOOM");
             Assert.assertTrue(direct.endsWith(" BOOM"));
             Assert.assertFalse(direct.includes("function trim()"));
@@ -61,7 +85,7 @@
 
             const blank = captureMonitorError("   ");
             Assert.assertTrue(blank.endsWith(" unknown error"));
-            Assert.assertEquals(3, monitorErrors.length);
+            Assert.assertEquals(3, monitorErrors.length - start);
         }});
 
         Test.start({auto:true});

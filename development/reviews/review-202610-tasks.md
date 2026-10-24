@@ -60,18 +60,17 @@ Vorschlaege; vorhandene Helfer werden ausdruecklich benannt. Bei offenen
 API-Entscheidungen ist der empfohlene Weg von einer bereits beschlossenen
 Semantik zu unterscheiden.
 
-**Quellenabgleich am 2026-10-24 (vor R11-Integration):** Die Abschlussvermerke
-fuer R01 und R02 passen nicht zum aktuell vom Build verwendeten
-`sources\composer.js`. Dort fehlen Element-Guard und Scope-Wiederherstellung.
-Vor R11-Integration war `_render_meta` weiterhin ein Array und beide
-Prune-Aufrufe verwendeten dessen `length`; die entsprechenden Aenderungen
-standen in der lokalen Datei `sources\composer_1.js`.
-`development\build.xml` bindet jedoch in den Quelllisten `composer.js` ein,
-nicht `composer_1.js`. R11 ist inzwischen gezielt in `sources\composer.js`
-integriert: `_render_meta` ist eine `Map`, und die Zugriffe sowie
-Prune-Grenzen verwenden deren Operationen und `size`. Die Dateien wurden nicht
-blind gegeneinander ausgetauscht. Die historischen Abschlussvermerke unten
-bleiben als solche erhalten.
+**Quellenabgleich am 2026-10-24 (R11 integriert):** Massgeblich ist
+`sources\composer.js`, das `development\build.xml` in seinen Quelllisten
+einbindet. Beim Abgleich fehlten in dieser Build-Quelle die in den
+Abschlussvermerken beschriebenen Korrekturen fuer R01 und R02. R01 wurde am
+2026-10-24 erneut umgesetzt und gezielt verifiziert; die Scope-Wiederherstellung
+aus R02 fehlt weiterhin. Die nachstehenden Loesungsansaetze beschreiben die
+erforderlichen Eingriffe direkt an dieser Quelle und setzen keine zusaetzliche
+Referenzimplementierung voraus. R11 ist bereits integriert: `_render_meta` ist
+eine `Map`, und die Zugriffe sowie Prune-Grenzen verwenden deren Operationen
+und `size`. Erhalte diesen Registerstand bei der Umsetzung von R02.
+Die historischen Abschlussvermerke unten bleiben als solche erhalten.
 
 In `sources\test.js` sind dagegen bereits `completeTask`, `normalizeError`,
 `matchesExpected`, `isCurrentWorker` und `parentContext` vorhanden.
@@ -203,8 +202,13 @@ Ergaenze am Anfang von `_render_element_selectors` den Guard
 `return` auf Ebene von `Composer.render` waere falsch, weil dann gerade
 Textknoten und Condition-Marker nicht mehr verarbeitet wuerden. Die bestehende
 Schleife ueber `_selectors` und der Abbruch bei `callback(...) === false`
-bleiben unveraendert. Gleiche dafuer die lokale Vorarbeit in `composer_1.js`
-mit der tatsaechlichen Build-Quelle ab; siehe Quellenhinweis oben.
+bleiben unveraendert. Erweitere dazu den vorhandenen `parentNode`-Guard in
+`sources\composer.js`, statt einen zweiten Filter im Aufrufer einzufuehren.
+Wichtig ist die Unterscheidung der Rueckgabewerte: `false` aus einem Callback
+fuehrt zu `true` aus dem Helfer und beendet das Rendering; `false` aus dem
+Guard ueberspringt dagegen nur das Matching. Fange Matching- oder
+Callback-Fehler nicht pauschal ab; der vorhandene Render-Fehlerpfad bleibt
+zustaendig.
 
 **Problem und Ziel:** `_render_element_selectors()` ruft `matches()` auch auf
 Textknoten und Condition-Markern auf. Bereits ein beliebiger registrierter
@@ -246,6 +250,16 @@ Der Compose-Pfad einschliesslich ES2015-Lint lief erfolgreich mit
 vorhandene lokale Release-Aenderungen unangetastet bleiben; die Test-Bundles
 wurden daraus erzeugt. `manuals\markup.md` dokumentiert die Begrenzung auf Elemente.
 
+**Erneute Umsetzung und Verifikation am 2026-10-24:** Der Element-Guard und
+Regressionen fuer dynamischen Text mit und ohne Selektortreffer, Condition
+`true/false/true`, Callback-Aufruf und den ausbleibenden `matches`-TypeError
+sind in `sources\composer.js` und
+`test\composer_render_customize_selectors.html` vorhanden. Der Compose-Pfad
+einschliesslich ES2015-Lint war mit isoliertem Release- und Testverzeichnis
+erfolgreich. Das Selektor-Szenario bestand in Blink, Gecko und WebKit jeweils
+mit drei Testaufgaben und null Fehlern. Die vollstaendige Szenariensuite wurde
+bei dieser erneuten Umsetzung nicht ausgefuehrt.
+
 ### R02
 
 **Renderkontexte bei verschachtelten und partiellen Iterationen erhalten**
@@ -256,14 +270,19 @@ wurden daraus erzeugt. `manuals\markup.md` dokumentiert die Begrenzung auf Eleme
 
 **Konkreter Loesungsansatz**
 
-Verwende die lokale Vorarbeit in `composer_1.js` als Referenz: Nach dem
-Queue-/Lock-Konfliktpfad, aber vor der initialen ID-Auswertung, werden
+Behandle den Scope jedes tatsaechlich ausgefuehrten Renderaufrufs als
+zeitlich begrenzten Zustand. Nach dem Queue-/Lock-Konfliktpfad, aber vor der
+initialen ID-Auswertung, werden
 `workspace = [..._view_scope_workspace]` und `stack = [..._view_scope_stack]`
 gesichert. Fuer den Knoten wird `object.context` beziehungsweise der bisherige
 Stack in den Workspace kopiert; derselbe Kontext bildet anschliessend den
 Stack fuer neu erzeugte Kinder. Im `finally` werden beide Arrays durch
 `length = 0` und `push(...snapshot)` wiederhergestellt. Ihre Objektidentitaet
 bleibt erhalten; die enthaltenen Anwendungsobjekte werden nicht tief geklont.
+Ein vorhandener leerer Knotenkontext ist dabei ebenfalls verbindlich:
+Er darf nicht mit Variablen des aktuellen Aufrufers aufgefuellt werden.
+Stelle beide Snapshots vor `lock.release()` wieder her, damit von dort
+ausgeloeste Folgeaktionen keinen temporaeren Kindkontext uebernehmen.
 
 Die initiale ID-Auswertung benoetigt einen eigenen solchen Schutz. In
 `_render_attribute_iterate` muss nach `push({[name]: meta})` die Verarbeitung
@@ -758,14 +777,15 @@ erneutes Setzen derselben Serial erhoeht `size` nicht.
   "Initialrendering hat begonnen" statt "Register nicht leer" meinen soll,
   diesen Zustand separat fuehren und nicht wieder ueber historische Groesse
   ausdruecken.
-- Den Debug-Test `test\composer_render_cache_prune.html` mitziehen:
-  `Object.keys(window.___render_meta).length` wird zu
-  `window.___render_meta.size`; direkte Testzugriffe erfolgen mit
-  `set`/`delete` oder bewusst beibehaltenen Helfern. Der Test verwendet
-  aktuell auch `___render_meta_set` und `___render_meta_delete`.
-  Fuer den kuenstlichen Testeintrag statt `"cache-prune-test"` eine
-  separate numerische Serial verwenden. Anders als Objektschluessel
-  unterscheidet eine Map die Zahl `1` vom String `"1"`.
+- Den Regressionstest `test\composer_render_cache_prune.html` am
+  tatsaechlichen Verhalten ausrichten: Er protokolliert aktuell die Argumente
+  beider Prune-Aufrufe und vergleicht sie nach jedem Entfernen mit dem ersten
+  abgeschlossenen Zyklus. Er setzt keine internen Registerhelfer voraus.
+  Falls direkte Registerpruefungen ergaenzt werden, muessen sie
+  `size`, `set` und `delete` statt Array-/Objektzugriffen verwenden.
+  Fuer kuenstliche Testeintraege separate numerische Serials verwenden:
+  Anders als Objektschluessel unterscheidet eine Map die Zahl `1` vom
+  String `"1"`.
 
 **Warum keine `WeakMap` als unmittelbarer Ersatz?** Die vorhandenen Keys
 sind numerische Serials; eine `WeakMap` akzeptiert keine Zahlen, hat kein
@@ -780,18 +800,23 @@ Sie ersetzt deshalb **nicht** den expliziten Cleanup und beweist fuer sich
 keine Speicherleckfreiheit. DOM-Verschiebungen duerfen nicht geloescht werden;
 wirklich entfernte Unterbaeume muessen weiterhin freigegeben werden.
 
-**Vorhandene Alternative und Integrationsstand:** Die lokale
-`sources\composer_1.js` enthaelt bereits eine fachlich ausreichende
-Minimalvariante mit `_render_meta_count`, `_render_meta_set` und
-`_render_meta_delete`. Sie korrigiert die Cache-Grenze ohne Registermigration,
-sofern wirklich alle Schreib-/Loeschpfade diese Helfer verwenden.
-Eine Map-Migration ist daher kein zwingender Beweis fuer die Behebung des
-Befunds. Fuer einen neuen konsistenten Registerstand ist `Map` jedoch klarer:
-Sie vermeidet sparse Arrays und einen separat synchron zu haltenden Zaehler.
-Waehle genau eine Variante; kombiniere nicht `Map.size` mit einem redundanten
-Aktivzaehler. Die `Map`-Variante ist in der Build-Quelle
-`sources\composer.js` integriert; `test\composer_render_cache_prune.html`
-prueft 50 Einfuege-/Render-/Entferne-Zyklen auf konstante Prune-Grenzen.
+**Empfehlung und Integrationsstand:** Behalte die in `sources\composer.js`
+integrierte `Map` bei. Sie vermeidet sparse Arrays und einen separat synchron
+zu haltenden Zaehler; fuehre deshalb keinen redundanten Aktivzaehler und keine
+zweite Registerverwaltung ein. Entscheidend ist nicht allein die Datenstruktur,
+sondern die Invariante: Nach dem Cleanup entspricht `size` genau den noch
+registrierten Metaobjekten. Condition-Marker und sichtbares Condition-Element
+zaehlen getrennt; blosse DOM-Verschiebungen aendern ihren Bestand nicht.
+
+Ermittle die Grenze erst nach Verarbeitung des gesamten Mutation-Batches
+einschliesslich Cleanup und uebergib sie an beide Prune-Aufrufe.
+`test\composer_render_cache_prune.html` prueft bereits 50
+Einfuege-/Render-/Entferne-Zyklen auf konstante, uebereinstimmende Prune-Grenzen.
+Das allein belegt noch nicht die korrekte aktive Anzahl oder die reale
+Cache-Groesse: Sichere diese separat ab und pruefe insbesondere vollstaendige
+Unterbaumfreigabe, Condition-Wechsel und Verschiebungen. Messe jeweils erst,
+nachdem der MutationObserver die Aenderungen verarbeitet hat; eine Messung
+direkt nach `removeChild()` kann noch den vorherigen Registerstand zeigen.
 
 **Problem und Ziel:** `delete _render_meta[serial]` entfernt einen Eintrag,
 verkleinert aber nicht das sparse Array. Dessen historische Laenge steuert

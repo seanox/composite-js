@@ -1971,7 +1971,8 @@
      * @returns {boolean} true if the rendering has to be terminated
      */
     const _render_element_selectors = (selector) => {
-        if (!selector.parentNode)
+        if (!(selector instanceof Element)
+                || !selector.parentNode)
             return false;
         for (const [key, macro] of _selectors)
             if (selector.matches(macro.selector)

@@ -14,6 +14,12 @@
     
         Test.activate();
         
+        Namespace.use()["probeCondition"] = true;
+        let probeSelectorCount = 0;
+        Composer.customize("[data-probe]", () => {
+            probeSelectorCount++;
+        });
+
         const insertTestValue = (element, value) => {
             if (element.textContent.match(new RegExp(value)))
                 return;
@@ -41,6 +47,29 @@
         Test.create({test() {
             Assert.assertSameTo("script[type='text/test']", document.body.textContent);
         }});
+
+        Test.create({test() {
+            Assert.assertEquals("2", document.getElementById("probeText").textContent);
+            Assert.assertEquals("4", document.getElementById("probeTextHit").textContent);
+            Assert.assertTrue(probeSelectorCount > 0);
+            Assert.assertFalse(String(console.output.error)
+                .includes("selector.matches is not a function"));
+        }});
+
+        Test.create({async test() {
+            for (const condition of [false, true]) {
+                Namespace.use()["probeCondition"] = condition;
+                await new Promise(resolve => {
+                    Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+                        if (selector === document.body)
+                            resolve();
+                    });
+                    Composer.render(document.body);
+                });
+                Assert.assertEquals(condition,
+                    Boolean(document.getElementById("probeCondition")));
+            }
+        }});
         
         let count = 0;
         Composer.listen(Composer.EVENT_RENDER_END, () => {
@@ -54,6 +83,9 @@
       xc031
       xd04
       xe05 
+      2
+      4
+      probe
     </script>
   </head>
   <body>
@@ -62,5 +94,9 @@
     <x value="xx3">xc</x>
     <x value="xx4">xd</x>
     <x value="xx5">xe</x>    
+    <span id="probeText">{{1 + 1}}</span>
+    <span id="probeTextHit" data-probe>{{2 + 2}}</span>
+    <span id="probeCondition" condition="{{probeCondition}}">probe</span>
+    <span data-probe></span>
   </body>
 </html>

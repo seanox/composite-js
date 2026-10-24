@@ -8,6 +8,7 @@ BF: Composer: Corrections and optimization
     - Validation now ignores unbound/unrendered elements
     - Optimizing the analysis of nested selectors
     - Correction of error handling when throw is used with non-Error objects
+    - Restrict custom selector matching to elements
 BF: DataSource: Correction of regex precedence error for Booleans
 BF: Expression: Corrections and optimization
     - Correction escaping of quotation marks in text expressions

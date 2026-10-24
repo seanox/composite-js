@@ -532,7 +532,7 @@
             // Validation requires an active composite binding.
             // Unbound elements are ignored.
             const serial = selector.uid;
-            const object = _render_meta[serial];
+            const object = _render_meta.get(serial);
             if (!object)
                 return;
 
@@ -771,7 +771,7 @@
                 if (_mount_elements.has(selector))
                     return;
 
-                const object = _render_meta[selector.uid];
+                const object = _render_meta.get(selector.uid);
                 
                 // Objects that were not rendered should not be mounted. This
                 // can happen if new DOM elements are created during rendering
@@ -854,7 +854,7 @@
 
                         const target = event.currentTarget;
                         const serial = target.serial();
-                        const object = _render_meta[serial];
+                        const object = _render_meta.get(serial);
 
                         let action = event.type.toLowerCase();
                         if (!PATTERN_EVENT_FILTER.includes(action))
@@ -1111,7 +1111,7 @@
                 const scanning = (element) => {
                     if (!(element instanceof Element))
                         return;
-                    const object = _render_meta[element.uid];
+                    const object = _render_meta.get(element.uid);
                     if (!object)
                         return;
                     changes.forEach((attribute) => {
@@ -1242,7 +1242,7 @@
             // corresponds to the current context stack. After resolving the
             // expression, however, the context workspace must be reset.
             if (selector instanceof Element
-                    && !_render_meta[selector.serial()]) {
+                    && !_render_meta.has(selector.serial())) {
                 _view_scope_workspace.push(..._view_scope_stack);
                 let identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
                 if (identifier.match(PATTERN_EXPRESSION_CONTAINS)) {
@@ -1273,7 +1273,7 @@
                     return;
 
                 let serial = selector.serial();
-                let object = _render_meta[serial];
+                let object = _render_meta.get(serial);
                 _view_scope_workspace.length = 0;
                 if (object && object.context)
                     _view_scope_workspace.push(...object.context);
@@ -1507,7 +1507,7 @@
             if (composite instanceof Element) {
                 if (!composite.hasAttribute(ATTRIBUTE_ID))
                     throw new Error("Unknown composite without id");
-                object = _render_meta[composite.uid];
+                object = _render_meta.get(composite.uid);
                 if (!object)
                     throw new Error("Unknown composite");
                 const meta = _mount_locate(composite);
@@ -1674,7 +1674,7 @@
                             if (selector instanceof Node
                                     && selector.nodeType === Node.TEXT_NODE) {
                                 let serial = selector.serial();
-                                let object = _render_meta[serial] || {};
+                                let object = _render_meta.get(serial) || {};
                                 if (object.condition
                                         && object.condition.element
                                         && object.condition.marker === this.selector)
@@ -1934,10 +1934,10 @@
     const _render_queue = [];
 
     /**
-     * Associative array for element-related meta-objects, those which are
-     * created during rendering: (key:serial, value:meta)
+     * Map of element-related meta-objects created during rendering:
+     * (key:serial, value:meta)
      */
-    const _render_meta = [];
+    const _render_meta = new Map();
 
     /**
      * Checks whether a node is contained in an element to be ignored, e.g.
@@ -1994,7 +1994,7 @@
             interceptor.call(null, selector));
         const object = {serial, element:selector, attributes:{},
             context:[..._view_scope_workspace]};
-        _render_meta[serial] = object;
+        _render_meta.set(serial, object);
         return object;
     };
 
@@ -2094,11 +2094,11 @@
         object = {serial:marker.serial(), element:marker, attributes,
             context:[..._view_scope_workspace],
             condition:{expression, template, marker, element:null, attributes, complete:false, share:null}};
-        _render_meta[object.serial] = object;
+        _render_meta.set(object.serial, object);
 
         // The meta-object for the HTML element is removed, because only the new
         // marker is relevant.
-        delete _render_meta[serial];
+        _render_meta.delete(serial);
 
         // The marker is initially created and in the DOM.
         selector.parentNode.replaceChild(marker, selector);
@@ -2173,9 +2173,9 @@
             condition.element = condition.template.cloneNode(true);
             const element = condition.element;
             const attributes = Object.assign({}, condition.attributes);
-            _render_meta[element.serial()] = {
+            _render_meta.set(element.serial(), {
                 serial:element.serial(), element, attributes, condition,
-                context:[..._view_scope_workspace]};
+                context:[..._view_scope_workspace]});
 
             // Load the composite module resources.
             // That no resources are loaded more than once is taken care of by
@@ -2293,7 +2293,7 @@
                     object.attributes[ATTRIBUTE_NAME] = param[1];
                     object.attributes[ATTRIBUTE_VALUE] = "{{" + param[2] + "}}";
                 } else object.attributes[ATTRIBUTE_VALUE] = match;
-                _render_meta[serial] = object;
+                _render_meta.set(serial, object);
                 return "{{" + serial + "}}";
             });
 
@@ -2308,7 +2308,7 @@
                 words.forEach((word, index, array) => {
                     if (word.match(/^\{\{\d+\}\}$/)) {
                         const serial = parseInt(word.substring(2, word.length -2).trim());
-                        const object = _render_meta[serial];
+                        const object = _render_meta.get(serial);
                         Composer.fire(EVENT_RENDER_NEXT, object.element);
                         object.render();
                         array[index] = object.element;
@@ -2320,7 +2320,7 @@
                         Composer.fire(EVENT_RENDER_NEXT, object.element);
                         object.element.textContent = word;
                         object.attributes[ATTRIBUTE_TEXT] = word;
-                        _render_meta[serial] = object;
+                        _render_meta.set(serial, object);
                         array[index] = object.element;
                     }
                 });
@@ -2916,7 +2916,7 @@
             const serial = node.uid;
             if (serial === undefined)
                 return;
-            const object = _render_meta[serial];
+            const object = _render_meta.get(serial);
             // Resets the rendered condition element when it is removed from the
             // DOM. Prevents the renderer from treating a deleted element as an
             // active condition output, ensuring correct re‑rendering and
@@ -2941,7 +2941,7 @@
             // meta-object assigned to the element must be deleted, because it
             // is an indicator for existence and presence of composites and
             // their application modules
-            delete _render_meta[serial];
+            _render_meta.delete(serial);
         };
 
         (new MutationObserver((records) => {
@@ -2977,10 +2977,10 @@
                 // Without Meta-Store, the renderer hasn't run yet. The reaction
                 // by the MutationObserver only makes sense when the renderer
                 // has run initially.
-                if (!_render_meta.length)
+                if (_render_meta.size <= 0)
                     return;
 
-                const object = _render_meta[record.target.uid];
+                const object = _render_meta.get(record.target.uid);
                 
                 // Text changes are only monitored at text nodes with expression.
                 // Manipulations are corrected/restored.
@@ -3082,7 +3082,7 @@
                         || (node instanceof Node
                                 && node.nodeType === Node.TEXT_NODE)))
                     return;
-                if (_render_meta[node.uid])
+                if (_render_meta.has(node.uid))
                     return;
                 if (!document.body.contains(node))
                     return;
@@ -3098,8 +3098,8 @@
             // used only as a key prefix, an LRU cache can be truncated to the
             // current cache size, effectively providing implicit cleanup
             // without tracking serials.
-            Expression.prune(_render_meta.length);
-            Scripting.prune(_render_meta.length);
+            Expression.prune(_render_meta.size);
+            Scripting.prune(_render_meta.size);
 
             // The events about the changes at the DOM are fired batched with
             // an array of the affected nodes, after the renderer and the

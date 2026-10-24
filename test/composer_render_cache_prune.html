@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const pruneLimits = {expression:[], scripting:[]};
+        const expressionPrune = Expression.prune;
+        const scriptingPrune = Scripting.prune;
+        Expression.prune = function(size) {
+            pruneLimits.expression.push(size);
+            return expressionPrune.call(this, size);
+        };
+        Scripting.prune = function(size) {
+            pruneLimits.scripting.push(size);
+            return scriptingPrune.call(this, size);
+        };
+
+        const delay = () => new Promise(resolve => window.setTimeout(resolve, 0));
+
+        Test.create({timeout:10000, async test() {
+            const fixture = document.createElement("div");
+            document.body.appendChild(fixture);
+            let stableLimit;
+            try {
+                await delay();
+                for (let index = 0; index < 50; index++) {
+                    const element = document.createElement("span");
+                    element.textContent = "{{'cache-prune-" + index + "'}}";
+                    fixture.appendChild(element);
+                    await delay();
+
+                    const expressionCount = pruneLimits.expression.length;
+                    const scriptingCount = pruneLimits.scripting.length;
+                    fixture.removeChild(element);
+                    await delay();
+
+                    Assert.assertTrue(pruneLimits.expression.length > expressionCount);
+                    Assert.assertTrue(pruneLimits.scripting.length > scriptingCount);
+
+                    const expressionLimit = pruneLimits.expression[
+                        pruneLimits.expression.length -1];
+                    const scriptingLimit = pruneLimits.scripting[
+                        pruneLimits.scripting.length -1];
+                    Assert.assertEquals(expressionLimit, scriptingLimit);
+                    if (stableLimit === undefined)
+                        stableLimit = expressionLimit;
+                    Assert.assertEquals(stableLimit, expressionLimit);
+                }
+            } finally {
+                if (fixture.parentNode)
+                    fixture.parentNode.removeChild(fixture);
+                await delay();
+            }
+        }});
+
+        let started = false;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (started)
+                return;
+            started = true;
+            Test.start();
+        });
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

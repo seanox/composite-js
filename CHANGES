@@ -59,6 +59,7 @@ CR: Composer: Refactoring ordinal/serial/uid
 CR: Composer: Optimization and extension
     - Events: Extending HTTP Events to the fetch() Method
     - Events: Faulty callbacks no longer cause the event queue to be aborted.
+    - Optimizing the queues for rendering and mounting (stricter FIFO)
 CR: Extensions: Removal of Math.unique
     The method wasn't unique enough, wasn't used anyway, and crypto.randomUUID()
     is the better solution.

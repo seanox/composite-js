@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+        Test.activate();
+
+        Test.create({async test() {
+            const order = [];
+            const errors = [];
+            const create = (name, composite) => {
+                const element = document.createElement(composite ? "div" : "span");
+                element.textContent = "{{'" + name + "'}}";
+                if (composite)
+                    element.setAttribute("composite", "");
+                return element;
+            };
+            const a = create("A");
+            const b = create("B", true);
+            const c = create("C");
+            const d = create("D");
+            const names = new Map([[a, "A"], [b, "B"], [c, "C"], [d, "D"]]);
+            let finish;
+            const completed = new Promise(resolve => finish = resolve);
+
+            Composer.listen(Composer.EVENT_RENDER_START, (event, selector) => {
+                const name = names.get(selector);
+                if (!name)
+                    return;
+                order.push(name);
+                if (selector === a) {
+                    Composer.render(b);
+                    Composer.render(c);
+                    Composer.render(b);
+                    Composer.render();
+                } else if (selector === b)
+                    Composer.render(d);
+            });
+            Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+                if (selector === d)
+                    finish();
+            });
+            Composer.listen(Composer.EVENT_ERROR, (event, error) => {
+                if (String(error).includes("Unknown composite without id"))
+                    errors.push(error);
+            });
+
+            try {
+                Composer.render(a);
+                await completed;
+                await new Promise(resolve => setTimeout(resolve, 0));
+                Assert.assertEquals("A,B,C,D", order.join(","));
+                Assert.assertEquals(1, errors.length);
+                Assert.assertEquals("A", a.textContent);
+                Assert.assertTrue(b.textContent.includes("Unknown composite without id"));
+                Assert.assertEquals("C", c.textContent);
+                Assert.assertEquals("D", d.textContent);
+            } finally {
+                [a, b, c, d].forEach(element => element.remove());
+            }
+        }});
+
+        Test.create({async test() {
+            const parent = document.createElement("div");
+            parent.innerHTML = "<span>{{'child'}}</span>";
+            const child = parent.firstChild;
+            const pending = document.createElement("span");
+            pending.textContent = "{{'pending'}}";
+            const starts = [];
+            Composer.listen(Composer.EVENT_RENDER_START, (event, selector) => {
+                if ([parent, child, pending].includes(selector))
+                    starts.push(selector);
+            });
+            Composer.listen("composerQueueSynchronous", () => {
+                Composer.render(child);
+                Composer.render(pending);
+            });
+
+            Composer.fire("composerQueueSynchronous");
+            Assert.assertEquals(0, starts.length);
+            Composer.render(parent);
+            Assert.assertEquals("child", child.textContent);
+            Assert.assertEquals("{{'pending'}}", pending.textContent);
+            Assert.assertEquals(1, starts.length);
+            Assert.assertEquals(parent, starts[0]);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            Assert.assertEquals("pending", pending.textContent);
+            Assert.assertEquals(2, starts.length);
+            Assert.assertEquals(pending, starts[1]);
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

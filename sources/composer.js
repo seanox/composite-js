@@ -724,26 +724,36 @@
          * 
          *     Queue and Lock:
          *     ----
-         * The method used a simple queue and transaction management so that the
-         * concurrent execution of rendering works sequentially in the order of
-         * the method call.
+         * Requests blocked by a foreign lock are queued and schedule a
+         * parameterless asynchronous call. That call takes the next queued
+         * selector once the lock is free, removing it before processing.
+         * A parameterless call does nothing when the queue is empty.
          *
-         * @param {Element|string} selector DOM element or a string
-         * @param {boolean} lock Unlocking of the application module validation
+         * @param {Element|string} [selector] DOM element or a string; omitted
+         *     to resume queued mounting
+         * @param {object} [lock] Shared transaction lock for internal calls
          * @throws {Error} In the following cases:
          *     - namespace is not valid or is not supported
          *     - namespace cannot be created if it already exists as a method
          */
         mount(selector, lock) {
 
+            if (!selector
+                    && _mount_queue.length <= 0)
+                return;
+
             // The lock locks concurrent mount requests.
             // Concurrent mounting causes unexpected effects.
             if (_mount_lock
                     && _mount_lock !== lock) {
-                if (!_mount_queue.includes(selector))
+                if (selector && !_mount_queue.includes(selector))
                     _mount_queue.push(selector);
+                Composer.asynchronous(Composer.mount);
                 return;
             }
+
+            if (!selector)
+                selector = _mount_queue.shift();
 
             lock = _lock(Composer.mount, selector);
                 
@@ -1008,7 +1018,8 @@
                     }
                 }
             } finally {
-                lock.release();
+                lock.release(() =>
+                    Composer.fire(EVENT_MOUNT_END, lock.selector));
             }        
         },
 
@@ -1208,9 +1219,9 @@
          * Details are described in the documentation:
          * https://seanox.github.io/composite-js/manuals/markup.html
          * 
-         * @param {Element|string} selector DOM element or a string
-         * @param {boolean} [lock] Unlocking of the application module
-         *     validation
+         * @param {Element|string} [selector] DOM element or a string; omitted
+         *     to resume queued rendering
+         * @param {object} [lock] Shared transaction lock for internal calls
          * @throws {Error} In case of errors occurring
          */
         render(selector, lock) {
@@ -1226,7 +1237,7 @@
             // then no longer be possible.
             if (_render_lock
                     && _render_lock !== lock) {
-                if (!_render_queue.includes(selector))
+                if (selector && !_render_queue.includes(selector))
                     _render_queue.push(selector);
                 Composer.asynchronous(Composer.render);
                 return;
@@ -1376,7 +1387,51 @@
                 if (index !== -1)
                     _render_queue.splice(index, 1);
 
-                lock.release();
+                lock.release(() => {
+
+                    // To ensure that on conditions when the lock is created for
+                    // the marker, the children are also mounted, the selector
+                    // must be switched to the element, because the marker is a
+                    // text node without children.
+
+                    let selector = lock.selector;
+                    if (selector instanceof Node
+                            && selector.nodeType === Node.TEXT_NODE) {
+                        let serial = selector.serial();
+                        let object = _render_meta.get(serial) || {};
+                        if (object.condition
+                                && object.condition.element
+                                && object.condition.marker === lock.selector)
+                            selector = object.condition.element;
+                    }
+
+                    // If the selector is a string, several elements must be
+                    // assumed, which may or may not have a relation to the DOM.
+                    // Therefore, they are all considered and mounted separately.
+
+                    const nodes = new Set();
+                    if (typeof selector === "string") {
+                        const scope = document.querySelectorAll(selector);
+                        Array.from(scope).forEach((node) => {
+                            nodes.add(node);
+                            const scope = node.querySelectorAll("*");
+                            Array.from(scope).forEach((node) => {
+                                nodes.add(node);
+                            });
+                        });
+                    } else if (selector instanceof Element) {
+                        nodes.add(selector);
+                        selector.querySelectorAll("*").forEach((node) =>
+                            nodes.add(node));
+                    }
+
+                    // Mount all elements in a composite, including the
+                    // composite element itself.
+                    nodes.forEach((node) =>
+                        Composer.mount(node));
+
+                    Composer.fire(EVENT_RENDER_END, lock.selector);
+                });
             }
         },
 
@@ -1634,14 +1689,17 @@
     const _mount_elements = new WeakSet();
 
     /**
-     * Lock mechanism for the methods: render and mount. The lock controls
-     * that the methods are not used concurrently and/or asynchronously. Each
-     * method opens its own transaction (lock). During a transaction, the method
-     * call requires a lock. If this lock does not exist or differs from the
-     * current transaction, the method call is parked in a queue until the
-     * current lock is released. The methods themselves can call themselves
-     * recursively and do so with the lock they know. In addition to the lock
-     * mechanism, the methods also control the START, NEXT, and END events.
+     * Lock mechanism for the methods: render and mount. The lock controls that
+     * the methods are not used concurrently and/or asynchronously. Each method
+     * opens its own transaction (lock). During a transaction, the method call
+     * requires a lock. If this lock does not exist or differs from the current
+     * transaction, the method call is parked in a queue until the current lock
+     * is released. The methods themselves can call themselves recursively and
+     * do so with the lock they know. The lock mechanism controls the START and
+     * NEXT events. Render and mount supply callbacks for completing their
+     * transactions, including END events. The final release invokes its
+     * callback with the lock while the lock is still held, then always clears
+     * the lock, even if the callback throws.
      * @param {Object} context Context (render or mount)
      * @param {string|Element} selector Selector to identify elements
      * @returns {Object} The created lock as a meta-object
@@ -1657,63 +1715,12 @@
                     this.ticks++;
                     return this;
                 },
-                release() {
+                release(callback) {
                     this.ticks--;
                     if (this.ticks > 0)
                         return;
                     try {
-                        if (context === Composer.render) {
-
-                            // To ensure that on conditions when the lock is
-                            // created for the marker, the children are also
-                            // mounted, the selector must be switched to the
-                            // element, because the marker is a text node
-                            // without children.
-
-                            let selector = this.selector;
-                            if (selector instanceof Node
-                                    && selector.nodeType === Node.TEXT_NODE) {
-                                let serial = selector.serial();
-                                let object = _render_meta.get(serial) || {};
-                                if (object.condition
-                                        && object.condition.element
-                                        && object.condition.marker === this.selector)
-                                    selector = object.condition.element;
-                            }
-
-                            // If the selector is a string, several elements
-                            // must be assumed, which may or may not have a
-                            // relation to the DOM. Therefore, they are all
-                            // considered and mounted separately.
-
-                            const nodes = new Set();
-                            if (typeof selector === "string") {
-                                const scope = document.querySelectorAll(selector);
-                                Array.from(scope).forEach((node) => {
-                                    nodes.add(node);
-                                    const scope = node.querySelectorAll("*");
-                                    Array.from(scope).forEach((node) => {
-                                        nodes.add(node);
-                                    });
-                                });
-                            } else if (selector instanceof Element) {
-                                nodes.add(selector);
-                                selector.querySelectorAll("*").forEach((node) =>
-                                    nodes.add(node));
-                            }
-
-                            // Mount all elements in a composite, including the
-                            // composite element itself
-                            nodes.forEach((node) =>
-                                Composer.mount(node));
-
-                            Composer.fire(EVENT_RENDER_END, this.selector);
-                        } else if (context === Composer.mount) {
-                            Composer.fire(EVENT_MOUNT_END, this.selector);
-                        } else throw new Error("Invalid context: " + context);
-                        const selector = (context === Composer.render ? _render_queue : _mount_queue).shift();
-                        if (selector)
-                            Composer.asynchronous(context, selector);
+                        callback(this);
                     } finally {
                         if (context === Composer.render) {
                             if (_render_lock === this)

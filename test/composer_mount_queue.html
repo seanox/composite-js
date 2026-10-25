@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+        Test.activate();
+
+        Test.create({async test() {
+            const elements = ["A", "B", "C", "D"].map(() => document.createElement("span"));
+            const [a, b, c, d] = elements;
+            const names = new Map(elements.map((element, index) => [element, "ABCD"[index]]));
+            const order = [];
+            let finish;
+            const completed = new Promise(resolve => finish = resolve);
+            Composer.listen(Composer.EVENT_MOUNT_START, (event, selector) => {
+                if (!names.has(selector))
+                    return;
+                order.push(names.get(selector));
+                if (selector === a) {
+                    Composer.mount(b);
+                    Composer.asynchronous(() => order.push("marker"));
+                    Composer.mount(c);
+                    Composer.mount(b);
+                } else if (selector === b)
+                    Composer.mount(d);
+            });
+            Composer.listen(Composer.EVENT_MOUNT_END, (event, selector) => {
+                if (selector === d)
+                    finish();
+            });
+
+            Composer.mount(a);
+            Assert.assertEquals("A", order.join(","));
+            await completed;
+            await new Promise(resolve => setTimeout(resolve, 0));
+            Assert.assertEquals("A,B,marker,C,D", order.join(","));
+        }});
+
+        Test.create({async test() {
+            for (const method of ["render", "mount"]) {
+                const a = document.createElement("span");
+                const b = document.createElement("span");
+                const order = [];
+                let emptyStarts = 0;
+                Composer.listen(Composer["EVENT_" + method.toUpperCase() + "_START"],
+                    (event, selector) => {
+                        if (selector === a) {
+                            order.push("A");
+                            Composer[method](b);
+                            Composer[method]();
+                            Composer[method]();
+                        } else if (selector === b)
+                            order.push("B");
+                        else if (selector === undefined)
+                            emptyStarts++;
+                    });
+
+                Composer[method](a);
+                await new Promise(resolve => setTimeout(resolve, 0));
+                Composer[method]();
+                Assert.assertEquals("A,B", order.join(","));
+                Assert.assertEquals(0, emptyStarts);
+            }
+        }});
+
+        Test.create({async test() {
+            const a = document.createElement("span");
+            const b = document.createElement("span");
+            let attempts = 0;
+            Object.defineProperty(b, "nodeName", {get() {
+                attempts++;
+                return "SPAN";
+            }});
+            Composer.listen(Composer.EVENT_MOUNT_START, (event, selector) => {
+                if (selector === a)
+                    Composer.mount(b);
+            });
+
+            Composer.mount(a);
+            Composer.mount(b);
+            Assert.assertEquals(0, attempts);
+            await new Promise(resolve => setTimeout(resolve, 0));
+            Assert.assertEquals(1, attempts);
+        }});
+
+        Test.create({async test() {
+            const a = document.createElement("span");
+            const b = document.createElement("span");
+            const c = document.createElement("span");
+            const names = new Map([[a, "A"], [b, "B"], [c, "C"]]);
+            const order = [];
+            const failure = new Error("MOUNT_QUEUE_RELEASE");
+            let report;
+            const reported = new Promise(resolve => report = resolve);
+            const listener = event => {
+                if (event.error === failure) {
+                    event.preventDefault();
+                    report();
+                }
+            };
+            window.addEventListener("error", listener);
+            Composer.listen(Composer.EVENT_MOUNT_START, (event, selector) => {
+                if (names.has(selector))
+                    order.push(names.get(selector));
+                if (selector === a) {
+                    Composer.mount(b);
+                    Composer.mount(c);
+                }
+            });
+            const fire = Composer.fire;
+            Composer.fire = function(event, ...variants) {
+                if (event === Composer.EVENT_MOUNT_END && variants[0] === b)
+                    throw failure;
+                return fire.call(this, event, ...variants);
+            };
+
+            try {
+                Composer.mount(a);
+                await Promise.all([
+                    reported,
+                    new Promise(resolve => Composer.asynchronous(resolve))
+                ]);
+                Assert.assertEquals("A,B,C", order.join(","));
+            } finally {
+                Composer.fire = fire;
+                window.removeEventListener("error", listener);
+                if (!order.includes("C")) {
+                    Composer.mount(c);
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
+            }
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

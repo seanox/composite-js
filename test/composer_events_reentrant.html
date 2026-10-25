@@ -254,6 +254,84 @@
         }});
 
         Test.create({async test() {
+            for (const method of ["render", "mount"]) {
+                const root = document.createElement("div");
+                root.id = "reentrantRelease" + method;
+                root.innerHTML = "<span></span><span></span>";
+                const pending = document.createElement("span");
+                const selector = "#" + root.id + " > span";
+                const prefix = "EVENT_" + method.toUpperCase() + "_";
+                const order = [];
+                let finish;
+                const completed = new Promise(resolve => finish = resolve);
+                document.body.appendChild(root);
+                try {
+                    Composer.render(root);
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                    Composer.listen(Composer[prefix + "START"], (event, target) => {
+                        if (target === selector)
+                            order.push("start");
+                        else if (target === pending)
+                            order.push("pending-start");
+                    });
+                    Composer.listen(Composer[prefix + "NEXT"], (event, target) => {
+                        if (target instanceof Element && target.parentNode === root)
+                            order.push("next");
+                    });
+                    Composer.listen(Composer[prefix + "END"], (event, target) => {
+                        if (target === selector) {
+                            order.push("end-enter");
+                            Composer[method](pending);
+                            order.push("end-exit");
+                        } else if (target === pending) {
+                            order.push("pending-end");
+                            finish();
+                        }
+                    });
+                    Composer[method](selector);
+                    Assert.assertEquals("start,next,next,end-enter,end-exit", order.join(","));
+                    await completed;
+                    Assert.assertEquals(
+                        "start,next,next,end-enter,end-exit,pending-start,pending-end",
+                        order.join(","));
+                } finally {
+                    root.remove();
+                }
+            }
+        }});
+
+        Test.create({test() {
+            for (const method of ["render", "mount"]) {
+                const element = document.createElement("span");
+                const pending = document.createElement("span");
+                const prefix = "EVENT_" + method.toUpperCase() + "_";
+                const failure = new Error("REENTRANT_RELEASE");
+                const fire = Composer.fire;
+                let caught;
+                Composer.fire = function(event, ...variants) {
+                    if (event === Composer[prefix + "END"] && variants[0] === element)
+                        throw failure;
+                    return fire.call(this, event, ...variants);
+                };
+                try {
+                    Composer[method](element);
+                } catch (error) {
+                    caught = error;
+                } finally {
+                    Composer.fire = fire;
+                }
+                Assert.assertTrue(caught === failure);
+                let started = false;
+                Composer.listen(Composer[prefix + "START"], (event, target) => {
+                    if (target === pending)
+                        started = true;
+                });
+                Composer[method](pending);
+                Assert.assertTrue(started);
+            }
+        }});
+
+        Test.create({async test() {
             const order = [];
             const frame = document.createElement("iframe");
             try {

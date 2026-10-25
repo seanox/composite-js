@@ -681,53 +681,116 @@ Interpretation des Werts erhalten bleiben.
 
 ### R10
 
-**Render-Queue durch genau einen FIFO-Drain verarbeiten**
+**Render-Queue ohne vorzeitige Entnahme verarbeiten**
 
-**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** erledigt
 **Paket:** `rendering` | **Abstimmung:** [R02](#r02)
-**Fundstellen:** `sources\composer.js:1223-1232, 1701-1703`
+**Fundstellen:** `sources\composer.js` (`render`, `mount`, `_lock`)
 
 **Konkreter Loesungsansatz**
 
-Fuehre fuer die Render-Queue einen einzigen Planungszustand ein, etwa
-`let renderDrainScheduled = false`. Ein neuer Helfer plant nur dann eine
-Microtask, wenn Arbeit vorliegt, kein fremder Render-Lock aktiv ist und noch
-kein Drain geplant ist. Die Microtask setzt den Planungszustand zurueck,
-prueft den Lock erneut und entnimmt erst dann mit `shift()` den naechsten
-Selektor. Nach dessen Verarbeitung wird bei Bedarf erneut geplant.
+Behalte `Composer.asynchronous(Composer.render)` im Lock-Konfliktpfad bei.
+Jeder dort eingereihte Renderauftrag hat damit bereits einen parameterlosen
+asynchronen Folgeaufruf. Dieser liest bei freiem Lock `_render_queue[0]`;
+`render()` entfernt den bearbeiteten Auftrag anschliessend im `finally`.
+Bei leerer Queue bleibt ein uebriger Folgeaufruf ohne Wirkung.
 
-Entferne sowohl `Composer.asynchronous(Composer.render)` im Lock-Konfliktpfad
-als auch das vorzeitige `shift()` fuer Rendering in `_lock.release`.
-Plane den Render-Drain dort erst nach Freigabe von `_render_lock`, auch bei
-Fehlern. `_lock` bedient ebenfalls Mounting; dessen Pfad darf nicht
-unbeabsichtigt entfallen. `lock.share()` erlaubt weiterhin synchrone
-Kindaufrufe derselben Transaktion. Das vorhandene Entfernen eines bereits
-mitgerenderten Selektors aus der Queue bleibt als Deduplizierung erhalten.
+Der fachliche Render-Abschluss liegt in der aktuellen Benchmark-Vergleichsvariante
+direkt als Inline-Callback im `finally` von `render()`. Der Mount-Abschluss
+besteht nur aus `EVENT_MOUNT_END` und wird ebenfalls als Inline-Callback
+uebergeben. Beide Closures verwenden `lock.selector` als urspruenglichen
+Selektor der Transaktion. Die Performance-Bewertung dieser Inlining-Variante
+steht noch aus.
+Beide `finally`-Bloecke uebergeben ihren Callback an `lock.release()`.
+Nur der Lock prueft den Zaehler und ruft den Callback bei
+der letzten geteilten Nutzung mit sich selbst als Argument auf, noch unter
+bestehender Sperre. Sein `finally` garantiert die anschliessende Freigabe
+auch bei Fehlern. Render und Mount greifen nicht mehr auf `lock.ticks` zu;
+der Lock kennt weder die fachliche Abschlusslogik noch die Queue-Verarbeitung.
+
+Entferne aus dem Render-Abschluss das vorzeitige `shift()` und den zusaetzlichen
+asynchronen Renderaufruf. Ein neuer Drain oder ein Planungsflag ist nicht
+noetig.
+
+Im anschliessenden Angleichungsschritt plant auch `mount()` seinen
+parameterlosen Folgeaufruf bereits beim Einreihen. Dieser entnimmt den
+naechsten Auftrag erst nach der Lock-Pruefung mit `shift()`, bevor die
+fachliche Verarbeitung beginnt. So bleibt die zusaetzliche
+`_mount_queue.includes(selector)`-Pruefung erhalten. Der Mount-Abschluss
+endet nach `EVENT_MOUNT_END` und verarbeitet selbst keine Queue mehr.
+Parameterlose Aufrufe dienen in beiden Methoden nur der Wiederaufnahme;
+sie werden nicht selbst als neue Queue-Eintraege gespeichert.
+Eine Prioritaetsregel zwischen Mounting und Rendering wird nicht eingefuehrt.
+`lock.share()` erlaubt weiterhin synchrone Kindaufrufe derselben Transaktion.
+Das Entfernen bereits mitgerenderter Selektoren bleibt als Deduplizierung erhalten.
 
 **Problem und Ziel:** Parameterlose geplante Queue-Aufrufe konkurrieren mit
 einem beim Unlock bereits entnommenen Auftrag. So wird aus `A,B,C` die
-Startreihenfolge `A,C,B`. Die Entnahme muss einen einzigen Eigentuemer haben.
+Startreihenfolge `A,C,B`. Wartende Renderauftraege muessen bis zu ihrer
+Verarbeitung in der Queue bleiben.
 
 **Umsetzung**
 
-1. Konsolidiere die Verwaltung von geplantem und laufendem Queue-Drain.
-   Es darf nicht fuer jeden Lock-Konflikt ein konkurrierender Drain entstehen.
-2. Entnimm Eintraege ausschliesslich im Drain. Die Lock-Freigabe plant
-   Verarbeitung, reserviert aber keinen Auftrag vorab.
+1. Ordne Render- und Mount-Abschluss der jeweiligen Operation statt dem Lock zu.
+   Erhalte den einmaligen Abschluss pro Transaktion unter bestehender Sperre.
+2. Entferne die konkurrierende Render-Planung aus dem Abschluss. Nur `render()`
+   verarbeitet und entfernt seine Queue-Eintraege; die fachlichen
+   Deduplizierungsregeln des Mountings bleiben erhalten.
 3. Haenge waehrend des Renderns eingehende Auftraege hinten an. Stelle auch
    nach einem Fehler Lock-Freigabe und geordneten Fortgang sicher.
 4. Erhalte bestehende Zusammenfassungsregeln und Aufrufargumente.
+5. Gleiche die Planung beim Einreihen und die parameterlose Wiederaufnahme fuer
+   Mounting an, ohne einen gemeinsamen Queue-Helfer oder eine Queue-Prioritaet einzufuehren.
 
 **Regression und Abnahme**
 
-- [ ] Fordere im Render-Start von A zuerst B und dann C an; die Starts erfolgen exakt in der Reihenfolge `A,B,C`.
-- [ ] Ein waehrend B eingereihtes D ueberholt C nicht.
-- [ ] Ein Fehler blockiert keine spaeteren Auftraege und fuehrt zu keiner unbeabsichtigten doppelten Ausfuehrung.
+- [x] Fordere im Render-Start von A zuerst B und dann C an; die Starts erfolgen exakt in der Reihenfolge `A,B,C`.
+- [x] Ein waehrend B eingereihtes D ueberholt C nicht.
+- [x] Ein Fehler blockiert keine spaeteren Auftraege und fuehrt zu keiner unbeabsichtigten doppelten Ausfuehrung.
+- [x] Geteilte Lock-Nutzung erzeugt nur einen Transaktionsabschluss; reentrante Auftraege aus End-Ereignissen warten bis zur Freigabe.
+- [x] Auch ein Fehler im Render- oder Mount-Abschluss gibt den jeweiligen Lock frei.
+- [x] Mounting plant beim Einreihen; spaetere Auftraege und Abschlussfehler blockieren die Queue nicht.
+- [x] Parameterlose Wiederaufnahme erzeugt weder leere Queue-Eintraege noch Transaktionen bei leerer Queue.
 
 **Testansatz:** `test\composer_events_render.html`,
-`test\composer_render_recursive.html`, `test\composer_render_lock_leak_1.html`.
+`test\composer_events_reentrant.html`,
+`test\composer_render_recursive.html`, `test\composer_render_lock_leak_1.html`,
+`test\composer_render_queue.html`, `test\composer_mount_queue.html`.
 **Erledigt, wenn:** Die verbleibenden Queue-Eintraege unter Beibehaltung der
 Zusammenfassungsregeln in FIFO-Reihenfolge verarbeitet werden.
+
+**Umsetzung:** Die vorhandene asynchrone Planung beim Einreihen bleibt der
+einzige Verarbeitungsweg fuer wartende Renderauftraege. Der Render-Abschluss
+endet nach `EVENT_RENDER_END`, ohne einen Auftrag vorab zu entnehmen.
+Render- und Mount-Abschluss sind aus `lock.release()` herausgeloest.
+Direkte Renderaufrufe bei freiem Lock bleiben synchron, auch wenn noch
+Queue-Eintraege warten; bereits mitgerenderte Eintraege werden weiterhin entfernt.
+Die Regression `test\composer_render_queue.html` deckt FIFO-Reihenfolge,
+spaetere Einreihung waehrend B, Fortgang nach einem Renderfehler, synchrone
+Direktaufrufe und die Deduplizierung mitgerenderter Kinder ab.
+`test\composer_events_reentrant.html` sichert den einmaligen Abschluss geteilter
+Transaktionen, reentrante End-Ereignisse und die Lock-Freigabe bei Abschlussfehlern.
+`test\composer_mount_queue.html` prueft die angeglichene Planung beim Einreihen,
+FIFO und Deduplizierung, parameterlose Wiederaufnahme, weiterhin zurueckgestellte
+Mount-Elemente sowie den Fortgang nach einem Fehler im Mount-Abschluss.
+
+**Verifikation am 2026-10-25:** Vor der Korrektur schlug die Queue-Regression
+in Blink, Gecko und WebKit mit `A,C,B,D` statt `A,B,C,D` fehl. Nach der
+Korrektur bestanden ES2015-Lint und elf gezielte Szenarien (Queue, Render-Events,
+reentrante Events, rekursives Rendering, Conditions, drei Lock-Leak-Faelle,
+Mount-Synchronisierung, Mounting und Mount-Refresh) in allen drei Engines.
+Die uebrigen Baseline-Ergebnisse blieben unveraendert. Die Test-Bundles wurden
+isoliert aus den Quellen erzeugt und minifiziert; vorhandene lokale
+Release-Aenderungen blieben unangetastet.
+
+**Verifikation der anschliessenden Angleichung am 2026-10-25:** Die vier neuen
+Mount-Queue-Faelle schlugen vor der Aenderung in Blink aus den erwarteten
+Gruenden fehl. Danach bestanden ES2015-Lint und alle 15 gezielten Szenarien
+in Blink, Gecko und WebKit: die bisherigen elf sowie Mount-Queue, Docking,
+Mount-Module und Mount-Namensraeume. Mount-Auftraege werden jetzt bereits
+beim Einreihen geplant; ihre Reihenfolge gegenueber sonstigen asynchronen
+Callbacks kann sich dadurch bewusst aendern. Release-Bundles wurden weiterhin
+nur isoliert fuer die Pruefung erzeugt.
 
 ### R11
 

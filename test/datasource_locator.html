@@ -162,11 +162,11 @@
             try {
                 await new Promise(resolve => {
                     frame.addEventListener("load", resolve, {once:true});
-                    frame.src = "/app/datasource_context.html";
+                    frame.src = "/example/datasource_context.html";
                 });
                 const probe = frame.contentWindow.__contextProbe;
                 Assert.assertNotNull(probe);
-                Assert.assertEquals("/app", probe.contextPath);
+                Assert.assertEquals("/example", probe.contextPath);
                 Assert.assertEquals("inside application context", probe.resource);
                 Assert.assertTrue(probe.traversalError.includes(
                     "xml:/attempted-traversal.xml"));
@@ -176,7 +176,7 @@
                     new URL(entry.response || entry.request,
                         frame.contentWindow.location.href).pathname);
                 Assert.assertTrue(paths.every(path =>
-                    path === "/app" || path.startsWith("/app/")));
+                    path === "/example" || path.startsWith("/example/")));
             } finally {
                 frame.remove();
             }

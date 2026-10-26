@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <script>
+        window.__contextProbe = {requests: []};
+        (() => {
+            const open = XMLHttpRequest.prototype.open;
+            const send = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.open = function(method, url, ...variants) {
+                this.__contextRequest = String(url);
+                return open.call(this, method, url, ...variants);
+            };
+            XMLHttpRequest.prototype.send = function(...variants) {
+                const result = send.apply(this, variants);
+                window.__contextProbe.requests.push({
+                    request: this.__contextRequest,
+                    response: this.responseURL
+                });
+                return result;
+            };
+        })();
+    </script>
+    <script src="../composite-js-testing.js"></script>
+    <script>
+        (() => {
+            const probe = window.__contextProbe;
+            probe.contextPath = window.location.contextPath;
+            probe.resource = DataSource.fetch(
+                "xml:/..%5Coutside.xml?string(/data)");
+
+            const parse = Locator.parse;
+            try {
+                Locator.parse = () => ({
+                    schema: Locator.SCHEMA_XML,
+                    path: "/outside.xml",
+                    uri: "xml:/../../outside.xml",
+                    query: undefined
+                });
+                try {DataSource.fetch("xml:/attempted-traversal.xml");
+                } catch (error) {
+                    probe.traversalError = error.message;
+                }
+
+                Locator.parse = () => ({
+                    schema: Locator.SCHEMA_XML,
+                    path: "/outside.xml",
+                    uri: "xml:2/outside.xml",
+                    query: undefined
+                });
+                try {DataSource.fetch("xml:/attempted-prefix.xml");
+                } catch (error) {
+                    probe.prefixError = error.message;
+                }
+            } finally {
+                Locator.parse = parse;
+            }
+        })();
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

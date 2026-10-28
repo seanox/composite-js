@@ -1208,37 +1208,32 @@ gueltige Literalinhalte nicht mehr veraendern.
 
 **Interne Scripting-Bindungen vom Anwendungskontext trennen**
 
-**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** erledigt
 **Paket:** `sprache_api` | **Abstimmung:** [R16](#r16), [R52](#r52)
-**Fundstellen:** `sources\scripting.js:249-256`
+**Fundstellen:** `sources\scripting.js` (`eval`, `run`)
 
-**Konkreter Loesungsansatz**
+**Umgesetzte Loesung**
 
-Trenne die Kollision des `script`-Transportparameters von den Makrohelfern.
-Fuer den Transport einen frischen internen Parameternamen erzeugen, der in
-`Object.keys(context)` und im ausgewerteten Quelltext nicht als Bezeichner
-vorkommt. Der Wrapper bleibt ein strikter direkter `eval`-Wrapper, damit
-lokale Kontextbindungen und das Ergebnis der letzten Anweisung erhalten
-bleiben. Ein indirektes `eval` wuerde diesen Kontext verlieren.
+Der Wrapper erhaelt nur die Kontextschluessel als Funktionsparameter. Ein
+frisches internes `this`-Objekt transportiert pro Aufruf den Skripttext sowie
+die Helfer `import`, `export` und `use`. Der strikte direkte Aufruf
+`eval(this.script)` erhaelt lokale Kontextbindungen und das Ergebnis der
+letzten Anweisung. Die internen Eigenschaften sind keine oeffentliche API.
 
-Fuer Makrohelfer reicht blosses Umbenennen von Funktionsparametern nicht:
-Auch die vom Parser erzeugten Aufrufe muessen genau diese internen Namen
-verwenden. Empfohlen ist, erzeugte Helferstellen beim Parsen getrennt von
-originalen Codebereichen zu markieren und beim Erzeugen des Ausfuehrungscodes
-mit frischen Aliasnamen zu belegen. Originaler Anwendungscode
-`_export` bleibt dann ein Kontextzugriff; ein aus `#export` erzeugter
-Aufruf referenziert den Alias des internen Helfers. Keine globale
-String-Ersetzung aller Vorkommen von `_export` durchfuehren.
+Die Makrouebersetzung erzeugt `this.import(...)`, `this.export(...)` und
+`this.use(...)`, auch im Debug-Ausgabepfad. Originaler Anwendungscode mit
+`script`, `_import`, `_export` oder `_use` bleibt unveraendert. Es sind weder
+dynamische Aliasnamen noch eine neue Liste reservierter Anwendungsnamen noetig.
+Der fruehere Helfer `_tolerate` wurde bereits entfernt.
 
-Wird ein gemeinsames Helferobjekt verwendet, lautet die Form beispielsweise
-`<frischerName>.export(...)`; auch dieser Name muss kollisionsfrei sein.
-Die Aliaswahl muss deterministisch mit der Wrapper-/Parse-Cache-Identitaet
-zusammenpassen. Beziehe daher Aliasbelegung neben den geordneten
-Kontextschluesseln in die Wrapper-Signatur ein; keine konkreten Kontextwerte
-oder deren Objekte im Cache festhalten. Beide Parser und der
-`Scripting.eval(..., debug)`-Ausgabepfad sind mit derselben Aliasstrategie
-zu verbinden. Eine neue reservierte Anwendungsnamenliste waere kein Fix
-fuer die hier geforderten gueltigen Namen.
+Der Cache speichert weiterhin ungebundene Wrapper anhand der geordneten
+Kontextschluessel. Kontextwerte und internes `this` werden bei jeder
+Ausfuehrung neu uebergeben und nicht im Cache festgehalten.
+
+Bewusste Verhaltensaenderung: Makros innerhalb normaler Funktionen oder Methoden
+benoetigen das interne Skript-`this`, etwa durch `.call(this)` vom Skript aus.
+Auf Skriptebene und in Arrow-Funktionen, die dessen `this` erben, sind die
+Helfer direkt erreichbar. Die Einschraenkung ist im Scripting-Manual beschrieben.
 
 **Problem und Ziel:** Kontextschluessel werden als Funktionsparameter
 erzeugt; anschliessend kommen interne Parameter gleichen Namens hinzu.
@@ -1246,20 +1241,23 @@ Schon ein unbenutzter Kontextwert `script` kann einen Syntaxfehler ausloesen.
 
 **Umsetzung**
 
-1. Trenne die internen Bindungen `script`, `_import`, `_export`, `_use` und
-   `_tolerate` kollisionsfrei von den Bindungen des Anwendungskontexts.
-2. Entferne oder benenne gueltige Anwendungsvariablen nicht still um. Ein
-   Ausdruck muss weiterhin den uebergebenen Kontextwert lesen koennen.
-3. Stimme erzeugten Funktionscode, Makroaufrufe und Cache-Identitaeten auf
-   dieselbe Bindungsstrategie ab.
+1. Interne Helfer und Skripttransport werden ausschliesslich ueber das interne
+   `this` statt ueber zusaetzliche Parameter bereitgestellt.
+2. Gleichnamige Anwendungsvariablen und lokale Deklarationen bleiben lesbar;
+   erzeugte Makroaufrufe verwenden weiterhin die internen Helfer.
+3. Makrouebersetzung, Debug-Ausgabe und Wrapper-Cache verwenden dieselbe
+   Bindungsstrategie.
 
 **Regression und Abnahme**
 
-- [ ] `Scripting.run({script:"Anwendungsdaten"}, "1 + 2")` ergibt `3`.
-- [ ] `Expression.eval({script:"Anwendungsdaten"}, "{{1 + 2}}")` ergibt ebenfalls `3`.
-- [ ] Alle fuenf kollidierenden Namen sind als Anwendungsdaten lesbar, waehrend zugehoerige Makros weiterhin ihre internen Helfer verwenden.
+- [x] `Scripting.run({script:"Anwendungsdaten"}, "1 + 2")` ergibt `3`.
+- [x] `Expression.eval({script:"Anwendungsdaten"}, "{{1 + 2}}")` ergibt ebenfalls `3`.
+- [x] Alle vier verbliebenen kollidierenden Namen sind als Anwendungsdaten lesbar, waehrend zugehoerige Makros weiterhin ihre internen Helfer verwenden.
+- [x] Cache-Wiederverwendung, wechselnde Skripte und Kontextwerte sowie ein frisches internes `this` pro Aufruf sind abgedeckt.
+- [x] Makros in Arrow-Funktionen und explizit gebundenen Funktionen sowie Fehler bei abweichendem `this` sind abgedeckt.
 
 **Testansatz:** `test\scripting_eval.html`, `test\expression_eval.html`.
+**Dokumentation:** `manuals\scripting.md`, `manuals\architecture.md`, `CHANGES`.
 **Erledigt, wenn:** Kein gueltiger Kontextname doppelte Parameter erzeugt oder
 durch interne Hilfsbindungen semantisch verloren geht.
 

@@ -28,7 +28,7 @@
  */
 (() => {
 
-    const PATTERN_EVAL_MACRO_MATCH = /(^|\W)(#(?:import|export|use))\s/;
+    const PATTERN_EVAL_MACRO_MATCH = /^[^\S\r\n]*#(import|export|use)(?!\w)([^\r\n]*)(?=\r?$)/gm;
     const PATTERN_EVAL_MACRO_IMPORT = /^(\w+(\/\w+)*)(\s+(\w+(\/\w+)*))*$/;
     const PATTERN_EVAL_MACRO_EXPORT = /^([_a-z]\w*)(?:@((?:[_a-z]\w*)(?:\.[_a-z]\w*)*))?$/i;
     const PATTERN_EVAL_MACRO_USE = /^([_a-z]\w*)(\.[_a-z]\w*)*(\s+([_a-z]\w*)(\.[_a-z]\w*)*)*$/i;
@@ -40,9 +40,9 @@
          * Executes a composite script. As a special feature, composite script
          * supports macros.
          *
-         * Macros are based on a keyword starting with a hash symbol followed by
-         * arguments separated by spaces. Macros end with the next line break, a
-         * semicolon or with the end of the file.
+         * Macros begin at the start of a line -- optionally after a space --
+         * and end at the next line break or at the end of the file. They are
+         * replaced regardless of the surrounding JavaScript context.
          *
          * #import    loads modules as composite script resources from the
          *            module directory
@@ -50,10 +50,6 @@
          *            function scope usable in the global scope, optionally in a
          *            namespace declared with an @ symbol
          * #use       creates the passed namespaces if they do not already exist
-         * (? ...)    tolerant expression, a macro with a different syntax, the
-         *            enclosed logic is executed fault-tolerantly and
-         *            corresponds to the value undefined in case of an error,
-         *            except for syntax errors
          *
          * The function uses variable parameters and has the following
          * signatures:
@@ -81,139 +77,49 @@
                 {url: [String], context: [Object], script: [String], debug: [Boolean]}
             ]);
 
-            // Performance is important here.
-            // The implementation parses and replaces macros in one pass.
+            script = script.replace(PATTERN_EVAL_MACRO_MATCH,
+                (line, name, parameters) => {
+                    const index = parameters.indexOf("//");
+                    const comment = index < 0 ? "" : parameters.substring(index).trim();
+                    parameters = parameters.substring(0,
+                        index < 0 ? parameters.length : index).trim();
+                    if (parameters.includes("/*"))
+                        throw new SyntaxError("Unexpected Token: " + line.trim());
 
-            // It was important to exclude literals and comments.
-            // - ignore: /*...*/
-            // - ignore: //...([\r\n]|$)
-            // - ignore: '...'
-            // - ignore: "..."
-            // - ignore: `...`
-            // - detect: (^|\W)#(import|export|use)\s+...(\W|$)
-            // - detect: \(\?\s+...)
+                    let macro;
+                    switch (name) {
+                        case "import":
+                            if (!parameters.match(PATTERN_EVAL_MACRO_IMPORT))
+                                throw new Error(("Invalid macro: #import " + parameters).trim());
+                            const imports = parameters.split(/\s+/).map(
+                                entry => "\"" + entry + "\"");
+                            macro = "this.import(...[" + imports.join(",") + "])";
+                            break;
 
-            let pattern;
-            let brackets = [];
-            for (let cursor = 0; cursor < script.length; cursor++) {
-                let digit = script.charAt(cursor);
+                        case "export":
+                            const exports = [];
+                            parameters.split(/\s+/).forEach(entry => {
+                                const match = entry.match(PATTERN_EVAL_MACRO_EXPORT);
+                                if (!match)
+                                    throw new Error(("Invalid macro: #export " + parameters).trim());
+                                parameters = [match[1], "\"" + match[1] + "\""];
+                                if (match[2])
+                                    parameters.push("\"" + match[2] + "\"");
+                                exports.push("[" + parameters.join(",") + "]");
+                            });
+                            macro = "this.export(...[" + exports.join(",") + "])";
+                            break;
 
-                // The macro for the tolerant logic is a bit more complicated,
-                // because round brackets have to be counted here. Therefore the
-                // parsing runs parallel to the other macros.
-
-                if (digit === "\\") {
-                    cursor++;
-                    continue;
-                }
-
-                if (pattern) {
-                    if (pattern === script.substring(cursor, cursor + pattern.length)
-                            || (pattern === "\n" && digit === "\r"))
-                        pattern = null;
-                    continue;
-                }
-
-                switch (digit) {
-                    case "/":
-                        digit = script.charAt(cursor +1);
-                        if (digit === "/")
-                            pattern = "\n";
-                        if (digit === "*")
-                            pattern = "*/";
-                        continue;
-
-                    // A distinction is needed to identify the end of the
-                    // tolerate function later on, in order to insert additional
-                    // closing brackets. That is why we count and classify:
-                    //     0: normal (...).
-                    //     1: tolerant (? ...)
-                    case "(":
-                        if (script[cursor +1] === "?"
-                                && (/\s/).test(script[cursor +2])) {
-                            brackets.push(1);
-                            let macro = "_tolerate(()=>";
-                            script = script.substring(0, cursor +1)
-                                + macro + script.substring(cursor +3);
-                            cursor += macro.length;
-                        } else brackets.push(0);
-                        continue;
-
-                    case ")":
-                        // Get the type of the corresponding opening bracket.
-                        let bracket = brackets.pop();
-                        if (bracket !== 1)
-                            continue;
-
-                        let macro = ")";
-                        script = script.substring(0, cursor)
-                            + macro + script.substring(cursor);
-                        cursor += macro.length;
-                        continue;
-
-                    case "\'":
-                    case "\"":
-                    case "\`":
-                        pattern = digit;
-                        continue;
-
-                    case "#":
-                        let string = script.substring(cursor -1, cursor +10);
-                        let match = string.match(PATTERN_EVAL_MACRO_MATCH);
-                        if (match) {
-                            let macro = match[2];
-                            for (let offset = cursor +macro.length; offset <= script.length; offset++) {
-                                string = script.charAt(offset);
-                                if (!string.match(/[;\r\n]/)
-                                        && offset < script.length)
-                                    continue;
-
-                                let parameters = script.substring(cursor +macro.length, offset).trim();
-
-                                switch (macro) {
-                                    case "#import":
-                                        if (!parameters.match(PATTERN_EVAL_MACRO_IMPORT))
-                                            throw new Error(("Invalid macro: #import " + parameters).trim());
-                                        const imports = parameters.split(/\s+/).map(
-                                            entry => "\"" + entry + "\"");
-                                        macro = "_import(...[" + imports.join(",") + "])";
-                                        break;
-
-                                    case "#export":
-                                        const exports = [];
-                                        parameters.split(/\s+/).forEach(entry => {
-                                            const match = entry.match(PATTERN_EVAL_MACRO_EXPORT);
-                                            if (!match)
-                                                throw new Error(("Invalid macro: #export " + parameters).trim());
-                                            parameters = [match[1], "\"" + match[1] + "\""];
-                                            if (match[2])
-                                                parameters.push("\"" + match[2] + "\"");
-                                            exports.push("[" + parameters.join(",") + "]");
-                                        });
-                                        macro = "_export(...[" + exports.join(",") + "])";
-                                        break;
-
-                                    case "#use":
-                                        if (!parameters.match(PATTERN_EVAL_MACRO_USE))
-                                            throw new Error(("Invalid macro: #use " + parameters).trim());
-                                        const uses = parameters.split(/\s+/).map(
-                                            entry => "\"" + entry + "\"");
-                                        macro = "_use(...[" + uses.join(",") + "])";
-                                        break;
-                                }
-
-                                script = script.substring(0, cursor -1) + (match[1] || "")
-                                    + macro + script.substring(offset);
-                                cursor += macro.length;
-                                break;
-                            }
-                        }
-                        continue;
-
-                    default:
-                        continue;
-                }
-            }
+                        case "use":
+                            if (!parameters.match(PATTERN_EVAL_MACRO_USE))
+                                throw new Error(("Invalid macro: #use " + parameters).trim());
+                            const uses = parameters.split(/\s+/).map(
+                                entry => "\"" + entry + "\"");
+                            macro = "this.use(...[" + uses.join(",") + "])";
+                            break;
+                    }
+                    return macro + ";" + (comment ? " " + comment : "");
+                });
 
              script = url ? script + "\n\n//# sourceURL=" + url + "\n" : script;
              return debug ? script : this.run(context, script);
@@ -221,7 +127,9 @@
 
         /**
          * Executes a script in a separate function scope with the selected
-         * context values and helper functions explicitly provided as arguments.
+         * context values explicitly provided as arguments. Internal helpers and
+         * the script are supplied through a fresh this object per invocation;
+         * its properties are implementation details, not a public API.
          *
          * Note: This provides neither a secure sandbox nor proper isolation,
          * and it does not prevent access to global variables.
@@ -244,7 +152,7 @@
 
             // To improve performance, cacheable execution wrappers are used.
             // Unbound wrappers are cached by their ordered context keys.
-            // Values and scripts are passed anew on every invocation.
+            // Context values and the internal this object are supplied anew.
 
             const keys = Object.keys(context);
             const signature = JSON.stringify(keys);
@@ -252,16 +160,15 @@
             if (!execute)
                 execute = Function(
                     ...keys,
-                    "_import", "_export", "_use", "_tolerate", "script",
-                    '"use strict"; return eval(script);'
+                    '"use strict"; return eval(this.script);'
                 );
 
             _cache.delete(signature);
             _cache.set(signature, execute);
 
-            return execute(
-                ...Object.values(context),
-                _import, _export, _use, _tolerate, script
+            return execute.call(
+                {import: _import, export: _export, use: _use, script},
+                ...Object.values(context)
             );
         },
 
@@ -310,11 +217,4 @@
     const _use = (...uses) => {
         uses.forEach(use => Namespace.use(use));
     }
-
-    const _tolerate = (invocation) => {
-        try {return invocation.call(window);
-        } catch (error) {
-            return undefined;
-        }
-    };
 })();

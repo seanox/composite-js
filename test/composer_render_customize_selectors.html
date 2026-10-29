@@ -49,8 +49,8 @@
         }});
 
         Test.create({test() {
-            Assert.assertEquals("2", document.getElementById("probeText").textContent);
-            Assert.assertEquals("4", document.getElementById("probeTextHit").textContent);
+            Assert.assertEquals("2", window["probeText"].textContent);
+            Assert.assertEquals("4", window["probeTextHit"].textContent);
             Assert.assertTrue(probeSelectorCount > 0);
             Assert.assertFalse(String(console.output.error)
                 .includes("selector.matches is not a function"));
@@ -67,7 +67,7 @@
                     Composer.render(document.body);
                 });
                 Assert.assertEquals(condition,
-                    Boolean(document.getElementById("probeCondition")));
+                    Boolean(window["probeCondition"]));
             }
         }});
         

@@ -69,16 +69,16 @@
       </div>
     </div>
     <pre>
-      a: {{___mount_locate(document.getElementById('a')).namespace}}
-      b: {{___mount_locate(document.getElementById('b@a')).namespace}}
-      c: {{___mount_locate(document.getElementById('c@a:b')).namespace}}
-      d: {{___mount_locate(document.getElementById('d')).namespace}}
-      e: {{___mount_locate(document.getElementById('e@d')).namespace}}
-      f: {{___mount_locate(document.getElementById('f@d:e')).namespace}}
-      g: {{___mount_locate(document.getElementById('g@d:e:f')).namespace}}
-      h: {{___mount_locate(document.getElementById('h')).namespace}}
-      i: {{___mount_locate(document.getElementById('i@h')).namespace}}
-      j: {{___mount_locate(document.getElementById('j@h:i')).namespace}}
+      a: {{___mount_locate(window['a']).namespace}}
+      b: {{___mount_locate(window['b@a']).namespace}}
+      c: {{___mount_locate(window['c@a:b']).namespace}}
+      d: {{___mount_locate(window['d']).namespace}}
+      e: {{___mount_locate(window['e@d']).namespace}}
+      f: {{___mount_locate(window['f@d:e']).namespace}}
+      g: {{___mount_locate(window['g@d:e:f']).namespace}}
+      h: {{___mount_locate(window['h']).namespace}}
+      i: {{___mount_locate(window['i@h']).namespace}}
+      j: {{___mount_locate(window['j@h:i']).namespace}}
     </pre>
   </body>
 </html>

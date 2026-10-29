@@ -2062,13 +2062,13 @@
     <!-- ModelX does not exist,
          but event + render must work regardless of this fact. -->        
     <button id="buttonA:modelX" events="click" render="body" release>
-      Model-X:A {{(? modelX.status) ? '1' : '0'}}</button>
+      Model-X:A {{tryout() => modelX.status) ? '1' : '0')}}</button>
     <button id="buttonB:modelX" events="click" render="body" release>
-      Model-X:B {{(? modelX.status) ? '1' : '0'}}</button>
+      Model-X:B {{tryout() => modelX.status) ? '1' : '0')}}</button>
     <button id="buttonC:4" events="click" render="body" release>
-      Model-X:C {{(? modelX.status) ? '1' : '0'}}</button>
+      Model-X:C {{tryout() => modelX.status) ? '1' : '0')}}</button>
     <button id="buttonDX" events="click" render="body" release>
-      Model-X:D {{(? modelX.status) ? '1' : '0'}}</button>
+      Model-X:D {{tryout() => modelX.status) ? '1' : '0')}}</button>
     <section id="modelX" composite condition="{{(? modelX.status)}}">
       Model-X
     </section>

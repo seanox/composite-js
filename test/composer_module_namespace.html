@@ -66,20 +66,20 @@
     <div id="ns3@nsA:a" composite></div>
     <div id="ns3@nsA:a:b" composite></div>
     <pre>
-    A1: {{(? typeof ns3)}}
-    B1: {{(? typeof nsA.ns3)}}
-    C1: {{(? typeof nsA.a.ns3)}}
-    D1: {{(? typeof nsA.a.b.ns3)}}
+    A1: {{tryout(() => typeof ns3))}}
+    B1: {{tryout(() => typeof nsA.ns3))}}
+    C1: {{tryout(() => typeof nsA.a.ns3))}}
+    D1: {{tryout(() => typeof nsA.a.b.ns3))}}
     </pre>
     ---- ns4
     <div id="ns4@nsB" composite></div>
     <div id="ns4@nsB:a" composite></div>
     <div id="ns4@nsB:a:b" composite></div>
     <pre>
-    A2: {{(? typeof ns4)}}
-    B2: {{(? typeof nsB.ns4)}}
-    C2: {{(? typeof nsB.a.ns4)}}
-    D2: {{(? typeof nsB.a.b.ns4)}}
+    A2: {{tryout(() => typeof ns4))}}
+    B2: {{tryout(() => typeof nsB.ns4))}}
+    C2: {{tryout(() => typeof nsB.a.ns4))}}
+    D2: {{tryout(() => typeof nsB.a.b.ns4))}}
     </pre>
     ---- ns5
     <div id="ns5" composite></div>

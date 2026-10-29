@@ -52,8 +52,8 @@
       undefined
       undefined
       ----
-      #import syntaxC;
-      #use u1.u2.u3;
+      #import syntaxC
+      #use u1.u2.u3
       Composer.render("body");
     </script>
     <script type="text/test">
@@ -77,8 +77,8 @@
       object
       object
       ----
-      #import syntaxC;
-      #use u1.u2.u3;
+      #import syntaxC
+      #use u1.u2.u3
       Composer.render("body");
     </script>
   </head>
@@ -99,13 +99,13 @@
     {{String(d1)}}
     {{String(d2)}}
     ----
-    {{String(? typeof u1)}}
-    {{String(? typeof u1.u2)}}
-    {{String(? typeof u1.u2.u3)}}
+    {{String(tryout(() => typeof u1))}}
+    {{String(tryout(() => typeof u1.u2))}}
+    {{String(tryout(() => typeof u1.u2.u3))}}
     ----
     <script type="composite/javascript">
-      #import syntaxC;
-      #use u1.u2.u3;
+      #import syntaxC
+      #use u1.u2.u3
       Composer.render("body");
     </script>
   </body>

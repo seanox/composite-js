@@ -311,9 +311,9 @@
         condition="{{Model.toggleD()}}">x4++; output4.textContent = x4;</script>
         
     E:<span iterate="{{list:Model.listE}}"
-        condition="{{not Model.toggleE()}}"><span>{{list.item}}</span></span>:E
+        condition="{{:not Model.toggleE()}}"><span>{{list.item}}</span></span>:E
     
-    {{s1:((? s1) || 0) +1}}
+    {{s1:(tryout(() => s1) || 0) +1}}
     SA:{{s1}}:<span id="outputSA" condition="{{true}}" import="{{testS(s1,'A')}}">---</span>:SA
     <!-- Expectation: testS(s1) is imported once, since the import is only executed once. --> 
     SB:{{s1}}:<span id="outputSB" condition="{{true}}" output="{{testS(s1,'B')}}">---</span>:SB

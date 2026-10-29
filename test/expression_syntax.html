@@ -2,227 +2,116 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Seanox composite-js Test Environment</title>
-    <style>
-      body {
-        font-family: monospace;
-        white-space: pre;
-      }
-    </style>
+    <title>Seanox composite-js Expression Syntax</title>
     <script src="composite-js-testing.js"></script>
-    <script src="expression.js"></script>
-    <script type="text/javascript">
-    
-        Test.activate();
+    <script>
 
-        Test.create({test() {
-            document.body.textContent = normalizeOutput(document.body.innerHTML);
-            const pattern = Test.read("expression_syntax_" + navigator.engine + ".txt");
-            try {Assert.assertSameText(pattern, document.body.textContent);
-            } catch (error) {
-                console.log(document.body.textContent);
-                throw error;
-            }
-        }});
-        Composer.listen(Composer.EVENT_RENDER_END, () => {
-            Test.start();
-        });
-        Example = {
-            xa() {
-                return 122;
-            },
-            xb() {
-                const element = document.createElement("i");
-                element.innerHTML = "Hallo";
-                return element;
-            }
-        };
+      Test.activate();
+
+      for (const [source, expected] of [
+          ["{{true && false}}", false],
+          ["{{true && true}}", true],
+          ["{{false || true}}", true],
+          ["{{!false}}", true],
+          ["{{!!'x'}}", true],
+          ["{{!''}}", true],
+          ["{{![]}}", false],
+          ["{{1 == '1'}}", true],
+          ["{{1 === '1'}}", false],
+          ["{{1 != '1'}}", false],
+          ["{{1 !== '1'}}", true],
+          ["{{1 < 2}}", true],
+          ["{{2 <= 2}}", true],
+          ["{{2 > 1}}", true],
+          ["{{2 >= 2}}", true],
+          ["{{25 / 5}}", 5],
+          ["{{10 % 3}}", 1],
+          ["{{(25 / 5) == 5}}", true],
+          ["{{10 / 2 % 3}}", 2],
+          ["{{true\t&&\ttrue}}", true],
+          ["{{true\n&&\rtrue}}", true],
+          ["{{' :and :or :not :empty :eq :eeq :ne :nee :lt :gt :le :ge :div :mod '}}",
+              " :and :or :not :empty :eq :eeq :ne :nee :lt :gt :le :ge :div :mod "],
+          ["{{'a:and b'}}", "a:and b"],
+          ["{{'a :and(b)'}}", "a :and(b)"],
+          ["{{'a :AND b'}}", "a :AND b"],
+          ["{{'a :unknown b'}}", "a :unknown b"],
+          [String.raw`{{'a \u003aand b'}}`, "a :and b"],
+          ["{{`a :and b ${1 + 2}`}}", "a :and b 3"],
+          ["{{/a :and b/.source}}", "a :and b"],
+          ["{{/['\"`]/.test('x') || true}}", true],
+          ["{{1 /* :and ' \" ` */ + 2}}", 3],
+          ["{{'a  b\tc'}}", "a  b\tc"],
+          ["{{`a\r\nb`}}", "a\nb"],
+          [String.raw`{{'a\r\nb'}}`, "a\r\nb"],
+          ["{{'a\\\nb'}}", "ab"],
+          ["{{'a\\\r\nb'}}", "ab"],
+          ["{{1 // comment\n + 2}}", 3],
+          ["{{1 // comment\r + 2}}", 3],
+          ["{{1 // comment\r\n + 2}}", 3],
+          ["{{let number = 2\nnumber + 3}}", 5],
+          ["{{(() => { return\n7; })()}}", undefined],
+          ["{{({outer: {value: 3} }).outer.value}}", 3],
+          ["{{(() => { return 7; })()}}", 7],
+          ["{{let value = 2; value + 3}}", 5],
+          ["{{'abc' + \"def\"}}", "abcdef"],
+          [String.raw`{{'abc\'d\"ef'}}`, "abc'd\"ef"],
+          [String.raw`{{"abc\\" + 'def\\'}}`, "abc\\def\\"],
+          ["{{and + not + empty}}", 6],
+          ["{{object.and + object.not}}", 3],
+          ["{{value}}", "a :and b"],
+          ["{{'#import module'}}", "#import module"],
+          ["{{'#use Example'}}", "#use Example"]
+      ])
+          Test.create({test() {
+              const context = {and:1, not:2, empty:3, object:{and:1, not:2},
+                  value:"a :and b"};
+              const result = Expression.eval(context, source);
+              Assert.assertEquals(2, result.length);
+              Assert.assertEquals(undefined, result[0]);
+              Assert.assertEquals(source, expected, result[1]);
+          }});
+
+      for (const source of [
+          "{{true and false}}", "{{not false}}", "{{empty ''}}",
+          "{{:and false}}", "{{:not false}}", "{{true :and false}}",
+          "{{test :and 123}}",
+          "{{1:and false}}",
+          "{{1 : value}}", "{{1 :and(false)}}", "{{:not(false)}}",
+          "{{1 :AND false}}", "{{#HiddenField}}", "{{#(HiddenField)}}",
+          "{{#[HiddenField]}}", "{{#import module}}", "{{#export value}}",
+          "{{#use Example}}", "{{throw\nnew Error('failure')}}",
+          "{{/a\nb/.test('ab')}}"
+      ])
+          Test.create({test() {
+              const errors = [];
+              const original = console.error;
+              let result;
+              console.error = error => errors.push(error);
+              try {result = Expression.eval({}, source);
+              } finally {
+                  console.error = original;
+              }
+              Assert.assertEquals(2, result.length);
+              Assert.assertEquals(undefined, result[0]);
+              Assert.assertTrue(source, result[1] instanceof SyntaxError);
+              Assert.assertEquals(1, errors.length);
+          }});
+
+      Test.create({test() {
+          const element = document.getElementById("HiddenField");
+          Assert.assertEquals(element,
+              Expression.eval({}, "{{document.getElementById('HiddenField')}}")[1]);
+          Assert.assertEquals("Test-HF",
+              Expression.eval({}, "{{document.getElementById('HiddenField').value}}")[1]);
+          Assert.assertNull(
+              Expression.eval({}, "{{document.getElementById('Nothing')}}")[1]);
+      }});
+
+      Test.start({auto:true});
     </script>
   </head>
   <body>
-    {{navigator.engine}}
-    ----
-
-    mapping:
-    ----
-    and &&        empty !         div /
-    eq  ==        eeq   ===       ge  >=
-    gt  >         le    <=        lt  <
-    mod %         ne    !=        nee !==
-    not !         or    ||
-    
-    normal use:
-    ----
-    {{true and true}} {{true && true}}
-    {{true eq true}} {{true == true}}
-    {{1 le 2}} {{1 <= 2}}
-    {{1 ne 2}} {{1 != 2}}
-    
-    {{1 eq true}} {{1 == true}}
-    {{2 eq true}} {{2 == true}}
-    {{0 eq true}} {{0 == true}}
-    {{-1 eq true}} {{-1 == true}}
-
-    {{1 eq false}} {{1 == false}}
-    {{2 eq false}} {{2 == false}}
-    {{0 eq false}} {{0 == false}}
-    {{-1 eq false}} {{-1 == false}}
-    {{true eq true}} {{false == false}}
-    {{true eq false}} {{true == false}}
-
-    {{1 eeq false}} {{1 === false}}
-    {{2 eeq false}} {{2 === false}}
-    {{0 eeq false}} {{0 === false}}
-    {{-1 eeq false}} {{-1 === false}}
-    {{true eeq true}} {{false === false}}
-    {{true eeq false}} {{true === false}}
-
-    {{1 eq false}} {{1 == false}}
-    {{2 eq false}} {{2 == false}}
-    {{0 eq false}} {{0 == false}}
-    {{-1 eq false}} {{-1 == false}}
-    {{true eq true}} {{false == false}}
-    {{true eq false}} {{true == false}}
-
-    {{1 ne false}} {{1 != false}}
-    {{2 ne false}} {{2 != false}}
-    {{0 ne false}} {{0 != false}}
-    {{-1 ne false}} {{-1 != false}}
-    {{true ne true}} {{false != false}}
-    {{true ne false}} {{true != false}}
-
-    {{1 nee false}} {{1 !== false}}
-    {{2 nee false}} {{2 !== false}}
-    {{0 nee false}} {{0 !== false}}
-    {{-1 nee false}} {{-1 !== false}}
-    {{true nee true}} {{false !== false}}
-    {{true nee false}} {{true !== false}}
-    
-    {{empty ''}} {{!''}}
-    {{2 ge 1}} {{2 >= 1}} 
-    {{1 lt 2}} {{1 < 2}}
-    {{not ''}} {{!''}}
-    {{not empty 'x'}} {{!!'x'}}    
-    
-    {{(25 div 5) eq 5}} {{(25 /5) eq 5}}
-    {{2 gt 1}} {{2 > 1}} 
-    {{(10 mod 3) eq 1}} {{(10 % 3) eq 1}}
-    {{true or false}} {{true || false}}
-       
-    invalid word boundaries:
-    ----
-    {{trueandtrue}} {{true&&true}}
-    {{trueeqtrue}} {{true==true}} 
-    {{1le2}} {{1<= 2}}
-    {{1ne2}} {{1!= 2}}
-    
-    {{empty''}} {{!''}}
-    {{2ge1}} {{2>=1}} 
-    {{1lt2}} {{1<2}}
-    {{not''}} {{!''}}
-    {{notempty'x'}} {{!!'x'}}    
-    
-    {{(25div5)eq5}} {{(25 /5)eq5}}
-    {{2gt1}} {{2>1}} 
-    {{(10mod3)eq1}} {{(10%3)eq1}}
-    {{trueorfalse}} {{true||false}}
-    
-    lower / upper case:
-    ----
-    {{true AND true}} {{true && true}}
-    {{true EQ true}} {{true == true}}
-    {{1 LE 2}} {{1 <= 2}}
-    {{1 NE 2}} {{1 != 2}}
-    
-    {{EMPTY ''}} {{!''}}
-    {{2 GE 1}} {{2 >= 1}} 
-    {{1 LT 2}} {{1 < 2}}
-    {{NOT ''}} {{!''}}
-    {{NOT EMPTY 'x'}} {{!!'x'}}    
-    
-    {{(25 DIV 5) EQ 5}} {{(25 /5) eq 5}}
-    {{2 GT 1}} {{2 > 1}} 
-    {{(10 MOD 3) EQ 1}} {{(10 % 3) eq 1}}
-    {{true OR false}} {{true || false}}
-    
-    various
-    ----
-    {{-1}}
-    {{-1 +2}}
-    {{'-1' +2}}
-    
-    {{unknown}}
-    {{unknown + '123'}}
-    
-    A1: {{Peter}}
-    A2: {{Peter.und.der.Wolf}}
-    A3: {{Peter.und.der()}}
-    
-    B1: {{#HiddenField}}
-    B2: {{#HiddenField.value()}}
-    B3: {{#HiddenField.value}}    
-    
-    C1: {{##HiddenField}}
-    C2: {{##HiddenField.value()}}
-    C3: {{##HiddenField.value()}}    
-    
-    D1: {{#Nothing}}
-    
-    E1: {{#}}
-    E2: {{# + #}}
-    
-    F1: {{'123' + #HiddenField.value() + 'abc'}}
-    F2: {{'123' + #HiddenField.value + 'abc'}}
-    
-    G1: {{#HiddenField_1}}
-    G2: {{#HiddenField_1.#HiddenField_1}}
-    G3: {{#HiddenField_1.#HiddenField_2}}    
-    G4: {{#HiddenField_1 #HiddenField_2}}    
-    G5: {{#HiddenField_1#HiddenField_2}}
-        
-    X0: <input type="hidden" id="HiddenField" value="Test-HF">
-    X1: <input type="hidden" id="HiddenField_1" value="Test-HF_A">
-    X2: <input type="hidden" id="HiddenField_2" value="Test-HF_B">
-    X3: <input type="hidden" id="HiddenField_3" value="Test-HF_C">
-
-    O1: <span output="{{}}">span-1</span>
-    O2: <span output="{{Example.xa}}">span-2</span>
-    O3: <span output="{{Example.xa()}}">span-3</span>
-    O4: <span output="x{{'xxx'}}">span-4</span>
-    O5: <span output="{{'xxx'}}x">span-5</span>
-    O6: <span output="x{{'xxx'}}x">span-6</span>
-    O7: <span output="{{Example.xb()}}">span-7</span>
-    
-    P1: {{"abcdef \#"}}
-    P2: {{'abcdef \#'}}    
-    
-    Q1: {{"abc" + "def"}}
-    Q2: {{'abc' + 'def'}}    
-    Q3: {{'abc' + "def"}}
-    Q4: {{"abc" + 'def'}}    
-    Q5: {{"abc' + 'def"}}
-    Q6: {{'abc" + "def'}}
-
-    QA: {{"abc\\" + "def\\"}}
-    QB: {{'abc\\' + 'def\\'}}    
-    QC: {{'abc\\' + "def\\"}}
-    QD: {{"abc\\" + 'def\\'}}    
-    QE: {{"abc\\' + 'def\\"}}
-    QF: {{'abc\\" + "def\\'}}
-    
-    R1: {{'abc\'d\'ef'}}
-    R2: {{'abc\"d\"ef'}}
-    R3: {{'abc\'d\"ef'}}
-    R4: {{'abc\'d\"ef'}}
-    R5: {{"abc\'d\'ef"}}
-    R6: {{"abc\"d\"ef"}}
-    R7: {{"abc\'d\"ef"}}
-    R8: {{"abc\'d\"ef"}}
-
-    S1: <span output="{{
-      1
-     +2
-     +3
-    }}">span-7</span>
+    <input type="hidden" id="HiddenField" value="Test-HF">
   </body>
 </html>

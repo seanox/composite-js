@@ -20,6 +20,14 @@
         value: _playwright
     });
 
+    compliant("window.tryout");
+    compliant(null, window.tryout = (invocation) => {
+        try {return invocation.call(window);
+        } catch (error) {
+            return undefined;
+        }
+    });
+
     compliant("Test.read");
     compliant(null, Test.read = (content) => {
         const request = new XMLHttpRequest();

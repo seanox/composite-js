@@ -398,12 +398,12 @@
       count: _80_ / _80_
       _80_ / _80_
       [object HTMLDivElement]
-      93
-      93
+      90
+      90
       1
       [object HTMLButtonElement]
-      111
-      111
+      108
+      108
     </script>
     <script type="text/test" id="___24">
       _A_456_
@@ -415,12 +415,12 @@
       count: _80_ / _80_
       _80_ / _80_
       [object HTMLDivElement]
-      93
-      93
+      90
+      90
       1
       [object HTMLButtonElement]
-      111
-      111
+      108
+      108
     </script>
     <script type="text/test" id="___25">
       _A_456_
@@ -432,12 +432,12 @@
       count: _80_ / _80_
       _80_ / _80_
       [object HTMLDivElement]
-      93
-      93
+      90
+      90
       1
       [object HTMLButtonElement]
-      111
-      111
+      108
+      108
     </script>
     <script type="text/test" id="___26">
       _A_456_
@@ -449,12 +449,12 @@
       count: _80_ / _80_
       _80_ / _80_
       [object HTMLDivElement]
-      93
-      93
+      90
+      90
       1
       [object HTMLButtonElement]
-      111
-      111
+      108
+      108
     </script>
     <script type="text/test" id="___27">
       _A_456_
@@ -466,12 +466,12 @@
       count: _80_ / _80_
       _80_ / _80_
       [object HTMLDivElement]
-      93
-      93
+      90
+      90
       1
       [object HTMLButtonElement]
-      111
-      111
+      108
+      108
     </script>
     <script type="text/test" id="___28">
       _A_456_
@@ -537,44 +537,43 @@
       count: _80_ / _80_
       _80_ / _80_
       [object HTMLDivElement]
-      154
-      154
+      148
+      148
       2
       [object HTMLButtonElement]
-      172
-      172
+      166
+      166
     </script>
   </head>
   <body>
     _A_{{modelA.valueA}}_
     true:  _<span condition="{{true}}">true</span>
     false: _<span condition="{{false}}">false</span>
-    react: _<span condition="{{modelA.valueA ne 123}}">A{{modelA.valueA}}B</span>_
-    react: _<span condition="{{modelA.valueAa ne 123}}">A{{modelA.valueA}}B</span>_
-    react: _<span condition="{{modelA.valueAb() ne 123}}">A{{modelA.valueA}}B</span>_
+    react: _<span condition="{{modelA.valueA :ne 123}}">A{{modelA.valueA}}B</span>_
+    react: _<span condition="{{modelA.valueAa :ne 123}}">A{{modelA.valueA}}B</span>_
+    react: _<span condition="{{modelA.valueAb() :ne 123}}">A{{modelA.valueA}}B</span>_
 
     count: _{{modelA["counter"]}}_ / _{{modelA.counter}}_
-    <div id="_condition" condition="{{modelA.valueA eq 123}}">
+    <div id="_condition" condition="{{modelA.valueA :eq 123}}">
       _{{modelA["counter"]}}_ / _{{modelA.counter}}_
-      {{#_condition}}
-      {{#_condition.uid}}
-      {{#_condition.serial()}}
+      {{_condition}}
+      {{_condition.uid}}
+      {{_condition.serial()}}
       <!--
         Creates an infinite loop during rendering and must be caught in code.
         But it is not a bug in composite-js!
       -->
-      {{modelA.count(#_condition.uid)}}
+      {{modelA.count(_condition.uid)}}
       <button id="button@modelA" event="click">
         {{modelA.button.ticks}}
-        <!-- Element expression with logic #[element//logic//] -->
-        {{#[button@model//String('A')//]}}
-        {{#[button@model//String('A')//].uid}}
-        {{#[button@model//String('A')//].serial()}}
+        {{window["button@modelA"]}}
+        {{window["button@modelA"].uid}}
+        {{window["button@modelA"].serial()}}
         <!--
           Creates an infinite loop during rendering and must be caught in code.
           But it is not a bug in composite-js!
         -->
-        {{modelA.count(#[button@modelA].serial())}}
+        {{modelA.count(window["button@modelA"].serial())}}
       </button>
     </div>
   </body>

@@ -90,7 +90,7 @@
         }});
         Test.create({test() {
             const content = document.querySelector("table").outerHTML;
-            Assert.assertEquals("B202EWU5NG1620L", content.hashCode());
+            Assert.assertEquals("AGMDDDJMS4P20E", content.hashCode());
         }});
         Test.create({test() {
             Assert.assertEquals("161616", OutputS1.textContent);
@@ -339,11 +339,11 @@
     </script>
   </head>
   <body>
-    <div id="OutputA1">{{String(? tempA)}}</div>
+    <div id="OutputA1">{{String(tryout(() => tempA))}}</div>
     <div iterate={{tempA:TestModel.listA}}>
       <input id="a:{{tempA.index}}" type="text" value="{{tempA.index}}: {{tempA.item}} of {{tempA.data}}">
     </div>
-    <div id="OutputA2">{{String(? tempA)}}</div>
+    <div id="OutputA2">{{String(tryout(() => tempA))}}</div>
 
     <div id="OutputB1">{{tempB()}}</div>
     <div iterate={{tempB:TestModel.listB}}>
@@ -351,20 +351,20 @@
     </div>
     <div id="OutputB2">{{tempB()}}</div>
 
-    {{s1:((? s1) || 0) +1}}
+    {{s1:(tryout(() => s1) || 0) +1}}
     S:{{s1}}:<span id="OutputS1" iterate="{{tempS:TestModel.listA}}" import="{{testS(s1)}}">---</span>
     
     <table>
       <thead>
         <tr iterate={{tempCol:TestModel.listC}}>
-          <th condition="{{not (tempCol.index gt 0)}}">\</th> 
-          <th condition="{{tempCol.index gt 0}}">{{tempCol.item}}</th>
+          <th condition="{{:not (tempCol.index :gt 0)}}">\</th>
+          <th condition="{{tempCol.index :gt 0}}">{{tempCol.item}}</th>
         </tr>
       </thead>
       <tbody iterate={{tempRow:TestModel.listC}}>
         <tr iterate={{tempCol:TestModel.listC}}>
-          <th condition="{{not (tempCol.index gt 0)}}">{{tempRow.index +1}}</th>
-          <td condition="{{tempCol.index gt 0}}">{{tempCol.item + (tempRow.index +1)}}</td>
+          <th condition="{{:not (tempCol.index :gt 0)}}">{{tempRow.index +1}}</th>
+          <td condition="{{tempCol.index :gt 0}}">{{tempCol.item + (tempRow.index +1)}}</td>
         </tr>  
       </tbody>
     </table>

@@ -52,7 +52,7 @@
         // The button is added and removed multiple times with a condition in
         // the DOM. The mounting was a bug that was fixed.
         const buttonPush = () => {
-            const button = document.getElementById("button@modelA");
+            const button = window["button@modelA"];
             if (button)
                 button.click();
         };

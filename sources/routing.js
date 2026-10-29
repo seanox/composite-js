@@ -473,10 +473,9 @@
         if (element.hasAttribute(Composer.ATTRIBUTE_CONDITION)) {
             script = element.getAttribute(Composer.ATTRIBUTE_CONDITION).trim();
             if (script.match(Composer.PATTERN_EXPRESSION_CONTAINS))
-                script = script.replace(Composer.PATTERN_EXPRESSION_CONTAINS, (match) => {
-                    match = match.substring(2, match.length -2).trim();
-                    return `{{Routing.approve("${path}", "${composite}") and (${match})}}`;
-                });
+                script = script.replace(Composer.PATTERN_EXPRESSION_INTERPOLATION,
+                    (match, content) =>
+                        `{{Routing.approve("${path}", "${composite}") && (${content.trim()})}}`);
         }
         if (!script)
             script = `{{Routing.approve("${path}", "${composite}")}}`;

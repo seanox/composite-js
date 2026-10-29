@@ -43,9 +43,9 @@
   </head>
   <body>
     {{messages.xx}}
-    {{String(? messages.nsA.a.ns3.oo)}}
+    {{String(tryout(() => messages.nsA.a.ns3.oo))}}
     <div id="ns3@nsA:a" composite></div>
     {{messages.xx}}
-    {{(? messages.nsA.a.ns3.oo)}}
+    {{(tryout(() => messages.nsA.a.ns3.oo))}}
   </body>
 </html>

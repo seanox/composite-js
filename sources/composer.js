@@ -91,29 +91,37 @@
      */
     const PATTERN_ATTRIBUTE_STATIC = /^(composite|id)$/i;
 
-    /**
-     * Pattern to detect if a string contains an expression.
-     * Escaping characters via slash is supported.
-     */
-    const PATTERN_EXPRESSION_CONTAINS = /\{\{(.|\r|\n)*?\}\}/g;
+    /** Pattern for all markup expression operators */
+    const MARKUP_EXPRESSION_OPERATORS = {
+        and: "&&", empty: "!", div: "/", eq: "==", eeq: "===",
+        ge: ">=", gt: ">", le: "<=", lt: "<", mod: "%",
+        ne: "!=", nee: "!==", not: "!", or: "||"
+    };
+
+    /** Pattern for all markup expression operators as list for RegExp */
+    const MARKUP_EXPRESSION_OPERATORS_LIST = Object.keys(MARKUP_EXPRESSION_OPERATORS).join("|");
+
+    /** Pattern for all markup expression operators */
+    const PATTERN_MARKUP_EXPRESSION_OPERATOR = new RegExp(
+        "(^|\\s):(?:(" + MARKUP_EXPRESSION_OPERATORS_LIST + "))(?!\\S)", "g");
+
+    /** Pattern to detect if a string contains a complete markup expression. */
+    const PATTERN_EXPRESSION_CONTAINS = /\{\{([\s\S]*?)\}\}/g;
+
+    /** Detects an exclusive declaration expression, including its delimiters. */
+    const PATTERN_EXPRESSION_DECLARATION =
+        /^\s*\{\{\s*((?:_*[a-zA-Z]|_\w*)\w*):\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
 
     /**
-     * Patterns for condition expressions.
-     * Conditions are explicitly a single expression and not a variable
-     * expression.
+     * Detects complete {{...}} markup, ending at the first closing }}.
+     * Backslashes and JavaScript strings/comments do not mask delimiters.
+     * Unmatched delimiter fragments remain static text.
      */
-    const PATTERN_EXPRESSION_CONDITION = /^\s*\{\{\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;
+    const PATTERN_EXPRESSION_INTERPOLATION = PATTERN_EXPRESSION_CONTAINS;
 
-    /**
-     * Patterns for expressions with variable.
-     * Variables are at the beginning of the expression and are separated
-     * from the expression by a colon. The variable name must conform to the
-     * usual JavaScript conditions and starts with _ or a letter, other word
-     * characters (_ 0-9 a-z A-Z) may follow.
-     * - group 1: variable
-     * - group 2: expression
-     */
-    const PATTERN_EXPRESSION_VARIABLE = /^\s*\{\{\s*((?:(?:_*[a-z])|(?:_\w*))\w*)\s*:\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;
+    /** Detects an exclusive value expression, including its markup delimiters. */
+    const PATTERN_EXPRESSION_VALUE =
+        /^\s*\{\{\s*(?!\s*(?:_*[a-zA-Z]|_\w*)\w*:)(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
 
     /** Pattern for all to ignore (script-)elements */
     const PATTERN_ELEMENT_IGNORE = /script|style/i;
@@ -286,13 +294,14 @@
         get PATTERN_ATTRIBUTE_ACCEPT() {return PATTERN_ATTRIBUTE_ACCEPT;},
         get PATTERN_ATTRIBUTE_STATIC() {return PATTERN_ATTRIBUTE_STATIC;},
         get PATTERN_EXPRESSION_CONTAINS() {return PATTERN_EXPRESSION_CONTAINS;},
-        get PATTERN_EXPRESSION_CONDITION() {return PATTERN_EXPRESSION_CONDITION;},
-        get PATTERN_EXPRESSION_VARIABLE() {return PATTERN_EXPRESSION_VARIABLE;},
+        get PATTERN_EXPRESSION_DECLARATION() {return PATTERN_EXPRESSION_DECLARATION;},
+        get PATTERN_EXPRESSION_INTERPOLATION() {return PATTERN_EXPRESSION_INTERPOLATION;},
+        get PATTERN_EXPRESSION_VALUE() {return PATTERN_EXPRESSION_VALUE;},
+        get PATTERN_ELEMENT_ID() {return PATTERN_ELEMENT_ID;},
         get PATTERN_ELEMENT_IGNORE() {return PATTERN_ELEMENT_IGNORE;},
         get PATTERN_SCRIPT() {return PATTERN_SCRIPT;},
         get PATTERN_COMPOSITE_SCRIPT() {return PATTERN_COMPOSITE_SCRIPT;},
         get PATTERN_COMPOSITE_ID() {return PATTERN_COMPOSITE_ID;},
-        get PATTERN_ELEMENT_ID() {return PATTERN_ELEMENT_ID;},
         get PATTERN_CUSTOMIZE_SCOPE() {return PATTERN_CUSTOMIZE_SCOPE;},
 
         get EVENT_DOM_ADDED() {return EVENT_DOM_ADDED;},
@@ -622,8 +631,9 @@
                         if (object.attributes.hasOwnProperty(ATTRIBUTE_MESSAGE))
                             message = String(object.attributes[ATTRIBUTE_MESSAGE] || "");
                         if ((message || "").match(PATTERN_EXPRESSION_CONTAINS))
-                            message = String(Expression.eval(serial + ":" + ATTRIBUTE_MESSAGE,
-                                _execution_context(),  message));
+                            message = String(_expression_eval(serial + ":" + ATTRIBUTE_MESSAGE,
+                                _execution_context(), message,
+                                EXPRESSION_TYPE_INTERPOLATION)[2]);
                     }
 
                     if (Object.usable(message)) {
@@ -983,8 +993,9 @@
                                     ? object.attributes[ATTRIBUTE_RENDER] : "";
                             render = String(render || "");
                             if ((render || "").match(PATTERN_EXPRESSION_CONTAINS))
-                                render = Expression.eval(serial + ":" + ATTRIBUTE_RENDER,
-                                    _execution_context(), render);
+                                [, , render] = _expression_eval(serial + ":" + ATTRIBUTE_RENDER,
+                                    _execution_context(), render,
+                                    EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION);
                             Composer.render(render);
                         }
                         
@@ -1257,8 +1268,9 @@
                 _view_scope_workspace.push(..._view_scope_stack);
                 let identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
                 if (identifier.match(PATTERN_EXPRESSION_CONTAINS)) {
-                    identifier = Expression.eval(selector.serial() + ":" + ATTRIBUTE_ID,
-                        _execution_context(), identifier);
+                    [, , identifier] = _expression_eval(selector.serial() + ":" + ATTRIBUTE_ID,
+                        _execution_context(), identifier,
+                        EXPRESSION_TYPE_INTERPOLATION);
                     selector.setAttribute(ATTRIBUTE_ID, identifier);
                 }
                 _view_scope_workspace.length = 0;
@@ -1934,6 +1946,54 @@
         return context;
     };
 
+    const EXPRESSION_TYPE_VALUE = "value";
+    const EXPRESSION_TYPE_DECLARATION = "declaration";
+    const EXPRESSION_TYPE_INTERPOLATION = "interpolation";
+
+    /**
+     * Expression evaluation; includes the substitution of markup operators.
+     * Value expressions retain their result type when allowed; interpolation
+     * always produces text, including for a standalone expression.
+     * @param {string} identifier Identifier for the expression evaluation cache
+     * @param {object} context Execution scope
+     * @param {string} expression Expression value to interpret
+     * @param {...string} type Allowed expression types
+     * @returns {Array} Tuple containing expression type, optional variable name,
+     *     and result, including errors as ordinary result values
+     */
+    const _expression_eval = (identifier, context, expression, ...type) => {
+
+        const source = expression.trim().replace(PATTERN_EXPRESSION_INTERPOLATION, match => {
+            const script = match.substring(2, match.length -2)
+                .replace(PATTERN_MARKUP_EXPRESSION_OPERATOR, (match, space, operator) =>
+                    space + MARKUP_EXPRESSION_OPERATORS[operator]);
+            return "{{" + script + "}}";
+        });
+
+        if (type.includes(EXPRESSION_TYPE_DECLARATION)
+                && source.match(PATTERN_EXPRESSION_DECLARATION))
+            return [EXPRESSION_TYPE_DECLARATION,
+                ...Expression.eval(identifier, context, source)];
+        if (type.includes(EXPRESSION_TYPE_VALUE)
+                && source.match(PATTERN_EXPRESSION_VALUE))
+            return [EXPRESSION_TYPE_VALUE,
+                 ...Expression.eval(identifier, context, source)];
+        if (!type.includes(EXPRESSION_TYPE_INTERPOLATION)
+                || source.match(PATTERN_EXPRESSION_DECLARATION))
+            return [undefined, undefined, new Error("Unsupported expression type")];
+
+        let index = 0;
+        const interpolation = source.replace(
+            PATTERN_EXPRESSION_INTERPOLATION, (match, expression) => {
+                if (!expression.trim())
+                    return "";
+                const [, , result] = _expression_eval(
+                    identifier + ":" + index++, context, match, EXPRESSION_TYPE_VALUE);
+                return result;
+            });
+        return [EXPRESSION_TYPE_INTERPOLATION, undefined, interpolation];
+    };
+
     /** Lock on rendering execution as a transaction */
     let _render_lock = null;
 
@@ -2041,8 +2101,9 @@
                                 || attribute.name === ATTRIBUTE_ID
                                 || attribute.name === ATTRIBUTE_EVENTS
                                 || _statics.has(attribute.name)))
-                    attribute.value = Expression.eval(selector.serial() + ":" + attribute.name,
-                        _execution_context(), attribute.value);
+                    [, , attribute.value] = _expression_eval(selector.serial() + ":" + attribute.name,
+                        _execution_context(), attribute.value,
+                        EXPRESSION_TYPE_INTERPOLATION);
 
                 // The resolved value is written back to the meta-object, so
                 // that the object and event binding use the value of the
@@ -2090,7 +2151,7 @@
             return false;
 
         const expression = (object.attributes[ATTRIBUTE_CONDITION] || "").trim();
-        if (!expression.match(PATTERN_EXPRESSION_CONDITION))
+        if (!expression.match(PATTERN_EXPRESSION_VALUE))
             throw new Error(`Invalid condition${expression ? ": " + expression : ""}`);
 
         // The marker and its meta-object are created. This prevents the
@@ -2152,8 +2213,8 @@
             // The condition must be explicitly true, otherwise the output is
             // removed from the DOM and the rendering ends. The cleanup will be
             // done by the MutationObserver.
-            const expression = Expression.eval(serial + ":" + ATTRIBUTE_CONDITION,
-                _execution_context(), condition.expression);
+            const [, , expression] = _expression_eval(serial + ":" + ATTRIBUTE_CONDITION,
+                _execution_context(), condition.expression, EXPRESSION_TYPE_VALUE);
             selector.nodeValue = expression instanceof Error ? expression : "";
             if (expression !== true) {
                 // Because a condition can consist of two elements (marker and
@@ -2220,13 +2281,12 @@
      * When the text nodes are split, meta-objects are created for them. The
      * meta-objects are compatible with the meta-objects of the rendering
      * methods but use the additional attributes:
-     *     Composer.ATTRIBUTE_TEXT, Composer.ATTRIBUTE_NAME and
-     *     Composer.ATTRIBUTE_VALUE
+     *     Composer.ATTRIBUTE_TEXT and Composer.ATTRIBUTE_VALUE
      * Only static content uses Composer.ATTRIBUTE_TEXT, dynamic content and
-     * parameters use Composer.ATTRIBUTE_VALUE, and only the parameters use
-     * Composer.ATTRIBUTE_NAME. For dynamic content the meta-objects also have
-     * their own rendering method for generating output. Static content is
-     * ignored later during rendering because it is unchangeable.
+     * parameters use Composer.ATTRIBUTE_VALUE. Expression identifies variable
+     * declarations during evaluation. Dynamic content has its own rendering
+     * method for generating output. Static content is ignored later during
+     * rendering because it is unchangeable.
      * @param {Node} selector Text node to be rendered
      * @param {object} object Meta-object of the text node
      */
@@ -2269,12 +2329,12 @@
             // method for updating the text content of the text node.
 
             // Step 3:
-            // The format of the expression distinguishes whether it is a
-            // parameter or an output expression. Parameter expressions start
-            // with the name of the parameter and are interpreted later, but do
-            // not generate any output.
+            // Keep complete matches for later evaluation by Expression, which
+            // returns [variable, result] and identifies declarations itself.
+            // Composer binds named results to the view scope without output;
+            // unnamed results are rendered by the expression's text node.
 
-            content = content.replace(PATTERN_EXPRESSION_CONTAINS, (match) => {
+            content = content.replace(PATTERN_EXPRESSION_INTERPOLATION, (match) => {
                 if (!match.substring(2, match.length -2).trim())
                     return "";
                 const node = document.createTextNode("");
@@ -2282,25 +2342,17 @@
                 const object = {serial, element:node, attributes:{}, value:null,
                     context:[..._view_scope_workspace],
                     render() {
-                        let word = "";
-                        if (this.attributes.hasOwnProperty(ATTRIBUTE_NAME)) {
-                            const name = String(this.attributes[ATTRIBUTE_NAME] || "").trim();
-                            const value = String(this.attributes[ATTRIBUTE_VALUE] || "").trim();
-                            _view_scope[name] = Expression.eval(this.serial + ":" + ATTRIBUTE_VALUE,
-                                _execution_context(), value);
-                        } else {
-                            word = String(this.attributes[ATTRIBUTE_VALUE] || "");
-                            word = Expression.eval(this.serial + ":" + ATTRIBUTE_VALUE,
-                                _execution_context(), word);
-                        }
+                        const [type, variable, result] = _expression_eval(
+                            this.serial + ":" + ATTRIBUTE_VALUE,
+                            _execution_context(), this.attributes[ATTRIBUTE_VALUE],
+                            EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_DECLARATION);
+                        const word = type === EXPRESSION_TYPE_DECLARATION ? "" : result;
+                        if (type === EXPRESSION_TYPE_DECLARATION)
+                            _view_scope[variable] = result;
                         this.value = word;
                         this.element.textContent = word !== undefined ? word : "";
                     }};
-                const param = match.match(PATTERN_EXPRESSION_VARIABLE);
-                if (param) {
-                    object.attributes[ATTRIBUTE_NAME] = param[1];
-                    object.attributes[ATTRIBUTE_VALUE] = "{{" + param[2] + "}}";
-                } else object.attributes[ATTRIBUTE_VALUE] = match;
+                object.attributes[ATTRIBUTE_VALUE] = match;
                 _render_meta.set(serial, object);
                 return "{{" + serial + "}}";
             });
@@ -2443,8 +2495,9 @@
 
         let value = object.attributes[attribute];
         if ((value || "").match(PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + attribute,
-                _execution_context(), String(value));
+            [, , value] = _expression_eval(serial + ":" + attribute,
+                _execution_context(), String(value),
+                EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION);
 
         if (value instanceof Document
                 || value instanceof DocumentFragment
@@ -2526,7 +2579,8 @@
         if (!interval || object.interval)
             return;
         const identifier = serial + ":" + ATTRIBUTE_INTERVAL;
-        interval = String(Expression.eval(identifier, _execution_context(), interval));
+        interval = String(_expression_eval(identifier, _execution_context(), interval,
+            EXPRESSION_TYPE_INTERPOLATION)[2]);
         if (!interval.match(/^\d*$/))
             throw new Error("Invalid interval: " + interval);
         interval = Number.parseInt(interval);
@@ -2568,18 +2622,22 @@
         if (!object.attributes.hasOwnProperty(ATTRIBUTE_ITERATE))
             return;
 
+        const expression = object.iterate ? object.iterate.expression
+                : String(object.attributes[ATTRIBUTE_ITERATE] || "").trim();
+        if (!object.iterate && !expression.match(PATTERN_EXPRESSION_DECLARATION))
+            throw new Error(`Invalid iterate${expression ? ": " + expression : ""}`);
+
+        const identifier = serial + ":" + ATTRIBUTE_ITERATE;
+        let [, name, iterate] = _expression_eval(
+            identifier, _execution_context(), expression, EXPRESSION_TYPE_DECLARATION);
         if (!object.iterate) {
-            const iterate = String(object.attributes[ATTRIBUTE_ITERATE] || "").trim();
-            const match = iterate.match(PATTERN_EXPRESSION_VARIABLE);
-            if (!match)
-                throw new Error(`Invalid iterate${iterate ? ": " + iterate : ""}`);
-            object.iterate = {name:match[1].trim(), expression:"{{" + match[2].trim() + "}}"};
+            if (name === undefined)
+                throw new Error(`Invalid iterate: ${expression}`);
+            object.iterate = {name, expression};
             object.template = selector.cloneNode(true);
             selector.innerHTML = "";
         }
 
-        const identifier = serial + ":" + ATTRIBUTE_ITERATE;
-        let iterate = Expression.eval(identifier, _execution_context(), object.iterate.expression);
         if (iterate instanceof Error)
             throw iterate;
         if (iterate) {
@@ -2671,7 +2729,8 @@
             if (!value.match(PATTERN_EXPRESSION_CONTAINS))
                 return;
             const identifier = serial + ":" + attribute;
-            value = Expression.eval(identifier, _execution_context(), value);
+            [, , value] = _expression_eval(identifier, _execution_context(), value,
+                EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION);
             // If the type value is undefined, the attribute is removed. Since
             // the attribute contains an expression, the removal is only
             // temporary and is checked again at the next render cycle and
@@ -3102,10 +3161,12 @@
             // not affected, because they were not removed from the DOM.
             removed.forEach(_cleanup);
 
-            // Indirectly clear the Expressions script cache: Since serial is
-            // used only as a key prefix, an LRU cache can be truncated to the
-            // current cache size, effectively providing implicit cleanup
-            // without tracking serials.
+            // Indirectly reclaim cached expression names and scripts. Expression
+            // identifiers use serials only as prefixes; tracking all keys per
+            // removed node would require extra bookkeeping. Retained render
+            // metadata provides an approximate LRU budget, not an exact count
+            // of live cache entries. Apply the same budget to execution wrappers,
+            // whose cache keys describe execution scopes rather than DOM serials.
             Expression.prune(_render_meta.size);
             Scripting.prune(_render_meta.size);
 

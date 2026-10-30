@@ -103,33 +103,33 @@
          * namespace contains arrays and the numbers can be used as index.
          * Levels of the namespace levels are separated by a dot. Levels can as
          * fragments also contain dots. Without arguments the global namespace
-         * window is returned.
+         * window is returned. An explicit root, including window, is resolved
+         * through properties only; implicit roots also resolve global bindings.
+         * Missing, null, undefined and DOM entries are replaced by namespaces.
+         * Objects and functions are reused; other primitive values cause errors.
          *
          * The method has the following various signatures:
          *     Namespace.use();
          *     Namespace.use(string);
          *     Namespace.use(string, ...string|number);
-         *     Namespace.use(object);
-         *     Namespace.use(object, ...string|number);
+         *     Namespace.use(object|function);
+         *     Namespace.use(object|function, ...string|number);
          *
-         * @param {...(string|number|object)} levels Levels of the namespace
-         * @returns {object} The created or already existing object (level)
-         * @throws {Error} In case of invalid data types or syntax
+         * @param {...(string|number|object|function)} levels Levels of the namespace
+         * @returns {object|function} The created or already existing namespace
+         * @throws {Error} In case of invalid types, syntax or property access
          */
         use(...variants) {
 
             if (variants.length <= 0)
                 return window;
 
-            if (variants.length === 1
-                    && variants[0] !== null
-                    && typeof variants[0] === "object")
-                return variants[0];
-
             _filter(...variants);
 
-            let [namespace, levels] = typeof variants[0] === "object"
+            let [namespace, levels] = typeof variants[0] !== "string"
                     ? [variants[0], variants.slice(1)] : [null, variants];
+            if (levels.length === 0)
+                return namespace;
             const offset = namespace === null ? 0 : 1;
 
             levels = levels.join(".");
@@ -140,36 +140,26 @@
                 if (!level.match(pattern))
                     throw new Error(`Invalid namespace at level ${index +1}${level && level.trim() ? ": " + level.trim() : ""}`);
 
-                // Composites use IDs which causes corresponding DOM objects
-                // (Element) in the global namespace if there are no
-                // corresponding application modules. Because namespaces are
-                // based on data objects, if an element appears, we assume that
-                // a data object does not exist and the recursive search is
-                // aborted as unsuccessful.
-
-                if (index === 0
-                        && namespace === null) {
-                    namespace = _populate(namespace, level);
-                    if (namespace !== undefined
-                            && namespace !== null
-                            && !(namespace instanceof Element))
-                        return;
+                let item = _populate(namespace, level);
+                if (namespace === null)
                     namespace = window;
-                }
 
-                const item = _populate(namespace, level);
                 const type = typeof item;
                 if (type !== "undefined"
-                        && type !== "object")
+                        && type !== "object"
+                        && type !== "function")
                     throw new TypeError(`Invalid namespace type at level ${index +1 +offset}: ${type}`);
                 if (item === undefined
                         || item === null
-                        || item instanceof Element)
+                        || item instanceof Element
+                        || item instanceof HTMLCollection) {
                     if (index < array.length -1
                             && array[index +1].match(/^\d+$/))
                         namespace[level] = [];
                     else namespace[level] = {};
-                namespace = _populate(namespace, level);
+                    item = namespace[level];
+                }
+                namespace = item;
             });
 
             return namespace;
@@ -177,17 +167,19 @@
             
         /**
          * Resolves a namespace and returns the determined object(-level).
-         * If the namespace does not exist, undefined is returned.
+         * If the namespace does not exist or is a DOM entry, undefined is
+         * returned. Explicit roots use property lookup; implicit roots also
+         * resolve global bindings. A root without further levels is returned.
          *
          * The method has the following various signatures:
          *     Namespace.lookup();
          *     Namespace.lookup(string);
          *     Namespace.lookup(string, ...string|number);
-         *     Namespace.lookup(object);
-         *     Namespace.lookup(object, ...string|number);
+         *     Namespace.lookup(object|function);
+         *     Namespace.lookup(object|function, ...string|number);
          *
-         * @param {...(string|number|object)} levels Levels of the namespace
-         * @returns {object|undefined} The determined object(-level)
+         * @param {...(string|number|object|function)} levels Levels of the namespace
+         * @returns {*} The determined value, including null or undefined
          * @throws {Error} In case of invalid data types or syntax
          */
         lookup(...variants) {
@@ -197,8 +189,10 @@
 
             _filter(...variants);
 
-            let [namespace, levels] = typeof variants[0] === "object"
+            let [namespace, levels] = typeof variants[0] !== "string"
                     ? [variants[0], variants.slice(1)] : [null, variants];
+            if (levels.length === 0)
+                return namespace;
             const offset = namespace === null ? 0 : 1;
 
             levels = levels.join(".");
@@ -212,27 +206,13 @@
                 if (!level.match(pattern))
                     throw new Error(`Invalid namespace at level ${index +1 +offset}${level && level.trim() ? ": " + level.trim() : ""}`);
 
-                // Composites use IDs which causes corresponding DOM objects
-                // (Element) in the global namespace if there are no
-                // corresponding application modules. Because namespaces are
-                // based on data objects, if an element appears, we assume that
-                // a data object does not exist and the recursive search is
-                // aborted as unsuccessful.
-
-                if (index === 0
-                        && namespace === null) {
-                    namespace = _populate(namespace, level);
-                    if (namespace !== undefined)
-                        continue;
-                    namespace = window;
-                }
-
                 namespace = _populate(namespace, level);
                 if (namespace === undefined
                         || namespace === null)
                     return namespace;
 
-                if (namespace instanceof Element)
+                if (namespace instanceof Element
+                        || namespace instanceof HTMLCollection)
                     return undefined;
             }
 
@@ -250,10 +230,10 @@
          *     Namespace.exists();
          *     Namespace.exists(string);
          *     Namespace.exists(string, ...string|number);
-         *     Namespace.exists(object);
-         *     Namespace.exists(object, ...string|number);
+         *     Namespace.exists(object|function);
+         *     Namespace.exists(object|function, ...string|number);
          *
-         * @param {...(string|number|object)} levels Levels of the namespace
+         * @param {...(string|number|object|function)} levels Levels of the namespace
          * @returns {boolean} True if the namespace exists
          */
         exists(...levels) {
@@ -362,6 +342,7 @@
         levels.forEach((level, index) => {
             if (index === 0
                     && typeof level !== "object"
+                    && typeof level !== "function"
                     && typeof level !== "string")
                 throw new TypeError(`Invalid namespace at level ${index +1}: ${typeof level}`);
             if (index === 0
@@ -379,15 +360,9 @@
     };
 
     const _populate = (namespace, level) => {
-        if (namespace && namespace !== window)
+        if (namespace !== null)
             return namespace[level];
-        try {return eval(`typeof ${level} !== "undefined" ? ${level} : undefined`);
-        } catch (error) {
-            if (error instanceof ReferenceError
-                    && namespace === window)
-                return window[level];
-            throw error;
-        }
+        return eval(`typeof ${level} !== "undefined" ? ${level} : undefined`);
     }
 
     /**
@@ -435,19 +410,20 @@
     /**
      * Enhancement of the JavaScript API
      * Adds a static function to create and use a namespace for an object.
+     * This method delegates to Namespace.use with the same resolution rules.
      * Without arguments, the method returns the global namespace window. If only
-     * an object is passed, that object is returned unchanged.
+     * an object or function is passed, that root is returned unchanged.
      *
      * The method has the following various signatures:
      *     Object.use();
      *     Object.use(string);
      *     Object.use(string, ...string|number);
-     *     Object.use(object);
-     *     Object.use(object, ...string|number);
+     *     Object.use(object|function);
+     *     Object.use(object|function, ...string|number);
      *
-     * @param {...(string|number|object)} levels Levels of the namespace
-     * @returns {object} The created or already existing object(-level)
-     * @throws {Error} In case of invalid data types or syntax
+     * @param {...(string|number|object|function)} levels Levels of the namespace
+     * @returns {object|function} The created or already existing namespace
+     * @throws {Error} In case of invalid types, syntax or property access
      */
     compliant("Object.use");
     compliant(null, Object.use = (...levels) =>
@@ -456,17 +432,18 @@
     /**
      * Enhancement of the JavaScript API
      * Adds a static function to determine an object via the namespace.
+     * This method delegates to Namespace.lookup with the same resolution rules.
      * Without arguments, the method returns the global namespace window.
      *
      * The method has the following various signatures:
      *     Object.lookup();
      *     Object.lookup(string);
      *     Object.lookup(string, ...string|number);
-     *     Object.lookup(object);
-     *     Object.lookup(object, ...string|number);
+     *     Object.lookup(object|function);
+     *     Object.lookup(object|function, ...string|number);
      *
-     * @param {...(string|number|object)} levels Levels of the namespace
-     * @returns {object} The determined object(-level)
+     * @param {...(string|number|object|function)} levels Levels of the namespace
+     * @returns {*} The determined value, including null or undefined
      * @throws {Error} In case of invalid data types or syntax
      */
     compliant("Object.lookup");
@@ -483,10 +460,10 @@
      *     Object.exists();
      *     Object.exists(string);
      *     Object.exists(string, ...string|number);
-     *     Object.exists(object);
-     *     Object.exists(object, ...string|number);
+     *     Object.exists(object|function);
+     *     Object.exists(object|function, ...string|number);
      *
-     * @param {...(string|number|object)} levels Levels of the namespace
+     * @param {...(string|number|object|function)} levels Levels of the namespace
      * @returns {boolean} True if the namespace exists
      * @throws {Error} In case of invalid data types or syntax
      */

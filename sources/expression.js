@@ -20,8 +20,6 @@
  * variable declarations. Markup extraction, rendering, and operator aliases
  * belong to Composer.
  *
- * Composite script macros are not supported.
- *
  * see also: https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {

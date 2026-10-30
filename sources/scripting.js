@@ -17,39 +17,27 @@
  *     DESCRIPTION
  *     ----
  * Expression language and composite script are two important components. Both
- * are based on ECMAScript/JavaScript enriched with macros. In addition,
- * composite script can be loaded at runtime and can itself load other composite
- * scripts. Because in the end everything is based on a simple eval command, it
- * was important to execute the scripts in a separate function scope so that
- * internal methods and constants cannot be accessed unintentionally.
+ * evaluate ECMAScript/JavaScript. Composite script can be loaded at runtime and
+ * can itself load other composite scripts through the global API. Because in
+ * the end everything is based on a simple eval command, it was important to
+ * execute the scripts in a separate function scope so that internal methods and
+ * constants cannot be accessed unintentionally.
  *
  * see also: https://seanox.github.io/composite-js/manuals/scripting.html
  *           https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {
 
-    const PATTERN_EVAL_MACRO_MATCH = /^[^\S\r\n]*#(import|export|use)(?!\w)([^\r\n]*)(?=\r?$)/gm;
-    const PATTERN_EVAL_MACRO_IMPORT = /^(\w+(\/\w+)*)(\s+(\w+(\/\w+)*))*$/;
-    const PATTERN_EVAL_MACRO_EXPORT = /^([_a-z]\w*)(?:@((?:[_a-z]\w*)(?:\.[_a-z]\w*)*))?$/i;
-    const PATTERN_EVAL_MACRO_USE = /^([_a-z]\w*)(\.[_a-z]\w*)*(\s+([_a-z]\w*)(\.[_a-z]\w*)*)*$/i;
+    const PATTERN_IMPORT = /^\w+(\/\w+)*$/;
+
+    const PATTERN_NAMESPACE = /^([_a-z]\w*)(\.[_a-z]\w*)*$/i;
 
     compliant("Scripting");
     compliant(null, window.Scripting = {
 
         /**
-         * Executes a composite script. As a special feature, composite script
-         * supports macros.
-         *
-         * Macros begin at the start of a line -- optionally after a space --
-         * and end at the next line break or at the end of the file. They are
-         * replaced regardless of the surrounding JavaScript context.
-         *
-         * #import    loads modules as composite script resources from the
-         *            module directory
-         * #export    makes variables, constants and functions of the separate
-         *            function scope usable in the global scope, optionally in a
-         *            namespace declared with an @ symbol
-         * #use       creates the passed namespaces if they do not already exist
+         * Executes a composite script as JavaScript, optionally appending a
+         * sourceURL for browser developer tools.
          *
          * The function uses variable parameters and has the following
          * signatures:
@@ -62,11 +50,11 @@
          * @param {object} context Execution context containing values
          *     available to the script
          * @param {string} script
-         * @param {boolean} [debug=false] Optional debug
+         * @param {boolean} [debug=false] Return the script without executing it
          * @returns {*} the return value from the script
          * @throws {Error} In case of invalid data types or syntax.
          *
-         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#macros
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#global-api
          *           https://seanox.github.io/composite-js/manuals/expression.html
          */
         eval(...variants) {
@@ -77,59 +65,15 @@
                 {url: [String], context: [Object], script: [String], debug: [Boolean]}
             ]);
 
-            script = script.replace(PATTERN_EVAL_MACRO_MATCH,
-                (line, name, parameters) => {
-                    const index = parameters.indexOf("//");
-                    const comment = index < 0 ? "" : parameters.substring(index).trim();
-                    parameters = parameters.substring(0,
-                        index < 0 ? parameters.length : index).trim();
-                    if (parameters.includes("/*"))
-                        throw new SyntaxError("Unexpected Token: " + line.trim());
-
-                    let macro;
-                    switch (name) {
-                        case "import":
-                            if (!parameters.match(PATTERN_EVAL_MACRO_IMPORT))
-                                throw new Error(("Invalid macro: #import " + parameters).trim());
-                            const imports = parameters.split(/\s+/).map(
-                                entry => "\"" + entry + "\"");
-                            macro = "this.import(...[" + imports.join(",") + "])";
-                            break;
-
-                        case "export":
-                            const exports = [];
-                            parameters.split(/\s+/).forEach(entry => {
-                                const match = entry.match(PATTERN_EVAL_MACRO_EXPORT);
-                                if (!match)
-                                    throw new Error(("Invalid macro: #export " + parameters).trim());
-                                parameters = [match[1], "\"" + match[1] + "\""];
-                                if (match[2])
-                                    parameters.push("\"" + match[2] + "\"");
-                                exports.push("[" + parameters.join(",") + "]");
-                            });
-                            macro = "this.export(...[" + exports.join(",") + "])";
-                            break;
-
-                        case "use":
-                            if (!parameters.match(PATTERN_EVAL_MACRO_USE))
-                                throw new Error(("Invalid macro: #use " + parameters).trim());
-                            const uses = parameters.split(/\s+/).map(
-                                entry => "\"" + entry + "\"");
-                            macro = "this.use(...[" + uses.join(",") + "])";
-                            break;
-                    }
-                    return macro + ";" + (comment ? " " + comment : "");
-                });
-
-             script = url ? script + "\n\n//# sourceURL=" + url + "\n" : script;
-             return debug ? script : this.run(context, script);
+            script = url ? script + "\n\n//# sourceURL=" + url + "\n" : script;
+            return debug ? script : this.run(context, script);
         },
 
         /**
          * Executes a script in a separate function scope with the selected
-         * context values explicitly provided as arguments. Internal helpers and
-         * the script are supplied through a fresh this object per invocation;
-         * its properties are implementation details, not a public API.
+         * context values explicitly provided as arguments. The script source is
+         * supplied through a fresh internal this object per invocation.
+         * The shared global namespace provides the public scripting API.
          *
          * Note: This provides neither a secure sandbox nor proper isolation,
          * and it does not prevent access to global variables.
@@ -166,10 +110,7 @@
             _cache.delete(signature);
             _cache.set(signature, execute);
 
-            return execute.call(
-                {import: _import, export: _export, use: _use, script},
-                ...Object.values(context)
-            );
+            return execute.call({script}, ...Object.values(context));
         },
 
         /**
@@ -186,35 +127,70 @@
     /** Cache (signature/execution wrapper) */
     const _cache = new Map();
 
-    const _import = (...imports) => {
-        // Because it is an internal method, an additional validation of the
-        // imports as data structure was omitted.
-        imports.forEach(include =>
-            Composer.load(Composer.MODULES + "/" + include + ".js", true));
-    };
+    if (typeof global === "undefined")
+        compliant("global", {});
+    if (global === null
+            || typeof global !== "object")
+        throw new TypeError("Invalid global: " + (global === null ? "null" : typeof global));
 
-    const _export = (...exports) => {
-        // Because it is an internal method, an additional validation of the
-        // exports as data structure was omitted.
-        exports.forEach(parameters => {
-            let context = window;
-            (parameters[2] ? parameters[2].split(/\./) : []).forEach(parameter => {
-                if (typeof context[parameter] === "undefined")
-                    context[parameter] = {};
-                context = context[parameter]
-            });
+    /**
+     * Imports a module from the module directory, without the .js extension.
+     * @param {string} path Module path
+     * @throws {TypeError} If the argument is not a string
+     * @throws {Error} In case of an invalid path or resource loading failure
+     */
+    compliant("global.import");
+    compliant(null, global.import = (path) => {
+        if (typeof path !== "string")
+            throw new TypeError("Invalid import: " + typeof path);
+        if (!path.match(PATTERN_IMPORT))
+            throw new Error("Invalid import: " + path);
+        Composer.load(Composer.MODULES + "/" + path + ".js", true);
+    });
 
-            const lookup = context[parameters[1]];
-            if (typeof lookup !== "undefined"
-                    && !(lookup instanceof Element)
-                    && !(lookup instanceof HTMLCollection))
-                throw new Error("Context for export is already in use: "
-                    + parameters[1] + (parameters[2] ? "@" + parameters[2] : ""));
-            context[parameters[1]] = parameters[0];
-        });
-    }
+    /**
+     * Exposes a value at a dot-separated path rooted at window.
+     * Parent namespaces use Namespace.use; occupied targets cause errors,
+     * except for DOM entries. Namespace and assignment errors propagate.
+     * @param {*} value Value to expose
+     * @param {string} path Full target path, including the exposed name
+     * @throws {Error} In case of an invalid path, namespace or occupied target
+     */
+    compliant("global.expose");
+    compliant(null, global.expose = (value, path) => {
 
-    const _use = (...uses) => {
-        uses.forEach(use => Namespace.use(use));
-    }
+        "use strict";
+
+        if (typeof path !== "string")
+            throw new TypeError("Invalid expose path: " + typeof path);
+        if (!path.match(PATTERN_NAMESPACE))
+            throw new Error("Invalid expose path: " + path);
+
+        const levels = path.split(".");
+        const name = levels.pop();
+        const context = Namespace.use(window, ...levels);
+
+        const lookup = context[name];
+        if (name in context
+                && !(lookup instanceof Element)
+                && !(lookup instanceof HTMLCollection))
+            throw new Error("Context for expose is already in use: " + path);
+        context[name] = value;
+    });
+
+    /**
+     * Creates a namespace if it does not already exist.
+     * Uses Namespace.use with window as the explicit root; errors propagate.
+     * @param {string} use Dot-separated namespace
+     * @throws {TypeError} If the argument is not a string
+     * @throws {Error} If the namespace is invalid
+     */
+    compliant("global.use");
+    compliant(null, global.use = (use) => {
+        if (typeof use !== "string")
+            throw new TypeError("Invalid use: " + typeof use);
+        if (!use.match(PATTERN_NAMESPACE))
+            throw new Error("Invalid use: " + use);
+        Namespace.use(window, use);
+    });
 })();

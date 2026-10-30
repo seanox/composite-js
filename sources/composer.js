@@ -1505,8 +1505,8 @@
             // JavaScript is not inserted as an element, it is executed
             // directly. For this purpose eval is used. Since the method may
             // form its own scope for variables, it is important to use the
-            // macro #export to be able to use variables and/or constants in the
-            // global scope.
+            // global.expose API to use variables and/or constants in the global
+            // scope.
 
             // HTML/Markup is preloaded into the render cache if available.
             // If markup exists for the composite, ATTRIBUTE_IMPORT with the URL

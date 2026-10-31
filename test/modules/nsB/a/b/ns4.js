@@ -1,1 +1,1 @@
-#use nsB.a.b.ns4;
+global.use("nsB.a.b.ns4");

@@ -1,1 +1,1 @@
-#use nsA.a.ns3;
+global.use("nsA.a.ns3");

@@ -64,11 +64,11 @@
   </head>
   <body>
     <input type="text" id="a1" events="input" render="#a2, #a3" value="0">
-    <input type="text" id="a2" value="{{(parseInt(a1.value) or 0) +1}}">
-    <input type="text" id="a3" value="{{(parseInt(a1.value) or 0) +2}}">
+    <input type="text" id="a2" value="{{(parseInt(a1.value) :or 0) +1}}">
+    <input type="text" id="a3" value="{{(parseInt(a1.value) :or 0) +2}}">
 
-    <input type="text" id="b1" events="input" render="#b2" value="{{(parseInt(b3.value) or 0) +3}}">
-    <input type="text" id="b2" events="input" render="#b3" value="{{(parseInt(b1.value) or 0) +1}}">
-    <input type="text" id="b3" events="input" render="#b1" value="{{(parseInt(b2.value) or 0) +2}}">
+    <input type="text" id="b1" events="input" render="#b2" value="{{(parseInt(b3.value) :or 0) +3}}">
+    <input type="text" id="b2" events="input" render="#b3" value="{{(parseInt(b1.value) :or 0) +1}}">
+    <input type="text" id="b3" events="input" render="#b1" value="{{(parseInt(b2.value) :or 0) +2}}">
   </body>
 </html>

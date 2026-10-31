@@ -1,13 +1,12 @@
 
-#import moduleB
-  #import moduleB moduleB
-#import moduleB moduleB moduleB
+global.include("moduleB");
+(global.include("moduleB"), global.include("moduleB"), global.include("moduleB"));
 
-#import io/moduleX
+global.include("io/moduleX");
 // io/moduleY does not exist.
 // With the macro, a non-existent module causes an error, unlike when loading
 // composites, where JS modules are optional.
-try {#import io/moduleY
+try {global.include("io/moduleY");
 } catch (error) {
     _error_collector.push(String(error));
 }

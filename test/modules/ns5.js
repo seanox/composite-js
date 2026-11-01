@@ -1,1 +1,1 @@
-#use ns5;
+global.use("ns5");

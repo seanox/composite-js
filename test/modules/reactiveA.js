@@ -10,11 +10,11 @@ const reactiveX =  {
     valueG: null
 };
 
-#export reactiveX;
+global.expose({reactiveX});
 
 const reactiveA = reactiveX.reactive();
 
-#export reactiveA;
+global.expose({reactiveA});
 
 reactiveA.a = "-1-";
 reactiveX.a = "-2-";

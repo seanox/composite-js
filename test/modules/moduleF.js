@@ -1,2 +1,2 @@
-#import
+global.include();
 const moduleF = {};

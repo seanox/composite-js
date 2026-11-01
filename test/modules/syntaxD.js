@@ -1,12 +1,13 @@
-#import syntaxA
-#import syntaxB
-#import syntaxC
-#import syntaxD
-#import syntax
+global.include("syntaxA");
+global.include("syntaxB");
+global.include("syntaxC");
+global.include("syntaxD");
+global.include("syntax");
 
 const x1 = () => {throw new Error("xxx");}
 
-const d1 = (? xxx.xxx.xxx);
-const d2 = (? x1());
+const d1 = tryout(() => xxx.xxx.xxx);
+const d2 = tryout(() => x1());
 
-#export d1 d2;
+global.expose({d1});
+global.expose({d2});

@@ -1,9 +1,10 @@
-#import syntaxA
-#import syntax
+global.include("syntaxA");
+global.include("syntax");
 
 const x1 = () => {throw new Error("xxx");}
 
-const a1 = (? xxx.xxx.xxx);
-const a2 = (? x1());
+const a1 = tryout(() => xxx.xxx.xxx);
+const a2 = tryout(() => x1());
 
-#export a1 a2;
+global.expose({a1});
+global.expose({a2});

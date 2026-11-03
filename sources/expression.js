@@ -84,7 +84,7 @@
                 _cache.set(identifier, [variable, script]);
             }
 
-            try {return [variable, Scripting.run(context, script)];
+            try {return [variable, Scripting.eval(context, script)];
             } catch (error) {
                 if (!(error instanceof Error))
                     error = new Error(error);

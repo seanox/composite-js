@@ -18,99 +18,224 @@
  *     ----
  * Expression language and composite script are two important components. Both
  * evaluate ECMAScript/JavaScript. Composite script can be loaded at runtime and
- * can itself load other composite scripts through the global API. Because in
- * the end everything is based on a simple eval command, it was important to
- * execute the scripts in a separate function scope so that internal methods and
- * constants cannot be accessed unintentionally.
+ * can itself load other composite scripts through injected helper functions.
+ * Because everything is based on a simple eval command, scripts execute in a
+ * separate function scope so that internal methods and constants cannot be
+ * accessed unintentionally.
  *
  * see also: https://seanox.github.io/composite-js/manuals/scripting.html
  *           https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {
 
-    const PATTERN_IMPORT = /^\w+(\/\w+)*$/;
+    const PATTERN_REQUIRE = /^\w+(\/\w+)*$/;
 
-    const PATTERN_NAMESPACE = /^([_a-z]\w*)(\.[_a-z]\w*)*$/i;
+    /**
+     * Loads a script module from the module directory, without the .js extension.
+     * @param {string} path Module path
+     * @throws {TypeError} If the argument is not a string
+     * @throws {Error} In case of an invalid path or resource loading failure
+     */
+    const _require = (path) => {
+        if (typeof path !== "string")
+            throw new TypeError("Invalid require: " + typeof path);
+        if (!path.match(PATTERN_REQUIRE))
+            throw new Error("Invalid require: " + path);
+        return Composer.load(Composer.MODULES + "/" + path + ".js", true);
+    };
+
+    const _expose_collector_stack = [];
+
+    /**
+     * Collects an object's own enumerable string keys as flat module exports.
+     * An optional namespace also publishes the original object on window,
+     * using Namespace.use to obtain or create its parent namespace.
+     * Later calls replace exports with the same keys without merging values.
+     * @param {object} object Values to export
+     * @param {string} [namespace] Full optional publication path on window
+     * @returns {object} The original object
+     * @throws {TypeError} If the object or namespace has an invalid type
+     * @throws {Error} In case of an invalid namespace or failed assignment
+     */
+    const _expose = function(object, namespace) {
+
+        "use strict";
+
+        if (object === null
+                || typeof object !== "object")
+            throw new TypeError("Invalid expose: " + (object === null ? "null" : typeof object));
+        if (namespace !== undefined) {
+            if (typeof namespace !== "string")
+                throw new TypeError("Invalid expose namespace: " + typeof namespace);
+            if (!namespace.match(Namespace.PATTERN_NAMESPACE))
+                throw new Error("Invalid expose namespace: " + namespace);
+            const levels = namespace.split(Namespace.PATTERN_NAMESPACE_SEPARATOR);
+            const name = levels.pop();
+            Namespace.use(window, ...levels)[name] = object;
+        }
+
+        const collector = _expose_collector_stack[_expose_collector_stack.length -1];
+        if (collector)
+            Object.keys(object).forEach(name =>
+                Object.defineProperty(collector, name, {
+                    value: object[name], writable: true, enumerable: true, configurable: true
+                }));
+        return object;
+    };
+
+    /**
+     * Creates a namespace if it does not already exist.
+     * @param {string} use Dot-separated namespace
+     * @throws {TypeError} If the argument is not a string
+     * @throws {Error} If the namespace is invalid
+     */
+    const _use = (use) => {
+        Namespace.use(window, use);
+    };
+
+    /**
+     * Invokes a callback synchronously, or returns a non-function unchanged.
+     * Callback errors yield undefined; promise rejections are not handled.
+     * @param {*} invocation Value or callback invoked with window as this
+     * @returns {*} Original value, callback result,
+     *     or undefined on callback error
+     */
+    const _attempt = (invocation) => {
+        if (typeof invocation !== "function")
+            return invocation
+        try {return invocation.call(window);
+        } catch (error) {
+            return undefined;
+        }
+    };
+
+    /** Cache (signature/execution wrapper) */
+    const _cache = new Map();
+
+    /**
+     * Shared internal executor for Composite JavaScript and expressions.
+     * Uses the supplied context without adding helper bindings.
+     * @param {object} context Execution context containing values
+     *     available to the script
+     * @param {string} script
+     * @returns {*} return value of the script, if available
+     * @throws {Error} In case of invalid data types or syntax.
+     */
+    const _execute = (context, script) => {
+
+        if (context === null
+                || typeof context !== "object")
+            throw new TypeError("Invalid context: " + typeof context);
+        if (typeof script !== "string")
+            throw new TypeError("Invalid script: " + typeof script);
+
+        if (!script.trim())
+            return;
+
+        // To improve performance, cacheable execution wrappers are used.
+        // Unbound wrappers are cached by their ordered context keys.
+        // Context values and the internal this object are supplied anew.
+
+        const keys = Object.keys(context);
+        const signature = JSON.stringify(keys);
+
+        let execute = _cache.get(signature);
+        if (!execute)
+            execute = Function(
+                ...keys,
+                '"use strict"; return eval(this.script);'
+            );
+        else _cache.delete(signature);
+        _cache.set(signature, execute);
+
+        return execute.call({script}, ...Object.values(context));
+    };
 
     compliant("Scripting");
     compliant(null, window.Scripting = {
 
         /**
-         * Executes a composite script as JavaScript, optionally appending a
-         * sourceURL for browser developer tools.
+         * Evaluates JavaScript and returns its final expression value.
+         * Provides attempt but no automatic require, use or expose bindings.
+         * Suspends any surrounding export collection during evaluation.
          *
          * The function uses variable parameters and has the following
          * signatures:
          *
          *     function(context, script)
          *     function(url, context, script)
-         *     function(url, context, script, debug)
          *
-         * @param {string} [url] Optional sourceURL
+         * @param {string} [url] Optional sourceURL for debugging
          * @param {object} context Execution context containing values
          *     available to the script
          * @param {string} script
-         * @param {boolean} [debug=false] Return the script without executing it
-         * @returns {*} the return value from the script
+         * @returns {*} The expression result
          * @throws {Error} In case of invalid data types or syntax.
          *
-         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#global-api
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#script-api
          *           https://seanox.github.io/composite-js/manuals/expression.html
          */
         eval(...variants) {
 
-            let {url, context, script, debug = false} = Arguments.bind(variants, [
+            let {url, context, script} = Arguments.bind(variants, [
                 {context: [Object], script: [String]},
-                {url: [String], context: [Object], script: [String]},
-                {url: [String], context: [Object], script: [String], debug: [Boolean]}
+                {url: [String], context: [Object], script: [String]}
             ]);
 
-            script = url ? script + "\n\n//# sourceURL=" + url + "\n" : script;
-            return debug ? script : this.run(context, script);
+            const source = url ? "\n\n//# sourceURL=" + url + "\n" : "";
+
+            context = Object.assign(Object.create(null), {
+                attempt: _attempt
+            }, context);
+
+            _expose_collector_stack.push(undefined);
+            try {return _execute(context, script + source);
+            } finally {
+                _expose_collector_stack.pop();
+            }
         },
 
         /**
-         * Executes a script in a separate function scope with the selected
-         * context values explicitly provided as arguments. The script source is
-         * supplied through a fresh internal this object per invocation.
-         * The shared global namespace provides the public scripting API.
+         * Executes Composite JavaScript and returns its flat collected exports,
+         * or a fresh empty object if no entries are exported. Provides require,
+         * use, expose and attempt as local bindings. Context values take
+         * precedence over these defaults.
          *
-         * Note: This provides neither a secure sandbox nor proper isolation,
-         * and it does not prevent access to global variables.
+         * The function uses variable parameters and has the following
+         * signatures:
          *
+         *     function(context, script)
+         *     function(url, context, script)
+         *
+         * @param {string} [url] Optional sourceURL for debugging
          * @param {object} context Execution context containing values
          *     available to the script
          * @param {string} script
-         * @returns {*} return value of the script, if available
+         * @returns {object} Collected exports
          * @throws {Error} In case of invalid data types or syntax.
+         *
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#script-api
          */
-        run(context, script) {
+        run(...variants) {
 
-            if (typeof context !== "object")
-                throw new TypeError("Invalid context: " + typeof context)
-            if (typeof script !== "string")
-                throw new TypeError("Invalid script: " + typeof script)
+            let {url, context, script} = Arguments.bind(variants, [
+                {context: [Object], script: [String]},
+                {url: [String], context: [Object], script: [String]}
+            ]);
 
-            if (!script.trim())
-                return;
+            const source = url ? "\n\n//# sourceURL=" + url + "\n" : "";
 
-            // To improve performance, cacheable execution wrappers are used.
-            // Unbound wrappers are cached by their ordered context keys.
-            // Context values and the internal this object are supplied anew.
+            context = Object.assign(Object.create(null), {
+                attempt: _attempt, require: _require, use: _use, expose: _expose
+            }, context)
 
-            const keys = Object.keys(context);
-            const signature = JSON.stringify(keys);
-            let execute = _cache.get(signature);
-            if (!execute)
-                execute = Function(
-                    ...keys,
-                    '"use strict"; return eval(this.script);'
-                );
-
-            _cache.delete(signature);
-            _cache.set(signature, execute);
-
-            return execute.call({script}, ...Object.values(context));
+            const exports = {};
+            _expose_collector_stack.push(exports);
+            try {_execute(context, script + source);
+            } finally {
+                _expose_collector_stack.pop();
+            }
+            return exports;
         },
 
         /**
@@ -122,75 +247,5 @@
             while (_cache.size > size)
                 _cache.delete(_cache.keys().next().value);
         }
-    });
-
-    /** Cache (signature/execution wrapper) */
-    const _cache = new Map();
-
-    if (typeof global === "undefined")
-        compliant("global", {});
-    if (global === null
-            || typeof global !== "object")
-        throw new TypeError("Invalid global: " + (global === null ? "null" : typeof global));
-
-    /**
-     * Imports a module from the module directory, without the .js extension.
-     * @param {string} path Module path
-     * @throws {TypeError} If the argument is not a string
-     * @throws {Error} In case of an invalid path or resource loading failure
-     */
-    compliant("global.import");
-    compliant(null, global.import = (path) => {
-        if (typeof path !== "string")
-            throw new TypeError("Invalid import: " + typeof path);
-        if (!path.match(PATTERN_IMPORT))
-            throw new Error("Invalid import: " + path);
-        Composer.load(Composer.MODULES + "/" + path + ".js", true);
-    });
-
-    /**
-     * Exposes a value at a dot-separated path rooted at window.
-     * Parent namespaces use Namespace.use; occupied targets cause errors,
-     * except for DOM entries. Namespace and assignment errors propagate.
-     * @param {*} value Value to expose
-     * @param {string} path Full target path, including the exposed name
-     * @throws {Error} In case of an invalid path, namespace or occupied target
-     */
-    compliant("global.expose");
-    compliant(null, global.expose = (value, path) => {
-
-        "use strict";
-
-        if (typeof path !== "string")
-            throw new TypeError("Invalid expose path: " + typeof path);
-        if (!path.match(PATTERN_NAMESPACE))
-            throw new Error("Invalid expose path: " + path);
-
-        const levels = path.split(".");
-        const name = levels.pop();
-        const context = Namespace.use(window, ...levels);
-
-        const lookup = context[name];
-        if (name in context
-                && !(lookup instanceof Element)
-                && !(lookup instanceof HTMLCollection))
-            throw new Error("Context for expose is already in use: " + path);
-        context[name] = value;
-    });
-
-    /**
-     * Creates a namespace if it does not already exist.
-     * Uses Namespace.use with window as the explicit root; errors propagate.
-     * @param {string} use Dot-separated namespace
-     * @throws {TypeError} If the argument is not a string
-     * @throws {Error} If the namespace is invalid
-     */
-    compliant("global.use");
-    compliant(null, global.use = (use) => {
-        if (typeof use !== "string")
-            throw new TypeError("Invalid use: " + typeof use);
-        if (!use.match(PATTERN_NAMESPACE))
-            throw new Error("Invalid use: " + use);
-        Namespace.use(window, use);
     });
 })();

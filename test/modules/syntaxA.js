@@ -1,10 +1,10 @@
-global.include("syntaxA");
-global.include("syntax");
+require("syntaxA");
+require("syntax");
 
 const x1 = () => {throw new Error("xxx");}
 
-const a1 = tryout(() => xxx.xxx.xxx);
-const a2 = tryout(() => x1());
+const a1 = attempt(() => xxx.xxx.xxx);
+const a2 = attempt(() => x1());
 
-global.expose({a1});
-global.expose({a2});
+Object.assign(window, expose({a1}));
+Object.assign(window, expose({a2}));

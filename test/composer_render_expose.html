@@ -10,24 +10,30 @@
       }
     </style>
     <script src="composite-js-testing.js"></script>
-    <script src="scripts/capture.js"></script>
     <script type="text/javascript">
 
         Test.activate();
 
-        const capture = new Capture();
-        Composer.listen(Composer.EVENT_RENDER_END, () => {
-            capture.snap();
-            const count = capture.patterns().length;
-            if (capture.size() === count)
-                Test.start();
-            if (capture.size() > count)
-                Assert.assertEquals("expected {1} steps but was {2}", count, capture.size());
-        });
+        Test.create({test() {
+            const expected = document.querySelector("script[type=\"text/test\"]").textContent;
+            Assert.assertSameText(expected, document.body.textContent);
+        }});
 
         Test.create({test() {
-            capture.validate();
+            Assert.assertSame(window.moduleM, window.a.b.c);
+            Assert.assertEquals("exampleE_A1,exampleE_A2,exampleE_A3,exampleX_01",
+                Object.keys(window.moduleM).join(","));
+            for (const name of ["exampleE_A2", "exampleE_A3", "exampleX_01"])
+                Assert.assertFalse(name, Object.prototype.hasOwnProperty.call(window, name));
         }});
+
+        let started = false;
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            if (selector !== document.body || started)
+                return;
+            started = true;
+            Test.start();
+        });
     </script>
     <script type="text/test">
       before import + expose
@@ -35,271 +41,37 @@
       exampleE_A1: undefined
       exampleE_A2: undefined
       exampleE_A3: undefined
-      exampleE_A4: undefined
-      exampleE_A5: undefined
-      exampleE_B1: undefined
-      exampleE_B2: undefined
-      exampleE_B3: undefined
-      exampleE_B4: undefined
-      exampleE_C1: undefined
-      exampleE_C2: undefined
-      exampleE_C3: undefined
-      exampleE_C4: undefined
       exampleX_01: undefined
-      exampleX_02: undefined
-      exampleX_03: undefined
-      exampleX_04: undefined
-      a: undefined
-      a.b: undefined
+      moduleM.exampleE_A1: undefined
       a.b.c: undefined
-      a.b.c.exampleE_A1: undefined
-      b: undefined
-      b.c: undefined
-      b.c.d: undefined
-      b.c.d.exampleE_A5: undefined
       import + expose
       ----
       after import + expose
       ----
-      exampleE_A1: {{String(tryout(() => exampleE_A1))}}
-      exampleE_A2: {{String(tryout(() => exampleE_A2))}}
-      exampleE_A3: {{String(tryout(() => exampleE_A3))}}
-      exampleE_A4: {{String(tryout(() => exampleE_A4))}}
-      exampleE_A5: {{String(tryout(() => exampleE_A5))}}
-      exampleE_B1: {{String(tryout(() => exampleE_B1))}}
-      exampleE_B2: {{String(tryout(() => exampleE_B2))}}
-      exampleE_B3: {{String(tryout(() => exampleE_B3))}}
-      exampleE_B4: {{String(tryout(() => exampleE_B4))}}
-      exampleE_C1: {{String(tryout(() => exampleE_C1))}}
-      exampleE_C2: {{String(tryout(() => exampleE_C2))}}
-      exampleE_C3: {{String(tryout(() => exampleE_C3))}}
-      exampleE_C4: {{String(tryout(() => exampleE_C4))}}
-      exampleX_01: {{String(tryout(() => exampleX_01))}}
-      exampleX_02: {{String(tryout(() => exampleX_02))}}
-      exampleX_03: {{String(tryout(() => exampleX_03))}}
-      exampleX_04: {{String(tryout(() => exampleX_04))}}
-      a: {{String(tryout(() => a))}}
-      a.b: {{String(tryout(() => a.b))}}
-      a.b.c: {{String(tryout(() => a.b.c))}}
-      a.b.c.exampleE_A1: {{String(tryout(() => a.b.c.exampleE_A1))}}
-      b: {{String(tryout(() => b))}}
-      b.c: {{String(tryout(() => b.c))}}
-      b.c.d: {{String(tryout(() => b.c.d))}}
-      b.c.d.exampleE_A5: {{String(tryout(() => b.c.d.exampleE_A5))}}
-      X: ReferenceError: exampleE_C1 is not defined
-    </script>
-    <script type="text/test">
-      before import + expose
-       ----
-       exampleE_A1: undefined
-       exampleE_A2: undefined
-       exampleE_A3: undefined
-       exampleE_A4: undefined
-       exampleE_A5: undefined
-       exampleE_B1: undefined
-       exampleE_B2: undefined
-       exampleE_B3: undefined
-       exampleE_B4: undefined
-       exampleE_C1: undefined
-       exampleE_C2: undefined
-       exampleE_C3: undefined
-       exampleE_C4: undefined
-       exampleX_01: undefined
-       exampleX_02: undefined
-       exampleX_03: undefined
-       exampleX_04: undefined
-       a: undefined
-       a.b: undefined
-       a.b.c: undefined
-       a.b.c.exampleE_A1: undefined
-       b: undefined
-       b.c: undefined
-       b.c.d: undefined
-       b.c.d.exampleE_A5: undefined
-       import + expose
-       ----
-       after import + expose
-       ----
-       exampleE_A1: {{String(tryout(() => exampleE_A1))}}
-       exampleE_A2: {{String(tryout(() => exampleE_A2))}}
-       exampleE_A3: {{String(tryout(() => exampleE_A3))}}
-       exampleE_A4: {{String(tryout(() => exampleE_A4))}}
-       exampleE_A5: {{String(tryout(() => exampleE_A5))}}
-       exampleE_B1: {{String(tryout(() => exampleE_B1))}}
-       exampleE_B2: {{String(tryout(() => exampleE_B2))}}
-       exampleE_B3: {{String(tryout(() => exampleE_B3))}}
-       exampleE_B4: {{String(tryout(() => exampleE_B4))}}
-       exampleE_C1: {{String(tryout(() => exampleE_C1))}}
-       exampleE_C2: {{String(tryout(() => exampleE_C2))}}
-       exampleE_C3: {{String(tryout(() => exampleE_C3))}}
-       exampleE_C4: {{String(tryout(() => exampleE_C4))}}
-       exampleX_01: {{String(tryout(() => exampleX_01))}}
-       exampleX_02: {{String(tryout(() => exampleX_02))}}
-       exampleX_03: {{String(tryout(() => exampleX_03))}}
-       exampleX_04: {{String(tryout(() => exampleX_04))}}
-       a: {{String(tryout(() => a))}}
-       a.b: {{String(tryout(() => a.b))}}
-       a.b.c: {{String(tryout(() => a.b.c))}}
-       a.b.c.exampleE_A1: {{String(tryout(() => a.b.c.exampleE_A1))}}
-       b: {{String(tryout(() => b))}}
-       b.c: {{String(tryout(() => b.c))}}
-       b.c.d: {{String(tryout(() => b.c.d))}}
-       b.c.d.exampleE_A5: {{String(tryout(() => b.c.d.exampleE_A5))}}
-       X: ReferenceError: exampleE_C1 is not defined
-    </script>
-    <script type="text/test">
-      before import + expose
-      ----
-      exampleE_A1: undefined
+      exampleE_A1: object
+      exampleE_A1.exampleE_A1: A-AAA
       exampleE_A2: undefined
       exampleE_A3: undefined
-      exampleE_A4: undefined
-      exampleE_A5: undefined
-      exampleE_B1: undefined
-      exampleE_B2: undefined
-      exampleE_B3: undefined
-      exampleE_B4: undefined
-      exampleE_C1: undefined
-      exampleE_C2: undefined
-      exampleE_C3: undefined
-      exampleE_C4: undefined
       exampleX_01: undefined
-      exampleX_02: undefined
-      exampleX_03: undefined
-      exampleX_04: undefined
-      a: undefined
-      a.b: undefined
-      a.b.c: undefined
-      a.b.c.exampleE_A1: undefined
-      b: undefined
-      b.c: undefined
-      b.c.d: undefined
-      b.c.d.exampleE_A5: undefined
-      import + expose
-      ----
-      after import + expose
-      ----
-      exampleE_A1: {{String(tryout(() => exampleE_A1))}}
-      exampleE_A2: {{String(tryout(() => exampleE_A2))}}
-      exampleE_A3: {{String(tryout(() => exampleE_A3))}}
-      exampleE_A4: {{String(tryout(() => exampleE_A4))}}
-      exampleE_A5: {{String(tryout(() => exampleE_A5))}}
-      exampleE_B1: {{String(tryout(() => exampleE_B1))}}
-      exampleE_B2: {{String(tryout(() => exampleE_B2))}}
-      exampleE_B3: {{String(tryout(() => exampleE_B3))}}
-      exampleE_B4: {{String(tryout(() => exampleE_B4))}}
-      exampleE_C1: {{String(tryout(() => exampleE_C1))}}
-      exampleE_C2: {{String(tryout(() => exampleE_C2))}}
-      exampleE_C3: {{String(tryout(() => exampleE_C3))}}
-      exampleE_C4: {{String(tryout(() => exampleE_C4))}}
-      exampleX_01: {{String(tryout(() => exampleX_01))}}
-      exampleX_02: {{String(tryout(() => exampleX_02))}}
-      exampleX_03: {{String(tryout(() => exampleX_03))}}
-      exampleX_04: {{String(tryout(() => exampleX_04))}}
-      a: {{String(tryout(() => a))}}
-      a.b: {{String(tryout(() => a.b))}}
-      a.b.c: {{String(tryout(() => a.b.c))}}
-      a.b.c.exampleE_A1: {{String(tryout(() => a.b.c.exampleE_A1))}}
-      b: {{String(tryout(() => b))}}
-      b.c: {{String(tryout(() => b.c))}}
-      b.c.d: {{String(tryout(() => b.c.d))}}
-      b.c.d.exampleE_A5: {{String(tryout(() => b.c.d.exampleE_A5))}}
-      X: ReferenceError: exampleE_C1 is not defined
-    </script>
-    <script type="text/test">
-      before import + expose
-      ----
-      exampleE_A1: undefined
-      exampleE_A2: undefined
-      exampleE_A3: undefined
-      exampleE_A4: undefined
-      exampleE_A5: undefined
-      exampleE_B1: undefined
-      exampleE_B2: undefined
-      exampleE_B3: undefined
-      exampleE_B4: undefined
-      exampleE_C1: undefined
-      exampleE_C2: undefined
-      exampleE_C3: undefined
-      exampleE_C4: undefined
-      exampleX_01: undefined
-      exampleX_02: undefined
-      exampleX_03: undefined
-      exampleX_04: undefined
-      a: undefined
-      a.b: undefined
-      a.b.c: undefined
-      a.b.c.exampleE_A1: undefined
-      b: undefined
-      b.c: undefined
-      b.c.d: undefined
-      b.c.d.exampleE_A5: undefined
-      import + expose
-      ----
-      after import + expose
-      ----
-      exampleE_A1: A-AAA
-      exampleE_A2: [object Object]
-      exampleE_A3: () => {return "A-CCC";}
-      exampleE_A4: undefined
-      exampleE_A5: undefined
-      exampleE_B1: B-AAA
-      exampleE_B2: [object Object]
-      exampleE_B3: () => {return "B-CCC";}
-      exampleE_B4: undefined
-      exampleE_C1: undefined
-      exampleE_C2: undefined
-      exampleE_C3: undefined
-      exampleE_C4: undefined
-      exampleX_01: 123"456789"
-      exampleX_02: 123'456789'
-      exampleX_03: 123"456789'
-      exampleX_04: 123'456789"
-      a: [object Object]
-      a.b: [object Object]
-      a.b.c: [object Object]
+      moduleM.exampleE_A1: A-AAA
+      moduleM.exampleE_A2: object
+      moduleM.exampleE_A2.value: A-BBB
+      moduleM.exampleE_A3: function
+      moduleM.exampleE_A3(): A-CCC
+      moduleM.exampleX_01: 123"456789'
       a.b.c.exampleE_A1: A-AAA
-      b: [object Object]
-      b.c: [object Object]
-      b.c.d: [object Object]
-      b.c.d.exampleE_A5: A-EEE
-      X: ReferenceError: exampleE_C1 is not defined
     </script>
   </head>
   <body>
 
     before import + expose
     ----
-    exampleE_A1: {{String(tryout(() => exampleE_A1))}}
-    exampleE_A2: {{String(tryout(() => exampleE_A2))}}
-    exampleE_A3: {{String(tryout(() => exampleE_A3))}}
-    exampleE_A4: {{String(tryout(() => exampleE_A4))}}
-    exampleE_A5: {{String(tryout(() => exampleE_A5))}}
-
-    exampleE_B1: {{String(tryout(() => exampleE_B1))}}
-    exampleE_B2: {{String(tryout(() => exampleE_B2))}}
-    exampleE_B3: {{String(tryout(() => exampleE_B3))}}
-    exampleE_B4: {{String(tryout(() => exampleE_B4))}}
-
-    exampleE_C1: {{String(tryout(() => exampleE_C1))}}
-    exampleE_C2: {{String(tryout(() => exampleE_C2))}}
-    exampleE_C3: {{String(tryout(() => exampleE_C3))}}
-    exampleE_C4: {{String(tryout(() => exampleE_C4))}}
-
-    exampleX_01: {{String(tryout(() => exampleX_01))}}
-    exampleX_02: {{String(tryout(() => exampleX_02))}}
-    exampleX_03: {{String(tryout(() => exampleX_03))}}
-    exampleX_04: {{String(tryout(() => exampleX_04))}}
-
-    a: {{String(tryout(() => a))}}
-    a.b: {{String(tryout(() => a.b))}}
-    a.b.c: {{String(tryout(() => a.b.c))}}
-    a.b.c.exampleE_A1: {{String(tryout(() => a.b.c.exampleE_A1))}}
-
-    b: {{String(tryout(() => b))}}
-    b.c: {{String(tryout(() => b.c))}}
-    b.c.d: {{String(tryout(() => b.c.d))}}
-    b.c.d.exampleE_A5: {{String(tryout(() => b.c.d.exampleE_A5))}}
+    exampleE_A1: {{String(attempt(() => exampleE_A1))}}
+    exampleE_A2: {{String(attempt(() => exampleE_A2))}}
+    exampleE_A3: {{String(attempt(() => exampleE_A3))}}
+    exampleX_01: {{String(attempt(() => exampleX_01))}}
+    moduleM.exampleE_A1: {{String(attempt(() => moduleM.exampleE_A1))}}
+    a.b.c: {{String(attempt(() => a.b.c))}}
 
     import + expose
     ----
@@ -307,35 +79,17 @@
 
     after import + expose
     ----
-    exampleE_A1: {{String(tryout(() => exampleE_A1))}}
-    exampleE_A2: {{String(tryout(() => exampleE_A2))}}
-    exampleE_A3: {{String(tryout(() => exampleE_A3))}}
-    exampleE_A4: {{String(tryout(() => exampleE_A4))}}
-    exampleE_A5: {{String(tryout(() => exampleE_A5))}}
-
-    exampleE_B1: {{String(tryout(() => exampleE_B1))}}
-    exampleE_B2: {{String(tryout(() => exampleE_B2))}}
-    exampleE_B3: {{String(tryout(() => exampleE_B3))}}
-    exampleE_B4: {{String(tryout(() => exampleE_B4))}}
-
-    exampleE_C1: {{String(tryout(() => exampleE_C1))}}
-    exampleE_C2: {{String(tryout(() => exampleE_C2))}}
-    exampleE_C3: {{String(tryout(() => exampleE_C3))}}
-    exampleE_C4: {{String(tryout(() => exampleE_C4))}}
-
-    exampleX_01: {{String(tryout(() => exampleX_01))}}
-    exampleX_02: {{String(tryout(() => exampleX_02))}}
-    exampleX_03: {{String(tryout(() => exampleX_03))}}
-    exampleX_04: {{String(tryout(() => exampleX_04))}}
-
-    a: {{String(tryout(() => a))}}
-    a.b: {{String(tryout(() => a.b))}}
-    a.b.c: {{String(tryout(() => a.b.c))}}
-    a.b.c.exampleE_A1: {{String(tryout(() => a.b.c.exampleE_A1))}}
-
-    b: {{String(tryout(() => b))}}
-    b.c: {{String(tryout(() => b.c))}}
-    b.c.d: {{String(tryout(() => b.c.d))}}
-    b.c.d.exampleE_A5: {{String(tryout(() => b.c.d.exampleE_A5))}}
+    exampleE_A1: {{typeof exampleE_A1}}
+    exampleE_A1.exampleE_A1: {{exampleE_A1.exampleE_A1}}
+    exampleE_A2: {{String(attempt(() => exampleE_A2))}}
+    exampleE_A3: {{String(attempt(() => exampleE_A3))}}
+    exampleX_01: {{String(attempt(() => exampleX_01))}}
+    moduleM.exampleE_A1: {{moduleM.exampleE_A1}}
+    moduleM.exampleE_A2: {{typeof moduleM.exampleE_A2}}
+    moduleM.exampleE_A2.value: {{moduleM.exampleE_A2.value}}
+    moduleM.exampleE_A3: {{typeof moduleM.exampleE_A3}}
+    moduleM.exampleE_A3(): {{moduleM.exampleE_A3()}}
+    moduleM.exampleX_01: {{moduleM.exampleX_01}}
+    a.b.c.exampleE_A1: {{a.b.c.exampleE_A1}}
   </body>
 </html>

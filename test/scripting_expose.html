@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+    (() => {
+
+        Test.activate();
+
+        const {expose} = Scripting.run({}, "expose({expose});");
+
+        Test.create({test() {
+            const types = "[typeof require, typeof use, typeof expose, typeof attempt].join(',')";
+            for (const prefix of [[], [""], ["scripting_api.js"]]) {
+                Assert.assertEquals("undefined,undefined,undefined,function",
+                    Scripting.eval(...prefix, {}, types));
+                const result = Scripting.run(...prefix, {},
+                    "expose({types: " + types + ", attempt});");
+                Assert.assertEquals("function,function,function,function", result.types);
+                Assert.assertSame(Scripting.eval({}, "attempt"), result.attempt);
+                Assert.assertEquals(42, Scripting.eval(...prefix, {},
+                    "attempt(() => 42)"));
+            }
+            for (const name of ["require", "use", "expose", "attempt"])
+                Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, name));
+            for (const name of ["_execute", "_run"])
+                Assert.assertEquals("undefined", Scripting.eval({}, "typeof " + name));
+            Assert.assertEquals("undefined,undefined,undefined,function",
+                Expression.eval({}, "{{" + types + "}}")[1]);
+        }});
+
+        Test.create({test() {
+            const value = {answer: 42};
+            for (const prefix of [[], [""], ["scripting_api.js"]]) {
+                Assert.assertSame(value, Scripting.eval(...prefix, {value}, "value"));
+                Assert.assertEquals(3, Scripting.eval(...prefix, {}, "1 + 2"));
+                Assert.assertUndefined(Scripting.eval(...prefix, {}, ""));
+                const result = Scripting.run(...prefix, {value},
+                    "expose({value}); 1 + 2;");
+                Assert.assertEquals("value", Object.keys(result).join(","));
+                Assert.assertSame(value, result.value);
+                const first = Scripting.run(...prefix, {}, "42;");
+                const second = Scripting.run(...prefix, {}, "");
+                Assert.assertEquals(0, Object.keys(first).length);
+                Assert.assertEquals(0, Object.keys(second).length);
+                Assert.assertNotSame(first, second);
+            }
+        }});
+
+        Test.create({test() {
+            const calls = [];
+            const context = Object.freeze({
+                require: path => "custom " + path,
+                use: namespace => calls.push(namespace),
+                expose: object => calls.push(object),
+                attempt: () => "custom attempt"
+            });
+            const keys = Object.keys(context).join(",");
+            const script = "use('local'); expose(require('module')); attempt();";
+            Assert.assertEquals("custom attempt", Scripting.eval(context, script));
+            Assert.assertEquals(0, Object.keys(Scripting.run(context, script)).length);
+            Assert.assertEquals("local,custom module,local,custom module", calls.join(","));
+            Assert.assertEquals(keys, Object.keys(context).join(","));
+            Assert.assertEquals("function", Scripting.eval({}, "typeof attempt"));
+            Assert.assertSame(expose, Scripting.run({}, "expose({expose});").expose);
+            const shared = Scripting.run({}, "expose({require, use, expose, attempt});");
+            Scripting.prune(0);
+            Assert.assertEquals("function,function,function,function", Scripting.eval(shared,
+                "[typeof require, typeof use, typeof expose, typeof attempt].join(',')"));
+            Assert.assertEquals("undefined,undefined,undefined,function", Scripting.eval({},
+                "[typeof require, typeof use, typeof expose, typeof attempt].join(',')"));
+        }});
+
+        Test.create({test() {
+            const failure = new Error("nested evaluation failure");
+            const child = [];
+            const object = {};
+            Object.defineProperty(object, "unread", {
+                enumerable: true,
+                get() {throw new Error("eval must not collect");}
+            });
+            const evaluate = () => {
+                for (const prefix of [[], [""], ["expression.js"]]) {
+                    const publish = () => expose(object);
+                    const executeChild = () => {
+                        child.push(Scripting.run({}, "expose({child: true});"));
+                    };
+                    Assert.assertSame(object, Scripting.eval(...prefix, {publish, executeChild},
+                        "publish(); executeChild(); publish();"));
+                    let error;
+                    try {Scripting.eval(...prefix, {publish, failure}, "publish(); throw failure;");
+                    } catch (caught) {
+                        error = caught;
+                    }
+                    Assert.assertSame(failure, error);
+                }
+            };
+            const result = Scripting.run({evaluate},
+                "expose({before: 1}); evaluate(); expose({after: 2});");
+            Assert.assertEquals("before,after", Object.keys(result).join(","));
+            Assert.assertEquals(3, child.length);
+            child.forEach(exports => Assert.assertTrue(exports.child));
+        }});
+
+        Test.create({test() {
+            const source = "effect();";
+            let effects = 0;
+            const context = Object.defineProperty({}, "effect", {
+                enumerable: true,
+                get() {effects++; return () => {effects++;};}
+            });
+            for (const name of ["eval", "run"])
+                for (const source of ["", " \n\t "]) {
+                    Scripting[name](context, source);
+                    Scripting[name]("", context, source);
+                }
+            Assert.assertEquals(8, effects);
+            Assert.assertUndefined(Scripting.eval(context, source));
+            Assert.assertEquals(10, effects);
+            Assert.assertEquals(0, Object.keys(Scripting.run(context, source)).length);
+            Assert.assertEquals(12, effects);
+        }});
+
+        Test.create({test() {
+            let effects = 0;
+            const effect = () => {effects++; return 42;};
+            for (const url of ["", "scripting_execution.js"])
+                for (const extra of [true, false, undefined]) {
+                    Assert.assertEquals(42, Scripting.eval(url, {effect}, "effect();", extra));
+                    const result = Scripting.run(url, {effect},
+                        "expose({answer: effect()});", extra);
+                    Assert.assertEquals("answer", Object.keys(result).join(","));
+                    Assert.assertEquals(42, result.answer);
+                }
+            Assert.assertEquals(12, effects);
+        }});
+
+        Test.create({test() {
+            const failure = new Error("execution context failure");
+            const context = Object.defineProperty({}, "value", {
+                enumerable: true,
+                get() {throw failure;}
+            });
+            const evaluate = () => {
+                for (const name of ["eval", "run"]) {
+                    let error;
+                    try {Scripting[name](context, "value;");
+                    } catch (caught) {
+                        error = caught;
+                    }
+                    Assert.assertSame(failure, error);
+                    Assert.assertEquals(42, Scripting.eval({}, "attempt(() => 42)"));
+                }
+            };
+            const result = Scripting.run({evaluate},
+                "expose({before: 1}); evaluate(); expose({after: 2});");
+            Assert.assertEquals("before,after", Object.keys(result).join(","));
+            Assert.assertEquals(0, Object.keys(Scripting.run({}, "")).length);
+        }});
+
+        Test.create({test() {
+            for (const name of ["eval", "run"]) {
+                const variants = [
+                    [], [undefined, ""], [null, ""], [1, ""], ["context", ""],
+                    [{}, undefined], [{}, null], [{}, 1], [{}, {}],
+                    [1, {}, ""], ["script.js", {}, 1]
+                ];
+                for (const parameters of variants) {
+                    let error;
+                    try {Scripting[name](...parameters);
+                    } catch (caught) {
+                        error = caught;
+                    }
+                    Assert.assertTrue(error instanceof TypeError);
+                }
+                for (const source of ["return 1;", "const = ;"]) {
+                    let error;
+                    try {Scripting[name]({}, source);
+                    } catch (caught) {
+                        error = caught;
+                    }
+                    Assert.assertTrue(error instanceof SyntaxError);
+                }
+            }
+        }});
+
+        Test.create({test() {
+            const nested = {a: 1};
+            const object = {a: 1, b: 2, c: nested};
+            const result = Scripting.run("scripting_expose.js", {object},
+                "expose(object); 42;");
+            Assert.assertEquals("a,b,c", Object.keys(result).join(","));
+            Assert.assertEquals(1, result.a);
+            Assert.assertEquals(2, result.b);
+            Assert.assertSame(nested, result.c);
+            Assert.assertNotSame(object, result);
+            Assert.assertSame(Object.prototype, Object.getPrototypeOf(result));
+            const local = {ScriptingExposeLocalTest: object};
+            const localResult = Scripting.run("local.js", {local}, "expose(local);");
+            Assert.assertSame(object, localResult.ScriptingExposeLocalTest);
+            Assert.assertSame(local, expose(local));
+            Assert.assertSame(local, expose(local, undefined));
+            Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ScriptingExposeLocalTest"));
+            Assert.assertSame(object, Scripting.eval({object, expose}, "expose(object)"));
+        }});
+
+        Test.create({test() {
+            const object = {a: 1, b: 2, c: {a: 1}};
+            try {
+                const result = Scripting.run("scripting_expose.js", {object},
+                    "expose(object, 'ScriptingExposeGlobalTest.y.z');");
+                Assert.assertSame(object, window.ScriptingExposeGlobalTest.y.z);
+                Assert.assertEquals("a,b,c", Object.keys(result).join(","));
+                Assert.assertEquals(1, result.a);
+                Assert.assertSame(object.c, result.c);
+                Assert.assertFalse("ScriptingExposeGlobalTest" in result);
+                Assert.assertSame(object, expose(object, "ScriptingExposeRootTest", true));
+                Assert.assertSame(object, window.ScriptingExposeRootTest);
+            } finally {
+                delete window.ScriptingExposeGlobalTest;
+                delete window.ScriptingExposeRootTest;
+            }
+        }});
+
+        Test.create({test() {
+            const nested = {keep: true};
+            const replacement = {replace: true};
+            const first = {a: 1, b: 2, c: nested};
+            const second = {a: 3, c: replacement};
+            try {
+                const result = Scripting.run("scripting_expose.js", {first, second},
+                    "expose(first); expose(second, 'ScriptingExposeMergeTest');");
+                Assert.assertEquals("a,b,c", Object.keys(result).join(","));
+                Assert.assertEquals(3, result.a);
+                Assert.assertEquals(2, result.b);
+                Assert.assertSame(replacement, result.c);
+                Assert.assertFalse("keep" in result.c);
+                Assert.assertSame(second, window.ScriptingExposeMergeTest);
+                Assert.assertEquals(1, first.a);
+                replacement.changed = true;
+                Assert.assertTrue(result.c.changed);
+                Assert.assertTrue(window.ScriptingExposeMergeTest.c.changed);
+                second.a = 4;
+                Assert.assertEquals(3, result.a);
+            } finally {
+                delete window.ScriptingExposeMergeTest;
+            }
+        }});
+
+        Test.create({test() {
+            const symbol = Symbol("ignored");
+            const object = Object.create({inherited: true});
+            Object.defineProperty(object, "hidden", {value: true});
+            Object.defineProperty(object, "answer", {value: 42, enumerable: true});
+            object[symbol] = true;
+            const result = Scripting.run("scripting_expose.js", {object}, "expose(object);");
+            Assert.assertEquals("answer", Object.keys(result).join(","));
+            Assert.assertEquals(42, result.answer);
+            Assert.assertEquals(0, Object.getOwnPropertySymbols(result).length);
+            const dotted = {"a.b": 1, "invalid-path": 2};
+            const flat = Scripting.run("scripting_expose.js", {dotted}, "expose(dotted);");
+            Assert.assertEquals(1, flat["a.b"]);
+            Assert.assertEquals(2, flat["invalid-path"]);
+            Assert.assertFalse("a" in flat);
+        }});
+
+        Test.create({test() {
+            const object = JSON.parse('{"__proto__":{"custom":true},"constructor":1,"prototype":2}');
+            const result = Scripting.run("scripting_expose.js", {object}, "expose(object);");
+            Assert.assertSame(Object.prototype, Object.getPrototypeOf(result));
+            Assert.assertTrue(Object.prototype.hasOwnProperty.call(result, "__proto__"));
+            Assert.assertSame(object.__proto__, result.__proto__);
+            Assert.assertEquals(1, result.constructor);
+            Assert.assertEquals(2, result.prototype);
+            Assert.assertUndefined(Object.prototype.custom);
+        }});
+
+        Test.create({test() {
+            const callback = () => 42;
+            const object = Object.freeze({
+                unset: undefined, nil: null, boolean: false, number: 0,
+                values: [1, 2], callback
+            });
+            const result = Scripting.run("scripting_expose.js", {object}, "expose(object);");
+            Assert.assertTrue(Object.prototype.hasOwnProperty.call(result, "unset"));
+            Assert.assertUndefined(result.unset);
+            Assert.assertNull(result.nil);
+            Assert.assertFalse(result.boolean);
+            Assert.assertEquals(0, result.number);
+            Assert.assertSame(object.values, result.values);
+            Assert.assertSame(callback, result.callback);
+            Assert.assertSame(object, expose(object));
+            const values = [1, 2];
+            const indexed = Scripting.run("scripting_expose.js", {values}, "expose(values);");
+            Assert.assertEquals("0,1", Object.keys(indexed).join(","));
+            Assert.assertEquals(1, indexed[0]);
+            Assert.assertEquals(2, indexed[1]);
+        }});
+
+        Test.create({test() {
+            for (const object of [undefined, null, 1, true, "value", () => {}, Symbol("invalid")])
+                for (const namespaced of [false, true]) {
+                    let error;
+                    try {
+                        if (namespaced)
+                            expose(object, "ScriptingExposeInvalidTest");
+                        else expose(object);
+                    } catch (caught) {
+                        error = caught;
+                    }
+                    Assert.assertTrue(error instanceof TypeError);
+                }
+            for (const namespace of [null, 1, false, {}, [], () => {}, Symbol("invalid")]) {
+                let error;
+                try {expose({}, namespace);
+                } catch (caught) {
+                    error = caught;
+                }
+                Assert.assertTrue(error instanceof TypeError);
+            }
+            Assert.assertUndefined(window.ScriptingExposeInvalidTest);
+        }});
+
+        Test.create({test() {
+            const {use} = Scripting.run({}, "expose({use});");
+            for (const namespace of ["", ".", ".a", "a.", "a..b", "a/b", "invalid-path", "a.invalid-path",
+                    "ScriptingExposeInvalidPath.10", "ScriptingExposeInvalidPath.0b", "ScriptingExposeInvalidPath.1 0"])
+                for (const method of [namespace => expose({}, namespace), use]) {
+                    let error;
+                    try {method(namespace);
+                    } catch (caught) {
+                        error = caught;
+                    }
+                    Assert.assertTrue(namespace, error instanceof Error);
+                }
+            Assert.assertUndefined(window.ScriptingExposeInvalidPath);
+            const object = {};
+            try {
+                expose(object, "ScriptingExposeSyntaxTest.$items._10");
+                Assert.assertSame(object, window.ScriptingExposeSyntaxTest.$items._10);
+                Assert.assertSame(Object.prototype, Object.getPrototypeOf(window.ScriptingExposeSyntaxTest.$items));
+            } finally {
+                delete window.ScriptingExposeSyntaxTest;
+            }
+        }});
+
+        Test.create({test() {
+            const original = Object.use;
+            const parent = {};
+            const object = {};
+            const calls = [];
+            Object.use = (...parameters) => {
+                calls.push(parameters);
+                return parent;
+            };
+            try {
+                expose(object);
+                Assert.assertEquals(0, calls.length);
+                expose(object, "ScriptingExposeNamespaceTest.child.object");
+                Assert.assertEquals(1, calls.length);
+                Assert.assertSame(window, calls[0][0]);
+                Assert.assertEquals("ScriptingExposeNamespaceTest,child", calls[0].slice(1).join(","));
+                Assert.assertSame(object, parent.object);
+            } finally {
+                Object.use = original;
+            }
+        }});
+
+        Test.create({test() {
+            const object = {answer: 42};
+            let writes = 0;
+            let assigned;
+            const parent = {};
+            Object.defineProperty(parent, "object", {
+                get() {throw new Error("Publication must not read its target");},
+                set(value) {writes++; assigned = value;}
+            });
+            window.ScriptingExposeSetterTest = parent;
+            try {
+                const result = Scripting.run("scripting_expose.js", {object},
+                    "expose(object, 'ScriptingExposeSetterTest.object');");
+                Assert.assertEquals(1, writes);
+                Assert.assertSame(object, assigned);
+                Assert.assertEquals(42, result.answer);
+            } finally {
+                delete window.ScriptingExposeSetterTest;
+            }
+        }});
+
+        Test.create({test() {
+            const parent = {};
+            const original = {};
+            Object.defineProperty(parent, "locked", {value: original});
+            parent.object = original;
+            window.ScriptingExposeAssignmentTest = parent;
+            try {
+                const result = Scripting.run("scripting_expose.js", {},
+                    "expose({answer: 1});"
+                    + "attempt(() => expose({failed: true}, 'ScriptingExposeAssignmentTest.locked'));"
+                    + "expose({answer: 2}, 'ScriptingExposeAssignmentTest.object');");
+                Assert.assertEquals("answer", Object.keys(result).join(","));
+                Assert.assertEquals(2, result.answer);
+                Assert.assertEquals(2, parent.object.answer);
+                Assert.assertSame(original, parent.locked);
+                Assert.assertFalse("failed" in result);
+            } finally {
+                delete window.ScriptingExposeAssignmentTest;
+            }
+        }});
+
+        Test.create({test() {
+            for (const source of ["", " \n\t ", "42;", "expose({});"])
+                for (const url of ["", "scripting_expose.js"]) {
+                    const first = Scripting.run(url, {}, source);
+                    const second = Scripting.run(url, {}, source);
+                    Assert.assertEquals(0, Object.keys(first).length);
+                    Assert.assertNotSame(first, second);
+                }
+            try {
+                const object = {};
+                const result = Scripting.run("scripting_expose.js", {object},
+                    "expose(object, 'ScriptingExposeEmptyTest');");
+                Assert.assertEquals(0, Object.keys(result).length);
+                Assert.assertSame(object, window.ScriptingExposeEmptyTest);
+            } finally {
+                delete window.ScriptingExposeEmptyTest;
+            }
+        }});
+
+        Test.create({test() {
+            const original = Composer.load;
+            const children = [];
+            const failure = new Error("nested module failure");
+            Composer.load = (url, strict) => {
+                Assert.assertTrue(strict);
+                return Scripting.run(url, {failure},
+                    url.endsWith("/failure.js")
+                        ? "expose({failed: true}); throw failure;"
+                        : "expose({child: 2});");
+            };
+            try {
+                const result = Scripting.run("scripting_expose.js", {children},
+                    "expose({before: 1});"
+                    + "children.push(require('runtime/child'));"
+                    + "attempt(() => require('runtime/failure'));"
+                    + "expose({after: 3});");
+                Assert.assertEquals("before,after", Object.keys(result).join(","));
+                Assert.assertEquals(1, result.before);
+                Assert.assertEquals(3, result.after);
+                Assert.assertEquals("child", Object.keys(children[0]).join(","));
+                Assert.assertEquals(2, children[0].child);
+                Assert.assertEquals(0, Object.keys(Scripting.run("next.js", {}, "")).length);
+            } finally {
+                Composer.load = original;
+            }
+        }});
+
+        Test.create({test() {
+            const object = {answer: 42};
+            const evaluate = () => {
+                Assert.assertSame(object, Expression.eval({object, expose}, "{{expose(object)}}")[1]);
+                Assert.assertEquals(3, Scripting.eval({expose}, "expose({temporary: true}); 1 + 2"));
+                const nested = Scripting.run("nested.js", {}, "expose({nested: true});");
+                Assert.assertTrue(nested.nested);
+                Scripting.prune(0);
+            };
+            const result = Scripting.run("scripting_expose.js", {evaluate},
+                "expose({before: 1}); evaluate(); expose({after: 2});");
+            Assert.assertEquals("before,after", Object.keys(result).join(","));
+            Assert.assertEquals(1, result.before);
+            Assert.assertEquals(2, result.after);
+        }});
+
+        Test.create({test() {
+            const failure = new Error("module failure");
+            let error;
+            try {
+                Scripting.run("scripting_expose.js", {failure},
+                    "expose({partial: true}); throw failure;");
+            } catch (caught) {
+                error = caught;
+            }
+            Assert.assertSame(failure, error);
+            expose({outside: true});
+            Assert.assertEquals(0, Object.keys(Scripting.run("next.js", {}, "")).length);
+            let callback;
+            const save = value => {callback = value;};
+            const result = Scripting.run("scripting_expose.js", {save},
+                "save(() => expose({later: true}));");
+            callback();
+            Assert.assertEquals(0, Object.keys(result).length);
+            const calls = [];
+            const overridden = Scripting.run("scripting_expose.js",
+                {expose: (...parameters) => calls.push(parameters)},
+                "expose({custom: true});");
+            Assert.assertEquals(1, calls.length);
+            Assert.assertEquals(0, Object.keys(overridden).length);
+        }});
+
+        Test.create({test() {
+            const error = Scripting.eval("scripting_eval_source.js", {},
+                "new Error('sourceURL');");
+            Assert.assertTrue(error.stack, error.stack.includes("scripting_eval_source.js"));
+            const result = Scripting.run("scripting_run_source.js", {},
+                "expose({error: new Error('sourceURL')});");
+            Assert.assertTrue(result.error.stack, result.error.stack.includes("scripting_run_source.js"));
+            Assert.assertUndefined(Scripting.eval({}, ""));
+            Assert.assertEquals(3, Expression.eval({}, "{{1 + 2}}")[1]);
+        }});
+
+        Test.start({auto: true});
+    })();
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

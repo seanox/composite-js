@@ -14,315 +14,235 @@
 
         Test.activate();
 
-        // #use
+        const helpers = Scripting.run({}, "expose({require, use, expose, attempt});");
+
         Test.create({test() {
-            Assert.assertEquals('this.use(...["foo"]);',
-                    Scripting.eval("", {}, "#use foo", true)
-            );
-            Assert.assertEquals(
-                    'this.use(...["foo","bar"]);',
-                    Scripting.eval("", {}, "#use foo bar", true)
-            );
-            Assert.assertEquals(
-                    'this.use(...["foo"]);\n'
-                    + 'const value = 123;',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "#use foo\n"
-                            + "const value = 123;",
-                            true
-                    )
-            );
+            const names = ["_require", "_expose", "_use", "_attempt"];
+            const types = "[" + names.map(name => "typeof " + name).join(",") + "].join(',')";
+            Assert.assertEquals("undefined,undefined,undefined,undefined", Scripting.eval({}, types));
+            const context = Object.freeze({
+                _require: "application require",
+                _expose: "application expose",
+                _use: "application use",
+                _attempt: "application attempt"
+            });
+            Assert.assertEquals(Object.values(context).join(","),
+                Scripting.eval(context, "[" + names.join(",") + "].join(',')"));
+            for (const name of names)
+                Assert.assertFalse(name, Object.prototype.hasOwnProperty.call(window, name));
         }});
 
-        // #export
-        Test.create({test() {
-            Assert.assertEquals('this.export(...[[value,"value"]]);',
-                    Scripting.eval("", {}, "#export value", true));
-            Assert.assertEquals('this.export(...[[value,"value","foo"]]);',
-                    Scripting.eval("", {}, "#export value@foo", true));
-            Assert.assertEquals('this.export(...[[foo,"foo"],[bar,"bar"]]);',
-                    Scripting.eval("", {}, "#export foo bar", true));
-            Assert.assertEquals(
-                    'const value = 123;\n'
-                    + 'this.export(...[[value,"value"]]);',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "const value = 123;\n"
-                            + "#export value",
-                            true
-                    )
-            );
-        }});
-
-        // #import
-        Test.create({test() {
-            Assert.assertEquals('this.import(...["foo"]);',
-                    Scripting.eval("", {}, "#import foo", true));
-            Assert.assertEquals('this.import(...["foo","bar"]);',
-                    Scripting.eval("", {}, "#import foo bar", true));
-            Assert.assertEquals(
-                    'this.import(...["foo"]);\n'
-                    + 'const value = 123;',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "#import foo\n"
-                            + "const value = 123;",
-                            true
-                    )
-            );
-        }});
-
-        // Macro lines preserve line endings and source position.
-        Test.create({test() {
-            Assert.assertEquals(
-                    'this.import(...["moduleA"]);\r\n'
-                    + 'const value = 123;',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "\t#import moduleA\r\n"
-                            + "const value = 123;",
-                            true
-                    )
-            );
-            Assert.assertEquals(
-                    'const text = `\n'
-                    + 'this.import(...["moduleA"]);\n'
-                    + '`;',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "const text = `\n"
-                            + "    #import moduleA\n"
-                            + "`;",
-                            true
-                    )
-            );
-            Assert.assertEquals(
-                    '\nthis.import(...["moduleA"]);\n',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "`\n#import moduleA\n`"
-                    )
-            );
-            Assert.assertEquals(
-                    '/*\n'
-                    + 'this.use(...["example.namespace"]);\n'
-                    + '*/',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "/*\n"
-                            + "#use example.namespace\n"
-                            + "*/",
-                            true
-                    )
-            );
-            Assert.assertEquals(
-                    'const text = "#import moduleA";',
-                    Scripting.eval("", {}, 'const text = "#import moduleA";', true)
-            );
-        }});
-
-        // Generated macro calls retain JavaScript control flow and use helpers.
-        Test.create({test() {
-            Scripting.eval(
-                    "",
-                    {},
-                    "const scriptingEvalMacro = 123;\n"
-                    + "if (true)\n"
-                    + "    #export scriptingEvalMacro@ScriptingEvalMacroTest\n"
-                    + "if (false)\n"
-                    + "    #export missingMacroValue@ScriptingEvalMacroTest"
-            );
-            Assert.assertEquals(
-                    123,
-                    window.ScriptingEvalMacroTest.scriptingEvalMacro
-            );
-            delete window.ScriptingEvalMacroTest;
-        }});
-
-        // A trimmed line comment is reattached.
-        Test.create({test() {
-            Assert.assertEquals(
-                    'this.import(...["moduleA","moduleB"]); // trailing\n'
-                    + 'moduleC',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "#import moduleA moduleB // trailing  \n"
-                            + "moduleC",
-                            true
-                    )
-            );
-            Assert.assertEquals(
-                    'this.import(...["moduleA"]);\n'
-                    + 'moduleB',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "#import moduleA\n"
-                            + "moduleB",
-                            true
-                    )
-            );
-        }});
-
-        // Block comments are not supported in macro arguments.
-        Test.create({test() {
-            let error;
-            try {Scripting.eval("", {}, "#import moduleA /* comment */ moduleB", true);
-            } catch (exception) {
-                error = exception;
+        Test.create({async test() {
+            const url = URL.createObjectURL(new Blob([
+                "export default [typeof require, typeof use, typeof expose, typeof attempt].join(',');"
+            ], {type: "text/javascript"}));
+            try {
+                const module = await Scripting.eval({url}, "import(url)");
+                Assert.assertEquals("undefined,undefined,undefined,undefined", module.default);
+            } finally {
+                URL.revokeObjectURL(url);
             }
-            Assert.assertEquals(true, error instanceof SyntaxError);
-            Assert.assertEquals(
-                    "Unexpected Token: #import moduleA /* comment */ moduleB",
-                    error && error.message
-            );
-            Assert.assertEquals(
-                    'this.import(...["moduleA"]); // /* unterminated',
-                    Scripting.eval("", {}, "#import moduleA // /* unterminated", true)
-            );
         }});
 
-        // A semicolon does not terminate a macro directive.
         Test.create({test() {
-            let message;
-            try {Scripting.eval("", {}, "#import moduleA; const value = 123;", true);
-            } catch (error) {
-                message = error.message;
+            for (const value of [undefined, null, 1, true, {}, [], () => {}, new String("invalid"), Symbol("invalid")]) {
+                let error;
+                try {helpers.require(value);
+                } catch (exception) {
+                    error = exception;
+                }
+                Assert.assertTrue(error instanceof TypeError);
             }
-            Assert.assertEquals(
-                    "Invalid macro: #import moduleA; const value = 123;",
-                    message
-            );
         }});
 
-        // Combination of all macros
         Test.create({test() {
-            Assert.assertEquals(
-                    'this.use(...["foo"]);\n'
-                    + 'this.import(...["bar"]);\n'
-                    + 'const value = 123;\n'
-                    + 'this.export(...[[value,"value"]]);',
-                    Scripting.eval(
-                            "",
-                            {},
-                            "#use foo\n"
-                            + "#import bar\n"
-                            + "const value = 123;\n"
-                            + "#export value",
-                            true
-                    )
-            );
+            const loads = [];
+            const load = Composer.load;
+            Composer.load = (...parameters) => loads.push(parameters);
+            try {
+                for (const path of ["", "/", "../module", "module.js", "foo-bar",
+                    "foo//bar", "foo\\bar", "foo?x", " foo", "foo "]) {
+                    let error;
+                    try {helpers.require(path);
+                    } catch (exception) {
+                        error = exception;
+                    }
+                    Assert.assertTrue(path, error instanceof Error);
+                    Assert.assertEquals("Invalid require: " + path, error.message);
+                }
+                Assert.assertEquals(0, loads.length);
+            } finally {
+                Composer.load = load;
+            }
         }});
 
-        // Source URL / debug mode
         Test.create({test() {
-            Assert.assertEquals(
-                    "const value = 123;\n\n//# sourceURL=scripting_eval.html\n",
-                    Scripting.eval(
-                            "scripting_eval.html",
-                            {},
-                            "const value = 123;",
-                            true
-                    )
-            );
+            const prototype = {inherited: 1};
+            const namespace = Object.create(prototype);
+            let assigned;
+            Object.defineProperty(namespace, "accessor", {
+                get() {throw new Error("Assignment must not read the target");},
+                set(value) {assigned = value;}
+            });
+            Object.defineProperty(namespace, "readonly", {value: 1});
+            Object.defineProperty(namespace, "getter", {get() {return 1;}});
+            namespace.frozen = Object.freeze({value: 1});
+            namespace.closed = Object.preventExtensions({});
+            window.ScriptingGlobalAssignmentTest = namespace;
+            try {
+                const value = {};
+                Assert.assertSame(value, helpers.expose(value, "ScriptingGlobalAssignmentTest.accessor"));
+                Assert.assertSame(value, assigned);
+                helpers.expose(value, "ScriptingGlobalAssignmentTest.inherited");
+                Assert.assertSame(value, namespace.inherited);
+                Assert.assertTrue(Object.prototype.hasOwnProperty.call(namespace, "inherited"));
+                Assert.assertEquals(1, prototype.inherited);
+                for (const name of ["readonly", "getter", "frozen.value", "closed.value"]) {
+                    let error;
+                    try {helpers.expose(value, "ScriptingGlobalAssignmentTest." + name);
+                    } catch (exception) {
+                        error = exception;
+                    }
+                    Assert.assertTrue(name, error instanceof TypeError);
+                }
+                Assert.assertEquals(1, namespace.readonly);
+                Assert.assertEquals(1, namespace.getter);
+                Assert.assertEquals(1, namespace.frozen.value);
+                Assert.assertFalse("value" in namespace.closed);
+            } finally {
+                delete window.ScriptingGlobalAssignmentTest;
+            }
         }});
 
-        // No debug: script is actually executed
         Test.create({test() {
-            Assert.assertEquals(3, Scripting.eval("scripting_eval.html", {}, "1 + 2"));
+            const includes = [];
+            const load = Composer.load;
+            Composer.load = (...parameters) => includes.push(parameters);
+            try {
+                helpers.require("runtime/first");
+                helpers.require("runtime/second");
+                Scripting.run({}, "require('runtime/third');");
+                Assert.assertEquals(3, includes.length);
+                ["first", "second", "third"].forEach((name, index) => {
+                    Assert.assertEquals(Composer.MODULES + "/runtime/" + name + ".js",
+                        includes[index][0]);
+                    Assert.assertTrue(includes[index][1]);
+                });
+                const failure = new Error("Module loading failed");
+                Composer.load = () => {throw failure;};
+                let error;
+                try {helpers.require("runtime/failure");
+                } catch (exception) {
+                    error = exception;
+                }
+                Assert.assertSame(failure, error);
+            } finally {
+                Composer.load = load;
+            }
+        }});
+
+        Test.create({test() {
+            try {
+                helpers.use("ScriptingGlobalUseTest.a");
+                helpers.use("ScriptingGlobalUseTest.b.c");
+                const namespace = window.ScriptingGlobalUseTest.a;
+                namespace.value = 123;
+                helpers.use("ScriptingGlobalUseTest.a");
+                Assert.assertSame(namespace, window.ScriptingGlobalUseTest.a);
+                Assert.assertEquals(123, window.ScriptingGlobalUseTest.a.value);
+                Assert.assertEquals("object", typeof window.ScriptingGlobalUseTest.b.c);
+            } finally {
+                delete window.ScriptingGlobalUseTest;
+            }
+        }});
+
+        Test.create({test() {
+            const context = Object.freeze({
+                require: undefined, use: null, expose: "own expose", attempt: "own attempt"
+            });
+            Assert.assertEquals("undefined,,own expose,own attempt", Scripting.eval(
+                context, "[typeof require, use, expose, attempt].join(',')"));
+            Assert.assertEquals("require,use,expose,attempt", Object.keys(context).join(","));
+            Assert.assertUndefined(context.require);
+            Assert.assertNull(context.use);
+            const calls = [];
+            for (const value of ["first", "second"]) {
+                const context = {require: path => calls.push(value + ":" + path)};
+                Scripting.eval(context, "require('custom');");
+                Assert.assertEquals("require", Object.keys(context).join(","));
+            }
+            Assert.assertEquals("first:custom,second:custom", calls.join(","));
+            const special = JSON.parse('{"__proto__":"application prototype","constructor":"application constructor"}');
+            Assert.assertEquals("application prototype,application constructor",
+                Scripting.eval(special, "[__proto__, constructor].join(',')"));
+        }});
+
+        Test.create({test() {
+            window.ScriptingGlobalDOMTest = {
+                element: document.createElement("div"),
+                collection: document.getElementsByTagName("script")
+            };
+            const object = {value: 123};
+            try {
+                helpers.expose(object, "ScriptingGlobalDOMTest.element");
+                helpers.expose(object, "ScriptingGlobalDOMTest.collection");
+                Assert.assertSame(object, window.ScriptingGlobalDOMTest.element);
+                Assert.assertSame(object, window.ScriptingGlobalDOMTest.collection);
+            } finally {
+                delete window.ScriptingGlobalDOMTest;
+            }
+        }});
+
+        Test.create({test() {
+            const source = "\tuse(\r\n"
+                + "    /* namespace */ 'ScriptingGlobalTextTest.used'\r\n"
+                + "); // trailing  \r\n"
+                + "/*\n require('unused');\n*/\r\n"
+                + "const text = `\n  require('unused');\n`;\r\n"
+                + "text";
+            Assert.assertUndefined(window.ScriptingGlobalTextTest);
+            try {
+                Assert.assertEquals("\n  require('unused');\n", Scripting.eval({use: helpers.use}, source));
+                Assert.assertEquals("object", typeof window.ScriptingGlobalTextTest.used);
+            } finally {
+                delete window.ScriptingGlobalTextTest;
+            }
         }});
 
         Test.create({test() {
             const context = {
                 script: "application script",
-                _import: "application import",
-                _export: "application export",
-                _use: "application use"
+                require: "application require",
+                expose: "application expose",
+                use: "application use",
+                attempt: "application attempt"
             };
-            const script = "[script, _import, _export, _use].join(',')";
+            const script = "[script, require, expose, use, attempt].join(',')";
             const expected = Object.values(context).join(",");
-            Assert.assertEquals(3, Scripting.run(context, "1 + 2"));
-            Assert.assertEquals(expected, Scripting.run(context, script));
             Assert.assertEquals(expected, Scripting.eval(context, script));
         }});
 
         Test.create({test() {
-            const context = {
-                script: "application script",
-                _import: "application import",
-                _export: "application export",
-                _use: "application use"
-            };
-            const imports = [];
-            const load = Composer.load;
-            Composer.load = (...parameters) => imports.push(parameters);
-            try {
-                const result = Scripting.eval(
-                        context,
-                        "#import runtime/helper runtime/other\n"
-                        + "#use ScriptingEvalRuntimeTest.namespace\n"
-                        + "#export script@ScriptingEvalRuntimeTest"
-                        + " _import@ScriptingEvalRuntimeTest"
-                        + " _export@ScriptingEvalRuntimeTest"
-                        + " _use@ScriptingEvalRuntimeTest\n"
-                        + "[script, _import, _export, _use].join(',')"
-                );
-                Assert.assertEquals(Object.values(context).join(","), result);
-                Object.keys(context).forEach(key =>
-                    Assert.assertSame(context[key], window.ScriptingEvalRuntimeTest[key]));
-                Assert.assertEquals("object", typeof window.ScriptingEvalRuntimeTest.namespace);
-                Assert.assertEquals(2, imports.length);
-                Assert.assertEquals(Composer.MODULES + "/runtime/helper.js", imports[0][0]);
-                Assert.assertEquals(Composer.MODULES + "/runtime/other.js", imports[1][0]);
-                Assert.assertTrue(imports[0][1]);
-                Assert.assertTrue(imports[1][1]);
-            } finally {
-                Composer.load = load;
-                delete window.ScriptingEvalRuntimeTest;
-            }
+            Assert.assertEquals(
+                    "local script,local require,local expose,local use,local attempt",
+                    Scripting.eval(
+                            {},
+                            "const script = 'local script';\n"
+                            + "const require = 'local require';\n"
+                            + "const expose = 'local expose';\n"
+                            + "const use = 'local use';\n"
+                            + "const attempt = 'local attempt';\n"
+                            + "[script, require, expose, use, attempt].join(',')"
+                    )
+            );
         }});
 
         Test.create({test() {
-            try {
-                Assert.assertEquals(
-                        "local script,local import,local export,local use",
-                        Scripting.eval(
-                                {},
-                                "const script = 'local script';\n"
-                                + "const _import = 'local import';\n"
-                                + "const _export = 'local export';\n"
-                                + "const _use = 'local use';\n"
-                                + "#use ScriptingEvalLocalTest\n"
-                                + "#export script@ScriptingEvalLocalTest\n"
-                                + "[script, _import, _export, _use].join(',')"
-                        )
-                );
-                Assert.assertEquals("local script", window.ScriptingEvalLocalTest.script);
-                Assert.assertEquals(
-                        "undefined,undefined,undefined,undefined",
-                        Scripting.run({}, "[typeof script, typeof _import,"
-                                + " typeof _export, typeof _use].join(',')")
-                );
-            } finally {
-                delete window.ScriptingEvalLocalTest;
-            }
-        }});
-
-        Test.create({test() {
-            const first = Scripting.run(
+            const first = Scripting.eval(
                     {script: "first"},
                     "({runtime: this, value: script})"
             );
-            const second = Scripting.run(
+            const second = Scripting.eval(
                     {script: "second"},
                     "({runtime: this, value: script + ' updated'})"
             );
@@ -335,66 +255,109 @@
                     second.runtime.script
             );
             Assert.assertEquals(
-                    "export,import,script,use",
+                    "script",
                     Object.keys(first.runtime).sort().join(",")
             );
-            Assert.assertSame(first.runtime.import, second.runtime.import);
-            Assert.assertSame(first.runtime.export, second.runtime.export);
-            Assert.assertSame(first.runtime.use, second.runtime.use);
-            first.runtime.use = null;
-            Assert.assertEquals("function", typeof Scripting.run({}, "this.use"));
-            Assert.assertEquals("function", typeof Scripting.run({script: "third"}, "this.use"));
+            Assert.assertUndefined(first.runtime.require);
+            Assert.assertUndefined(first.runtime.expose);
+            Assert.assertUndefined(first.runtime.use);
+            first.runtime.extra = true;
+            Assert.assertEquals("script", Scripting.eval({}, "Object.keys(this).join(',')"));
+            Assert.assertEquals("script", Scripting.eval({script: "third"}, "Object.keys(this).join(',')"));
             Scripting.prune(0);
-            Assert.assertEquals("after pruning", Scripting.run({script: "after pruning"}, "script"));
+            Assert.assertEquals("after pruning", Scripting.eval({script: "after pruning"}, "script"));
         }});
 
         Test.create({test() {
             const context = {value: 1};
             Assert.assertEquals(
                     3,
-                    Scripting.run(context, "value += 2; var scriptingRunLocal = value; value")
+                    Scripting.eval(context, "value += 2; var scriptingRunLocal = value; value")
             );
             Assert.assertEquals(1, context.value);
             Assert.assertUndefined(window.scriptingRunLocal);
-            Assert.assertUndefined(Scripting.run({}, "(function() { return this; })()"));
-            Assert.assertUndefined(Scripting.run({}, " \n\t "));
-            Assert.assertEquals(3, Scripting.run({}, " \n1 + 2; "));
+            Assert.assertUndefined(Scripting.eval({}, "(function() { return this; })()"));
+            Assert.assertUndefined(Scripting.eval({}, " \n\t "));
+            Assert.assertEquals(3, Scripting.eval({}, " \n1 + 2; "));
         }});
 
         Test.create({test() {
             try {
-                Scripting.eval(
+                Scripting.run(
                         {},
                         "(() => {\n"
-                        + "#use ScriptingEvalThisTest.arrow\n"
-                        + "})();\n"
-                        + "(function() {\n"
-                        + "#use ScriptingEvalThisTest.bound\n"
-                        + "}).call(this);"
+                        + "use('ScriptingEvalThisTest.arrow');\n"
+                        + "})();"
                 );
                 Assert.assertEquals("object", typeof window.ScriptingEvalThisTest.arrow);
-                Assert.assertEquals("object", typeof window.ScriptingEvalThisTest.bound);
 
                 [
-                    "(function() {\n#use ScriptingEvalThisTest.unbound\n})();",
-                    "({method() {\n#use ScriptingEvalThisTest.method\n}}).method();"
-                ].forEach(script => {
-                    let error;
-                    try {Scripting.eval({}, script);
-                    } catch (exception) {
-                        error = exception;
-                    }
-                    Assert.assertTrue(error instanceof TypeError);
-                });
-                Assert.assertUndefined(window.ScriptingEvalThisTest.unbound);
-                Assert.assertUndefined(window.ScriptingEvalThisTest.method);
+                    "(function() {\n"
+                    + "use('ScriptingEvalThisTest.unbound');\n"
+                    + "})();",
+                    "({method() {\n"
+                    + "use('ScriptingEvalThisTest.method');\n"
+                    + "}}).method();",
+                    "[1].forEach(function() { use('ScriptingEvalThisTest.callback'); });"
+                ].forEach(script => Scripting.run({}, script));
+                Assert.assertEquals("object", typeof window.ScriptingEvalThisTest.unbound);
+                Assert.assertEquals("object", typeof window.ScriptingEvalThisTest.method);
+                Assert.assertEquals("object", typeof window.ScriptingEvalThisTest.callback);
             } finally {
                 delete window.ScriptingEvalThisTest;
             }
         }});
 
+        Test.create({test() {
+            for (const name of ["require", "use", "expose", "attempt"]) {
+                Assert.assertEquals("own", Scripting.eval(helpers,
+                    name + "(); function " + name + "() {return 'own';}"));
+                for (const declaration of ["var", "let", "const"])
+                    Assert.assertEquals("own", Scripting.eval(helpers,
+                        declaration + " " + name + " = () => 'own'; " + name + "();"));
+                Assert.assertEquals("undefined", Scripting.eval(helpers,
+                    "typeof " + name + "; var " + name + ";"));
+                let error;
+                try {Scripting.eval(helpers, name + "(); const " + name + " = () => 'own';");
+                } catch (exception) {
+                    error = exception;
+                }
+                Assert.assertTrue(name, error instanceof ReferenceError);
+                Scripting.eval(helpers, name + " = null;");
+                Assert.assertSame(helpers[name], Scripting.eval(helpers, name));
+            }
+            Assert.assertEquals("function,own", Scripting.eval(helpers,
+                "const connector = {expose() {return 'own';}};"
+                + "[typeof expose, connector.expose()].join(',')"));
+            const callback = Scripting.eval(helpers, "() => ({require, use, expose, attempt})");
+            for (const name of Object.keys(helpers))
+                Assert.assertSame(helpers[name], callback()[name]);
+            Scripting.prune(0);
+            Assert.assertSame(helpers.expose, Scripting.eval(helpers, "expose"));
+        }});
+
+        Test.create({test() {
+            for (const value of [undefined, null, false, 0, "", {}, () => 42])
+                Assert.assertSame(value, helpers.attempt(() => value));
+            for (const error of [new Error("optional"), "optional", null, undefined]) {
+                let calls = 0;
+                Assert.assertUndefined(helpers.attempt(() => {
+                    calls++;
+                    throw error;
+                }));
+                Assert.assertEquals(1, calls);
+            }
+            Assert.assertSame(window, Scripting.eval({}, "attempt(function() {return this;})"));
+            Assert.assertTrue(Scripting.eval({}, "attempt(() => this) === this"));
+            const failure = new Error("asynchronous failure");
+            const promise = Promise.reject(failure);
+            promise.catch(() => {});
+            Assert.assertSame(promise, helpers.attempt(() => promise));
+        }});
+
         Test.start({auto:true});
     </script>
+  </head>
   <body>
   </body>
 </html>

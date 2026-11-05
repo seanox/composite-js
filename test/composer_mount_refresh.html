@@ -66,7 +66,7 @@
       that it is difficult to adjust and would be annoying if the error is not
       noticed later.
     -->
-    {{countRender:(tryout(() => countRender) ?? 0) +1}}
+    {{countRender:(attempt(() => countRender) ?? 0) +1}}
     Render:{{countRender}}, Click:{{countClick}}
     <div id="about" composite condition="{{true}}">
       <button id="refresh" events="click" render="body">refresh</button>

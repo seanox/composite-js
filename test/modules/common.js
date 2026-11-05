@@ -20,14 +20,6 @@
         value: _playwright
     });
 
-    compliant("window.tryout");
-    compliant(null, window.tryout = (invocation) => {
-        try {return invocation.call(window);
-        } catch (error) {
-            return undefined;
-        }
-    });
-
     compliant("String.prototype.simplify");
     compliant(null, String.prototype.simplify = function() {
         return this.trim().replace(/\t/g, "    ")

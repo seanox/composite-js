@@ -29,6 +29,7 @@
 (() => {
 
     const PATTERN_REQUIRE = /^\w+(\/\w+)*$/;
+    const PATTERN_NAMESPACE = /^[_a-z$][\w$]*(\.[_a-z$][\w$]*)*$/i;
 
     /**
      * Loads a script module from the module directory, without the .js extension.
@@ -49,7 +50,7 @@
     /**
      * Collects an object's own enumerable string keys as flat module exports.
      * An optional namespace also publishes the original object on window,
-     * using Namespace.use to obtain or create its parent namespace.
+     * using Object.use to obtain or create its parent namespace.
      * Later calls replace exports with the same keys without merging values.
      * @param {object} object Values to export
      * @param {string} [namespace] Full optional publication path on window
@@ -67,11 +68,12 @@
         if (namespace !== undefined) {
             if (typeof namespace !== "string")
                 throw new TypeError("Invalid expose namespace: " + typeof namespace);
-            if (!namespace.match(Namespace.PATTERN_NAMESPACE))
+            if (!namespace.match(PATTERN_NAMESPACE))
                 throw new Error("Invalid expose namespace: " + namespace);
-            const levels = namespace.split(Namespace.PATTERN_NAMESPACE_SEPARATOR);
+            const levels = namespace.split(".");
             const name = levels.pop();
-            Namespace.use(window, ...levels)[name] = object;
+            const parent = levels.length ? Object.use(window, levels.join(".")) : window;
+            parent[name] = object;
         }
 
         const collector = _expose_collector_stack[_expose_collector_stack.length -1];
@@ -90,7 +92,11 @@
      * @throws {Error} If the namespace is invalid
      */
     const _use = (use) => {
-        Namespace.use(window, use);
+        if (typeof use !== "string")
+            throw new TypeError("Invalid use: " + typeof use);
+        if (!use.match(PATTERN_NAMESPACE))
+            throw new Error("Invalid use: " + use);
+        Object.use(window, use);
     };
 
     /**

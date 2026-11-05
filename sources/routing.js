@@ -196,7 +196,7 @@
                 return namespace.split('.').reduce(function(scope, target) {
                     return scope && scope[target];
                 }, context);
-            })(window, scope) || (Object.exists(scope) ? Object.use(scope) : undefined);
+            })(window, scope) || Object.lookup(scope);
 
             if (object == null
                     || typeof object !== "object"

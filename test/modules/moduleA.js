@@ -1,12 +1,12 @@
-global.include("moduleB");
-global.include("moduleB"); global.include("moduleB");
-(global.include("moduleB"), global.include("moduleB"), global.include("moduleB"));
+require("moduleB");
+require("moduleB"); require("moduleB");
+(require("moduleB"), require("moduleB"), require("moduleB"));
 
-global.include("moduleA");
+require("moduleA");
 // io/moduleY does not exist.
 // With the macro, a non-existent module causes an error, unlike when loading
 // composites, where JS modules are optional.
-try {global.include("io/moduleY");
+try {require("io/moduleY");
 } catch (error) {
     _error_collector.push(String(error));
 }

@@ -1,2 +1,2 @@
-global.include();
+require();
 const moduleF = {};

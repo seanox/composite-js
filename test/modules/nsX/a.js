@@ -4,4 +4,4 @@ const a = Reactive({
     }
 });
 
-global.expose(a, "nsX.a");
+expose(a, "nsX.a");

@@ -1,22 +1,22 @@
-global.include("syntaxA");
-global.include("syntax");
+require("syntaxA");
+require("syntax");
 
 const x1 = () => {throw new Error("xxx");}
 
-const _1 = tryout(() => xxx.xxx.xxx);
-const _2 = tryout(() => x1());
+const _1 = attempt(() => xxx.xxx.xxx);
+const _2 = attempt(() => x1());
 
-global.expose({_1});
-global.expose({_2});
+Object.assign(window, expose({_1}));
+Object.assign(window, expose({_2}));
 
-const _3 = tryout(() => xxx.xxx.xxx);
-const _4 = tryout(() =>  x1());
-const _5 = tryout(() =>
+const _3 = attempt(() => xxx.xxx.xxx);
+const _4 = attempt(() =>  x1());
+const _5 = attempt(() =>
     xxx.xxx.xxx);
-const _6 = tryout(() =>
+const _6 = attempt(() =>
     x1());
 
-global.expose({_3});
-global.expose({_4});
-global.expose({_5});
-global.expose({_6});
+Object.assign(window, expose({_3}));
+Object.assign(window, expose({_4}));
+Object.assign(window, expose({_5}));
+Object.assign(window, expose({_6}));

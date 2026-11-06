@@ -10,11 +10,11 @@ const reactiveX =  {
     valueG: null
 };
 
-global.expose({reactiveX});
+Object.assign(window, expose({reactiveX}));
 
 const reactiveA = reactiveX.reactive();
 
-global.expose({reactiveA});
+Object.assign(window, expose({reactiveA}));
 
 reactiveA.a = "-1-";
 reactiveX.a = "-2-";

@@ -1,1 +1,1 @@
-global.use("ns5");
+Object.use(window, "ns5");

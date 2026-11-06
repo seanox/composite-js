@@ -36,7 +36,7 @@
     compliant(null, window.Expression = {
 
         /**
-         * Executes a framed expression and returns [variable, result].
+         * Executes a framed expression and returns {variable, result}.
          * The variable name is undefined unless the expression declares one.
          * An optional identifier caches the variable name and prepared script,
          * but not the result or execution context.
@@ -56,8 +56,9 @@
          * @param {object} context Execution context containing values
          *     available to the expression
          * @param {string} expression JavaScript expression enclosed in {{...}}
-         * @returns {Array} Tuple containing the optional variable name and
-         *     result, including errors as ordinary result values
+         * @returns {{variable: (string|undefined), result: *}}
+         *     Object containing the optional variable name and result,
+         *     including errors as ordinary result values
          * @throws {Error} In case of invalid data types
          * @throws {SyntaxError} If the outer {{...}} frame is missing
          */
@@ -84,13 +85,13 @@
                 _cache.set(identifier, [variable, script]);
             }
 
-            try {return [variable, Scripting.eval(context, script)];
+            try {return {variable, result: Scripting.eval(context, script)};
             } catch (error) {
                 if (!(error instanceof Error))
                     error = new Error(error);
                 error.message = (String(error.message).trim() + " in " + script).trim();
                 console.error(String(error));
-                return [variable, error];
+                return {variable, result: error};
             }
         },
 

@@ -58,12 +58,12 @@
                 // used for the level, which returns the actual text via
                 // Object.prototype.toString().
                 const namespace = "messages" + (match[1] ? "." + match[1] : "");
-                if (!Namespace.exists(namespace, match[2]))
-                    Object.defineProperty(Namespace.use(namespace), match[2], {
+                if (!Object.exists(window, namespace + "." + match[2]))
+                    Object.defineProperty(Object.use(window, namespace), match[2], {
                         value: {toString() {return value;}}
                     });
-                if (!Namespace.exists("Messages", key))
-                    Object.defineProperty(Namespace.use("Messages"), key, {
+                if (!Object.prototype.hasOwnProperty.call(Messages, key))
+                    Object.defineProperty(Messages, key, {
                         value
                     });
             }

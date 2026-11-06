@@ -2,116 +2,131 @@
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Seanox composite-js Expression Syntax</title>
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
     <script src="composite-js-testing.js"></script>
     <script>
 
       Test.activate();
 
-      for (const [source, expected] of [
-          ["{{true && false}}", false],
-          ["{{true && true}}", true],
-          ["{{false || true}}", true],
-          ["{{!false}}", true],
-          ["{{!!'x'}}", true],
-          ["{{!''}}", true],
-          ["{{![]}}", false],
-          ["{{1 == '1'}}", true],
-          ["{{1 === '1'}}", false],
-          ["{{1 != '1'}}", false],
-          ["{{1 !== '1'}}", true],
-          ["{{1 < 2}}", true],
-          ["{{2 <= 2}}", true],
-          ["{{2 > 1}}", true],
-          ["{{2 >= 2}}", true],
-          ["{{25 / 5}}", 5],
-          ["{{10 % 3}}", 1],
-          ["{{(25 / 5) == 5}}", true],
-          ["{{10 / 2 % 3}}", 2],
-          ["{{true\t&&\ttrue}}", true],
-          ["{{true\n&&\rtrue}}", true],
-          ["{{' :and :or :not :empty :eq :eeq :ne :nee :lt :gt :le :ge :div :mod '}}",
-              " :and :or :not :empty :eq :eeq :ne :nee :lt :gt :le :ge :div :mod "],
-          ["{{'a:and b'}}", "a:and b"],
-          ["{{'a :and(b)'}}", "a :and(b)"],
-          ["{{'a :AND b'}}", "a :AND b"],
-          ["{{'a :unknown b'}}", "a :unknown b"],
-          [String.raw`{{'a \u003aand b'}}`, "a :and b"],
-          ["{{`a :and b ${1 + 2}`}}", "a :and b 3"],
-          ["{{/a :and b/.source}}", "a :and b"],
-          ["{{/['\"`]/.test('x') || true}}", true],
-          ["{{1 /* :and ' \" ` */ + 2}}", 3],
-          ["{{'a  b\tc'}}", "a  b\tc"],
-          ["{{`a\r\nb`}}", "a\nb"],
-          [String.raw`{{'a\r\nb'}}`, "a\r\nb"],
-          ["{{'a\\\nb'}}", "ab"],
-          ["{{'a\\\r\nb'}}", "ab"],
-          ["{{1 // comment\n + 2}}", 3],
-          ["{{1 // comment\r + 2}}", 3],
-          ["{{1 // comment\r\n + 2}}", 3],
-          ["{{let number = 2\nnumber + 3}}", 5],
-          ["{{(() => { return\n7; })()}}", undefined],
-          ["{{({outer: {value: 3} }).outer.value}}", 3],
-          ["{{(() => { return 7; })()}}", 7],
-          ["{{let value = 2; value + 3}}", 5],
-          ["{{'abc' + \"def\"}}", "abcdef"],
-          [String.raw`{{'abc\'d\"ef'}}`, "abc'd\"ef"],
-          [String.raw`{{"abc\\" + 'def\\'}}`, "abc\\def\\"],
-          ["{{and + not + empty}}", 6],
-          ["{{object.and + object.not}}", 3],
-          ["{{value}}", "a :and b"],
-          ["{{'#import module'}}", "#import module"],
-          ["{{'#use Example'}}", "#use Example"]
-      ])
-          Test.create({test() {
-              const context = {and:1, not:2, empty:3, object:{and:1, not:2},
-                  value:"a :and b"};
-              const result = Expression.eval(context, source);
-              Assert.assertEquals(2, result.length);
-              Assert.assertEquals(undefined, result[0]);
-              Assert.assertEquals(source, expected, result[1]);
-          }});
-
-      for (const source of [
-          "{{true and false}}", "{{not false}}", "{{empty ''}}",
-          "{{:and false}}", "{{:not false}}", "{{true :and false}}",
-          "{{test :and 123}}",
-          "{{1:and false}}",
-          "{{1 : value}}", "{{1 :and(false)}}", "{{:not(false)}}",
-          "{{1 :AND false}}", "{{#HiddenField}}", "{{#(HiddenField)}}",
-          "{{#[HiddenField]}}", "{{#import module}}", "{{#expose value}}",
-          "{{#use Example}}", "{{throw\nnew Error('failure')}}",
-          "{{/a\nb/.test('ab')}}"
-      ])
-          Test.create({test() {
-              const errors = [];
-              const original = console.error;
-              let result;
-              console.error = error => errors.push(error);
-              try {result = Expression.eval({}, source);
-              } finally {
-                  console.error = original;
-              }
-              Assert.assertEquals(2, result.length);
-              Assert.assertEquals(undefined, result[0]);
-              Assert.assertTrue(source, result[1] instanceof SyntaxError);
-              Assert.assertEquals(1, errors.length);
-          }});
+      const syntaxValue = "a :and b";
+      const errors = [];
+      const original = console.error;
+      console.error = error => errors.push(String(error));
 
       Test.create({test() {
-          const element = document.getElementById("HiddenField");
-          Assert.assertEquals(element,
-              Expression.eval({}, "{{document.getElementById('HiddenField')}}")[1]);
-          Assert.assertEquals("Test-HF",
-              Expression.eval({}, "{{document.getElementById('HiddenField').value}}")[1]);
-          Assert.assertNull(
-              Expression.eval({}, "{{document.getElementById('Nothing')}}")[1]);
+          const content = document.body.textContent;
+          const messages = Array.from(document.body.childNodes)
+              .filter(node => node.nodeType === Node.TEXT_NODE
+                  && node.textContent.startsWith("SyntaxError:"))
+              .map(node => node.textContent);
+          Assert.assertEquals(18, errors.length);
+          Assert.assertEquals(errors.join("\n"), messages.join("\n"));
+          const pattern = Test.read("expression_syntax_" + navigator.engine + ".txt");
+          try {Assert.assertSameText(pattern, content);
+          } catch (error) {
+              console.log(content);
+              throw error;
+          }
       }});
 
-      Test.start({auto:true});
+      Composer.listen(Composer.EVENT_RENDER_END, (event, element) => {
+          if (element !== document.body)
+              return;
+          console.error = original;
+          Test.start();
+      });
     </script>
   </head>
   <body>
     <input type="hidden" id="HiddenField" value="Test-HF">
+
+    {{and: 1}}{{not: 2}}{{empty: 3}}
+    {{object: ({and:1, not:2})}}{{value: syntaxValue}}
+
+    Syntax 01: {{true &amp;&amp; false}}
+    Syntax 02: {{true &amp;&amp; true}}
+    Syntax 03: {{false || true}}
+    Syntax 04: {{!false}}
+    Syntax 05: {{!!'x'}}
+    Syntax 06: {{!''}}
+    Syntax 07: {{![]}}
+    Syntax 08: {{1 == '1'}}
+    Syntax 09: {{1 === '1'}}
+    Syntax 10: {{1 != '1'}}
+    Syntax 11: {{1 !== '1'}}
+    Syntax 12: {{1 &lt; 2}}
+    Syntax 13: {{2 &lt;= 2}}
+    Syntax 14: {{2 > 1}}
+    Syntax 15: {{2 >= 2}}
+    Syntax 16: {{25 / 5}}
+    Syntax 17: {{10 % 3}}
+    Syntax 18: {{(25 / 5) == 5}}
+    Syntax 19: {{10 / 2 % 3}}
+    Syntax 20: {{true&#9;&amp;&amp;&#9;true}}
+    Syntax 21: {{true&#10;&amp;&amp;&#13;true}}
+    Syntax 22: {{true :and false}}
+    Syntax 23: {{false :or true}}
+    Syntax 24: {{:not false}}
+    Syntax 25: {{:empty ''}}
+    Syntax 26: {{JSON.stringify(' :and :or :not :empty :eq :eeq :ne :nee :lt :gt :le :ge :div :mod ')}}
+    Syntax 27: {{'a:and b'}}
+    Syntax 28: {{'a :and(b)'}}
+    Syntax 29: {{'a :AND b'}}
+    Syntax 30: {{'a :unknown b'}}
+    Syntax 31: {{'a \u003aand b'}}
+    Syntax 32: {{`a :and b ${1 + 2}`}}
+    Syntax 33: {{/a :and b/.source}}
+    Syntax 34: {{/['"`]/.test('x') || true}}
+    Syntax 35: {{1 /* :and ' " ` */ + 2}}
+    Whitespace: {{JSON.stringify('a  b&#9;c')}}
+    Template newline: {{JSON.stringify(`a&#13;&#10;b`)}}
+    String newline: {{JSON.stringify('a\r\nb')}}
+    Syntax 39: {{'a\&#10;b'}}
+    Syntax 40: {{'a\&#13;&#10;b'}}
+    Syntax 41: {{1 // comment&#10; + 2}}
+    Syntax 42: {{1 // comment&#13; + 2}}
+    Syntax 43: {{1 // comment&#13;&#10; + 2}}
+    Syntax 44: {{let number = 2&#10;number + 3}}
+    Syntax 45: {{(() => { return&#10;7; })()}}
+    Syntax 46: {{({outer: {value: 3} }).outer.value}}
+    Syntax 47: {{(() => { return 7; })()}}
+    Syntax 48: {{let value = 2; value + 3}}
+    Syntax 49: {{'abc' + "def"}}
+    Syntax 50: {{'abc\'d\"ef'}}
+    Syntax 51: {{"abc\\" + 'def\\'}}
+    Syntax 52: {{and + not + empty}}
+    Syntax 53: {{object.and + object.not}}
+    Syntax 54: {{value}}
+    Syntax 55: {{'require("module")'}}
+    Syntax 56: {{'use("Example")'}}
+
+    Syntax error 01: {{true and false}}
+    Syntax error 02: {{not false}}
+    Syntax error 03: {{empty ''}}
+    Syntax error 04: {{:and false}}
+    Syntax error 05: {{true :and }}
+    Syntax error 06: {{1:and false}}
+    Syntax error 07: {{1 : value}}
+    Syntax error 08: {{1 :and(false)}}
+    Syntax error 09: {{:not(false)}}
+    Syntax error 10: {{1 :AND false}}
+    Syntax error 11: {{#HiddenField}}
+    Syntax error 12: {{#(HiddenField)}}
+    Syntax error 13: {{#[HiddenField]}}
+    Syntax error 14: {{require(}}
+    Syntax error 15: {{expose(}}
+    Syntax error 16: {{use(}}
+    Syntax error 17: {{throw&#10;new Error('failure')}}
+    Syntax error 18: {{/a&#10;b/.test('ab')}}
+
+    Hidden field identity: {{document.getElementById('HiddenField') === document.querySelector('#HiddenField')}}
+    Hidden field value: {{document.getElementById('HiddenField').value}}
+    Missing field: {{document.getElementById('Nothing') === null}}
   </body>
 </html>

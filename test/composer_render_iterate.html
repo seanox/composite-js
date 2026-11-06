@@ -29,9 +29,9 @@
             return span;
         };
 
-        Namespace.use()["tempB"] = () => {
+        Object.use(window, "tempB", () => {
             return "123";
-        };
+        });
 
         const objectX = {
             array0: [],
@@ -339,11 +339,11 @@
     </script>
   </head>
   <body>
-    <div id="OutputA1">{{String(tryout(() => tempA))}}</div>
+    <div id="OutputA1">{{String(attempt(() => tempA))}}</div>
     <div iterate={{tempA:TestModel.listA}}>
       <input id="a:{{tempA.index}}" type="text" value="{{tempA.index}}: {{tempA.item}} of {{tempA.data}}">
     </div>
-    <div id="OutputA2">{{String(tryout(() => tempA))}}</div>
+    <div id="OutputA2">{{String(attempt(() => tempA))}}</div>
 
     <div id="OutputB1">{{tempB()}}</div>
     <div iterate={{tempB:TestModel.listB}}>
@@ -351,7 +351,7 @@
     </div>
     <div id="OutputB2">{{tempB()}}</div>
 
-    {{s1:(tryout(() => s1) || 0) +1}}
+    {{s1:(attempt(() => s1) || 0) +1}}
     S:{{s1}}:<span id="OutputS1" iterate="{{tempS:TestModel.listA}}" import="{{testS(s1)}}">---</span>
     
     <table>

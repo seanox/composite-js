@@ -13,8 +13,8 @@
     <script type="text/javascript">
     
         Test.activate();
-        
-        Namespace.use()["probeCondition"] = true;
+
+        Object.use(window, "probeCondition", true);
         let probeSelectorCount = 0;
         Composer.customize("[data-probe]", () => {
             probeSelectorCount++;
@@ -58,7 +58,7 @@
 
         Test.create({async test() {
             for (const condition of [false, true]) {
-                Namespace.use()["probeCondition"] = condition;
+                Object.use(window, "probeCondition", condition);
                 await new Promise(resolve => {
                     Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
                         if (selector === document.body)

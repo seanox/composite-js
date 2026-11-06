@@ -120,11 +120,11 @@
             Assert.assertEquals(0, stylesX.length);
         }});
 
-        Test.create({expected:/Invalid namespace at level 1: io\/moduleE/, test() {
+        Test.create({expected:/Invalid object path: io\/moduleE/, test() {
             Composer.include("io/moduleE");
         }});
 
-        Test.create({expected:/Invalid namespace at level 1: io\/moduleY/, test() {
+        Test.create({expected:/Invalid object path: io\/moduleY/, test() {
             Composer.include("io/moduleY");
         }});
 
@@ -151,7 +151,7 @@
         }});
 
         Test.create({test() {
-            Assert.assertEquals("Error: Invalid macro: #import", document.getElementById("moduleF").innerText);
+            Assert.assertEquals("TypeError: Invalid require: undefined", document.getElementById("moduleF").innerText);
         }});
 
         Test.create({test() {

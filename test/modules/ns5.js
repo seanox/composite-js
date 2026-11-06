@@ -1,1 +1,1 @@
-Object.use(window, "ns5");
+Object.use(window, "ns5", {});

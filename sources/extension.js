@@ -67,180 +67,49 @@
      * @returns {string} The version of Seanox composite-js
      */
     Object.defineProperty(compliant, "version", {
-        value: "0.0.0",
-        writable: false,
-        configurable: false,
-        enumerable: true
+        value: "0.0.0", writable: false, configurable: false, enumerable: true
     });
 
     /**
-     * Comparable to packages in other programming languages, namespaces can be
-     * used for hierarchical structuring of components, resources and business
-     * logic. Although packages are not a feature of JavaScript, they can be
-     * mapped at the object level by concatenating objects into an object tree.
-     * Here, each level of the object tree forms a namespace, which can also be
-     * considered a domain.
-     *
-     * As is typical for the identifiers of objects, namespaces so use word
-     * characters, means letters, numbers and underscores separated by a dot. As
-     * a special feature, arrays are also supported. If a layer in the namespace
-     * uses an integer, this layer is used as an array.
+     * Enhancement of the JavaScript API
+     * Static function to create a time based alphanumeric serial identifier
+     * that is chronologically sortable as text and contains the time and a
+     * counter if serial are created at the same time.
+     * @returns {string} The generated time-based serial identifier
      */
-    compliant("Namespace");
-    compliant(null, window.Namespace = {
+    compliant("Math.serial");
+    compliant(null, Math.serial = () => _serial.toString());
+    const _offset = -946684800000;
+    const _serial = {
+        timing: Date.now() + _offset,
+        number: 0,
+        toString() {
+            const timing = Date.now() + _offset;
+            this.number = this.timing === timing ? this.number +1 : 0;
+            this.timing = timing;
+            const serial = this.timing.toString(36);
+            const number = this.number.toString(36);
+            return (serial.length.toString(36) + serial
+                + number.length.toString(36) + number).toUpperCase();
+        }};
 
-        /** Pattern for the namespace separator */
-        get PATTERN_NAMESPACE_SEPARATOR() {return /\./;},
-
-        /** Pattern for a valid namespace level at the beginning */
-        get PATTERN_NAMESPACE_LEVEL_START() {return /^[_a-z\$][\w\$]*$/i;},
-
-        /** Pattern for a valid namespace level */
-        get PATTERN_NAMESPACE_LEVEL() {return /^[\w\$]+$/;},
-
-        /**
-         * Creates a namespace to the passed object, strings and numbers, if the
-         * namespace contains arrays and the numbers can be used as index.
-         * Levels of the namespace levels are separated by a dot. Levels can as
-         * fragments also contain dots. Without arguments the global namespace
-         * window is returned. An explicit root, including window, is resolved
-         * through properties only; implicit roots also resolve global bindings.
-         * Missing, null, undefined and DOM entries are replaced by namespaces.
-         * Objects and functions are reused; other primitive values cause errors.
-         *
-         * The method has the following various signatures:
-         *     Namespace.use();
-         *     Namespace.use(string);
-         *     Namespace.use(string, ...string|number);
-         *     Namespace.use(object|function);
-         *     Namespace.use(object|function, ...string|number);
-         *
-         * @param {...(string|number|object|function)} levels Levels of the namespace
-         * @returns {object|function} The created or already existing namespace
-         * @throws {Error} In case of invalid types, syntax or property access
-         */
-        use(...variants) {
-
-            if (variants.length <= 0)
-                return window;
-
-            _filter(...variants);
-
-            let [namespace, levels] = typeof variants[0] !== "string"
-                    ? [variants[0], variants.slice(1)] : [null, variants];
-            if (levels.length === 0)
-                return namespace;
-            const offset = namespace === null ? 0 : 1;
-
-            levels = levels.join(".");
-            levels.split(Namespace.PATTERN_NAMESPACE_SEPARATOR).forEach((level, index, array) => {
-
-                const pattern = index === 0 && namespace === null
-                        ? Namespace.PATTERN_NAMESPACE_LEVEL_START : Namespace.PATTERN_NAMESPACE_LEVEL;
-                if (!level.match(pattern))
-                    throw new Error(`Invalid namespace at level ${index +1}${level && level.trim() ? ": " + level.trim() : ""}`);
-
-                let item = _populate(namespace, level);
-                if (namespace === null)
-                    namespace = window;
-
-                const type = typeof item;
-                if (type !== "undefined"
-                        && type !== "object"
-                        && type !== "function")
-                    throw new TypeError(`Invalid namespace type at level ${index +1 +offset}: ${type}`);
-                if (item === undefined
-                        || item === null
-                        || item instanceof Element
-                        || item instanceof HTMLCollection) {
-                    if (index < array.length -1
-                            && array[index +1].match(/^\d+$/))
-                        namespace[level] = [];
-                    else namespace[level] = {};
-                    item = namespace[level];
-                }
-                namespace = item;
-            });
-
-            return namespace;
-        },
-            
-        /**
-         * Resolves a namespace and returns the determined object(-level).
-         * If the namespace does not exist or is a DOM entry, undefined is
-         * returned. Explicit roots use property lookup; implicit roots also
-         * resolve global bindings. A root without further levels is returned.
-         *
-         * The method has the following various signatures:
-         *     Namespace.lookup();
-         *     Namespace.lookup(string);
-         *     Namespace.lookup(string, ...string|number);
-         *     Namespace.lookup(object|function);
-         *     Namespace.lookup(object|function, ...string|number);
-         *
-         * @param {...(string|number|object|function)} levels Levels of the namespace
-         * @returns {*} The determined value, including null or undefined
-         * @throws {Error} In case of invalid data types or syntax
-         */
-        lookup(...variants) {
-
-            if (variants.length <= 0)
-                return window;
-
-            _filter(...variants);
-
-            let [namespace, levels] = typeof variants[0] !== "string"
-                    ? [variants[0], variants.slice(1)] : [null, variants];
-            if (levels.length === 0)
-                return namespace;
-            const offset = namespace === null ? 0 : 1;
-
-            levels = levels.join(".");
-            levels = levels.split(Namespace.PATTERN_NAMESPACE_SEPARATOR);
-            for (let index = 0; index < levels.length; index++) {
-
-                const level = levels[index];
-
-                const pattern = index +offset === 0
-                        ? Namespace.PATTERN_NAMESPACE_LEVEL_START : Namespace.PATTERN_NAMESPACE_LEVEL;
-                if (!level.match(pattern))
-                    throw new Error(`Invalid namespace at level ${index +1 +offset}${level && level.trim() ? ": " + level.trim() : ""}`);
-
-                namespace = _populate(namespace, level);
-                if (namespace === undefined
-                        || namespace === null)
-                    return namespace;
-
-                if (namespace instanceof Element
-                        || namespace instanceof HTMLCollection)
-                    return undefined;
-            }
-
-            return namespace;
-        },
-        
-        /**
-         * Checks whether a namespace exists based on the passed object, strings
-         * and numbers, if the namespace contains arrays and the numbers can be
-         * used as index. Levels of the namespace chain are separated by a dot.
-         * Levels can also be fragments that contain dots. Without arguments,
-         * false is returned.
-         *
-         * The method has the following various signatures:
-         *     Namespace.exists();
-         *     Namespace.exists(string);
-         *     Namespace.exists(string, ...string|number);
-         *     Namespace.exists(object|function);
-         *     Namespace.exists(object|function, ...string|number);
-         *
-         * @param {...(string|number|object|function)} levels Levels of the namespace
-         * @returns {boolean} True if the namespace exists
-         */
-        exists(...levels) {
-            if (levels.length < 1)
-                return false;
-            return Object.usable(Namespace.lookup(...levels));
-        }
+    /**
+     * Enhancement of the JavaScript API
+     * Add a time based alphanumeric serial identifier for the window instance
+     * that is chronologically sortable as text and contains the time and a
+     * counter if serial are created at the same time.
+     *
+     * Window.serial must be defined before Object.prototype.serial because the
+     * own property on window takes precedence during property lookup.
+     *
+     * @returns {string} The generated time-based serial identifier
+     */
+    compliant("window.serial");
+    Object.defineProperty(window, "serial", {
+        value: (() => {
+            const serial = Math.serial();
+            return () => serial;
+        })()
     });
 
     /**
@@ -337,145 +206,306 @@
         }
     });
 
-    const _filter = (...levels) => {
-        const chain = [];
-        levels.forEach((level, index) => {
-            if (index === 0
-                    && typeof level !== "object"
-                    && typeof level !== "function"
-                    && typeof level !== "string")
-                throw new TypeError(`Invalid namespace at level ${index +1}: ${typeof level}`);
-            if (index === 0
-                    && level === null)
-                throw new TypeError(`Invalid namespace at level ${index +1}: null`);
-            if (index > 0
-                    && typeof level !== "string"
-                    && typeof level !== "number")
-                throw new TypeError(`Invalid namespace at level ${index +1}: ${typeof level}`);
-            level = typeof level === "string"
-                ? level.split(Namespace.PATTERN_NAMESPACE_SEPARATOR) : [level];
-            chain.push(...level);
-        });
-        return chain;
+    const PATTERN_OBJECT_PATH_TOKEN = /\0[1-9]\d*\0/;
+    const PATTERN_OBJECT_PATH_TOKEN_RESTORE = /\0([1-9]\d*)\0/g;
+    const PATTERN_OBJECT_PATH_NULL = /\0/g;
+    const PATTERN_OBJECT_PATH_NULL_RESTORE = /\0[0]\0/g;
+    const PATTERN_OBJECT_PATH_LITERAL = new RegExp([
+        /"(?:\\[\s\S]|[^"\\])*"/,
+        /'(?:\\[\s\S]|[^'\\])*'/,
+        /`(?:\\[\s\S]|[^`\\])*`/
+    ].map(pattern => pattern.source).join("|"), "g");
+    const PATTERN_OBJECT_PATH_BRACKET_WHITESPACE = /\[\s+|\s+\]/g;
+    const PATTERN_OBJECT_PATH_BRACKET_OPEN = /\[/g;
+    const PATTERN_OBJECT_PATH_IDENTIFIER = /[A-Za-z_$][A-Za-z0-9_$]*/;
+    const PATTERN_OBJECT_PATH_INDEX = /\d+/;
+    const PATTERN_OBJECT_LITERAL = /^["'`]/;
+    const PATTERN_OBJECT_INDEX_ZEROS = /^0+(?=\d)/;
+    const PATTERN_OBJECT_IDENTIFIER = new RegExp(`^${PATTERN_OBJECT_PATH_IDENTIFIER.source}$`);
+    const PATTERN_OBJECT_ARRAY_INDEX = /^\[\d+\]$/;
+
+    // Validation / Identifier-oriented grammar - Basic Rules:
+    // - Identifiers are the default: object.property
+    // - Numeric indices are an exception: object[123]
+    // - Literals allow any property name: object["123abc"]
+    // - Brackets allow alternative addressing: object[property]
+    // - Invalid identifiers must be written as literals: object["\u00F6"]
+    const PATTERN_OBJECT_PATH_PART = new RegExp("(?:" + [
+        PATTERN_OBJECT_PATH_IDENTIFIER,
+        PATTERN_OBJECT_PATH_TOKEN
+    ].map(pattern => pattern.source).join("|") + ")");
+    const PATTERN_OBJECT_PATH_BRACKET = new RegExp("\\[(?:" + [
+        PATTERN_OBJECT_PATH_IDENTIFIER,
+        PATTERN_OBJECT_PATH_INDEX,
+        PATTERN_OBJECT_PATH_TOKEN
+    ].map(pattern => pattern.source).join("|") + ")\\]");
+    const PATTERN_OBJECT_PATH = new RegExp("^(?:" + [
+        PATTERN_OBJECT_PATH_PART,
+        PATTERN_OBJECT_PATH_BRACKET
+    ].map(pattern => pattern.source).join("|") + ")(?:" + [
+        `\\.${PATTERN_OBJECT_PATH_PART.source}`,
+        PATTERN_OBJECT_PATH_BRACKET.source
+    ].join("|") + ")*$");
+
+    /**
+     * Splits an identifier-oriented path into property and array-access
+     * parts: a[1] becomes ["a", "[1]"]. Brackets and literal delimiters are
+     * preserved for later distinction of numeric indices and associative keys.
+     * Literal contents are decoded once, after validation and splitting.
+     * @param {string} path Object path to split
+     * @returns {Array<string>} Ordered property and array-access parts
+     */
+    const _object_path_split = (path) => {
+
+        if (typeof path !== "string")
+            throw new TypeError(`Invalid object path: ${typeof path}`);
+
+        const tokens = ["\0"];
+        const mask = text => `\0${tokens.push(text) - 1}\0`;
+        const restore = text => text.replace(PATTERN_OBJECT_PATH_TOKEN_RESTORE,
+            (match, index) => {
+                const literal = tokens[index];
+                const content = literal.slice(1, -1)
+                    .replace(PATTERN_OBJECT_PATH_NULL_RESTORE, "\0").unescape();
+                return literal.charAt(0) + content + literal.charAt(0);
+            });
+        const value = path
+            .replace(PATTERN_OBJECT_PATH_NULL, "\0" + "0" + "\0")
+            .replace(PATTERN_OBJECT_PATH_LITERAL,
+                literal => mask(literal))
+            .replace(PATTERN_OBJECT_PATH_BRACKET_WHITESPACE,
+                match => match.trim());
+
+        if (!PATTERN_OBJECT_PATH.test(value))
+            throw new SyntaxError(`Invalid object path: ${path}`);
+
+        return value
+            .replace(PATTERN_OBJECT_PATH_BRACKET_OPEN, ".[")
+            .split(".")
+            .filter(Boolean)
+            .map(restore);
     };
 
-    const _populate = (namespace, level) => {
-        if (namespace !== null)
-            return namespace[level];
-        return eval(`typeof ${level} !== "undefined" ? ${level} : undefined`);
-    }
+    const _object_node_assert = (value, levels) => {
+        const type = value === null ? "null" : typeof value;
+        if (type !== "object") {
+            const path = levels.reduce((path, level) => {
+                const bracket = level.charAt(0) === "[";
+                let name = bracket ? level.slice(1, -1) : level;
+                if (PATTERN_OBJECT_LITERAL.test(name))
+                    name = JSON.stringify(name.slice(1, -1));
+                return path + (path && !bracket ? "." : "")
+                    + (bracket ? `[${name}]` : name);
+            }, "");
+            throw new TypeError(`Unsupported object node: ${path || "<root>"} (${type})`);
+        }
+    };
 
     /**
-     * Enhancement of the JavaScript API
-     * Static function to create a time based alphanumeric serial identifier
-     * that is chronologically sortable as text and contains the time and a
-     * counter if serial are created at the same time.
-     * @returns {string} The generated time-based serial identifier
-     */
-    compliant("Math.serial");
-    compliant(null, Math.serial = () => _serial.toString());
-    const _offset = -946684800000;
-    const _serial = {
-        timing: Date.now() + _offset,
-        number: 0,
-        toString() {
-            const timing = Date.now() + _offset;
-            this.number = this.timing === timing ? this.number +1 : 0;
-            this.timing = timing;
-            const serial = this.timing.toString(36);
-            const number = this.number.toString(36);
-            return (serial.length.toString(36) + serial
-                + number.length.toString(36) + number).toUpperCase();
-    }};
-
-    /**
-     * Enhancement of the JavaScript API
-     * Add a time based alphanumeric serial identifier for the window instance
-     * that is chronologically sortable as text and contains the time and a
-     * counter if serial are created at the same time.
+     * Resolves or ensures an object tree below an explicit or implicit root.
      *
-     * Window.serial must be defined before Object.prototype.serial because the
-     * own property on window takes precedence during property lookup.
+     * - Path: identifiers, brackets, decoded literals; undefined = omitted.
+     * - Keys: unquoted decimal indices normalized as strings (no rounding);
+     *   quoted keys preserved.
+     * - Implicit root: bare identifier via indirect eval
+     *   (global scope, including global const/let bindings, no closure access),
+     *   window fallback if undefined; brackets/literals address window only.
+     *   Local/module bindings are not resolved; missing root = undefined.
+     * - Traversed nodes: non-null objects, including arrays.
+     * - Readonly: ignore value; no creation/assignment; any leaf type allowed;
+     *   missing nodes = undefined.
+     * - Ensure (!readonly, value === undefined): reuse nodes; create [] before
+     *   unquoted numeric indices, otherwise {}; end node must be an object.
+     * - Assign (!readonly, value !== undefined): explicit root + path required;
+     *   ensure intermediates, overwrite leaf, return value unchanged.
      *
-     * @returns {string} The generated time-based serial identifier
+     * @param {boolean} readonly Resolve without creating or assigning nodes
+     * @param {string|object|undefined} [root] Root object or implicit-root path
+     * @param {string} [path] Complete path below the root
+     * @param {*} [value] Value to assign; ignored in readonly mode
+     * @returns {*} Resolved or ensured node, assigned value, or undefined
+     * @throws {Error} In case of invalid arguments, paths, nodes, global
+     *     resolution or native property access and assignment errors
      */
-    compliant("window.serial");
-    Object.defineProperty(window, "serial", {
-        value: (() => {
-            const serial = Math.serial();
-            return () => serial;
-        })()
-    });
+    const _object_tree = (readonly, root, path, value) => {
+
+        if (!readonly
+                && value !== undefined) {
+            if (root === undefined)
+                throw new TypeError("Missing argument: root");
+            if (path === undefined)
+                throw new TypeError("Missing argument: path");
+        } else value = undefined;
+
+        const explicit = typeof root === "object";
+        if (value !== undefined && !explicit)
+            throw new TypeError(`Invalid object root: ${typeof root}`);
+        let object = explicit ? root : undefined;
+        if (!explicit && root !== undefined) {
+            if (path !== undefined)
+                throw new TypeError(`Invalid object root: ${typeof root}`);
+            path = root;
+        }
+        const levels = path === undefined ? [] : _object_path_split(path);
+        const keys = levels.map(level => {
+            const bracket = level.charAt(0) === "[";
+            const name = bracket ? level.slice(1, -1) : level;
+            if (PATTERN_OBJECT_LITERAL.test(name))
+                return name.slice(1, -1);
+            return bracket ? name.replace(PATTERN_OBJECT_INDEX_ZEROS, "") : name;
+        });
+
+        if (!explicit) {
+            if (levels.length === 0)
+                return undefined;
+            const name = keys[0];
+            if (PATTERN_OBJECT_IDENTIFIER.test(levels[0]))
+                object = (0, eval)(`typeof ${name} === "undefined" ? undefined : ${name}`);
+            if (object === undefined)
+                object = window[name];
+        } else _object_node_assert(object, []);
+
+        for (let index = explicit ? 0 : 1; index < levels.length; index++) {
+            if (object === undefined && value === undefined)
+                return undefined;
+            _object_node_assert(object, levels.slice(0, index));
+            const level = keys[index];
+            if (value !== undefined && index === levels.length -1) {
+                object[level] = value;
+                return value;
+            }
+            let item = object[level];
+            if (!readonly && item === undefined) {
+                object[level] = PATTERN_OBJECT_ARRAY_INDEX.test(levels[index +1]) ? [] : {};
+                item = object[level];
+            }
+            object = item;
+        }
+        if (!readonly && object !== undefined)
+            _object_node_assert(object, levels);
+        return object;
+    };
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to create and use a namespace for an object.
-     * This method delegates to Namespace.use with the same resolution rules.
-     * Without arguments, the method returns the global namespace window. If only
-     * an object or function is passed, that root is returned unchanged.
+     * Ensures an object tree below an existing root and returns its last level.
+     *
+     * - Path: identifiers, brackets and decoded string literals.
+     * - Root: without an explicit root, an initial bare identifier is resolved
+     *   globally, including global const/let bindings in classic scripts;
+     *   local/module bindings are not resolved. If undefined, use the window
+     *   property instead. Initial brackets/literals address window only.
+     *   Pass window explicitly to create a new global root.
+     * - Traversal: non-null objects, including arrays; existing nodes are reused.
+     * - Ensure (value === undefined): create missing branches as arrays before
+     *   unquoted numeric indices, otherwise as ordinary objects.
+     * - Assign (value !== undefined): explicit root and complete path required;
+     *   create missing intermediates only and overwrite the end value.
+     * - Return: last object/array or assigned value unchanged; undefined for a
+     *   missing implicit root or an argumentless call.
+     * - Arguments: undefined path and value are treated as omitted.
      *
      * The method has the following various signatures:
      *     Object.use();
      *     Object.use(string);
-     *     Object.use(string, ...string|number);
-     *     Object.use(object|function);
-     *     Object.use(object|function, ...string|number);
+     *     Object.use(object);
+     *     Object.use(object, string);
+     *     Object.use(undefined, string);
+     *     Object.use(object, string, value);
      *
-     * @param {...(string|number|object|function)} levels Levels of the namespace
-     * @returns {object|function} The created or already existing namespace
-     * @throws {Error} In case of invalid types, syntax or property access
+     * @param {string|object|undefined} [root] Root object or implicit-root path
+     * @param {string} [path] Complete path below the root
+     * @param {*} [value] Value to assign; undefined only ensures the structure
+     * @returns {*} The object at the last level or the assigned value
+     * @throws {Error} In case of invalid arguments, paths, nodes, global
+     *     resolution or native property access and assignment errors
      */
     compliant("Object.use");
-    compliant(null, Object.use = (...levels) =>
-        Namespace.use.apply(null, levels));
+    compliant(null, Object.use = function(root, path, value) {
+        return _object_tree(false, root, path, value);
+    });
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to determine an object via the namespace.
-     * This method delegates to Namespace.lookup with the same resolution rules.
-     * Without arguments, the method returns the global namespace window.
+     * Resolves an object path without creating or assigning nodes.
+     *
+     * - Path: identifiers, brackets and decoded string literals.
+     * - Root: without an explicit root, an initial bare identifier is resolved
+     *   globally, including global const/let bindings in classic scripts;
+     *   local/module bindings are not resolved. If undefined, use the window
+     *   property instead. Initial brackets/literals address window only.
+     * - Traversal: non-null objects, including arrays; end values may have any
+     *   type. No nodes are created or assigned.
+     * - Return: end value unchanged; undefined for a missing implicit root,
+     *   missing node or an argumentless call.
+     * - Arguments: an undefined path is treated as omitted.
      *
      * The method has the following various signatures:
      *     Object.lookup();
      *     Object.lookup(string);
-     *     Object.lookup(string, ...string|number);
-     *     Object.lookup(object|function);
-     *     Object.lookup(object|function, ...string|number);
+     *     Object.lookup(object);
+     *     Object.lookup(object, string);
+     *     Object.lookup(undefined, string);
      *
-     * @param {...(string|number|object|function)} levels Levels of the namespace
-     * @returns {*} The determined value, including null or undefined
-     * @throws {Error} In case of invalid data types or syntax
+     * @param {string|object|undefined} [root] Root object or implicit-root path
+     * @param {string} [path] Complete path below the root
+     * @returns {*} The resolved value
+     * @throws {Error} In case of invalid arguments, paths, nodes, global
+     *     resolution or native property access errors
      */
     compliant("Object.lookup");
-    compliant(null, Object.lookup = (...levels) =>
-        Namespace.lookup.apply(null, levels));
+    compliant(null, Object.lookup = function(root, path) {
+        return _object_tree(true, root, path);
+    });
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to check whether an object exists in a namespace.
-     * This method is an alias for Namespace.exists(...levels) and uses the
-     * same namespace syntax.
+     * Checks whether Object.lookup resolves a usable value.
+     * Equivalent to Object.usable(Object.lookup(root, path)).
+     * A usable value is neither undefined nor null; false, zero, NaN and empty
+     * strings are usable. This is not a property-presence or truthiness check.
+     * Path syntax, root resolution and traversal follow Object.lookup,
+     * including global const/let bindings in classic scripts, but not local
+     * bindings.
+     *
+     * - No nodes are created or assigned.
+     * - An undefined path is treated as omitted.
+     * - Without arguments, false is returned.
+     * - Object.lookup errors propagate.
      *
      * The method has the following various signatures:
      *     Object.exists();
      *     Object.exists(string);
-     *     Object.exists(string, ...string|number);
-     *     Object.exists(object|function);
-     *     Object.exists(object|function, ...string|number);
+     *     Object.exists(object);
+     *     Object.exists(object, string);
+     *     Object.exists(undefined, string);
      *
-     * @param {...(string|number|object|function)} levels Levels of the namespace
-     * @returns {boolean} True if the namespace exists
-     * @throws {Error} In case of invalid data types or syntax
+     * @param {string|object|undefined} [root] Root object or implicit-root path
+     * @param {string} [path] Complete path below the root
+     * @returns {boolean} True if the resolved value is neither undefined nor null
+     * @throws {Error} In case of invalid arguments, paths, nodes, global
+     *     resolution or native property access errors
      */
     compliant("Object.exists");
-    compliant(null, Object.exists = (...levels) =>
-        Namespace.exists.apply(null, levels));
+    compliant(null, Object.exists = function(root, path) {
+        return Object.usable(Object.lookup.apply(Object, arguments));
+    });
 
     /**
      * Enhancement of the JavaScript API
-     * Adds a static function to checks that an object is not undefined / null.
-     * @param {*} object Object to be checked
-     * @returns {boolean} True if the object is neither undefined nor null
+     * Checks whether a value is usable, without object-path resolution.
+     * A usable value is neither undefined nor null; false, zero, NaN and empty
+     * strings are usable.
+     *
+     * - This is not a truthiness check.
+     * - Without arguments, false is returned.
+     *
+     * The method has the following various signatures:
+     *     Object.usable();
+     *     Object.usable(value);
+     *
+     * @param {*} [object] Value to check; not restricted to objects
+     * @returns {boolean} True if the value is neither undefined nor null
      */
     compliant("Object.usable");
     compliant(null, Object.usable = (object) =>
@@ -646,19 +676,48 @@
         return hash;
     });
 
+    const PATTERN_UNESCAPE_OCTAL = /([0-7]{1,3})/;
+    const PATTERN_UNESCAPE_HEX = /x([0-9A-Fa-f]{2})/;
+    const PATTERN_UNESCAPE_CODEPOINT = /u\{([0-9A-Fa-f]{1,6})\}/;
+    const PATTERN_UNESCAPE_UNICODE = /u([0-9A-Fa-f]{4})/;
+    const PATTERN_UNESCAPE_SYMBOL = /([\s\S]|$)/;
+    const PATTERN_UNESCAPE = new RegExp("\\\\(?:" + [
+        PATTERN_UNESCAPE_OCTAL,
+        PATTERN_UNESCAPE_HEX,
+        PATTERN_UNESCAPE_CODEPOINT,
+        PATTERN_UNESCAPE_UNICODE,
+        PATTERN_UNESCAPE_SYMBOL
+    ].map(pattern => pattern.source).join("|") + ")", "g");
+
     /**
-     * Enhancement of the JavaScript APIa
-     * Function to decode escape sequences in a string.
+     * Enhancement of the JavaScript API
+     * Decodes escape sequences once, without reinterpreting decoded characters.
      * @returns {string} The decoded string with processed control characters
+     * @throws {SyntaxError} In case of malformed numeric or trailing escapes
+     * @throws {RangeError} In case of a Unicode code point above U+10FFFF
      */
     compliant("String.prototype.unescape");
     compliant(null, String.prototype.unescape = function() {
-        let text = this
-            .replace(/\r/g, "\\r")
-            .replace(/\n/g, "\\n")
-            .replace(/^(["'])/, "\$1")
-            .replace(/(^|[^\\])((?:\\{2})*)"/g, "$1$2\\");
-        return eval(`"${text}"`);
+        return this.replace(PATTERN_UNESCAPE,
+            (match, octal, hexdecimal, codepoint, unicode, symbol) => {
+                if (octal !== undefined)
+                    return String.fromCharCode(Number.parseInt(octal, 8));
+                if (hexdecimal !== undefined
+                        || unicode !== undefined)
+                    return String.fromCharCode(Number.parseInt(hexdecimal || unicode, 16));
+                if (codepoint !== undefined) {
+                    const value = Number.parseInt(codepoint, 16);
+                    if (value > 0x10FFFF)
+                        throw new RangeError(`Invalid unicode codepoint: U+${codepoint}`);
+                    return String.fromCodePoint(value);
+                }
+                if (symbol === "x"
+                        || symbol === "u"
+                        || symbol === "")
+                    throw new SyntaxError(`Invalid escape sequence: ${match}`);
+                const index = "bfnrtv".indexOf(symbol);
+                return index < 0 ? symbol : "\b\f\n\r\t\v".charAt(index);
+            });
     });
 
     /**

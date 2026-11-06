@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const objectTreeConst = {};
+        let objectTreeLet = {};
+        const objectTreeShadow = {source: "lexical"};
+        window.objectTreeShadow = {source: "window"};
+        const objectTreeNull = null;
+        window.objectTreeNull = {};
+        const objectTreeUnset = undefined;
+        window.objectTreeUnset = {};
+        const objectTreeArray = [];
+        window.objectTreeArray = {};
+        const objectTreeNodes = {};
+
+        window.objectTreeUninitialized = {};
+        const objectTreeQuotedUninitialized = Object.lookup('["objectTreeUninitialized"]');
+        let objectTreeUninitializedError;
+        try {Object.lookup("objectTreeUninitialized");
+        } catch (error) {
+            objectTreeUninitializedError = error;
+        }
+        let objectTreeUninitialized = {};
+
+        const assertError = (method, parameters, message, type = TypeError) => {
+            let error;
+            try {method(...parameters);
+            } catch (caught) {
+                error = caught;
+            }
+            Assert.assertTrue(error instanceof type);
+            Assert.assertEquals(message, error.message);
+        };
+
+        Test.create({test() {
+            Assert.assertEquals("undefined", typeof Namespace);
+            for (const method of [Object.use, Object.lookup, Object.exists])
+                Assert.assertEquals("function", typeof method);
+            Assert.assertUndefined(Object.use());
+            Assert.assertUndefined(Object.lookup());
+            Assert.assertFalse(Object.exists());
+            Assert.assertUndefined(Object.use(undefined));
+            Assert.assertUndefined(Object.lookup(undefined));
+            Assert.assertFalse(Object.exists(undefined));
+        }});
+
+        Test.create({test() {
+            const root = {};
+            Assert.assertSame(root, Object.use(root));
+            Assert.assertSame(root, Object.lookup(root));
+            Assert.assertTrue(Object.exists(root));
+            const leaf = Object.use(root, "a.b.c.d");
+            Assert.assertSame(root.a.b.c.d, leaf);
+            Assert.assertSame(leaf, Object.lookup(root, "a.b.c.d"));
+            Assert.assertTrue(Object.exists(root, "a.b.c.d"));
+            Assert.assertSame(leaf, Object.use(root, "a.b.c.d"));
+        }});
+
+        Test.create({test() {
+            Assert.assertUndefined(Object.use("objectTreeMissing.a.b"));
+            Assert.assertUndefined(Object.lookup("objectTreeMissing.a.b"));
+            Assert.assertFalse(Object.exists("objectTreeMissing.a.b"));
+            Assert.assertUndefined(window.objectTreeMissing);
+            Assert.assertUndefined(Object.use(undefined, "objectTreeMissing.a"));
+            Assert.assertUndefined(window.objectTreeMissing);
+            try {
+                const leaf = Object.use(window, "objectTreeMissing.a.b");
+                Assert.assertSame(window.objectTreeMissing.a.b, leaf);
+                Assert.assertSame(leaf, Object.use("objectTreeMissing.a.b"));
+            } finally {
+                delete window.objectTreeMissing;
+            }
+        }});
+
+        Test.create({test() {
+            const root = {existing: {}};
+            Assert.assertUndefined(Object.lookup(root, "missing.child"));
+            Assert.assertFalse(Object.exists(root, "missing.child"));
+            Assert.assertFalse("missing" in root);
+            Assert.assertUndefined(Object.lookup(root, "existing.child"));
+            Assert.assertFalse("child" in root.existing);
+            Assert.assertFalse("missing" in root);
+        }});
+
+        Test.create({test() {
+            Assert.assertSame(objectTreeConst, Object.lookup("objectTreeConst"));
+            Assert.assertSame(objectTreeLet, Object.use("objectTreeLet"));
+            Assert.assertUndefined(window.objectTreeConst);
+            Assert.assertUndefined(window.objectTreeLet);
+            const leaf = Object.use("objectTreeConst.a.b");
+            Assert.assertSame(objectTreeConst.a.b, leaf);
+            Assert.assertSame(leaf, Object.lookup(undefined, "objectTreeConst.a.b"));
+            Assert.assertTrue(Object.exists(undefined, "objectTreeConst.a.b"));
+            Assert.assertSame(leaf, Object.use(undefined, "objectTreeConst.a.b"));
+            objectTreeLet = {replacement: {}};
+            Assert.assertSame(objectTreeLet.replacement, Object.lookup("objectTreeLet.replacement"));
+        }});
+
+        Test.create({test() {
+            Assert.assertSame(objectTreeShadow, Object.lookup("objectTreeShadow"));
+            Assert.assertEquals("lexical", Object.lookup("objectTreeShadow.source"));
+            Assert.assertEquals("window", Object.lookup(window, "objectTreeShadow.source"));
+            Assert.assertEquals("window", Object.lookup("window.objectTreeShadow.source"));
+            const root = {global: window};
+            Assert.assertEquals("window", Object.lookup(root, "global.objectTreeShadow.source"));
+            const leaf = Object.use(root, "global.objectTreeShadow.created");
+            Assert.assertSame(window.objectTreeShadow.created, leaf);
+            Assert.assertUndefined(objectTreeShadow.created);
+            Assert.assertSame(window.objectTreeUnset, Object.lookup("objectTreeUnset"));
+            Assert.assertTrue(objectTreeUninitializedError instanceof ReferenceError);
+            Assert.assertSame(window.objectTreeUninitialized, objectTreeQuotedUninitialized);
+            Assert.assertSame(objectTreeUninitialized, Object.lookup("objectTreeUninitialized"));
+            for (const path of ["[objectTreeShadow].source", '["objectTreeShadow"].source',
+                    '"objectTreeShadow".source', "'objectTreeShadow'.source",
+                    "`objectTreeShadow`.source"])
+                Assert.assertEquals("window", Object.lookup(path));
+            Assert.assertUndefined(Object.lookup('["objectTreeConst"]'));
+            Assert.assertUndefined(Object.use("[objectTreeConst].missing"));
+            Assert.assertUndefined(window.objectTreeConst);
+        }});
+
+        Test.create({test() {
+            const objectTreeLocal = {child: {}};
+            Assert.assertUndefined(Object.lookup("objectTreeLocal"));
+            Assert.assertSame(objectTreeLocal.child, Object.lookup(objectTreeLocal, "child"));
+            for (const name of ["_object_tree", "_object_node_assert", "_object_path_split",
+                    "_serial", "variants", "object", "levels", "keys"])
+                Assert.assertUndefined(name, Object.lookup(name));
+        }});
+
+        Test.create({test() {
+            const values = {
+                nil: null, unset: undefined, text: "", number: 0,
+                boolean: false, callback() {}, symbol: Symbol("leaf")
+            };
+            for (const name of Object.keys(values)) {
+                Assert.assertSame(values[name], Object.lookup(values, name));
+                Assert.assertEquals(Object.usable(values[name]), Object.exists(values, name));
+            }
+            Assert.assertNull(Object.lookup("objectTreeNull"));
+            Assert.assertFalse(Object.exists("objectTreeNull"));
+        }});
+
+        Test.create({test() {
+            for (const value of [null, "", 123, false, () => {}, Symbol("node"), BigInt(1)]) {
+                const type = value === null ? "null" : typeof value;
+                const root = {a: {b: {c: value}}};
+                objectTreeNodes.a = root.a;
+                for (const method of [Object.lookup, Object.exists, Object.use]) {
+                    assertError(method, [root, "a.b.c.child"],
+                        `Unsupported object node: a.b.c (${type})`);
+                    assertError(method, ["objectTreeNodes.a.b.c.child"],
+                        `Unsupported object node: objectTreeNodes.a.b.c (${type})`);
+                }
+                assertError(Object.use, [root, "a.b.c"],
+                    `Unsupported object node: a.b.c (${type})`);
+                Assert.assertSame(value, root.a.b.c);
+            }
+            assertError(Object.use, ["objectTreeNull"],
+                "Unsupported object node: objectTreeNull (null)");
+            assertError(Object.lookup, ["objectTreeNull.child"],
+                "Unsupported object node: objectTreeNull (null)");
+            Assert.assertEquals(0, Object.keys(window.objectTreeNull).length);
+            for (const method of [Object.use, Object.lookup, Object.exists])
+                assertError(method, [null], "Unsupported object node: <root> (null)");
+        }});
+
+        Test.create({test() {
+            const root = {missing: undefined, date: new Date()};
+            const date = root.date;
+            const leaf = Object.use(root, "missing.a.b");
+            Assert.assertSame(root.missing.a.b, leaf);
+            Assert.assertSame(date, Object.use(root, "date"));
+            const inherited = {};
+            const derived = Object.create({inherited});
+            Assert.assertSame(inherited, Object.use(derived, "inherited"));
+        }});
+
+        Test.create({test() {
+            for (const value of [[], [1], Object.assign([], {child: {}}), Object.freeze([])]) {
+                const root = {a: {b: value}};
+                objectTreeNodes.a = root.a;
+                for (const method of [Object.use, Object.lookup]) {
+                    Assert.assertSame(value, method(value));
+                    Assert.assertSame(value, method(root, "a.b"));
+                    Assert.assertSame(value, method("objectTreeNodes.a.b"));
+                }
+                Assert.assertTrue(Object.exists(value));
+                Assert.assertTrue(Object.exists(root, "a.b"));
+                Assert.assertTrue(Object.exists("objectTreeNodes.a.b"));
+                Assert.assertSame(value.child, Object.lookup(value, "child"));
+                Assert.assertSame(value.child, Object.lookup(root, "a.b.child"));
+                Assert.assertSame(value.child, Object.lookup("objectTreeNodes.a.b.child"));
+                Assert.assertSame(value, root.a.b);
+                Assert.assertSame(root.a, Object.lookup(root, "a"));
+            }
+            Assert.assertSame(objectTreeArray, Object.lookup("objectTreeArray"));
+            Assert.assertSame(objectTreeArray, Object.use("objectTreeArray"));
+            Assert.assertTrue(Object.exists("objectTreeArray"));
+            const leaf = Object.use(undefined, "objectTreeArray[007].child");
+            Assert.assertSame(objectTreeArray[7].child, leaf);
+            Assert.assertEquals(8, objectTreeArray.length);
+            Assert.assertSame(leaf, Object.lookup("objectTreeArray[7].child"));
+            Assert.assertSame(window.objectTreeArray, Object.lookup(window, "objectTreeArray"));
+            Assert.assertSame(window.objectTreeArray, Object.use(window, "objectTreeArray"));
+            Assert.assertTrue(Object.exists(window, "objectTreeArray"));
+            Assert.assertEquals(0, Object.keys(window.objectTreeArray).length);
+        }});
+
+        Test.create({test() {
+            const root = {};
+            for (const name of ["_", "__", "_a", "__a", "_1", "__1", "$items", "a10", "$10"])
+                Assert.assertEquals("object", typeof Object.use(root, name));
+            try {
+                const leaf = Object.use(window, "$objectTree.items._10");
+                Assert.assertSame(Object.prototype, Object.getPrototypeOf(window.$objectTree));
+                Assert.assertSame(Object.prototype, Object.getPrototypeOf(window.$objectTree.items));
+                Assert.assertSame(Object.prototype, Object.getPrototypeOf(leaf));
+                Assert.assertSame(leaf, Object.lookup("$objectTree.items._10"));
+            } finally {
+                delete window.$objectTree;
+            }
+        }});
+
+        Test.create({test() {
+            const invalid = [
+                " ", "?", "x/a/b", "x\\a\\b", "x.a.b. .d", "x.a/b.c",
+                "x.a.b\\c", "\\x\\a", "\\\\x\\a", "/x/a", "////x/a",
+                "\\\\x\\\\a", "//x//a", ".x.a", "..x.a", "x.", "x..a",
+                "", "0", "x.a);alert(1)", "x.10", "x.items.0b", "x.b.1 0",
+                "x.a.10.child", "x[-1]", "x[+1]", "x[1.5]", "x[]",
+                "x.[0]", "x[b.c]", 'x["unterminated]', "x[call()]"
+            ];
+            for (const method of [Object.use, Object.lookup, Object.exists])
+                for (const path of invalid)
+                    assertError(method, [path], `Invalid object path: ${path}`, SyntaxError);
+            const root = {};
+            assertError(Object.use, [root, "valid..child"], "Invalid object path: valid..child", SyntaxError);
+            for (const method of [Object.use, Object.lookup, Object.exists])
+                for (const path of ["10", "1 0", "valid.10", "valid._a.0b"])
+                    assertError(method, [root, path], `Invalid object path: ${path}`, SyntaxError);
+            Assert.assertEquals(0, Object.keys(root).length);
+        }});
+
+        Test.create({name: "Mixed paths create arrays only before numeric fragments", test() {
+            const root = {};
+            const path = 'peter.und["der\\nWolf"].gehen.durch[1].den.wald';
+            const leaf = Object.use(root, path);
+            const wolf = root.peter.und["der\nWolf"];
+            Assert.assertTrue(Array.isArray(wolf.gehen.durch));
+            Assert.assertEquals(2, wolf.gehen.durch.length);
+            Assert.assertSame(leaf, wolf.gehen.durch[1].den.wald);
+            Assert.assertSame(leaf, Object.lookup(root, path));
+            Assert.assertSame(leaf, Object.lookup(root,
+                'peter.und["der\\nWolf"].gehen.durch[001].den.wald'));
+            Assert.assertTrue(Object.exists(root, path));
+            Assert.assertSame(Object.prototype, Object.getPrototypeOf(leaf));
+            Assert.assertSame(leaf, Object.use(root, path));
+        }});
+
+        Test.create({name: "Nested indices and associative keys", test() {
+            const root = {};
+            const leaf = Object.use(root, "matrix[0][007][property].child");
+            Assert.assertTrue(Array.isArray(root.matrix));
+            Assert.assertTrue(Array.isArray(root.matrix[0]));
+            Assert.assertFalse(Array.isArray(root.matrix[0][7]));
+            Assert.assertEquals(8, root.matrix[0].length);
+            Assert.assertSame(leaf, root.matrix[0][7].property.child);
+            Assert.assertSame(leaf, Object.lookup(root, "matrix[ 000 ][\t7\n][ property ].child"));
+            const quoted = Object.use(root, 'quoted["007"]["-1"].child');
+            Assert.assertFalse(Array.isArray(root.quoted));
+            Assert.assertSame(quoted, root.quoted["007"]["-1"].child);
+            const ordinary = {};
+            const associative = [];
+            root.ordinary = ordinary;
+            root.associative = associative;
+            Object.use(root, "ordinary[1]");
+            Object.use(root, "associative[property]");
+            Assert.assertSame(ordinary, root.ordinary);
+            Assert.assertSame(associative, root.associative);
+            Assert.assertEquals(0, associative.length);
+            Assert.assertFalse(Array.isArray(ordinary[1]));
+        }});
+
+        ["0", "000", "007", "0004294967294", "4294967295",
+            "009007199254740993", "0" + "9".repeat(100)].forEach(index => {
+            Test.create({name: "Lossless numeric normalization: " + index, test() {
+                const root = {};
+                const key = index.replace(/^0+(?=\d)/, "");
+                const path = "items[" + index + "].leaf";
+                const leaf = Object.use(root, path);
+                Assert.assertTrue(Array.isArray(root.items));
+                Assert.assertSame(leaf, root.items[key].leaf);
+                Assert.assertSame(leaf, Object.lookup(root, path));
+                Assert.assertEquals(Number(key) <= 4294967294 ? Number(key) +1 : 0,
+                    root.items.length);
+                Object.use(root, 'items["' + index + '"].literal');
+                Assert.assertSame(root.items[index].literal,
+                    Object.lookup(root, 'items["' + index + '"].literal'));
+                if (key !== index)
+                    Assert.assertTrue(root.items[key] !== root.items[index]);
+            }});
+        });
+
+        Test.create({name: "Quoted keys remain opaque after decoding", test() {
+            const root = Object.create(null);
+            const keys = ["", "a.b", "a[0]", " a ", "\0", "\0" + "1" + "\0",
+                "x\ny", "\\n", "\\u0041", '"[]\'`', "gr\u00f6\u00dfe",
+                "\ud83d\ude00", "__proto__", "constructor", "007", "-1"];
+            for (const key of keys) {
+                const node = {};
+                root[key] = node;
+                for (const delimiter of ['"', "'", "`"]) {
+                    const literal = delimiter + key.replace(/\\/g, "\\\\")
+                        .split(delimiter).join("\\" + delimiter) + delimiter;
+                    Assert.assertSame(node, Object.lookup(root, literal));
+                    Assert.assertSame(node, Object.lookup(root, "[" + literal + "]"));
+                    Assert.assertSame(node, Object.use(root, literal));
+                    Assert.assertTrue(Object.exists(root, "[" + literal + "]"));
+                    const child = Object.use(root, literal + '."child.name"');
+                    Assert.assertSame(child, node["child.name"]);
+                }
+            }
+        }});
+
+        Test.create({name: "JavaScript and path escaping both yield a newline key", test() {
+            const root = {};
+            const first = Object.use(root, 'a.b["x\\ny"].z');
+            Assert.assertSame(first, Object.use(root, 'a.b["x\ny"].z'));
+            Assert.assertSame(first, root.a.b["x\ny"].z);
+            const literal = Object.use(root, 'a.b["x\\\\ny"].z');
+            Assert.assertSame(literal, root.a.b["x\\ny"].z);
+            Assert.assertTrue(first !== literal);
+            Assert.assertSame(first, Object.use(root, 'a.b["x\\u000ay"].z'));
+        }});
+
+        Test.create({name: "Implicit literal roots address window only", test() {
+            for (const [path, key] of [['["objectTreeLiteral.root"]', "objectTreeLiteral.root"],
+                    ['"objectTreeLiteral.root"', "objectTreeLiteral.root"]]) {
+                Assert.assertUndefined(Object.lookup(path));
+                Assert.assertUndefined(Object.use(path + ".missing"));
+                const leaf = Object.use(window, path + "[0].child");
+                try {
+                    Assert.assertTrue(Array.isArray(window[key]));
+                    Assert.assertSame(leaf, Object.lookup(path + "[0].child"));
+                    Assert.assertSame(leaf, Object.use(undefined, path + "[000].child"));
+                    Assert.assertTrue(Object.exists(path + "[0].child"));
+                } finally {
+                    delete window[key];
+                }
+            }
+        }});
+
+        Test.create({name: "Implicit numeric roots address window frame indices", test() {
+            const frame = document.createElement("iframe");
+            document.body.appendChild(frame);
+            try {
+                const root = frame.contentWindow;
+                Assert.assertSame(root, Object.lookup("[000]"));
+                Assert.assertSame(root, Object.use("[0]"));
+                Assert.assertUndefined(Object.lookup('["000"]'));
+                const leaf = Object.use(window, "[000].objectTreeNumeric[001].child");
+                Assert.assertTrue(Array.isArray(root.objectTreeNumeric));
+                Assert.assertEquals(2, root.objectTreeNumeric.length);
+                Assert.assertSame(leaf, root.objectTreeNumeric[1].child);
+                Assert.assertSame(leaf, Object.lookup("[0].objectTreeNumeric[1].child"));
+                Assert.assertTrue(Object.exists("[000].objectTreeNumeric[001].child"));
+            } finally {
+                frame.remove();
+            }
+        }});
+
+        Test.create({name: "Creating window frame indices propagates native errors",
+                expected: TypeError, test() {
+            Object.use(window, "[7]");
+        }});
+
+        Test.create({name: "Bracket identifiers and literal content are never evaluated", test() {
+            const objectTreeKey = "other";
+            const root = {objectTreeKey: {}, other: {}};
+            Assert.assertSame(root.objectTreeKey, Object.lookup(root, "[objectTreeKey]"));
+            Assert.assertSame(root.other, Object.lookup(root, "[" + objectTreeKey + "]"));
+            window.objectTreePathEffect = () => Assert.fail("Path content was evaluated");
+            try {
+                const leaf = Object.use(root, '["objectTreePathEffect()"].child');
+                Assert.assertSame(leaf, root["objectTreePathEffect()"].child);
+                Object.use(root, "[`${objectTreePathEffect()}`]");
+                Assert.assertTrue(Object.exists(root, "[`${objectTreePathEffect()}`]"));
+            } finally {
+                delete window.objectTreePathEffect;
+            }
+        }});
+
+        Test.create({name: "Syntax and escape errors precede all tree mutations", test() {
+            const root = {};
+            for (const method of [Object.use, Object.lookup, Object.exists]) {
+                assertError(method, [root, "valid[0].invalid..child"],
+                    "Invalid object path: valid[0].invalid..child", SyntaxError);
+                assertError(method, [root, 'valid["\\x4"]'], "Invalid escape sequence: \\x", SyntaxError);
+                assertError(method, [root, 'valid["\\u{110000}"]'],
+                    "Invalid unicode codepoint: U+110000", RangeError);
+            }
+            Assert.assertEquals(0, Object.keys(root).length);
+            Assert.assertUndefined(Object.lookup(root, "missing[0].child"));
+            Assert.assertFalse(Object.exists(root, 'missing["name"].child'));
+            Assert.assertEquals(0, Object.keys(root).length);
+        }});
+
+        Test.create({name: "Unsupported nodes retain bracket and literal diagnostics", test() {
+            const root = {items: [null], quoted: {"x\ny": false}};
+            for (const method of [Object.use, Object.lookup, Object.exists]) {
+                assertError(method, [root, "items[0].child"],
+                    "Unsupported object node: items[0] (null)");
+                assertError(method, [root, 'quoted["x\\ny"].child'],
+                    'Unsupported object node: quoted["x\\ny"] (boolean)');
+                assertError(method, [root, "quoted.'x\\ny'.child"],
+                    'Unsupported object node: quoted."x\\ny" (boolean)');
+            }
+        }});
+
+        Test.create({name: "Tree methods retain argument type validation", test() {
+            for (const method of [Object.use, Object.lookup, Object.exists]) {
+                for (const value of [false, 1, () => {}, Symbol("invalid")])
+                    assertError(method, [value], `Invalid object path: ${typeof value}`);
+                const root = {};
+                for (const value of [0, 10]) {
+                    assertError(method, [root, value], "Invalid object path: number");
+                }
+                Assert.assertEquals(0, Object.keys(root).length);
+            }
+        }});
+
+        Test.create({name: "Tree methods ignore arguments outside their signatures", test() {
+            const extras = [undefined, null, false, 0, 10, NaN, Infinity,
+                {}, [], () => {}, Symbol("extra"), BigInt(1)];
+            const root = {a: {b: {}}};
+            const leaf = root.a.b;
+            for (const method of [Object.lookup, Object.exists]) {
+                for (const extra of extras) {
+                    Assert.assertSame(method === Object.lookup ? leaf : true,
+                        method(root, "a.b", extra, "ignored"));
+                    Assert.assertSame(method === Object.lookup ? undefined : false,
+                        method(root, "missing.child", extra, "ignored"));
+                    Assert.assertSame(method === Object.lookup ? objectTreeConst : true,
+                        method(undefined, "objectTreeConst", extra, "ignored"));
+                }
+            }
+            Assert.assertSame(leaf, root.a.b);
+            Assert.assertFalse("missing" in root);
+            for (const value of extras) {
+                const target = {};
+                const result = Object.use(target, "a.b", value, "ignored", null);
+                if (value === undefined) {
+                    Assert.assertEquals("object", typeof result);
+                    Assert.assertSame(result, target.a.b);
+                } else if (Number.isNaN(value)) {
+                    Assert.assertTrue(Number.isNaN(result));
+                    Assert.assertTrue(Number.isNaN(target.a.b));
+                } else {
+                    Assert.assertSame(value, result);
+                    Assert.assertSame(value, target.a.b);
+                }
+                Assert.assertTrue(Object.prototype.hasOwnProperty.call(target.a, "b"));
+            }
+            const target = {};
+            Assert.assertEquals("b", Object.use(target, "a", "b", "c"));
+            Assert.assertEquals("b", target.a);
+            Assert.assertFalse("c" in target);
+        }});
+
+        Test.create({name: "Tree methods require root and path only for assignment", test() {
+            for (const method of [Object.use, Object.lookup, Object.exists]) {
+                Assert.assertEquals(method === Object.use ? 3 : 2, method.length);
+                const root = {};
+                assertError(method, ["objectTreeConst", "a"],
+                    "Invalid object root: string");
+                assertError(method, ["objectTreeConst", "a", "b"],
+                    "Invalid object root: string");
+                Assert.assertSame(method === Object.exists ? true : root,
+                    method(root, undefined));
+                Assert.assertSame(method === Object.exists ? false : undefined,
+                    method(undefined, undefined));
+                Assert.assertSame(method === Object.exists ? true : objectTreeConst,
+                    method("objectTreeConst", undefined));
+                if (method === Object.use)
+                    assertError(method, [root, undefined, 42, "ignored"],
+                        "Missing argument: path");
+                else Assert.assertSame(method === Object.exists ? true : root,
+                    method(root, undefined, 42, "ignored"));
+                Assert.assertEquals(0, Object.keys(root).length);
+            }
+            for (const parameters of [[undefined, "a", "b"],
+                    [undefined, "a", null, "ignored"], [undefined, undefined, 42]])
+                assertError(Object.use, parameters, "Missing argument: root");
+            for (const root of [{}, null, false, "objectTreeConst"])
+                assertError(Object.use, [root, undefined, 42],
+                    "Missing argument: path");
+            Assert.assertEquals(1, Object.usable.length);
+            Assert.assertFalse(Object.usable());
+            Assert.assertFalse(Object.usable(null));
+            Assert.assertTrue(Object.usable(false));
+        }});
+
+        Test.create({name: "Undefined values ensure object nodes instead of assigning", test() {
+            const root = {};
+            const leaf = Object.use(root, "a.b", undefined);
+            Assert.assertEquals("object", typeof leaf);
+            Assert.assertSame(leaf, root.a.b);
+            Assert.assertSame(leaf, Object.use(root, "a.b", undefined, "ignored"));
+            Assert.assertSame(root, Object.use(root, undefined, undefined));
+            const item = Object.use(root, "items[0]", undefined);
+            Assert.assertTrue(Array.isArray(root.items));
+            Assert.assertSame(item, root.items[0]);
+            Assert.assertEquals("object", typeof item);
+            Assert.assertSame(objectTreeConst, Object.use("objectTreeConst", undefined, undefined));
+            Assert.assertSame(objectTreeConst, Object.use(undefined, "objectTreeConst", undefined));
+            Assert.assertUndefined(Object.use(undefined, undefined, undefined));
+            for (const value of [null, false, 0, ""]) {
+                root.existing = value;
+                const type = value === null ? "null" : typeof value;
+                assertError(Object.use, [root, "existing", undefined],
+                    `Unsupported object node: existing (${type})`);
+                Assert.assertSame(value, root.existing);
+            }
+            const container = {};
+            let writes = 0;
+            Object.defineProperty(root, "container", {
+                get() {return container;},
+                set() {writes++;}
+            });
+            Assert.assertSame(container, Object.use(root, "container", undefined));
+            Assert.assertEquals(0, writes);
+        }});
+
+        Test.create({name: "Value assignment creates nodes and returns defined values unchanged", test() {
+            const values = [null, false, true, 0, 10, "", "text",
+                Infinity, {}, [], () => {}, Symbol("value"), BigInt(1)];
+            for (const value of values) {
+                const root = {};
+                Assert.assertSame(value, Object.use(root, "a.b.c", value));
+                Assert.assertSame(value, root.a.b.c);
+                Assert.assertTrue(Object.prototype.hasOwnProperty.call(root.a.b, "c"));
+                Assert.assertSame(value, Object.lookup(root, "a.b.c"));
+                Assert.assertEquals(Object.usable(value), Object.exists(root, "a.b.c"));
+            }
+            const root = {};
+            const value = NaN;
+            Assert.assertTrue(Number.isNaN(Object.use(root, "value", value)));
+            Assert.assertTrue(Number.isNaN(root.value));
+            Assert.assertTrue(Object.exists(root, "value"));
+        }});
+
+        Test.create({name: "Value assignment overwrites only the final property", test() {
+            const root = {node: {}};
+            const node = root.node;
+            for (const value of [undefined, null, false, 10, "text", {}, [], () => {}]) {
+                node.leaf = value;
+                Assert.assertEquals("replacement", Object.use(root, "node.leaf", "replacement"));
+                Assert.assertEquals("replacement", node.leaf);
+                Assert.assertSame(node, root.node);
+            }
+            for (const value of [null, false, 10, "text", () => {}]) {
+                root.node = value;
+                const type = value === null ? "null" : typeof value;
+                assertError(Object.use, [root, "node.leaf", "replacement"],
+                    `Unsupported object node: node (${type})`);
+                Assert.assertSame(value, root.node);
+            }
+        }});
+
+        Test.create({name: "Final numeric fragments create arrays before direct assignment", test() {
+            const root = {};
+            Assert.assertEquals("a", Object.use(root, "a.b.c[10]", "a"));
+            Assert.assertTrue(Array.isArray(root.a.b.c));
+            Assert.assertEquals(11, root.a.b.c.length);
+            Assert.assertEquals("a", root.a.b.c[10]);
+            Assert.assertFalse(0 in root.a.b.c);
+            Assert.assertEquals(10, Object.use(root, 'named.c["a"]', 10));
+            Assert.assertFalse(Array.isArray(root.named.c));
+            Assert.assertEquals(10, root.named.c.a);
+            Assert.assertEquals(7, Object.use(root, 'quoted["007"]', 7));
+            Assert.assertFalse(Array.isArray(root.quoted));
+            Assert.assertEquals(7, root.quoted["007"]);
+            Assert.assertFalse("7" in root.quoted);
+            Assert.assertEquals("normalized", Object.use(root, "a.b.c[007]", "normalized"));
+            Assert.assertEquals("normalized", root.a.b.c[7]);
+            Assert.assertEquals("nested", Object.use(root, "matrix[0][007]", "nested"));
+            Assert.assertTrue(Array.isArray(root.matrix));
+            Assert.assertTrue(Array.isArray(root.matrix[0]));
+            Assert.assertEquals("nested", root.matrix[0][7]);
+            Assert.assertEquals("large", Object.use(root, "large[009007199254740993]", "large"));
+            Assert.assertTrue(Array.isArray(root.large));
+            Assert.assertEquals(0, root.large.length);
+            Assert.assertEquals("large", root.large["9007199254740993"]);
+
+            root.ordinary = {};
+            root.associative = [];
+            const ordinary = root.ordinary;
+            const associative = root.associative;
+            Object.use(root, "ordinary[1]", "object");
+            Object.use(root, "associative[property]", "array");
+            Assert.assertSame(ordinary, root.ordinary);
+            Assert.assertSame(associative, root.associative);
+            Assert.assertEquals("object", ordinary[1]);
+            Assert.assertEquals("array", associative.property);
+            const array = [];
+            Assert.assertEquals("root array", Object.use(array, "[10]", "root array"));
+            Assert.assertEquals("root array", array[10]);
+            Assert.assertEquals(11, array.length);
+        }});
+
+        Test.create({name: "Assignment preserves decoded literal keys", test() {
+            const root = {};
+            Assert.assertEquals(42, Object.use(root, 'a["x\\ny"]["child.name"]', 42));
+            Assert.assertEquals(42, root.a["x\ny"]["child.name"]);
+            Assert.assertEquals(43, Object.use(root, 'a["x\\\\ny"]', 43));
+            Assert.assertEquals(43, root.a["x\\ny"]);
+            Assert.assertEquals(44, Object.use(root, '[""]', 44));
+            Assert.assertEquals(44, root[""]);
+        }});
+
+        Test.create({name: "Assignment requires an explicit root and a valid path before mutation", test() {
+            assertError(Object.use, [undefined, "child", 42],
+                "Missing argument: root");
+            for (const root of ["objectTreeConst", false, 1, () => {}, Symbol("root")])
+                assertError(Object.use, [root, "child", 42],
+                    `Invalid object root: ${typeof root}`);
+            assertError(Object.use, [null, "child", 42],
+                "Unsupported object node: <root> (null)");
+            const root = {};
+            assertError(Object.use, [root, undefined, 42],
+                "Missing argument: path");
+            for (const path of [null, false, 1, {}, [], () => {}, Symbol("path")])
+                assertError(Object.use, [root, path, 42],
+                    `Invalid object path: ${typeof path}`);
+            for (const path of ["", "a.b..c", "a[0].bad..child"])
+                assertError(Object.use, [root, path, 42],
+                    `Invalid object path: ${path}`, SyntaxError);
+            assertError(Object.use, [root, 'a["\\x4"]', 42],
+                "Invalid escape sequence: \\x", SyntaxError);
+            assertError(Object.use, [root, 'a["\\u{110000}"]', 42],
+                "Invalid unicode codepoint: U+110000", RangeError);
+            Assert.assertEquals(0, Object.keys(root).length);
+        }});
+
+        Test.create({name: "Assignment publishes through an explicit window root", test() {
+            try {
+                Assert.assertEquals(42, Object.use(window, "objectTreeWrite.node.value", 42));
+                Assert.assertEquals(42, window.objectTreeWrite.node.value);
+                Assert.assertEquals(43, Object.use(window, "objectTreeWrite", 43));
+                Assert.assertEquals(43, window.objectTreeWrite);
+            } finally {
+                delete window.objectTreeWrite;
+            }
+        }});
+
+        Test.create({name: "Assignment invokes a setter once without reading the final property", test() {
+            const root = {node: {}};
+            const value = {};
+            let writes = 0;
+            Object.defineProperty(root.node, "leaf", {
+                get() {Assert.fail("Final property was read");},
+                set(item) {
+                    writes++;
+                    Assert.assertSame(value, item);
+                }
+            });
+            Assert.assertSame(value, Object.use(root, "node.leaf", value));
+            Assert.assertEquals(1, writes);
+        }});
+
+        Test.create({name: "Assignment propagates native errors without replacing parents", test() {
+            const root = {node: Object.freeze({leaf: 1})};
+            const node = root.node;
+            let caught;
+            try {Object.use(root, "node.leaf", 2);
+            } catch (error) {
+                caught = error;
+            }
+            Assert.assertTrue(caught instanceof TypeError);
+            Assert.assertSame(node, root.node);
+            Assert.assertEquals(1, root.node.leaf);
+        }});
+
+        Test.create({expected: TypeError, name: "Assignment to a frozen array fails", test() {
+            Object.use(Object.freeze([]), "[0]", 42);
+        }});
+
+        Test.create({expected: TypeError, name: "Assignment to a getter-only target fails", test() {
+            const root = {};
+            Object.defineProperty(root, "leaf", {get() {return 1;}});
+            Object.use(root, "leaf", 42);
+        }});
+
+        Test.create({name: "Assignment propagates setter errors unchanged", test() {
+            const failure = new Error("Setter rejected value");
+            const root = {};
+            Object.defineProperty(root, "leaf", {set() {throw failure;}});
+            let caught;
+            try {Object.use(root, "leaf", 42);
+            } catch (error) {
+                caught = error;
+            }
+            Assert.assertSame(failure, caught);
+        }});
+
+        Test.create({name: "Unusable created intermediate nodes fail instead of silently returning", test() {
+            const root = {};
+            Object.defineProperty(root, "node", {
+                get() {return undefined;},
+                set() {}
+            });
+            assertError(Object.use, [root, "node.leaf", 42],
+                "Unsupported object node: node (undefined)");
+        }});
+
+        Test.create({test() {
+            const element = document.createElement("div");
+            element.id = "objectTreeElement";
+            document.body.appendChild(element);
+            try {
+                Assert.assertSame(element, Object.lookup("objectTreeElement"));
+                Assert.assertSame(element, Object.use("objectTreeElement"));
+                Assert.assertTrue(Object.exists("objectTreeElement"));
+                const leaf = Object.use("objectTreeElement.node.child");
+                Assert.assertSame(element.node.child, leaf);
+                Assert.assertSame(element, window.objectTreeElement);
+            } finally {
+                element.remove();
+            }
+        }});
+
+        Test.create({test() {
+            let reads = 0;
+            const node = {};
+            const root = {};
+            Object.defineProperty(root, "node", {
+                get() {reads++; return node;}
+            });
+            Assert.assertSame(node, Object.lookup(root, "node"));
+            Assert.assertEquals(1, reads);
+            Assert.assertSame(node, Object.use(root, "node"));
+            Assert.assertEquals(2, reads);
+        }});
+
+        Test.create({expected:TypeError, test() {
+            Object.use(Object.freeze({}), "missing");
+        }});
+
+        Test.create({expected:TypeError, test() {
+            Object.use(Object.freeze([]), "[0]");
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

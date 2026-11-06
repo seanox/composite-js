@@ -54,6 +54,7 @@
       ---- ns5
       A3: object
       B3: false
+      C3: true
       ---- ns6
       A4: object
       B4: true
@@ -86,6 +87,7 @@
     <pre>
     A3: {{typeof ns5}}
     B3: {{ns5 instanceof Element}}
+    C3: {{Object.use(window, 'ns5') === ns5}}
     </pre>
     ---- ns6
     <div id="ns6" composite></div>

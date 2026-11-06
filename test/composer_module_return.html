@@ -56,7 +56,7 @@
             const exports = require("returns/expose");
             Assert.assertSame(exports, require("returns/expose"));
             const caller = Scripting.run({},
-                "expose({module: require('return/expose')});");
+                "expose({module: require('returns/expose')});");
             Assert.assertSame(exports, caller.module);
             Assert.assertEquals(1, executions.get("expose"));
         }});
@@ -83,9 +83,9 @@
 
         Test.create({name: "Direct Composer.load and require share exports across normalized paths",
                 test() {
-            const resource = Composer.MODULES + "/return/loaded.js";
+            const resource = Composer.MODULES + "/returns/loaded.js";
             const exports = Composer.load(
-                Composer.MODULES + "/return//loaded.js?initial=1", true);
+                Composer.MODULES + "/returns//loaded.js?initial=1", true);
             Assert.assertEquals("object", typeof exports);
             Assert.assertEquals("direct", exports.moduleReturnLoadedValue);
             Assert.assertSame(exports, require("returns/loaded"));
@@ -96,7 +96,7 @@
         }});
 
         Test.create({name: "CSS remains undefined and is inserted only once", test() {
-            const resource = Composer.MODULES + "/return/loaded.css";
+            const resource = Composer.MODULES + "/returns/loaded.css";
             const styles = document.querySelectorAll("html head style").length;
             for (let count = 0; count < 2; count++)
                 Assert.assertUndefined(Composer.load(resource, true));
@@ -104,7 +104,7 @@
         }});
 
         Test.create({name: "Repeated HTML loads still return content", test() {
-            const resource = Composer.MODULES + "/return/loaded.html";
+            const resource = Composer.MODULES + "/returns/loaded.html";
             for (let count = 0; count < 2; count++)
                 Assert.assertEquals("<span>module exports</span>", Composer.load(resource, true));
         }});
@@ -134,7 +134,7 @@
         Test.create({name: "require returns exports loaded by composite rendering and Composer.include",
                 async test() {
             const composite = document.createElement("div");
-            composite.id = "moduleReturnComposite";
+            composite.id = "moduleReturn";
             composite.setAttribute("composite", "");
             composite.textContent = "module exports";
             document.body.appendChild(composite);
@@ -142,14 +142,14 @@
                 Composer.render(composite);
                 await new Promise(resolve => window.setTimeout(resolve, 0));
                 Assert.assertEquals(1, executions.get("composite"));
-                Composer.include("moduleReturnComposite");
+                Composer.include("moduleReturn");
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ModuleReturnCompositeLocal"));
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnCompositeValue"));
-                const exports = require("moduleReturnComposite");
+                const exports = require("moduleReturn");
                 Assert.assertEquals("object", typeof exports);
                 Assert.assertEquals("moduleReturnCompositeValue", Object.keys(exports).join(","));
                 Assert.assertEquals("composite", exports.moduleReturnCompositeValue);
-                Assert.assertSame(exports, require("moduleReturnComposite"));
+                Assert.assertSame(exports, require("moduleReturn"));
                 Assert.assertSame(exports, Composer.load(
                     Composer.MODULES + "/moduleReturn.js", true));
                 Assert.assertEquals(1, executions.get("composite"));
@@ -162,7 +162,7 @@
             const children = [];
             const result = Scripting.run({children},
                 "expose({before: true});"
-                + "children.push(require('return/parent'));"
+                + "children.push(require('returns/parent'));"
                 + "expose({after: true});");
             Assert.assertEquals("after,before", Object.keys(result).sort().join(","));
             Assert.assertEquals(1, executions.get("parent"));
@@ -184,7 +184,7 @@
             const capture = error => {failure = error;};
             const result = Scripting.run({capture},
                 "expose({before: true});"
-                + "try {require('return/error');} catch (error) {capture(error);}"
+                + "try {require('returns/error');} catch (error) {capture(error);}"
                 + "expose({after: true});");
             Assert.assertTrue(failure instanceof Error);
             Assert.assertEquals("MODULE_RETURN_FAILURE", failure.message);
@@ -192,7 +192,7 @@
             Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnPartial"));
             Assert.assertUndefined(require("returns/error"));
             Assert.assertUndefined(Composer.load(
-                Composer.MODULES + "/return/error.js", true));
+                Composer.MODULES + "/returns/error.js", true));
         }});
 
         Test.start({auto:true});

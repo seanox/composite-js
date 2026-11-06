@@ -18,7 +18,7 @@
     
         Test.activate();
 
-        Namespace.use()["Model"] = {
+        Object.use(window, "Model", {
             onA: false,
             toggleA() {
                 this.onA = !this.onA;
@@ -45,7 +45,7 @@
                 return this.onE;
             },
             listE: ["a", "b", "c"]
-        };
+        });
         
         const testS = (text, index) => {
             const span = document.createElement("span");
@@ -84,8 +84,8 @@
                 Assert.assertEquals("expected {1} steps but was {2}", 5, capture.patterns().length);
         });
 
-        Namespace.use()["x1"] = 0;
-        Namespace.use()["x2"] = 0;
+        Object.use(window, "x1", 0);
+        Object.use(window, "x2", 0);
         var x3 = 0;
         var x4 = 0;
 
@@ -313,7 +313,7 @@
     E:<span iterate="{{list:Model.listE}}"
         condition="{{:not Model.toggleE()}}"><span>{{list.item}}</span></span>:E
     
-    {{s1:(tryout(() => s1) || 0) +1}}
+    {{s1:(attempt(() => s1) || 0) +1}}
     SA:{{s1}}:<span id="outputSA" condition="{{true}}" import="{{testS(s1,'A')}}">---</span>:SA
     <!-- Expectation: testS(s1) is imported once, since the import is only executed once. --> 
     SB:{{s1}}:<span id="outputSB" condition="{{true}}" output="{{testS(s1,'B')}}">---</span>:SB

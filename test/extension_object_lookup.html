@@ -14,7 +14,7 @@
     
         Test.activate();
 
-        Namespace.use()["exampleA"] = {
+        Object.use(window, "exampleA", {
             a: null,
             b: "",
             c: 123,
@@ -56,7 +56,7 @@
                     {value: "D"}
                 ]
             }
-        };
+        });
         
         Test.create({test() {
             Assert.assertEquals("object", typeof Object.lookup("exampleA"));
@@ -100,25 +100,22 @@
             Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g"));
             Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g.g_g_g_g_g"));
         }});
-        Test.create({expected:/Invalid namespace at level 1/, test() {
+        Test.create({expected:/Invalid object path: exampleA:g/, test() {
             Assert.assertEquals("object", typeof Object.lookup("exampleA:g"));
         }});
-        Test.create({expected:/Invalid namespace at level 2/, test() {
+        Test.create({expected:/Invalid object path: exampleA.g:g_g/, test() {
             Assert.assertEquals("object", typeof Object.lookup("exampleA.g:g_g"));
         }});
-        Test.create({expected:/Invalid namespace at level 3/, test() {
+        Test.create({expected:/Invalid object path: exampleA.g.g_g:g_g_g/, test() {
             Assert.assertEquals("object", typeof Object.lookup("exampleA.g.g_g:g_g_g"));
         }});
         Test.create({test() {
-            Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g"));
-            Assert.assertUndefined(Object.lookup("exampleA.g.g_g.g_g_g.g_g_g_g.g_g_g_g_g"));
+            Assert.assertSame(exampleA.h.h_d, Object.lookup("exampleA.h.h_d"));
+            Assert.assertEquals("A", Object.lookup("exampleA.h.h_d[0].value"));
+            Assert.assertEquals("B", Object.lookup("exampleA.h.h_d[001].value"));
         }});
-
-        Test.create({test() {
-             Assert.assertEquals("A", Object.lookup("exampleA.h.h_d.0").value);
-             Assert.assertEquals("B", Object.lookup("exampleA.h.h_d.1").value);
-             Assert.assertEquals("C", Object.lookup("exampleA.h.h_d.2").value);
-             Assert.assertEquals("D", Object.lookup("exampleA.h.h_d.3").value);
+        Test.create({expected:/Invalid object path: exampleA.h.h_d.0/, test() {
+            Object.lookup("exampleA.h.h_d.0");
         }});
 
         Test.start({auto:true});

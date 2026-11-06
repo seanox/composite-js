@@ -72,7 +72,7 @@
          * @param {string|URL} target Target schema or locator
          * @param {string|URL} [value] Locator when a target is specified
          * @returns {{uri:string, schema:string, path:string, query:string|undefined}}
-         *     Parsed locator meta-object
+         *     Parsed locator metadata object
          * @throws {Error} In case of invalid locator syntax
          */
         parse(...variants) {

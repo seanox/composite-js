@@ -34,6 +34,8 @@
     /**
      * Loads a script module from the module directory, without the .js extension.
      * @param {string} path Module path
+     * @returns {object|undefined} Cached module exports, or undefined if
+     *     unavailable
      * @throws {TypeError} If the argument is not a string
      * @throws {Error} In case of an invalid path or resource loading failure
      */

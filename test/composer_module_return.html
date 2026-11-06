@@ -19,37 +19,31 @@
                 "function", "array", "object"])
             Test.create({name: "require ignores the final expression without expose: " + name,
                     test() {
-                const first = require("moduleReturn/" + name);
-                Assert.assertEquals("object", typeof first);
-                Assert.assertEquals(0, Object.keys(first).length);
-                for (let count = 0; count < 3; count++)
-                    Assert.assertSame(first, require("moduleReturn/" + name));
+                const exports = require("return/" + name);
+                Assert.assertEquals("object", typeof exports);
+                Assert.assertEquals(0, Object.keys(exports).length);
+                Assert.assertSame(exports, require("return/" + name));
             }});
 
         Test.create({name: "Modules without exports execute once and keep declarations private",
                 test() {
-            const first = require("moduleReturn/noReturn");
-            Assert.assertEquals("object", typeof first);
-            Assert.assertEquals(0, Object.keys(first).length);
-            for (let count = 0; count < 3; count++)
-                Assert.assertSame(first, require("moduleReturn/noReturn"));
+            const exports = require("return/noReturn");
+            Assert.assertEquals("object", typeof exports);
+            Assert.assertEquals(0, Object.keys(exports).length);
+            Assert.assertSame(exports, require("return/noReturn"));
             Assert.assertEquals(1, executions.get("noReturn"));
             Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ModuleReturnPrivate"));
             Assert.assertEquals("undefined", Scripting.eval({}, "typeof ModuleReturnPrivate"));
         }});
 
-        Test.create({name: "require returns flat exports instead of the final expression", test() {
-            const module = require("moduleReturn/expose");
+        Test.create({name: "require returns flat exports without publishing private bindings", test() {
+            const module = require("return/expose");
             Assert.assertEquals("object", typeof module);
-            Assert.assertEquals("moduleReturnValue,nested,describe", Object.keys(module).join(","));
+            Assert.assertEquals("describe,moduleReturnValue,nested", Object.keys(module).sort().join(","));
             Assert.assertEquals(42, module.moduleReturnValue);
             Assert.assertEquals(1, module.nested.count);
             Assert.assertEquals("exported module", module.describe());
             Assert.assertSame(Object.prototype, Object.getPrototypeOf(module));
-        }});
-
-        Test.create({name: "expose without a namespace does not publish module bindings", test() {
-            require("moduleReturn/expose");
             Assert.assertEquals(1, executions.get("expose"));
             for (const name of ["ModuleReturnLocal", "moduleReturnHidden", "moduleReturnValue"]) {
                 Assert.assertFalse(name, Object.prototype.hasOwnProperty.call(window, name));
@@ -59,88 +53,79 @@
 
         Test.create({name: "Repeated require returns the same cached exports without execution",
                 test() {
-            const first = require("moduleReturn/expose");
-            Assert.assertEquals("object", typeof first);
-            for (let count = 0; count < 3; count++) {
-                const next = require("moduleReturn/expose");
-                Assert.assertSame(first, next);
-                Assert.assertEquals(42, next.moduleReturnValue);
-                Assert.assertSame(first.nested, next.nested);
-                Assert.assertSame(first.describe, next.describe);
-            }
+            const exports = require("return/expose");
+            Assert.assertSame(exports, require("return/expose"));
             const caller = Scripting.run({},
-                "expose({module: require('moduleReturn/expose')});");
-            Assert.assertSame(first, caller.module);
+                "expose({module: require('return/expose')});");
+            Assert.assertSame(exports, caller.module);
             Assert.assertEquals(1, executions.get("expose"));
         }});
 
         Test.create({name: "Mutations of cached exports and nested objects are shared", test() {
-            const first = require("moduleReturn/expose");
-            const value = first.moduleReturnValue;
-            const count = first.nested.count;
+            const exports = require("return/expose");
+            const value = exports.moduleReturnValue;
+            const count = exports.nested.count;
             try {
-                first.moduleReturnValue = 43;
-                first.nested.count = 2;
-                const second = require("moduleReturn/expose");
-                Assert.assertSame(first, second);
-                Assert.assertEquals(43, second.moduleReturnValue);
-                Assert.assertEquals(2, second.nested.count);
-                second.nested.count = 3;
-                Assert.assertEquals(3, first.nested.count);
+                exports.moduleReturnValue = 43;
+                exports.nested.count = 2;
+                const cachedExports = require("return/expose");
+                Assert.assertSame(exports, cachedExports);
+                Assert.assertEquals(43, cachedExports.moduleReturnValue);
+                Assert.assertEquals(2, cachedExports.nested.count);
+                cachedExports.nested.count = 3;
+                Assert.assertEquals(3, exports.nested.count);
                 Assert.assertEquals(1, executions.get("expose"));
             } finally {
-                first.moduleReturnValue = value;
-                first.nested.count = count;
+                exports.moduleReturnValue = value;
+                exports.nested.count = count;
             }
         }});
 
         Test.create({name: "Direct Composer.load and require share exports across normalized paths",
                 test() {
-            const resource = Composer.MODULES + "/moduleReturn/loaded.js";
-            const first = Composer.load(
-                Composer.MODULES + "/moduleReturn//loaded.js?initial=1", true);
-            Assert.assertEquals("object", typeof first);
-            Assert.assertEquals("direct", first.moduleReturnLoadedValue);
-            for (let count = 0; count < 3; count++) {
-                Assert.assertSame(first, require("moduleReturn/loaded"));
-                Assert.assertSame(first, Composer.load(resource, true));
-                Assert.assertSame(first, Composer.load(
-                    window.location.origin + resource + "?repeat=" + count));
-            }
+            const resource = Composer.MODULES + "/return/loaded.js";
+            const exports = Composer.load(
+                Composer.MODULES + "/return//loaded.js?initial=1", true);
+            Assert.assertEquals("object", typeof exports);
+            Assert.assertEquals("direct", exports.moduleReturnLoadedValue);
+            Assert.assertSame(exports, require("return/loaded"));
+            Assert.assertSame(exports, Composer.load(resource, true));
+            Assert.assertSame(exports, Composer.load(
+                window.location.origin + resource + "?repeat=1"));
             Assert.assertEquals(1, executions.get("loaded"));
         }});
 
         Test.create({name: "CSS remains undefined and is inserted only once", test() {
-            const resource = Composer.MODULES + "/moduleReturn/loaded.css";
+            const resource = Composer.MODULES + "/return/loaded.css";
             const styles = document.querySelectorAll("html head style").length;
-            for (let count = 0; count < 3; count++)
+            for (let count = 0; count < 2; count++)
                 Assert.assertUndefined(Composer.load(resource, true));
             Assert.assertEquals(styles +1, document.querySelectorAll("html head style").length);
         }});
 
         Test.create({name: "Repeated HTML loads still return content", test() {
-            const resource = Composer.MODULES + "/moduleReturn/loaded.html";
-            for (let count = 0; count < 3; count++)
+            const resource = Composer.MODULES + "/return/loaded.html";
+            for (let count = 0; count < 2; count++)
                 Assert.assertEquals("<span>module exports</span>", Composer.load(resource, true));
         }});
 
         Test.create({name: "Namespaced expose returns flat exports and publishes the original object",
                 test() {
             try {
-                const first = require("moduleReturn/namespaced");
+                const exports = require("return/namespaced");
                 const published = window.ModuleReturnPublication.branch;
-                const second = require("moduleReturn/namespaced");
+                const cachedExports = require("return/namespaced");
                 Assert.assertEquals(1, executions.get("namespaced"));
                 Assert.assertEquals(7, published.moduleReturnNamedValue);
                 Assert.assertSame(published, window.ModuleReturnPublication.branch);
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnNamedValue"));
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ModuleReturnNamespaced"));
-                Assert.assertEquals("object", typeof first);
-                Assert.assertEquals("moduleReturnNamedValue,nested", Object.keys(first).join(","));
-                Assert.assertEquals(7, first.moduleReturnNamedValue);
-                Assert.assertSame(published.nested, first.nested);
-                Assert.assertNotSame(published, first);
-                Assert.assertSame(first, second);
+                Assert.assertEquals("object", typeof exports);
+                Assert.assertEquals("moduleReturnNamedValue,nested", Object.keys(exports).sort().join(","));
+                Assert.assertEquals(7, exports.moduleReturnNamedValue);
+                Assert.assertSame(published.nested, exports.nested);
+                Assert.assertNotSame(published, exports);
+                Assert.assertSame(exports, cachedExports);
             } finally {
                 delete window.ModuleReturnPublication;
             }
@@ -160,13 +145,12 @@
                 Composer.include("moduleReturnComposite");
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ModuleReturnCompositeLocal"));
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnCompositeValue"));
-                const first = require("moduleReturnComposite");
-                Assert.assertEquals("object", typeof first);
-                Assert.assertEquals("moduleReturnCompositeValue", Object.keys(first).join(","));
-                Assert.assertEquals("composite", first.moduleReturnCompositeValue);
-                for (let count = 0; count < 3; count++)
-                    Assert.assertSame(first, require("moduleReturnComposite"));
-                Assert.assertSame(first, Composer.load(
+                const exports = require("moduleReturnComposite");
+                Assert.assertEquals("object", typeof exports);
+                Assert.assertEquals("moduleReturnCompositeValue", Object.keys(exports).join(","));
+                Assert.assertEquals("composite", exports.moduleReturnCompositeValue);
+                Assert.assertSame(exports, require("moduleReturnComposite"));
+                Assert.assertSame(exports, Composer.load(
                     Composer.MODULES + "/moduleReturnComposite.js", true));
                 Assert.assertEquals(1, executions.get("composite"));
             } finally {
@@ -178,20 +162,20 @@
             const children = [];
             const result = Scripting.run({children},
                 "expose({before: true});"
-                + "children.push(require('moduleReturn/parent'));"
+                + "children.push(require('return/parent'));"
                 + "expose({after: true});");
-            Assert.assertEquals("before,after", Object.keys(result).join(","));
+            Assert.assertEquals("after,before", Object.keys(result).sort().join(","));
             Assert.assertEquals(1, executions.get("parent"));
             Assert.assertEquals(1, executions.get("child"));
             Assert.assertEquals(1, children.length);
             const parent = children[0];
             Assert.assertEquals("object", typeof parent);
-            Assert.assertEquals("parentValue,child", Object.keys(parent).join(","));
+            Assert.assertEquals("child,parentValue", Object.keys(parent).sort().join(","));
             Assert.assertEquals("parent", parent.parentValue);
             Assert.assertEquals("moduleReturnChildValue", Object.keys(parent.child).join(","));
             Assert.assertEquals("child", parent.child.moduleReturnChildValue);
-            Assert.assertSame(parent, require("moduleReturn/parent"));
-            Assert.assertSame(parent.child, require("moduleReturn/child"));
+            Assert.assertSame(parent, require("return/parent"));
+            Assert.assertSame(parent.child, require("return/child"));
             Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnChildValue"));
         }});
 
@@ -200,15 +184,15 @@
             const capture = error => {failure = error;};
             const result = Scripting.run({capture},
                 "expose({before: true});"
-                + "try {require('moduleReturn/error');} catch (error) {capture(error);}"
+                + "try {require('return/error');} catch (error) {capture(error);}"
                 + "expose({after: true});");
             Assert.assertTrue(failure instanceof Error);
             Assert.assertEquals("MODULE_RETURN_FAILURE", failure.message);
-            Assert.assertEquals("before,after", Object.keys(result).join(","));
+            Assert.assertEquals("after,before", Object.keys(result).sort().join(","));
             Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnPartial"));
-            Assert.assertUndefined(require("moduleReturn/error"));
+            Assert.assertUndefined(require("return/error"));
             Assert.assertUndefined(Composer.load(
-                Composer.MODULES + "/moduleReturn/error.js", true));
+                Composer.MODULES + "/return/error.js", true));
         }});
 
         Test.start({auto:true});

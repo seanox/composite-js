@@ -22,8 +22,8 @@
         }});
 
         Test.create({test() {
-            Assert.assertEquals(String(calls),
-                "common,common,[object HTMLDivElement],nsX/a,[object HTMLDivElement],nsX/b");
+            const expected = "common,common,[object HTMLDivElement],nsX/a,[object HTMLDivElement],nsX/b";
+            Assert.assertEquals(expected, String(calls));
         }});
 
         const calls = [];

@@ -28,7 +28,7 @@
             for (const name of ["_execute", "_run"])
                 Assert.assertEquals("undefined", Scripting.eval({}, "typeof " + name));
             Assert.assertEquals("undefined,undefined,undefined,function",
-                Expression.eval({}, "{{" + types + "}}")[1]);
+                Expression.eval({}, "{{" + types + "}}").result);
         }});
 
         Test.create({test() {
@@ -360,8 +360,9 @@
                 Assert.assertEquals(0, calls.length);
                 expose(object, "ScriptingExposeNamespaceTest.child.object");
                 Assert.assertEquals(1, calls.length);
+                Assert.assertEquals(2, calls[0].length);
                 Assert.assertSame(window, calls[0][0]);
-                Assert.assertEquals("ScriptingExposeNamespaceTest,child", calls[0].slice(1).join(","));
+                Assert.assertEquals("ScriptingExposeNamespaceTest.child", calls[0][1]);
                 Assert.assertSame(object, parent.object);
             } finally {
                 Object.use = original;
@@ -460,7 +461,7 @@
         Test.create({test() {
             const object = {answer: 42};
             const evaluate = () => {
-                Assert.assertSame(object, Expression.eval({object, expose}, "{{expose(object)}}")[1]);
+                Assert.assertSame(object, Expression.eval({object, expose}, "{{expose(object)}}").result);
                 Assert.assertEquals(3, Scripting.eval({expose}, "expose({temporary: true}); 1 + 2"));
                 const nested = Scripting.run("nested.js", {}, "expose({nested: true});");
                 Assert.assertTrue(nested.nested);
@@ -507,7 +508,7 @@
                 "expose({error: new Error('sourceURL')});");
             Assert.assertTrue(result.error.stack, result.error.stack.includes("scripting_run_source.js"));
             Assert.assertUndefined(Scripting.eval({}, ""));
-            Assert.assertEquals(3, Expression.eval({}, "{{1 + 2}}")[1]);
+            Assert.assertEquals(3, Expression.eval({}, "{{1 + 2}}").result);
         }});
 
         Test.start({auto: true});

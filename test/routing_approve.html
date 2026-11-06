@@ -29,10 +29,14 @@
         // modelA is explicitly registered on the window object.
         //
         // In practice, this conflict rarely occurs because modules generally
-        // assign their exported objects to the window object correctly.
+        // assign their exposed objects to the window object correctly.
         //
         // The test makes routing states, permit() calls, and their effects on
         // the DOM visible and verifiable.
+        //
+        // Both views cover routing without an own condition.
+        // routing_condition.html covers routing combined with own conditions,
+        // including false conditions and removal/reinsertion.
         //
         // Reference: Named access on the Window object
         // https://html.spec.whatwg.org/multipage/nav-history-apis.html#named-access-on-the-window-object

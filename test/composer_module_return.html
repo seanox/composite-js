@@ -19,25 +19,25 @@
                 "function", "array", "object"])
             Test.create({name: "require ignores the final expression without expose: " + name,
                     test() {
-                const exports = require("return/" + name);
+                const exports = require("returns/" + name);
                 Assert.assertEquals("object", typeof exports);
                 Assert.assertEquals(0, Object.keys(exports).length);
-                Assert.assertSame(exports, require("return/" + name));
+                Assert.assertSame(exports, require("returns/" + name));
             }});
 
         Test.create({name: "Modules without exports execute once and keep declarations private",
                 test() {
-            const exports = require("return/noReturn");
+            const exports = require("returns/noReturn");
             Assert.assertEquals("object", typeof exports);
             Assert.assertEquals(0, Object.keys(exports).length);
-            Assert.assertSame(exports, require("return/noReturn"));
+            Assert.assertSame(exports, require("returns/noReturn"));
             Assert.assertEquals(1, executions.get("noReturn"));
             Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ModuleReturnPrivate"));
             Assert.assertEquals("undefined", Scripting.eval({}, "typeof ModuleReturnPrivate"));
         }});
 
         Test.create({name: "require returns flat exports without publishing private bindings", test() {
-            const module = require("return/expose");
+            const module = require("returns/expose");
             Assert.assertEquals("object", typeof module);
             Assert.assertEquals("describe,moduleReturnValue,nested", Object.keys(module).sort().join(","));
             Assert.assertEquals(42, module.moduleReturnValue);
@@ -53,8 +53,8 @@
 
         Test.create({name: "Repeated require returns the same cached exports without execution",
                 test() {
-            const exports = require("return/expose");
-            Assert.assertSame(exports, require("return/expose"));
+            const exports = require("returns/expose");
+            Assert.assertSame(exports, require("returns/expose"));
             const caller = Scripting.run({},
                 "expose({module: require('return/expose')});");
             Assert.assertSame(exports, caller.module);
@@ -62,13 +62,13 @@
         }});
 
         Test.create({name: "Mutations of cached exports and nested objects are shared", test() {
-            const exports = require("return/expose");
+            const exports = require("returns/expose");
             const value = exports.moduleReturnValue;
             const count = exports.nested.count;
             try {
                 exports.moduleReturnValue = 43;
                 exports.nested.count = 2;
-                const cachedExports = require("return/expose");
+                const cachedExports = require("returns/expose");
                 Assert.assertSame(exports, cachedExports);
                 Assert.assertEquals(43, cachedExports.moduleReturnValue);
                 Assert.assertEquals(2, cachedExports.nested.count);
@@ -88,7 +88,7 @@
                 Composer.MODULES + "/return//loaded.js?initial=1", true);
             Assert.assertEquals("object", typeof exports);
             Assert.assertEquals("direct", exports.moduleReturnLoadedValue);
-            Assert.assertSame(exports, require("return/loaded"));
+            Assert.assertSame(exports, require("returns/loaded"));
             Assert.assertSame(exports, Composer.load(resource, true));
             Assert.assertSame(exports, Composer.load(
                 window.location.origin + resource + "?repeat=1"));
@@ -112,9 +112,9 @@
         Test.create({name: "Namespaced expose returns flat exports and publishes the original object",
                 test() {
             try {
-                const exports = require("return/namespaced");
+                const exports = require("returns/namespaced");
                 const published = window.ModuleReturnPublication.branch;
-                const cachedExports = require("return/namespaced");
+                const cachedExports = require("returns/namespaced");
                 Assert.assertEquals(1, executions.get("namespaced"));
                 Assert.assertEquals(7, published.moduleReturnNamedValue);
                 Assert.assertSame(published, window.ModuleReturnPublication.branch);
@@ -151,7 +151,7 @@
                 Assert.assertEquals("composite", exports.moduleReturnCompositeValue);
                 Assert.assertSame(exports, require("moduleReturnComposite"));
                 Assert.assertSame(exports, Composer.load(
-                    Composer.MODULES + "/moduleReturnComposite.js", true));
+                    Composer.MODULES + "/moduleReturn.js", true));
                 Assert.assertEquals(1, executions.get("composite"));
             } finally {
                 document.body.removeChild(composite);
@@ -174,8 +174,8 @@
             Assert.assertEquals("parent", parent.parentValue);
             Assert.assertEquals("moduleReturnChildValue", Object.keys(parent.child).join(","));
             Assert.assertEquals("child", parent.child.moduleReturnChildValue);
-            Assert.assertSame(parent, require("return/parent"));
-            Assert.assertSame(parent.child, require("return/child"));
+            Assert.assertSame(parent, require("returns/parent"));
+            Assert.assertSame(parent.child, require("returns/child"));
             Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnChildValue"));
         }});
 
@@ -190,7 +190,7 @@
             Assert.assertEquals("MODULE_RETURN_FAILURE", failure.message);
             Assert.assertEquals("after,before", Object.keys(result).sort().join(","));
             Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnPartial"));
-            Assert.assertUndefined(require("return/error"));
+            Assert.assertUndefined(require("returns/error"));
             Assert.assertUndefined(Composer.load(
                 Composer.MODULES + "/return/error.js", true));
         }});

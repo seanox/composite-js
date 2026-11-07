@@ -158,8 +158,9 @@ and the persistent scope objects `view` and `application`. It is discarded
 afterwards; assigning to a bare variable does not update the persistent scope.
 Object values retain their identity, so changes to their properties persist.
 
-The scopes are not interchangeable. Use each scope according to the lifetime and
-visibility required by the data or service.
+Use `view` for markup variables and render-related state, and `application` for
+shared application state and services. Neither scope is automatically isolated
+per composite.
 
 Expressions and composite scripts execute in the execution scope. View scope
 variables are available there by name, while the persistent scopes are reached
@@ -319,10 +320,11 @@ A composite script is JavaScript code with access to the _composite-js_-specific
 `attempt`. The runtime injects these helpers as local functions. They are not
 registered as global functions or automatically provided to ECMAScript modules.
 
-The composite script of a composite module is loaded and executed by the runtime
-as part of realizing the composite, unless a corresponding application object
-already exists. The script can provide the application module that implements
-the application logic of the composite.
+The separately stored script resource comes from the module directory within the
+application context, not from an arbitrary external source. It is loaded and
+executed at most once. When a corresponding application object already exists,
+the runtime skips loading it. The script can provide the application module that
+implements the application logic of the composite.
 
 The same language and API can also be used in standalone modules loaded via
 [require](scripting.md#require) and in JavaScript embedded in markup (see

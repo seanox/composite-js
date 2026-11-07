@@ -72,9 +72,9 @@ while a composite is realized, so the view can access application logic without
 an additional wiring layer.
 
 ## Rendering
-Rendering is the process by which the runtime transforms the declarative model
-into its running state, both for the initial realization of a composite and for
-later updates.
+Rendering evaluates expressions and processes runtime instructions to realize
+the declarative view in the DOM. It covers both the initial realization of a
+composite and later updates.
 
 These concepts, their responsibilities, and their relationships are defined in
 full detail in [Architecture](architecture.md).

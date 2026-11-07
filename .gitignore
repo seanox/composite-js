@@ -23,6 +23,7 @@
 /test/composite-js*.js
 /test/composite-js*.lcov
 /test/composite-js*.md
+/test/composite-js*.tests
 
 # Runtime specific
 **/temp

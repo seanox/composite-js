@@ -105,7 +105,7 @@
         border-left-color: var(--error);
       }
     </style>
-    <script src="composite-js-testing.js"></script>
+    <script src="composite-js-testing.js?index"></script>
     <script type="text/javascript">
       (() => {
           "use strict";
@@ -119,11 +119,12 @@
 
           const benchmarks = [];
 
-          const attachProgress = () => {
+          const attachProgress = testCases => {
               const fragment = document.createDocumentFragment();
-              queue = document.querySelector("script[type='text/test-cases']");
-              queue = queue.textContent.trim().split(/\s+/);
+              queue = testCases.trim().split(/\s+/);
               queue = queue.filter(entry => !entry.match(/^\*/));
+              if (!queue.length)
+                  throw new Error("No test cases found in composite-js.tests");
               queue.forEach(entry => {
                   const id = entry.hashCode();
                   const item = document.createElement("div");
@@ -216,9 +217,20 @@
               progressElement = document.querySelector("#progress");
               outputElement = document.querySelector("#output");
               iframeElement = document.querySelector("#frame iframe");
-              attachProgress();
               attachTestListeners();
-              loadTest(queue.shift());
+              try {
+                  const request = new XMLHttpRequest();
+                  request.open("GET", "composite-js.tests", false);
+                  request.send();
+                  if (request.status < 200
+                          || request.status >= 300)
+                      throw new Error("HTTP " + request.status + " " + request.statusText);
+                  attachProgress(request.responseText);
+                  loadTest(queue.shift());
+              } catch (error) {
+                  outputMessage("error",
+                          "Unable to load composite-js.tests: " + error.message);
+              }
           });
 
           const locateTest = () => {
@@ -255,118 +267,6 @@
               outputElement.scrollTop = outputElement.scrollHeight;
           };
       })();
-    </script>
-    <script type="text/test-cases">
-      compatibility.test.html
-
-      composer_docking.test.html
-      composer_events_fetch.test.html
-      composer_events_error.test.html
-      composer_events_reentrant.test.html
-      composer_events_module.test.html
-      composer_events_render.test.html
-      composer_render_queue.test.html
-      composer_events_xmlhttprequest.test.html
-      composer_module.test.html
-      composer_module_namespace.test.html
-      composer_module_namespace_mount.test.html
-      composer_module_namespace_scopes.test.html
-      composer_module_return.test.html
-      composer_mount_modules.test.html
-      composer_mount_queue.test.html
-      composer_mount_refresh.test.html
-      composer_mount_synchronization.test.html
-      composer_mount.test.html
-      composer_render_attributes.test.html
-      composer_render_attributes_encoding.test.html
-      composer_render_cache_prune.test.html
-      composer_render_condition.test.html
-      composer_render_customize.test.html
-      composer_render_customize_interceptors.test.html
-      composer_render_customize_macros.test.html
-      composer_render_customize_selectors.test.html
-      composer_render_customize_statics.test.html
-      composer_render_events.test.html
-      composer_render_expose.test.html
-      composer_render_hardening.test.html
-      composer_render_import.test.html
-      composer_render_import_datasource.test.html
-      composer_render_interval.test.html
-      composer_render_iterate.test.html
-      composer_render_lock_leak_1.test.html
-      composer_render_lock_leak_2.test.html
-      composer_render_lock_leak_3.test.html
-      composer_render_output.test.html
-      composer_render_output_datasource.test.html
-      composer_render_param.test.html
-      composer_render_recursive.test.html
-      composer_render_release.test.html
-      composer_render_script.test.html
-      composer_render_text.test.html
-      composer_render_validate.test.html
-      composer_render_validate_message.test.html
-      composer_render_validate_select.test.html
-      composer_render_value.test.html
-
-      datasource_collect.test.html
-      datasource_locales.test.html
-      datasource_locator.test.html
-
-      expression_datasource.test.html
-      expression_element.test.html
-      expression_errors.test.html
-      expression_eval.test.html
-      expression_lookup.test.html
-      expression_markup.test.html
-      expression_parse.test.html
-      expression_syntax.test.html
-
-      extension_arguments.test.html
-      extension_namespace_modules.test.html
-      extension_object_path_split.test.html
-      extension_object_tree.test.html
-      extension_object_lookup.test.html
-      extension_object_serial.test.html
-      extension_string_decodeBase64.test.html
-      extension_string_encodeHex.test.html
-      extension_string_hashcode.test.html
-      extension_string_unescape.test.html
-      extension_window_serial.test.html
-
-      locator_canonical_path.test.html
-
-      messages_locales.test.html
-      messages_locales_module.test.html
-
-      reactive_attributes.test.html
-      reactive_attributes_custom.test.html
-      reactive_condition.test.html
-      reactive_import.test.html
-      reactive_input_events.test.html
-      reactive_iterate.test.html
-      reactive_module.test.html
-      reactive_objects.test.html
-      reactive_output.test.html
-      reactive_recipients.test.html
-      reactive_recursion.test.html
-      reactive_routing.test.html
-      reactive_text.test.html
-
-      routing_approve.test.html
-      routing_active_on.test.html
-      routing_active_off.test.html
-      routing_condition.test.html
-      routing_interceptors.test.html
-      routing_path_normalize.test.html
-      routing_route.test.html
-
-      scripting_eval.test.html
-      scripting_expose.test.html
-      scripting_syntax.test.html
-
-      test_assert_message.test.html
-      test_events.test.html
-      test_timeout.test.html
     </script>
   </head>
   <body>

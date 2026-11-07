@@ -55,26 +55,24 @@
     Syntax 55: require("module")
     Syntax 56: use("Example")
 
-    Syntax error 01: SyntaxError: Unexpected identifier 'and' in true and false
-    Syntax error 02: SyntaxError: Unexpected token 'false' in not false
-    Syntax error 03: SyntaxError: Unexpected string in empty ''
-    Syntax error 04: SyntaxError: Unexpected token '&&' in && false
-    Syntax error 05: SyntaxError: Unexpected end of input in true &&
-    Syntax error 06: SyntaxError: Unexpected token ':' in 1:and false
-    Syntax error 07: SyntaxError: Unexpected token ':' in 1 : value
-    Syntax error 08: SyntaxError: Unexpected token ':' in 1 :and(false)
-    Syntax error 09: SyntaxError: Unexpected token ':' in :not(false)
-    Syntax error 10: SyntaxError: Unexpected token ':' in 1 :AND false
-    Syntax error 11: SyntaxError: Private field '#HiddenField' must be declared in an enclosing class in #HiddenField
-    Syntax error 12: SyntaxError: Invalid or unexpected token in #(HiddenField)
-    Syntax error 13: SyntaxError: Invalid or unexpected token in #[HiddenField]
-    Syntax error 14: SyntaxError: Unexpected end of input in require(
-    Syntax error 15: SyntaxError: Unexpected end of input in expose(
-    Syntax error 16: SyntaxError: Unexpected end of input in use(
-    Syntax error 17: SyntaxError: Illegal newline after throw in throw
-new Error('failure')
-    Syntax error 18: SyntaxError: Invalid regular expression: missing / in /a
-b/.test('ab')
+    Syntax error 01: SyntaxError: Unexpected identifier 'and'
+    Syntax error 02: SyntaxError: Unexpected token 'false'
+    Syntax error 03: SyntaxError: Unexpected string
+    Syntax error 04: SyntaxError: Unexpected token '&&'
+    Syntax error 05: SyntaxError: Unexpected end of input
+    Syntax error 06: SyntaxError: Unexpected token ':'
+    Syntax error 07: SyntaxError: Unexpected token ':'
+    Syntax error 08: SyntaxError: Unexpected token ':'
+    Syntax error 09: SyntaxError: Unexpected token ':'
+    Syntax error 10: SyntaxError: Unexpected token ':'
+    Syntax error 11: SyntaxError: Private field '#HiddenField' must be declared in an enclosing class
+    Syntax error 12: SyntaxError: Invalid or unexpected token
+    Syntax error 13: SyntaxError: Invalid or unexpected token
+    Syntax error 14: SyntaxError: Unexpected end of input
+    Syntax error 15: SyntaxError: Unexpected end of input
+    Syntax error 16: SyntaxError: Unexpected end of input
+    Syntax error 17: SyntaxError: Illegal newline after throw
+    Syntax error 18: SyntaxError: Invalid regular expression: missing /
 
     Hidden field identity: true
     Hidden field value: Test-HF

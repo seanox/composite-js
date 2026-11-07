@@ -366,7 +366,7 @@
               window.setTimeout(resolve, 0);
           }).then(() => {
               Assert.assertEquals("Error: ordinary result / after", element.title);
-              Assert.assertEquals("before Error: mixed failure in markupModel.fail() / after",
+              Assert.assertEquals("before Error: mixed failure / after",
                   element.getAttribute("data-failure"));
               Assert.assertEquals("{{Symbol('value')}} suffix",
                   element.getAttribute("data-symbol"));

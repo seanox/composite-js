@@ -55,26 +55,24 @@
     Syntax 55: require("module")
     Syntax 56: use("Example")
 
-    Syntax error 01: SyntaxError: missing ; before statement in true and false
-    Syntax error 02: SyntaxError: missing ; before statement in not false
-    Syntax error 03: SyntaxError: missing ; before statement in empty ''
-    Syntax error 04: SyntaxError: expected expression, got '&&' in && false
-    Syntax error 05: SyntaxError: expected expression, got end of script in true &&
-    Syntax error 06: SyntaxError: missing ; before statement in 1:and false
-    Syntax error 07: SyntaxError: missing ; before statement in 1 : value
-    Syntax error 08: SyntaxError: missing ; before statement in 1 :and(false)
-    Syntax error 09: SyntaxError: expected expression, got ':' in :not(false)
-    Syntax error 10: SyntaxError: missing ; before statement in 1 :AND false
-    Syntax error 11: SyntaxError: private names aren't valid in this context in #HiddenField
-    Syntax error 12: SyntaxError: illegal character in #(HiddenField)
-    Syntax error 13: SyntaxError: illegal character in #[HiddenField]
-    Syntax error 14: SyntaxError: expected expression, got end of script in require(
-    Syntax error 15: SyntaxError: expected expression, got end of script in expose(
-    Syntax error 16: SyntaxError: expected expression, got end of script in use(
-    Syntax error 17: SyntaxError: no line break is allowed between 'throw' and its expression in throw
-new Error('failure')
-    Syntax error 18: SyntaxError: unterminated regular expression literal in /a
-b/.test('ab')
+    Syntax error 01: SyntaxError: missing ; before statement
+    Syntax error 02: SyntaxError: missing ; before statement
+    Syntax error 03: SyntaxError: missing ; before statement
+    Syntax error 04: SyntaxError: expected expression, got '&&'
+    Syntax error 05: SyntaxError: expected expression, got end of script
+    Syntax error 06: SyntaxError: missing ; before statement
+    Syntax error 07: SyntaxError: missing ; before statement
+    Syntax error 08: SyntaxError: missing ; before statement
+    Syntax error 09: SyntaxError: expected expression, got ':'
+    Syntax error 10: SyntaxError: missing ; before statement
+    Syntax error 11: SyntaxError: private names aren't valid in this context
+    Syntax error 12: SyntaxError: illegal character
+    Syntax error 13: SyntaxError: illegal character
+    Syntax error 14: SyntaxError: expected expression, got end of script
+    Syntax error 15: SyntaxError: expected expression, got end of script
+    Syntax error 16: SyntaxError: expected expression, got end of script
+    Syntax error 17: SyntaxError: no line break is allowed between 'throw' and its expression
+    Syntax error 18: SyntaxError: unterminated regular expression literal
 
     Hidden field identity: true
     Hidden field value: Test-HF

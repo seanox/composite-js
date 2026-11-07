@@ -43,8 +43,8 @@
          *
          * Execution errors are handled uniformly, whether they occur during
          * script interpretation or are explicitly thrown by the expression.
-         * Instead of propagating such errors, the function returns them as
-         * values.
+         * Instead of propagating them, the function logs and returns the
+         * original thrown values.
          *
          * The function uses variable parameters and has the following
          * signatures:
@@ -87,10 +87,7 @@
 
             try {return {variable, result: Scripting.eval(context, script)};
             } catch (error) {
-                if (!(error instanceof Error))
-                    error = new Error(error);
-                error.message = (String(error.message).trim() + " in " + script).trim();
-                console.error(String(error));
+                console.error(error, ("Error in expression: " + script).trim());
                 return {variable, result: error};
             }
         },

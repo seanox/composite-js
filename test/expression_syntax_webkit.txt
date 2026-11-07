@@ -55,26 +55,24 @@
     Syntax 55: require("module")
     Syntax 56: use("Example")
 
-    Syntax error 01: SyntaxError: Unexpected identifier 'and' in true and false
-    Syntax error 02: SyntaxError: Unexpected keyword 'false' in not false
-    Syntax error 03: SyntaxError: Unexpected string literal '' in empty ''
-    Syntax error 04: SyntaxError: Unexpected token '&&' in && false
-    Syntax error 05: SyntaxError: Unexpected end of script in true &&
-    Syntax error 06: SyntaxError: Unexpected token ':' in 1:and false
-    Syntax error 07: SyntaxError: Unexpected token ':' in 1 : value
-    Syntax error 08: SyntaxError: Unexpected token ':' in 1 :and(false)
-    Syntax error 09: SyntaxError: Unexpected token ':' in :not(false)
-    Syntax error 10: SyntaxError: Unexpected token ':' in 1 :AND false
-    Syntax error 11: SyntaxError: Bare private name can only be used as the left-hand side of an `in` expression. in #HiddenField
-    Syntax error 12: SyntaxError: Invalid character: '#' in #(HiddenField)
-    Syntax error 13: SyntaxError: Invalid character: '#' in #[HiddenField]
-    Syntax error 14: SyntaxError: Unexpected end of script in require(
-    Syntax error 15: SyntaxError: Unexpected end of script in expose(
-    Syntax error 16: SyntaxError: Unexpected end of script in use(
-    Syntax error 17: SyntaxError: Cannot have a newline after 'throw'. in throw
-new Error('failure')
-    Syntax error 18: SyntaxError: Unterminated regular expression literal '/a' in /a
-b/.test('ab')
+    Syntax error 01: SyntaxError: Unexpected identifier 'and'
+    Syntax error 02: SyntaxError: Unexpected keyword 'false'
+    Syntax error 03: SyntaxError: Unexpected string literal ''
+    Syntax error 04: SyntaxError: Unexpected token '&&'
+    Syntax error 05: SyntaxError: Unexpected end of script
+    Syntax error 06: SyntaxError: Unexpected token ':'
+    Syntax error 07: SyntaxError: Unexpected token ':'
+    Syntax error 08: SyntaxError: Unexpected token ':'
+    Syntax error 09: SyntaxError: Unexpected token ':'
+    Syntax error 10: SyntaxError: Unexpected token ':'
+    Syntax error 11: SyntaxError: Bare private name can only be used as the left-hand side of an `in` expression.
+    Syntax error 12: SyntaxError: Invalid character: '#'
+    Syntax error 13: SyntaxError: Invalid character: '#'
+    Syntax error 14: SyntaxError: Unexpected end of script
+    Syntax error 15: SyntaxError: Unexpected end of script
+    Syntax error 16: SyntaxError: Unexpected end of script
+    Syntax error 17: SyntaxError: Cannot have a newline after 'throw'.
+    Syntax error 18: SyntaxError: Unterminated regular expression literal '/a'
 
     Hidden field identity: true
     Hidden field value: Test-HF

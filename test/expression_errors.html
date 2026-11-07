@@ -19,6 +19,10 @@
             const content = document.body.textContent;
             console.debug(content);
             Assert.assertSameTo("script[type='text/test']", content);
+            const outputs = document.querySelectorAll("body > span");
+            Assert.assertEquals(14, outputs.length);
+            for (const index of [0, 2, 5, 8, 11, 13])
+                Assert.assertEquals("", outputs[index].textContent);
         }});
 
         Test.start({auto:true})
@@ -45,38 +49,32 @@
         };
     </script>
     <script type="text/test">
-      Error: in throw ""
-      Error: 123 in throw 123
-      Error: null in throw null
-      Error: [object Object] in throw new Object()
-      Error: Oops in throw "Oops"
-      Error: in throw undefined
-      Error: false in throw false
-      Error: true in throw true
+      123
+      [object Object]
+      Oops
+      false
+      true
 
-      Error: in model.throwError1()
-      Error: Oops in model.throwError2()
-      Error: [object Object] in model.throwError3()
-      Error: null in model.throwError4()
-      Error: Oops in model.throwError5()
-      Error: in model.throwError6()
+      Oops
+      [object Object]
+      Error: Oops
     </script>
   </head>
   <body>
-    {{throw ""}}
-    {{throw 123}}
-    {{throw null}}
-    {{throw new Object()}}
-    {{throw "Oops"}}
-    {{throw undefined}}
-    {{throw false}}
-    {{throw true}}
+    <span>{{throw ""}}</span>
+    <span>{{throw 123}}</span>
+    <span>{{throw null}}</span>
+    <span>{{throw new Object()}}</span>
+    <span>{{throw "Oops"}}</span>
+    <span>{{throw undefined}}</span>
+    <span>{{throw false}}</span>
+    <span>{{throw true}}</span>
 
-    {{model.throwError1()}}
-    {{model.throwError2()}}
-    {{model.throwError3()}}
-    {{model.throwError4()}}
-    {{model.throwError5()}}
-    {{model.throwError6()}}
+    <span>{{model.throwError1()}}</span>
+    <span>{{model.throwError2()}}</span>
+    <span>{{model.throwError3()}}</span>
+    <span>{{model.throwError4()}}</span>
+    <span>{{model.throwError5()}}</span>
+    <span>{{model.throwError6()}}</span>
   </body>
 </html>

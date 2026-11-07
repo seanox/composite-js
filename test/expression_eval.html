@@ -12,6 +12,7 @@
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
 
+      const nativeConsoleError = console.error;
       Test.activate();
 
       for (const source of ["", "1 + 2", "{{", "}}", "{{1 + 2",
@@ -189,18 +190,184 @@
 
       Test.create({test() {
           const errors = [];
+          const failure = new Error("expression failure");
           const original = console.error;
           let result;
-          console.error = error => errors.push(error);
-          try {result = Expression.eval({}, "{{throw new Error('expression failure')}}");
+          console.error = (...variants) => errors.push(variants);
+          try {result = Expression.eval({failure}, "{{throw failure}}");
           } finally {
               console.error = original;
           }
           Assert.assertEquals("variable,result", Object.keys(result).join(","));
           Assert.assertEquals(undefined, result.variable);
-          Assert.assertTrue(result.result instanceof Error);
-          Assert.assertTrue(result.result.message.startsWith("expression failure"));
+          Assert.assertSame(failure, result.result);
+          Assert.assertEquals("expression failure", failure.message);
           Assert.assertEquals(1, errors.length);
+          Assert.assertEquals(2, errors[0].length);
+          Assert.assertSame(failure, errors[0][0]);
+          Assert.assertEquals("Error in expression: throw failure", errors[0][1]);
+      }});
+
+      Test.create({name: "Cached errors keep their identity and log the prepared context", test() {
+          const failure = new Error("cached failure");
+          const errors = [];
+          const original = console.error;
+          console.error = (...variants) => errors.push(variants);
+          try {
+              for (const source of [" \n{{value:\n throw failure\n}} \t",
+                  "{{ignored: throw missing}}"]) {
+                  const result = Expression.eval("failure-context-cache", {failure}, source);
+                  Assert.assertEquals("variable,result", Object.keys(result).join(","));
+                  Assert.assertEquals("value", result.variable);
+                  Assert.assertSame(failure, result.result);
+                  Assert.assertEquals("cached failure", failure.message);
+              }
+          } finally {
+              console.error = original;
+              Expression.prune(0);
+          }
+          Assert.assertEquals(2, errors.length);
+          for (const variants of errors) {
+              Assert.assertEquals(2, variants.length);
+              Assert.assertSame(failure, variants[0]);
+              Assert.assertEquals("Error in expression: throw failure", variants[1]);
+          }
+      }});
+
+      Test.create({name: "DOMException is returned without propagation", test() {
+          const errors = [];
+          const original = console.error;
+          let result;
+          console.error = (...variants) => errors.push(variants);
+          try {result = Expression.eval({}, "{{document.querySelector('[')}}");
+          } finally {
+              console.error = original;
+          }
+          Assert.assertEquals("variable,result", Object.keys(result).join(","));
+          Assert.assertEquals(undefined, result.variable);
+          Assert.assertTrue(result.result instanceof DOMException);
+          Assert.assertEquals("SyntaxError", result.result.name);
+          Assert.assertEquals(1, errors.length);
+          Assert.assertEquals(2, errors[0].length);
+          Assert.assertSame(result.result, errors[0][0]);
+          Assert.assertEquals("Error in expression: document.querySelector('[')", errors[0][1]);
+      }});
+
+      Test.create({name: "Frozen errors are returned without mutation", test() {
+          const failure = Object.freeze(new Error("failure"));
+          const errors = [];
+          const original = console.error;
+          let result;
+          console.error = (...variants) => errors.push(variants);
+          try {result = Expression.eval({failure}, "{{throw failure}}");
+          } finally {
+              console.error = original;
+          }
+          Assert.assertEquals("variable,result", Object.keys(result).join(","));
+          Assert.assertEquals(undefined, result.variable);
+          Assert.assertSame(failure, result.result);
+          Assert.assertEquals("failure", failure.message);
+          Assert.assertTrue(Object.isFrozen(failure));
+          Assert.assertEquals(1, errors.length);
+          Assert.assertEquals(2, errors[0].length);
+          Assert.assertSame(failure, errors[0][0]);
+          Assert.assertEquals("Error in expression: throw failure", errors[0][1]);
+      }});
+
+      const diagnosticAccesses = [];
+      const messageGetter = new Error("failure");
+      Object.defineProperty(messageGetter, "message", {
+          get() {
+              diagnosticAccesses.push("message getter");
+              throw new Error("message access failed");
+          }
+      });
+      const messageConversion = new Error("failure");
+      messageConversion.message = {
+          toString() {
+              diagnosticAccesses.push("message conversion");
+              throw new Error("message conversion failed");
+          }
+      };
+      const valueConversion = {
+          toString() {
+              diagnosticAccesses.push("value conversion");
+              throw new Error("value conversion failed");
+          }
+      };
+      const diagnosticConversion = new Error("diagnostic");
+      diagnosticConversion.toString = () => {
+          diagnosticAccesses.push("error conversion");
+          throw new Error("diagnostic conversion failed");
+      };
+      const ignoredAssignment = new Error("ignored");
+      Object.defineProperty(ignoredAssignment, "message", {
+          get() {
+              diagnosticAccesses.push("ignored getter");
+              return "ignored";
+          },
+          set() {diagnosticAccesses.push("ignored setter");}
+      });
+      const rejectedAssignment = new Proxy(new Error("rejected"), {
+          set() {
+              diagnosticAccesses.push("proxy setter");
+              return false;
+          }
+      });
+      let assignedMessage = "setter";
+      const acceptedAssignment = new Error("setter");
+      Object.defineProperty(acceptedAssignment, "message", {
+          get() {
+              diagnosticAccesses.push("accepted getter");
+              return assignedMessage;
+          },
+          set(value) {
+              diagnosticAccesses.push("accepted setter");
+              assignedMessage = value;
+          }
+      });
+      const thrownValues = [
+          undefined, null, false, true, 0, -0, NaN, "", "failure", Symbol("failure"),
+          messageGetter, messageConversion, valueConversion, new Error("ordinary"),
+          diagnosticConversion, ignoredAssignment, rejectedAssignment, acceptedAssignment
+      ];
+      thrownValues.forEach((failure, index) => {
+          Test.create({name: "Thrown values are returned unchanged #" + (index +1), test() {
+              const errors = [];
+              const original = console.error;
+              let result;
+              console.error = (...variants) => errors.push(variants);
+              try {result = Expression.eval({failure}, "{{throw failure}}");
+              } finally {
+                  console.error = original;
+              }
+              Assert.assertEquals("variable,result", Object.keys(result).join(","));
+              Assert.assertEquals(undefined, result.variable);
+              Assert.assertTrue(Object.is(failure, result.result));
+              Assert.assertEquals(1, errors.length);
+              Assert.assertEquals(2, errors[0].length);
+              Assert.assertTrue(Object.is(failure, errors[0][0]));
+              Assert.assertEquals("Error in expression: throw failure", errors[0][1]);
+              Assert.assertEquals(0, diagnosticAccesses.length);
+              Assert.assertEquals("setter", assignedMessage);
+          }});
+      });
+
+      Test.create({name: "Native console logging preserves thrown values", test() {
+          const original = console.error;
+          console.error = (...variants) => nativeConsoleError.apply(console, variants);
+          try {
+              for (const failure of thrownValues) {
+                  const result = Expression.eval({failure}, "{{throw failure}}");
+                  Assert.assertEquals("variable,result", Object.keys(result).join(","));
+                  Assert.assertEquals(undefined, result.variable);
+                  Assert.assertTrue(Object.is(failure, result.result));
+              }
+          } finally {
+              console.error = original;
+          }
+          Assert.assertFalse(diagnosticAccesses.some(access => access.endsWith("setter")));
+          Assert.assertEquals("setter", assignedMessage);
       }});
 
       Test.create({test() {

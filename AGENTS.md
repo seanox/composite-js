@@ -15,21 +15,21 @@ other architectures, but the runtime must not depend on any of them.
 ## Project Structure and Starting Points
 Paths below are relative to the repository root.
 
-| Path                                  |   | Responsibility                                                   |
-|:--------------------------------------|---|:-----------------------------------------------------------------|
-| `sources/`                            |   | Authoritative browser runtime source                             |
-| `release/`                            |   | Generated bundles; do not edit manually                          |
-| `test/`                               |   | HTML test pages, fixtures, helpers and generated test bundles    |
-| `test/playwright/`                    |   | Node.js test runner, HTTP server and coverage tooling            |
-| `development/build.xml`               |   | Ant build targets, source order, minification and bundle linting |
-| `development/package.json`            |   | Build dependencies: ESLint and UglifyJS                          |
-| `development/eslint.config.js`        |   | ES2015 syntax constraint for runtime bundles                     |
-| `.github/actions/compose/action.yaml` |   | CI build setup and composition command                           |
-| `.github/workflows/playwright.yaml`   |   | Browser installation and three-engine test matrix                |
-| `manuals/`                            |   | Architecture, public API and testing documentation               |
-| `tutorials/`                          |   | Executable application examples                                  |
-| `server/`                             |   | Supporting development server infrastructure                     |
-| `README.md`, `CHANGES`                |   | Public overview, requirements and change history                 |
+| Path                                  | Responsibility                                                   |
+|:--------------------------------------|:-----------------------------------------------------------------|
+| `sources/`                            | Authoritative browser runtime source                             |
+| `release/`                            | Generated bundles; do not edit manually                          |
+| `test/`                               | HTML test pages, fixtures, helpers and generated test bundles    |
+| `test/playwright/`                    | Node.js test runner, HTTP server and coverage tooling            |
+| `development/build.xml`               | Ant build targets, source order, minification and bundle linting |
+| `development/package.json`            | Build dependencies: ESLint and UglifyJS                          |
+| `development/eslint.config.js`        | ES2015 syntax constraint for runtime bundles                     |
+| `.github/actions/compose/action.yaml` | CI build setup and composition command                           |
+| `.github/workflows/playwright.yaml`   | Browser installation and three-engine test matrix                |
+| `manuals/`                            | Architecture, public API and testing documentation               |
+| `tutorials/`                          | Executable application examples                                  |
+| `server/`                             | Supporting development server infrastructure                     |
+| `README.md`, `CHANGES`                | Public overview, requirements and change history                 |
 
 Use this source map to locate the relevant implementation and manual:
 
@@ -180,8 +180,10 @@ that contain a recognized runtime script tag; see `PATTERN_TEST_SCRIPTS` in
 run. No matching pages is an error, not a successful empty test run.
 
 ### Test Requirements
-- Add tests for new functionality.
-- Add regression tests for bug fixes.
+- Add tests for new functionality, preferably before implementation (test-driven
+  development) where feasible, including relevant edge cases.
+- Add regression tests for bug fixes that reproduce the original issue and
+  verify that it is fixed.
 - Follow neighboring test and fixture conventions; do not rename unrelated
   pages or helpers. Consult `manuals/test.md` for the Test/Assert APIs.
 - Reuse existing page setup with `Test.activate()`, `Test.create(...)` and
@@ -214,6 +216,7 @@ run. No matching pages is an error, not a successful empty test run.
    Establish intended behavior and identify browser/API compatibility risks.
 3. Choose the smallest complete change using existing mechanisms. Clarify
    ambiguous behavior or conflicting local changes before editing.
+4. Before changing implementation code, follow the test-first requirements above.
 
 ### After making changes
 1. Review the complete task diff, including any generated output. Check for

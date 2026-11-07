@@ -501,12 +501,17 @@
         }});
 
         Test.create({test() {
-            const error = Scripting.eval("scripting_eval_source.js", {},
-                "new Error('sourceURL');");
-            Assert.assertTrue(error.stack, error.stack.includes("scripting_eval_source.js"));
-            const result = Scripting.run("scripting_run_source.js", {},
-                "expose({error: new Error('sourceURL')});");
-            Assert.assertTrue(result.error.stack, result.error.stack.includes("scripting_run_source.js"));
+            const sourceURL = "scripting_source_probe.js";
+            const stack = eval("new Error().stack;\n//# sourceURL=" + sourceURL + "\n");
+            if (typeof stack === "string"
+                    && stack.includes(sourceURL)) {
+                const error = Scripting.eval("scripting_eval_source.js", {},
+                    "new Error('sourceURL');");
+                Assert.assertTrue(error.stack, error.stack.includes("scripting_eval_source.js"));
+                const result = Scripting.run("scripting_run_source.js", {},
+                    "expose({error: new Error('sourceURL')});");
+                Assert.assertTrue(result.error.stack, result.error.stack.includes("scripting_run_source.js"));
+            }
             Assert.assertUndefined(Scripting.eval({}, ""));
             Assert.assertEquals(3, Expression.eval({}, "{{1 + 2}}").result);
         }});

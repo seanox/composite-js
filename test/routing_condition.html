@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        // Routing approval and an existing condition must both be true.
+        // In particular, an approved view must remain absent when its own
+        // condition is false; testing only true would not detect an ignored
+        // condition.
+        //
+        // All four views share a model to compare no condition, literal true,
+        // literal false, and a variable condition under the same permission.
+        // Explicit Window properties avoid named access through element IDs.
+        //
+        // The first three states keep permission true and toggle the variable
+        // condition true -> false -> true. The element must be removed and
+        // recreated without navigation. The remaining states complete the
+        // permission/condition matrix and restore the view after a denial.
+        // When routing denies permission, the own condition is not evaluated.
+
+        window.routingCondition = {
+            permission: true,
+            visible: true,
+            evaluations: 0,
+            permit() {
+                return this.permission;
+            },
+            condition() {
+                this.evaluations++;
+                return this.visible;
+            }
+        };
+        window.routingAlways = routingCondition;
+        window.routingNever = routingCondition;
+        window.routingDefault = routingCondition;
+
+        Test.create({name: "Routing approval combined with own conditions", timeout: 5000, async test() {
+            const hash = window.location.hash;
+            let previousElement = null;
+            let finish;
+            Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+                if (selector === document.body && finish)
+                    finish();
+            });
+            const states = [
+                {permission:true, visible:true},
+                {permission:true, visible:false},
+                {permission:true, visible:true},
+                {permission:false, visible:true},
+                {permission:false, visible:false},
+                {permission:true, visible:false},
+                {permission:true, visible:true}
+            ];
+            for (const state of states) {
+                routingCondition.permission = state.permission;
+                routingCondition.visible = state.visible;
+                const evaluations = routingCondition.evaluations;
+                const rendered = new Promise(resolve => finish = resolve);
+                Composer.render(document.body);
+                await rendered;
+                finish = null;
+
+                const label = `permission=${state.permission}, condition=${state.visible}`;
+                const element = document.getElementById("routingCondition");
+                Assert.assertEquals(`${label}: variable condition`,
+                    state.permission && state.visible, element !== null);
+                Assert.assertEquals(`${label}: literal true condition`,
+                    state.permission, document.getElementById("routingAlways") !== null);
+                Assert.assertEquals(`${label}: literal false condition`,
+                    null, document.getElementById("routingNever"));
+                Assert.assertEquals(`${label}: no own condition`,
+                    state.permission, document.getElementById("routingDefault") !== null);
+                Assert.assertEquals(`${label}: short-circuit evaluation`,
+                    evaluations +(state.permission ? 1 : 0), routingCondition.evaluations);
+                Assert.assertEquals(`${label}: no navigation`, hash, window.location.hash);
+
+                if (element) {
+                    Assert.assertEquals("variable", element.textContent);
+                    if (previousElement)
+                        Assert.assertTrue("Reinsertion must create a new element",
+                            element !== previousElement);
+                    previousElement = element;
+                } else if (previousElement)
+                    Assert.assertFalse("The previous element must be disconnected",
+                        previousElement.isConnected);
+            }
+        }});
+
+        window.addEventListener("load", () => Test.start());
+    </script>
+  </head>
+  <body route>
+    <span id="routingCondition" composite route condition="{{routingCondition.condition()}}">variable</span>
+    <span id="routingAlways" composite route condition="{{true}}">always</span>
+    <span id="routingNever" composite route condition="{{false}}">never</span>
+    <span id="routingDefault" composite route>default</span>
+  </body>
+</html>

@@ -17,252 +17,233 @@
  *     DESCRIPTION
  *     ----
  * Expression language and composite script are two important components. Both
- * are based on ECMAScript/JavaScript enriched with macros. In addition,
- * composite script can be loaded at runtime and can itself load other composite
- * scripts. Because in the end everything is based on a simple eval command, it
- * was important to execute the scripts in a separate function scope so that
- * internal methods and constants cannot be accessed unintentionally.
+ * evaluate ECMAScript/JavaScript. Composite script can be loaded at runtime and
+ * can itself load other composite scripts through injected helper functions.
+ * Because everything is based on a simple eval command, scripts execute in a
+ * separate function scope so that internal methods and constants cannot be
+ * accessed unintentionally.
  *
  * see also: https://seanox.github.io/composite-js/manuals/scripting.html
  *           https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {
 
-    const PATTERN_EVAL_MACRO_MATCH = /(^|\W)(#(?:import|export|use))\s/;
-    const PATTERN_EVAL_MACRO_IMPORT = /^(\w+(\/\w+)*)(\s+(\w+(\/\w+)*))*$/;
-    const PATTERN_EVAL_MACRO_EXPORT = /^([_a-z]\w*)(?:@((?:[_a-z]\w*)(?:\.[_a-z]\w*)*))?$/i;
-    const PATTERN_EVAL_MACRO_USE = /^([_a-z]\w*)(\.[_a-z]\w*)*(\s+([_a-z]\w*)(\.[_a-z]\w*)*)*$/i;
+    const PATTERN_REQUIRE = /^\w+(\/\w+)*$/;
+    const PATTERN_NAMESPACE = /^[_a-z$][\w$]*(\.[_a-z$][\w$]*)*$/i;
+
+    /**
+     * Loads a script module from the module directory, without the .js extension.
+     * @param {string} path Module path
+     * @returns {object|undefined} Cached module exports, or undefined if
+     *     unavailable
+     * @throws {TypeError} If the argument is not a string
+     * @throws {Error} In case of an invalid path or resource loading failure
+     */
+    const _require = (path) => {
+        if (typeof path !== "string")
+            throw new TypeError("Invalid require: " + typeof path);
+        if (!path.match(PATTERN_REQUIRE))
+            throw new Error("Invalid require: " + path);
+        return Composer.load(Composer.MODULES + "/" + path + ".js", true);
+    };
+
+    const _expose_collector_stack = [];
+
+    /**
+     * Collects an object's own enumerable string keys as flat module exports.
+     * An optional namespace also publishes the original object on window,
+     * using Object.use to obtain or create its parent namespace.
+     * Later calls replace exports with the same keys without merging values.
+     * @param {object} object Values to export
+     * @param {string} [namespace] Full optional publication path on window
+     * @returns {object} The original object
+     * @throws {TypeError} If the object or namespace has an invalid type
+     * @throws {Error} In case of an invalid namespace or failed assignment
+     */
+    const _expose = function(object, namespace) {
+
+        "use strict";
+
+        if (object === null
+                || typeof object !== "object")
+            throw new TypeError("Invalid expose: " + (object === null ? "null" : typeof object));
+        if (namespace !== undefined) {
+            if (typeof namespace !== "string")
+                throw new TypeError("Invalid expose namespace: " + typeof namespace);
+            if (!namespace.match(PATTERN_NAMESPACE))
+                throw new Error("Invalid expose namespace: " + namespace);
+            const levels = namespace.split(".");
+            const name = levels.pop();
+            const parent = levels.length ? Object.use(window, levels.join(".")) : window;
+            parent[name] = object;
+        }
+
+        const collector = _expose_collector_stack[_expose_collector_stack.length -1];
+        if (collector)
+            Object.keys(object).forEach(name =>
+                Object.defineProperty(collector, name, {
+                    value: object[name], writable: true, enumerable: true, configurable: true
+                }));
+        return object;
+    };
+
+    /**
+     * Creates a namespace if it does not already exist.
+     * @param {string} use Dot-separated namespace
+     * @throws {TypeError} If the argument is not a string
+     * @throws {Error} If the namespace is invalid
+     */
+    const _use = (use) => {
+        if (typeof use !== "string")
+            throw new TypeError("Invalid use: " + typeof use);
+        if (!use.match(PATTERN_NAMESPACE))
+            throw new Error("Invalid use: " + use);
+        Object.use(window, use);
+    };
+
+    /**
+     * Invokes a callback synchronously, or returns a non-function unchanged.
+     * Callback errors yield undefined; promise rejections are not handled.
+     * @param {*} invocation Value or callback invoked with window as this
+     * @returns {*} Original value, callback result,
+     *     or undefined on callback error
+     */
+    const _attempt = (invocation) => {
+        if (typeof invocation !== "function")
+            return invocation
+        try {return invocation.call(window);
+        } catch (error) {
+            return undefined;
+        }
+    };
+
+    /** Cache (signature/execution wrapper) */
+    const _cache = new Map();
+
+    /**
+     * Shared internal executor for Composite JavaScript and expressions.
+     * Uses the supplied context without adding helper bindings.
+     * @param {object} context Execution context containing values
+     *     available to the script
+     * @param {string} script
+     * @returns {*} return value of the script, if available
+     * @throws {Error} In case of invalid data types or syntax.
+     */
+    const _execute = (context, script) => {
+
+        if (context === null
+                || typeof context !== "object")
+            throw new TypeError("Invalid context: " + typeof context);
+        if (typeof script !== "string")
+            throw new TypeError("Invalid script: " + typeof script);
+
+        if (!script.trim())
+            return;
+
+        // To improve performance, cacheable execution wrappers are used.
+        // Unbound wrappers are cached by their ordered context keys.
+        // Context values and the internal this object are supplied anew.
+
+        const keys = Object.keys(context);
+        const signature = JSON.stringify(keys);
+
+        let execute = _cache.get(signature);
+        if (!execute)
+            execute = Function(
+                ...keys,
+                '"use strict"; return eval(this.script);'
+            );
+        else _cache.delete(signature);
+        _cache.set(signature, execute);
+
+        return execute.call({script}, ...Object.values(context));
+    };
 
     compliant("Scripting");
     compliant(null, window.Scripting = {
 
         /**
-         * Executes a composite script. As a special feature, composite script
-         * supports macros.
-         *
-         * Macros are based on a keyword starting with a hash symbol followed by
-         * arguments separated by spaces. Macros end with the next line break, a
-         * semicolon or with the end of the file.
-         *
-         * #import    loads modules as composite script resources from the
-         *            module directory
-         * #export    makes variables, constants and functions of the separate
-         *            function scope usable in the global scope, optionally in a
-         *            namespace declared with an @ symbol
-         * #use       creates the passed namespaces if they do not already exist
-         * (? ...)    tolerant expression, a macro with a different syntax, the
-         *            enclosed logic is executed fault-tolerantly and
-         *            corresponds to the value undefined in case of an error,
-         *            except for syntax errors
+         * Evaluates JavaScript and returns its final expression value.
+         * Provides attempt but no automatic require, use or expose bindings.
+         * Suspends any surrounding export collection during evaluation.
          *
          * The function uses variable parameters and has the following
          * signatures:
          *
          *     function(context, script)
          *     function(url, context, script)
-         *     function(url, context, script, debug)
          *
-         * @param {string} [url] Optional sourceURL
+         * @param {string} [url] Optional sourceURL for debugging
          * @param {object} context Execution context containing values
          *     available to the script
          * @param {string} script
-         * @param {boolean} [debug=false] Optional debug
-         * @returns {*} the return value from the script
+         * @returns {*} The expression result
          * @throws {Error} In case of invalid data types or syntax.
          *
-         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#macros
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#script-api
          *           https://seanox.github.io/composite-js/manuals/expression.html
          */
         eval(...variants) {
 
-            let {url, context, script, debug = false} = Arguments.bind(variants, [
+            let {url, context, script} = Arguments.bind(variants, [
                 {context: [Object], script: [String]},
-                {url: [String], context: [Object], script: [String]},
-                {url: [String], context: [Object], script: [String], debug: [Boolean]}
+                {url: [String], context: [Object], script: [String]}
             ]);
 
-            // Performance is important here.
-            // The implementation parses and replaces macros in one pass.
+            const source = url ? "\n\n//# sourceURL=" + url + "\n" : "";
 
-            // It was important to exclude literals and comments.
-            // - ignore: /*...*/
-            // - ignore: //...([\r\n]|$)
-            // - ignore: '...'
-            // - ignore: "..."
-            // - ignore: `...`
-            // - detect: (^|\W)#(import|export|use)\s+...(\W|$)
-            // - detect: \(\?\s+...)
+            context = Object.assign(Object.create(null), {
+                attempt: _attempt
+            }, context);
 
-            let pattern;
-            let brackets = [];
-            for (let cursor = 0; cursor < script.length; cursor++) {
-                let digit = script.charAt(cursor);
-
-                // The macro for the tolerant logic is a bit more complicated,
-                // because round brackets have to be counted here. Therefore the
-                // parsing runs parallel to the other macros.
-
-                if (digit === "\\") {
-                    cursor++;
-                    continue;
-                }
-
-                if (pattern) {
-                    if (pattern === script.substring(cursor, cursor + pattern.length)
-                            || (pattern === "\n" && digit === "\r"))
-                        pattern = null;
-                    continue;
-                }
-
-                switch (digit) {
-                    case "/":
-                        digit = script.charAt(cursor +1);
-                        if (digit === "/")
-                            pattern = "\n";
-                        if (digit === "*")
-                            pattern = "*/";
-                        continue;
-
-                    // A distinction is needed to identify the end of the
-                    // tolerate function later on, in order to insert additional
-                    // closing brackets. That is why we count and classify:
-                    //     0: normal (...).
-                    //     1: tolerant (? ...)
-                    case "(":
-                        if (script[cursor +1] === "?"
-                                && (/\s/).test(script[cursor +2])) {
-                            brackets.push(1);
-                            let macro = "_tolerate(()=>";
-                            script = script.substring(0, cursor +1)
-                                + macro + script.substring(cursor +3);
-                            cursor += macro.length;
-                        } else brackets.push(0);
-                        continue;
-
-                    case ")":
-                        // Get the type of the corresponding opening bracket.
-                        let bracket = brackets.pop();
-                        if (bracket !== 1)
-                            continue;
-
-                        let macro = ")";
-                        script = script.substring(0, cursor)
-                            + macro + script.substring(cursor);
-                        cursor += macro.length;
-                        continue;
-
-                    case "\'":
-                    case "\"":
-                    case "\`":
-                        pattern = digit;
-                        continue;
-
-                    case "#":
-                        let string = script.substring(cursor -1, cursor +10);
-                        let match = string.match(PATTERN_EVAL_MACRO_MATCH);
-                        if (match) {
-                            let macro = match[2];
-                            for (let offset = cursor +macro.length; offset <= script.length; offset++) {
-                                string = script.charAt(offset);
-                                if (!string.match(/[;\r\n]/)
-                                        && offset < script.length)
-                                    continue;
-
-                                let parameters = script.substring(cursor +macro.length, offset).trim();
-
-                                switch (macro) {
-                                    case "#import":
-                                        if (!parameters.match(PATTERN_EVAL_MACRO_IMPORT))
-                                            throw new Error(("Invalid macro: #import " + parameters).trim());
-                                        const imports = parameters.split(/\s+/).map(
-                                            entry => "\"" + entry + "\"");
-                                        macro = "_import(...[" + imports.join(",") + "])";
-                                        break;
-
-                                    case "#export":
-                                        const exports = [];
-                                        parameters.split(/\s+/).forEach(entry => {
-                                            const match = entry.match(PATTERN_EVAL_MACRO_EXPORT);
-                                            if (!match)
-                                                throw new Error(("Invalid macro: #export " + parameters).trim());
-                                            parameters = [match[1], "\"" + match[1] + "\""];
-                                            if (match[2])
-                                                parameters.push("\"" + match[2] + "\"");
-                                            exports.push("[" + parameters.join(",") + "]");
-                                        });
-                                        macro = "_export(...[" + exports.join(",") + "])";
-                                        break;
-
-                                    case "#use":
-                                        if (!parameters.match(PATTERN_EVAL_MACRO_USE))
-                                            throw new Error(("Invalid macro: #use " + parameters).trim());
-                                        const uses = parameters.split(/\s+/).map(
-                                            entry => "\"" + entry + "\"");
-                                        macro = "_use(...[" + uses.join(",") + "])";
-                                        break;
-                                }
-
-                                script = script.substring(0, cursor -1) + (match[1] || "")
-                                    + macro + script.substring(offset);
-                                cursor += macro.length;
-                                break;
-                            }
-                        }
-                        continue;
-
-                    default:
-                        continue;
-                }
+            _expose_collector_stack.push(undefined);
+            try {return _execute(context, script + source);
+            } finally {
+                _expose_collector_stack.pop();
             }
-
-             script = url ? script + "\n\n//# sourceURL=" + url + "\n" : script;
-             return debug ? script : this.run(context, script);
         },
 
         /**
-         * Executes a script in a separate function scope with the selected
-         * context values and helper functions explicitly provided as arguments.
+         * Executes Composite JavaScript and returns its flat collected exports,
+         * or a fresh empty object if no entries are exported. Provides require,
+         * use, expose and attempt as local bindings. Context values take
+         * precedence over these defaults.
          *
-         * Note: This provides neither a secure sandbox nor proper isolation,
-         * and it does not prevent access to global variables.
+         * The function uses variable parameters and has the following
+         * signatures:
          *
+         *     function(context, script)
+         *     function(url, context, script)
+         *
+         * @param {string} [url] Optional sourceURL for debugging
          * @param {object} context Execution context containing values
          *     available to the script
          * @param {string} script
-         * @returns {*} return value of the script, if available
+         * @returns {object} Collected exports
          * @throws {Error} In case of invalid data types or syntax.
+         *
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#script-api
          */
-        run(context, script) {
+        run(...variants) {
 
-            if (typeof context !== "object")
-                throw new TypeError("Invalid context: " + typeof context)
-            if (typeof script !== "string")
-                throw new TypeError("Invalid script: " + typeof script)
+            let {url, context, script} = Arguments.bind(variants, [
+                {context: [Object], script: [String]},
+                {url: [String], context: [Object], script: [String]}
+            ]);
 
-            if (!script.trim())
-                return;
+            const source = url ? "\n\n//# sourceURL=" + url + "\n" : "";
 
-            // To improve performance, cacheable execution wrappers are used.
-            // Unbound wrappers are cached by their ordered context keys.
-            // Values and scripts are passed anew on every invocation.
+            context = Object.assign(Object.create(null), {
+                attempt: _attempt, require: _require, use: _use, expose: _expose
+            }, context)
 
-            const keys = Object.keys(context);
-            const signature = JSON.stringify(keys);
-            let execute = _cache.get(signature);
-            if (!execute)
-                execute = Function(
-                    ...keys,
-                    "_import", "_export", "_use", "_tolerate", "script",
-                    '"use strict"; return eval(script);'
-                );
-
-            _cache.delete(signature);
-            _cache.set(signature, execute);
-
-            return execute(
-                ...Object.values(context),
-                _import, _export, _use, _tolerate, script
-            );
+            const exports = {};
+            _expose_collector_stack.push(exports);
+            try {_execute(context, script + source);
+            } finally {
+                _expose_collector_stack.pop();
+            }
+            return exports;
         },
 
         /**
@@ -275,46 +256,4 @@
                 _cache.delete(_cache.keys().next().value);
         }
     });
-
-    /** Cache (signature/execution wrapper) */
-    const _cache = new Map();
-
-    const _import = (...imports) => {
-        // Because it is an internal method, an additional validation of the
-        // imports as data structure was omitted.
-        imports.forEach(include =>
-            Composer.load(Composer.MODULES + "/" + include + ".js", true));
-    };
-
-    const _export = (...exports) => {
-        // Because it is an internal method, an additional validation of the
-        // exports as data structure was omitted.
-        exports.forEach(parameters => {
-            let context = window;
-            (parameters[2] ? parameters[2].split(/\./) : []).forEach(parameter => {
-                if (typeof context[parameter] === "undefined")
-                    context[parameter] = {};
-                context = context[parameter]
-            });
-
-            const lookup = context[parameters[1]];
-            if (typeof lookup !== "undefined"
-                    && !(lookup instanceof Element)
-                    && !(lookup instanceof HTMLCollection))
-                throw new Error("Context for export is already in use: "
-                    + parameters[1] + (parameters[2] ? "@" + parameters[2] : ""));
-            context[parameters[1]] = parameters[0];
-        });
-    }
-
-    const _use = (...uses) => {
-        uses.forEach(use => Namespace.use(use));
-    }
-
-    const _tolerate = (invocation) => {
-        try {return invocation.call(window);
-        } catch (error) {
-            return undefined;
-        }
-    };
 })();

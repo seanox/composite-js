@@ -5,6 +5,8 @@
     SyntaxError: expected expression, got ':' in :
     SyntaxError: expected expression, got ':' in :
     SyntaxError: expected expression, got ':' in :
+    SyntaxError: expected expression, got end of x-script in n :
+    SyntaxError: expected expression, got end of x-script in n :
     A:1:
     A:2: ReferenceError: Hallo is not defined in Hallo
     A:3: Hallo

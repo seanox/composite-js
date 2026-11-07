@@ -10,12 +10,12 @@ let moduleC = {
     test: "C"
 };
 
-window["moduleF"] = {
+Object.use(window, "moduleF", {
     test: "F"
-};
+});
 
-Namespace.use()["moduleG"] = {
+Object.use(window, "moduleG", {
     test: "G"
-};
+});
 
-Namespace.use("moduleH");
+Object.use(window, "moduleH");

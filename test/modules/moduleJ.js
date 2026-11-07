@@ -1,12 +1,12 @@
 // Modules are loaded only once.
 // Even if an error occurs during the first call.
 // Therefore, second calls must be ignored.
-try {#import nix/nix/nix;
+try {require("nix/nix/nix");
 } catch (error) {
     _error_collector.push(String(error));
 }
 
-try {#import nix/nix/nix;
+try {require("nix/nix/nix");
 } catch (error) {
     _error_collector.push(String(error));
 }
@@ -14,4 +14,4 @@ try {#import nix/nix/nix;
 // Since the resource has already been called, this must run without error here,
 // since the call is now ignored, even if the call was previously responded to
 // with status 404.
-#import nix/nix/nix;
+require("nix/nix/nix");

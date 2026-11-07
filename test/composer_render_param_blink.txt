@@ -5,6 +5,8 @@
     SyntaxError: Unexpected token ':' in :
     SyntaxError: Unexpected token ':' in :
     SyntaxError: Unexpected token ':' in :
+    SyntaxError: Unexpected end of input in n :
+    SyntaxError: Unexpected end of input in n :
     A:1:
     A:2: ReferenceError: Hallo is not defined in Hallo
     A:3: Hallo

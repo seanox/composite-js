@@ -27,8 +27,8 @@
                 Test.start();
         });
 
-        Namespace.use()["tempA"] = 0;
-        Namespace.use()["tempD"] = 0;
+        Object.use(window, "tempA", 0);
+        Object.use(window, "tempD", 0);
     </script>
   </head>
   <body>

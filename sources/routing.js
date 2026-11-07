@@ -196,7 +196,7 @@
                 return namespace.split('.').reduce(function(scope, target) {
                     return scope && scope[target];
                 }, context);
-            })(window, scope) || (Object.exists(scope) ? Object.use(scope) : undefined);
+            })(window, scope) || Object.lookup(scope);
 
             if (object == null
                     || typeof object !== "object"
@@ -237,7 +237,7 @@
          * composite to the current location. If Routing is inactive, the method
          * will be returned undefined.
          * @param {(boolean|Object)} [meta=false] optional true or a metadata
-         *     object to be filled; in both cases, a meta-object with locate
+         *     object to be filled; in both cases, a metadata object with locate
          *     and, if available, an array with data is also returned
          * @returns {string|undefined|Object} the resolved location if Routing
          *     is active; otherwise, returns undefined
@@ -473,10 +473,9 @@
         if (element.hasAttribute(Composer.ATTRIBUTE_CONDITION)) {
             script = element.getAttribute(Composer.ATTRIBUTE_CONDITION).trim();
             if (script.match(Composer.PATTERN_EXPRESSION_CONTAINS))
-                script = script.replace(Composer.PATTERN_EXPRESSION_CONTAINS, (match) => {
-                    match = match.substring(2, match.length -2).trim();
-                    return `{{Routing.approve("${path}", "${composite}") and (${match})}}`;
-                });
+                script = script.replace(Composer.PATTERN_EXPRESSION_INTERPOLATION,
+                    (match, content) =>
+                        `{{Routing.approve("${path}", "${composite}") && (${content.trim()})}}`);
         }
         if (!script)
             script = `{{Routing.approve("${path}", "${composite}")}}`;

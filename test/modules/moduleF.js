@@ -1,2 +1,2 @@
-#import
+require();
 const moduleF = {};

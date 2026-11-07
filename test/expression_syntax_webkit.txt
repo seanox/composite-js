@@ -1,183 +1,81 @@
+    Syntax 01: false
+    Syntax 02: true
+    Syntax 03: true
+    Syntax 04: true
+    Syntax 05: true
+    Syntax 06: true
+    Syntax 07: false
+    Syntax 08: true
+    Syntax 09: false
+    Syntax 10: false
+    Syntax 11: true
+    Syntax 12: true
+    Syntax 13: true
+    Syntax 14: true
+    Syntax 15: true
+    Syntax 16: 5
+    Syntax 17: 1
+    Syntax 18: true
+    Syntax 19: 2
+    Syntax 20: true
+    Syntax 21: true
+    Syntax 22: false
+    Syntax 23: true
+    Syntax 24: true
+    Syntax 25: true
+    Syntax 26: " && || ! ! == === != !== < > <= >= / % "
+    Syntax 27: a:and b
+    Syntax 28: a :and(b)
+    Syntax 29: a :AND b
+    Syntax 30: a :unknown b
+    Syntax 31: a :and b
+    Syntax 32: a && b 3
+    Syntax 33: a && b
+    Syntax 34: true
+    Syntax 35: 3
+    Whitespace: "a  b\tc"
+    Template newline: "a\nb"
+    String newline: "a\r\nb"
+    Syntax 39: ab
+    Syntax 40: ab
+    Syntax 41: 3
+    Syntax 42: 3
+    Syntax 43: 3
+    Syntax 44: 5
+    Syntax 45:
+    Syntax 46: 3
+    Syntax 47: 7
+    Syntax 48: 5
+    Syntax 49: abcdef
+    Syntax 50: abc'd"ef
+    Syntax 51: abc\def\
+    Syntax 52: 6
+    Syntax 53: 3
+    Syntax 54: a :and b
+    Syntax 55: require("module")
+    Syntax 56: use("Example")
 
-    webkit
-    ----
+    Syntax error 01: SyntaxError: Unexpected identifier 'and' in true and false
+    Syntax error 02: SyntaxError: Unexpected keyword 'false' in not false
+    Syntax error 03: SyntaxError: Unexpected string literal '' in empty ''
+    Syntax error 04: SyntaxError: Unexpected token '&&' in && false
+    Syntax error 05: SyntaxError: Unexpected end of script in true &&
+    Syntax error 06: SyntaxError: Unexpected token ':' in 1:and false
+    Syntax error 07: SyntaxError: Unexpected token ':' in 1 : value
+    Syntax error 08: SyntaxError: Unexpected token ':' in 1 :and(false)
+    Syntax error 09: SyntaxError: Unexpected token ':' in :not(false)
+    Syntax error 10: SyntaxError: Unexpected token ':' in 1 :AND false
+    Syntax error 11: SyntaxError: Bare private name can only be used as the left-hand side of an `in` expression. in #HiddenField
+    Syntax error 12: SyntaxError: Invalid character: '#' in #(HiddenField)
+    Syntax error 13: SyntaxError: Invalid character: '#' in #[HiddenField]
+    Syntax error 14: SyntaxError: Unexpected end of script in require(
+    Syntax error 15: SyntaxError: Unexpected end of script in expose(
+    Syntax error 16: SyntaxError: Unexpected end of script in use(
+    Syntax error 17: SyntaxError: Cannot have a newline after 'throw'. in throw
+new Error('failure')
+    Syntax error 18: SyntaxError: Unterminated regular expression literal '/a' in /a
+b/.test('ab')
 
-    mapping:
-    ----
-    and &amp;&amp;        empty !         div /
-    eq  ==        eeq   ===       ge  &gt;=
-    gt  &gt;         le    &lt;=        lt  &lt;
-    mod %         ne    !=        nee !==
-    not !         or    ||
-
-    normal use:
-    ----
-    true true
-    true true
-    true true
-    true true
-
-    true true
-    false false
-    false false
-    false false
-
-    false false
-    false false
-    true true
-    false false
-    true true
-    false false
-
-    false false
-    false false
-    false false
-    false false
-    true true
-    false false
-
-    false false
-    false false
-    true true
-    false false
-    true true
-    false false
-
-    true true
-    true true
-    false false
-    true true
-    false false
-    true true
-
-    true true
-    true true
-    true true
-    true true
-    false false
-    true true
-
-    true true
-    true true
-    true true
-    true true
-    true true
-
-    true true
-    true true
-    true true
-    true true
-
-    invalid word boundaries:
-    ----
-    ReferenceError: Can't find variable: trueandtrue in trueandtrue true
-    ReferenceError: Can't find variable: trueeqtrue in trueeqtrue true
-    SyntaxError: No identifiers allowed directly after numeric literal in 1le2 true
-    SyntaxError: No identifiers allowed directly after numeric literal in 1ne2 true
-
-    true true
-    SyntaxError: No identifiers allowed directly after numeric literal in 2ge1 true
-    SyntaxError: No identifiers allowed directly after numeric literal in 1lt2 true
-    true true
-    SyntaxError: Unexpected string literal 'x' in notempty'x' true
-
-    SyntaxError: No identifiers allowed directly after numeric literal in (25div5)eq5 SyntaxError: Unexpected identifier 'eq5' in (25 /5)eq5
-    SyntaxError: No identifiers allowed directly after numeric literal in 2gt1 true
-    SyntaxError: No identifiers allowed directly after numeric literal in (10mod3)eq1 SyntaxError: Unexpected identifier 'eq1' in (10%3)eq1
-    ReferenceError: Can't find variable: trueorfalse in trueorfalse true
-
-    lower / upper case:
-    ----
-SyntaxError: Unexpected identifier 'AND' in true AND true true
-    SyntaxError: Unexpected identifier 'EQ' in true EQ true true
-    SyntaxError: Unexpected identifier 'LE' in 1 LE 2 true
-    SyntaxError: Unexpected identifier 'NE' in 1 NE 2 true
-
-    SyntaxError: Unexpected string literal '' in EMPTY '' true
-    SyntaxError: Unexpected identifier 'GE' in 2 GE 1 true
-    SyntaxError: Unexpected identifier 'LT' in 1 LT 2 true
-    SyntaxError: Unexpected string literal '' in NOT '' true
-    SyntaxError: Unexpected identifier 'EMPTY' in NOT EMPTY 'x' true
-
-    SyntaxError: Unexpected identifier 'DIV'. Expected ')' to end a compound expression. in (25 DIV 5) EQ 5 true
-    SyntaxError: Unexpected identifier 'GT' in 2 GT 1 true
-    SyntaxError: Unexpected identifier 'MOD'. Expected ')' to end a compound expression. in (10 MOD 3) EQ 1 true
-    SyntaxError: Unexpected identifier 'OR' in true OR false true
-
-    various
-    ----
-    -1
-    1
-    -12
-
-    ReferenceError: Can't find variable: unknown in unknown
-    ReferenceError: Can't find variable: unknown in unknown + '123'
-
-    A1: ReferenceError: Can't find variable: Peter in Peter
-    A2: ReferenceError: Can't find variable: Peter in Peter.und.der.Wolf
-    A3: ReferenceError: Can't find variable: Peter in Peter.und.der()
-
-    B1: [object HTMLInputElement]
-    B2: TypeError: document.getElementById("HiddenField").value is not a function. (In 'document.getElementById("HiddenField").value()', 'document.getElementById("HiddenField").value' is "Test-HF") in document.getElementById("HiddenField").value()
-    B3: Test-HF
-
-    C1: SyntaxError: Bare private name can only be used as the left-hand side of an `in` expression. in #document.getElementById("HiddenField")
-    C2: SyntaxError: Bare private name can only be used as the left-hand side of an `in` expression. in #document.getElementById("HiddenField").value()
-    C3: SyntaxError: Bare private name can only be used as the left-hand side of an `in` expression. in #document.getElementById("HiddenField").value()
-
-    D1:
-
-    E1: SyntaxError: ~~~Error_1~: '#' in #
-    E2: SyntaxError: ~~~Error_1~: '#' in # + #
-
-    F1: TypeError: document.getElementById("HiddenField").value is not a function. (In 'document.getElementById("HiddenField").value()', 'document.getElementById("HiddenField").value' is "Test-HF") in '123' + document.getElementById("HiddenField").value() + 'abc'
-    F2: 123Test-HFabc
-
-    G1: [object HTMLInputElement]
-    G2: TypeError: undefined is not an object (evaluating 'document.getElementById("HiddenField_1").document.getElementById') in document.getElementById("HiddenField_1").document.getElementById("HiddenField_1")
-    G3: TypeError: undefined is not an object (evaluating 'document.getElementById("HiddenField_1").document.getElementById') in document.getElementById("HiddenField_1").document.getElementById("HiddenField_2")
-    G4: SyntaxError: Unexpected identifier 'document' in document.getElementById("HiddenField_1") document.getElementById("HiddenField_2")
-    G5: SyntaxError: Unexpected identifier 'document' in document.getElementById("HiddenField_1")document.getElementById("HiddenField_2")
-
-    X0: <input type="hidden" id="HiddenField" value="Test-HF">
-    X1: <input type="hidden" id="HiddenField_1" value="Test-HF_A">
-    X2: <input type="hidden" id="HiddenField_2" value="Test-HF_B">
-    X3: <input type="hidden" id="HiddenField_3" value="Test-HF_C">
-
-    O1: <span>undefined</span>
-    O2: <span>xa() {
-                return 122;
-            }</span>
-    O3: <span>122</span>
-    O4: <span>xxxx</span>
-    O5: <span>xxxx</span>
-    O6: <span>xxxxx</span>
-    O7: <span><i>Hallo</i></span>
-
-    P1: abcdef #
-    P2: abcdef #
-
-    Q1: abcdef
-    Q2: abcdef
-    Q3: abcdef
-    Q4: abcdef
-    Q5: abc' + 'def
-    Q6: abc" + "def
-
-    QA: abc\def\
-    QB: abc\def\
-    QC: abc\def\
-    QD: abc\def\
-    QE: abc\' + 'def\
-    QF: abc\" + "def\
-
-    R1: abc'd'ef
-    R2: abc"d"ef
-    R3: abc'd"ef
-    R4: abc'd"ef
-    R5: abc'd'ef
-    R6: abc"d"ef
-    R7: abc'd"ef
-    R8: abc'd"ef
-
-    S1: <span>6</span>
+    Hidden field identity: true
+    Hidden field value: Test-HF
+    Missing field: true

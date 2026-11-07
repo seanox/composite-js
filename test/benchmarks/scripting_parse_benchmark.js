@@ -1,11 +1,11 @@
 (()=> {
 
-// Imports the connector with the #import macro. Since the connector in turn
-// uses the #export macro, it can then be used in the global scope.
-#import benchmark/connector;
+// Includes the connector with require. Since the connector in turn
+// exposes its values with expose, they can then be used in the global scope.
+require("benchmark/connector");
 
 // Imports the mock-up tools with which the application behaves more realistic
-#import benchmark/mockup;
+require("benchmark/mockup");
 
 const API_HOST_URL = window.location.contextPath + "/api/" + DataSource.locale;
 const API_LIST_MARKET_URL = API_HOST_URL + "/listMarket";
@@ -32,7 +32,10 @@ const FUNCTION_PREVIEW_EMAIL = 2;
 const FUNCTION_RECIPIENTS = 3;
 const FUNCTION_PUBLISH = 4;
 
-#export FUNCTION_PREVIEW_YOU FUNCTION_PREVIEW_EMAIL FUNCTION_RECIPIENTS FUNCTION_PUBLISH;
+(expose(FUNCTION_PREVIEW_YOU, "FUNCTION_PREVIEW_YOU"),
+    expose(FUNCTION_PREVIEW_EMAIL, "FUNCTION_PREVIEW_EMAIL"),
+    expose(FUNCTION_RECIPIENTS, "FUNCTION_RECIPIENTS"),
+    expose(FUNCTION_PUBLISH, "FUNCTION_PUBLISH"));
 
 const news = Reactive({
     market: {
@@ -233,18 +236,15 @@ const news = Reactive({
 });
 
 // Object news was declared as const in the current scope. To make it globally
-// usable, it is made public with the #export macro.
-#export news;
+// usable, it is made public with expose.
+expose(news, "news");
 
-// Test of invalid macros #import !!!
-console.log("#import !!!");
-console.log('#import !!!');
-console.log(`#import !!!`);
-/* #import !!! */
+// API call text in literals and comments is not executed.
+console.log("require('!!!');");
+console.log('require("!!!");');
+console.log(`require("!!!");`);
 
-// Test of invalid macros #export !!!
-console.log("#export !!!");
-console.log('#export !!!');
-console.log(`#export !!!`);
-/* #export !!! */
+console.log("expose(value, '!!!');");
+console.log('expose(value, "!!!");');
+console.log(`expose(value, "!!!");`);
 });

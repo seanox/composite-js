@@ -88,7 +88,6 @@
             Assert.assertEquals("#httpx://local/#x#y#z#httpx://local/#a#b#c#f", Path.normalize("httpx://local/#x#y#z", "httpx://local/#a#b#c#d#e###f"));
             Assert.assertEquals("#httpx://local/#x#y#f", Path.normalize("httpx://local/#x#y#z", "httpx://local/###f"));
             Assert.assertEquals("#httpx://local#x#f", Path.normalize("httpx://local#x#y#z", "httpx://local####f"));
-            Assert.assertEquals("#httpx://local#x#f", Path.normalize("httpx://local#x#y#z", "httpx://local####f"));
             Assert.assertEquals("#httpx://local#f", Path.normalize("httpx://local#x#y#z", "httpx://local#####f"));
             Assert.assertEquals("#f", Path.normalize("httpx://local#x#y#z", "httpx://local######f"));
         }});

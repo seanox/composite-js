@@ -125,7 +125,7 @@
              * If the script is in a frame, the parent object is triggered after
              * the current object.
              * @param {string} event  see Test.EVENT_***
-             * @param {Object} status meta-object with information about the
+             * @param {Object} status metadata object with information about the
              *     test execution
              */
             fire(event, status) {
@@ -219,10 +219,10 @@
 
             /**
              * Starts the test run. The execution of the tests can optionally be
-             * configured with the start by passing a meta-object. The
-             * parameters in the meta-object are optional and cannot be changed
-             * when the test are running. Only with the next start can new
-             * parameters be passed as meta-objects.
+             * configured with the start by passing a metadata object. The
+             * parameters in the metadata object are optional and cannot be
+             * changed when the test are running. Only with the next start can
+             * new parameters be passed as metadata objects.
              *
              *     structure of meta: {auto:..., output:..., monitor:...}
              *

@@ -10,7 +10,6 @@
       }
     </style>
     <script src="composite-js-testing.js"></script>
-    <script src="expression.js"></script>
     <script type="text/javascript">
     
         Test.activate();
@@ -96,9 +95,9 @@
     
     Mix 01: {{'Literal 01' + TestModel_1.method_1()}}
     
-    Condition 01: {{1 gt 2}}
-    Condition 01: {{not (1 gt 2)}}
-    Condition 01: {{1 not gt 2}}
+    Condition 01: {{1 :gt 2}}
+    Condition 01: {{:not (1 :gt 2)}}
+    Condition 01: {{1 :not :gt 2}}
     Condition 01: {{typeof 2}}
     
     {{}}

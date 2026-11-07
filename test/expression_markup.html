@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script>
+
+      Test.activate();
+
+      const markupModel = {value:7, and:true, text:"a :and b"};
+
+      const value = 7;
+
+      const markupCases = [
+          ["{{value}} afterwards }}", "7 afterwards }}"],
+          ['"{{value}}"', '"7"'],
+          ["'{{value}}'", "'7'"],
+          ["{{'text'}}", "text"],
+          ["before {{value}} after", "before 7 after"],
+          ["{{value}} / {{value + 1}}", "7 / 8"],
+          ["{{1}}{{2}}", "12"],
+          ["{{0}}{{2}}", "02"],
+          ["{{false}}{{false}}", "falsefalse"],
+          ["{{null}}{{1}}", "null1"],
+          ["{{undefined}}{{1}}", "undefined1"],
+          ["{{undefined}} after", "undefined after"],
+          [String.raw`\{{123}}{{value}}{{value + 1}}`, "\\12378"],
+          [String.raw`\\{{value}}{{value + 1}}`, String.raw`\\78`],
+          ["{{}}", undefined],
+          ["{{ }}", undefined],
+          ["a{{}}b", "ab"],
+          [String.raw`\{{}}\\{{ }}`, "\\".repeat(3)],
+          ["{{", "{{"],
+          ["{{value", "{{value"],
+          ["}}", "}}"],
+          ["}} {{value", "}} {{value"],
+          ["text {{value}} {{", "text 7 {{"],
+          ["{{value}} {{value", "7 {{value"],
+          ["a :and b", "a :and b"],
+          ["a :and b {{value}}", "a :and b 7"],
+          ["{{value}} a :or b", "7 a :or b"],
+          ["a :not b {{:not false}}", "a :not b true"],
+          ["{{:not false}} after", "true after"],
+          ["before {{:empty ''}}", "before true"],
+          ["{{'a :and b'}} after", "a && b after"],
+          ["{{let number = 2; number + 3}}", 5],
+          ["before {{let number = 2; number + 3}} after", "before 5 after"],
+          ["{{value // comment}} after", "7 after"],
+          ["{{const amount = 2; // Number of items\namount * 3}}", 6],
+          ["before {{const amount = 2; // Number of items\r\namount * 3}} after",
+              "before 6 after"],
+          ["{{let number = 2\nnumber + 3}}", 5],
+          ["{{`line\nbreak`}}", "line\nbreak"],
+          ["{{true :and false}}", false],
+          ["{{false :or true}}", true],
+          ["{{:not false}}", true],
+          ["{{:not :empty 'x'}}", true],
+          ["{{:empty ''}}", true],
+          ["{{:empty []}}", false],
+          ["{{1 :eq '1'}}", true],
+          ["{{1 :eeq '1'}}", false],
+          ["{{1 :ne '1'}}", false],
+          ["{{1 :nee '1'}}", true],
+          ["{{1 :lt 2}}", true],
+          ["{{2 :le 2}}", true],
+          ["{{2 :gt 1}}", true],
+          ["{{2 :ge 2}}", true],
+          ["{{25 :div 5}}", 5],
+          ["{{10 :mod 3}}", 1],
+          ["{{(25 :div 5) :eq 5}}", true],
+          ["{{true\t:and\ttrue}}", true],
+          ["{{true\n:and\rtrue}}", true],
+          ["{{' :and :or :not :empty :eq :eeq :ne :nee :lt :gt :le :ge :div :mod '}}",
+              " && || ! ! == === != !== < > <= >= / % "],
+          ["{{'a:and b'}}", "a:and b"],
+          ["{{'a :and(b)'}}", "a :and(b)"],
+          ["{{'a :AND b'}}", "a :AND b"],
+          ["{{'a :unknown b'}}", "a :unknown b"],
+          [String.raw`{{'a \u003aand b'}}`, "a :and b"],
+          ["{{`a :and b ${1 + 2}`}}", "a && b 3"],
+          ["{{/a :and b/.source}}", "a && b"],
+          ["{{/['\"`]/.test('x') :or true}}", true],
+          ["{{1 /* :and ' \" ` */ + 2}}", 3],
+          ["{{markupModel.text}}", "a :and b"],
+          [String.raw`\{{123}} / {{value}}`, "\\123 / 7"],
+          [String.raw`{{ "\}\}" + "\{\{" }}`, "}}{{"],
+          [String.raw`{{ "\{\{" }}`, "{{"],
+          [String.raw`{{'\{\{'}}`, "{{"],
+          [String.raw`{{"a \}\} b \{\{"}}`, "a }} b {{"],
+          ["{{({outer: {value: 3} }).outer.value}}", 3],
+          ["{{value /* { { */}}", 7],
+          ["{{value // }}", 7],
+          ["a\r\nb {{value}}", "a\nb 7"]
+      ];
+
+      for (let count = 0; count <= 8; count++) {
+          const prefix = "\\".repeat(count);
+          markupCases.push([prefix + "{{value}}", count === 0 ? 7 : prefix + "7"]);
+      }
+
+      for (const [index, [source, expected]] of markupCases.entries())
+          Test.create({test() {
+              Assert.assertEquals(source, String(expected),
+                  document.getElementById("markup-case-" + index).textContent);
+          }});
+
+      for (let count = 1; count <= 8; count++)
+          Test.create({test() {
+              const source = "{{value // " + "\\".repeat(count) + "}} afterwards }}";
+              const match = new RegExp(Composer.PATTERN_EXPRESSION_INTERPOLATION).exec(source);
+              Assert.assertEquals("{{value // " + "\\".repeat(count) + "}}", match[0]);
+              Assert.assertEquals(7, Expression.eval({value:7}, match[0]).result);
+          }});
+
+      for (const source of [
+          "{{", "{{value", "text {{value", "}}", "}} {{value"
+      ])
+          Test.create({test() {
+              Assert.assertNull(source.match(Composer.PATTERN_EXPRESSION_INTERPOLATION));
+              Assert.assertNull(source.match(Composer.PATTERN_EXPRESSION_VALUE));
+          }});
+
+      for (const source of [
+          String.raw`\{{{value}}`, "{{value {{value}}", String.raw`{{value \}}`,
+          String.raw`{{value /* \}} */}}`, String.raw`{{value /* \\\}} */}}`,
+          String.raw`{{"\}}"}}`
+      ])
+          Test.create({test() {
+              const errors = [];
+              const original = console.error;
+              let result;
+              console.error = error => errors.push(error);
+              try {
+                  const match = new RegExp(Composer.PATTERN_EXPRESSION_INTERPOLATION).exec(source);
+                  result = Expression.eval({value:7}, match[0]);
+              } finally {
+                  console.error = original;
+              }
+              Assert.assertEquals("variable,result", Object.keys(result).join(","));
+              Assert.assertEquals(undefined, result.variable);
+              Assert.assertTrue(source, result.result instanceof SyntaxError);
+              Assert.assertEquals(1, errors.length);
+          }});
+
+      Test.create({test() {
+          for (const source of ["{{value: and}}", "{{value: 1}}",
+              "{{value: !false}}", String.raw`{{value: '\}\}'}}`])
+              Assert.assertEquals("value", Expression.eval({}, source).variable);
+          Assert.assertNull("{{true}} afterwards }}".match(
+              Composer.PATTERN_EXPRESSION_VALUE));
+          Assert.assertNull("{{true}}{{false}}".match(
+              Composer.PATTERN_EXPRESSION_VALUE));
+          Assert.assertEquals(true,
+              Boolean("{{true}}".match(Composer.PATTERN_EXPRESSION_VALUE)));
+          Assert.assertNull("{{value: true}}".match(
+              Composer.PATTERN_EXPRESSION_VALUE));
+          Assert.assertEquals(true, Boolean("{{value: true}}".match(
+              Composer.PATTERN_EXPRESSION_DECLARATION)));
+          Assert.assertNull("{{true}}".match(Composer.PATTERN_EXPRESSION_DECLARATION));
+      }});
+
+      for (const whitespace of ["", " ", "\t", "\n", "\r\n", " \t\r\n "])
+          Test.create({test() {
+              for (const name of ["value", "_value", "_1", "_"]) {
+                  const source = "{{" + whitespace + name + ": true}}";
+                  Assert.assertNull(source.match(Composer.PATTERN_EXPRESSION_VALUE));
+                  Assert.assertEquals(name,
+                      source.match(Composer.PATTERN_EXPRESSION_DECLARATION)[1]);
+              }
+              for (const value of ["true", "value :and true", ":not false"])
+                  Assert.assertTrue(Boolean(("{{" + whitespace + value + "}}").match(
+                      Composer.PATTERN_EXPRESSION_VALUE)));
+          }});
+
+      Test.create({test() {
+          const element = document.createElement("div");
+          element.innerHTML = ["", " ", "\t", "\n", "\r\n", " \t\r\n "]
+              .map(whitespace => {
+                  const source = "{{" + whitespace + "value: true}}";
+                  return '<span class="condition" condition="' + source + '">visible</span>'
+                      + '<span class="attribute" title="' + source
+                      + '" data-mixed="before ' + source + ' after"></span>';
+              }).join("");
+          const errors = [];
+          const original = console.error;
+          console.error = error => errors.push(String(error));
+          const cleanup = () => {
+              console.error = original;
+              element.remove();
+          };
+          return new Promise(resolve => {
+              document.body.appendChild(element);
+              window.setTimeout(resolve, 0);
+          }).then(() => {
+              element.querySelectorAll(".condition").forEach(node =>
+                  Assert.assertEquals("Invalid expression", node.textContent));
+              element.querySelectorAll(".attribute").forEach(node => {
+                  Assert.assertEquals("Error: Unsupported expression type", node.title);
+                  Assert.assertEquals("before Error: Unsupported expression type after",
+                      node.getAttribute("data-mixed"));
+              });
+              Assert.assertEquals(6, errors.length);
+              Assert.assertTrue(errors.every(error =>
+                  error.startsWith("Error: Invalid condition:")));
+          }).then(cleanup, error => {
+              cleanup();
+              throw error;
+          });
+      }});
+
+      Test.create({test() {
+          const context = {object:{value:7}};
+          Assert.assertEquals(context.object,
+              Expression.eval(context, "{{object}}").result);
+          Assert.assertEquals(true, Expression.eval({}, "{{true}}").result);
+          Assert.assertNull(Expression.eval({}, "{{null}}").result);
+      }});
+
+      Test.create({test() {
+          const original = Scripting.eval;
+          const context = {};
+          let calls = 0;
+          Scripting.eval = function(actualContext, script) {
+              calls++;
+              Assert.assertSame(Scripting, this);
+              Assert.assertSame(context, actualContext);
+              Assert.assertEquals("1 + 2", script);
+              return 3;
+          };
+          try {
+              Assert.assertEquals(3, Expression.eval(context, "{{1 + 2}}").result);
+              Assert.assertEquals(1, calls);
+          } finally {
+              Scripting.eval = original;
+          }
+      }});
+
+      Test.create({test() {
+          const element = document.createElement("div");
+          element.innerHTML = "{{multilineValue: const amount = 2; // Number of items\n"
+              + "amount * 3}}"
+              + '<span class="value">{{ // Current value\nmultilineValue}}</span>'
+              + '<span class="condition" condition="{{ // Check value\n'
+              + 'multilineValue :eq 6}}">visible</span>'
+              + '<span class="iterate" iterate="{{multilineEntry: // Values\n'
+              + '[multilineValue]}}">{{ // Current item\nmultilineEntry.item}}</span>';
+          element.setAttribute("title", "before {{ // Label\n6}} after");
+          const cleanup = () => element.remove();
+          return new Promise(resolve => {
+              document.body.appendChild(element);
+              window.setTimeout(resolve, 0);
+          }).then(() => {
+              Assert.assertEquals("before 6 after", element.title);
+              Assert.assertEquals("6", element.querySelector(".value").textContent);
+              Assert.assertEquals("visible", element.querySelector(".condition").textContent);
+              Assert.assertEquals("6", element.querySelector(".iterate").textContent);
+          }).then(cleanup, error => {
+              cleanup();
+              throw error;
+          });
+      }});
+
+      Test.create({test() {
+          const element = document.createElement("div");
+          element.setAttribute("title", "before {{1\n+ 1}} / {{3}} after");
+          element.innerHTML = "{{tupleScoped: 5}}"
+              + '<span class="value">{{tupleScoped}}</span>'
+              + '<span class="temporary" title="{{tupleScoped = 8}}{{tupleScoped}}"></span>'
+              + '<span class="interpolation" title="{{1}}{{2}} items"></span>'
+              + '<span class="iterate" iterate="{{tupleItem: [tupleScoped]}}">'
+              + "{{tupleItem.item}}</span>";
+          const calls = [];
+          const original = Expression.eval;
+          Expression.eval = function(...variants) {
+              calls.push(variants[variants.length -1]);
+              return original.apply(this, variants);
+          };
+          const cleanup = () => {
+              Expression.eval = original;
+              element.remove();
+          };
+          return new Promise(resolve => {
+              document.body.appendChild(element);
+              window.setTimeout(resolve, 0);
+          }).then(() => {
+              Assert.assertEquals("before 2 / 3 after", element.title);
+              Assert.assertEquals("5", element.querySelector(".value").textContent);
+              Assert.assertEquals("85", element.querySelector(".temporary").title);
+              Assert.assertEquals("12 items", element.querySelector(".interpolation").title);
+              Assert.assertEquals("5", element.querySelector(".iterate").textContent);
+              for (const source of ["{{1\n+ 1}}", "{{3}}", "{{tupleScoped: 5}}",
+                  "{{tupleItem: [tupleScoped]}}"])
+                  Assert.assertTrue(source, calls.includes(source));
+              Assert.assertFalse(calls.some(source => source.includes('"before "')));
+          }).then(cleanup, error => {
+              cleanup();
+              throw error;
+          });
+      }});
+
+      Test.create({test() {
+          const element = document.createElement("div");
+          element.innerHTML = '<span id="{{\'textOnly\'}}" data-native="{{void 0}}"></span>'
+              + '<span id="empty{{}}" title="{{false}}"></span>'
+              + '<span id="text{{42}}" title="{{null}}"></span>'
+              + '<span interval="{{333}}"></span>'
+              + '<span interval="222"></span>'
+              + '<span interval="{{33}}3"></span>';
+          const delays = [];
+          const original = window.setInterval;
+          window.setInterval = function(...variants) {
+              delays.push(variants[1]);
+              return original.apply(this, variants);
+          };
+          const cleanup = () => {
+              window.setInterval = original;
+              element.remove();
+          };
+          return new Promise(resolve => {
+              document.body.appendChild(element);
+              Composer.render(element);
+              window.setTimeout(resolve, 0);
+          }).then(() => {
+              const elements = element.querySelectorAll("span");
+              Assert.assertEquals("textOnly", elements[0].id);
+              Assert.assertFalse(elements[0].hasAttribute("data-native"));
+              Assert.assertEquals("empty", elements[1].id);
+              Assert.assertEquals("false", elements[1].title);
+              Assert.assertEquals("text42", elements[2].id);
+              Assert.assertEquals("null", elements[2].title);
+              Assert.assertEquals("333,222,333", delays.join(","));
+          }).then(cleanup, error => {
+              cleanup();
+              throw error;
+          });
+      }});
+
+      Test.create({test() {
+          const element = document.createElement("span");
+          const errors = [];
+          const original = console.error;
+          markupModel.error = new Error("ordinary result");
+          markupModel.fail = () => {throw new Error("mixed failure");};
+          markupModel.after = () => "after";
+          element.setAttribute("title", "{{markupModel.error}} / {{markupModel.after()}}");
+          element.setAttribute("data-failure",
+              "before {{markupModel.fail()}} / {{markupModel.after()}}");
+          element.setAttribute("data-symbol", "{{Symbol('value')}} suffix");
+          console.error = error => errors.push(String(error));
+          const cleanup = () => {
+              console.error = original;
+              element.remove();
+              delete markupModel.error;
+              delete markupModel.fail;
+              delete markupModel.after;
+          };
+          return new Promise(resolve => {
+              document.body.appendChild(element);
+              window.setTimeout(resolve, 0);
+          }).then(() => {
+              Assert.assertEquals("Error: ordinary result / after", element.title);
+              Assert.assertEquals("before Error: mixed failure in markupModel.fail() / after",
+                  element.getAttribute("data-failure"));
+              Assert.assertEquals("{{Symbol('value')}} suffix",
+                  element.getAttribute("data-symbol"));
+              Assert.assertTrue(element.textContent.startsWith("TypeError:"));
+              Assert.assertTrue(errors.some(error => error.includes("mixed failure")));
+              Assert.assertTrue(errors.some(error => error.startsWith("TypeError:")));
+          }).then(cleanup, error => {
+              cleanup();
+              throw error;
+          });
+      }});
+
+      Test.create({test() {
+          const element = document.createElement("span");
+          const trace = [];
+          markupModel.trace = number => {
+              trace.push("eval" + number);
+              return {valueOf() {
+                  trace.push("coerce" + number);
+                  return number;
+              }};
+          };
+          element.setAttribute("title", "{{markupModel.trace(1)}}"
+              + "{{markupModel.trace(2)}}{{markupModel.trace(3)}}");
+          const cleanup = () => {
+              element.remove();
+              delete markupModel.trace;
+          };
+          return new Promise(resolve => {
+              document.body.appendChild(element);
+              window.setTimeout(resolve, 0);
+          }).then(() => {
+              Assert.assertEquals("[object Object][object Object][object Object]",
+                  element.title);
+              Assert.assertEquals("eval1,eval2,eval3",
+                  trace.join(","));
+          }).then(cleanup, error => {
+              cleanup();
+              throw error;
+          });
+      }});
+
+      Test.create({test() {
+          const content = document.body.innerHTML
+                  .replaceAll("<script>", "<!--script")
+                  .replaceAll("<\/script>", "script-->");
+          try {Assert.assertSameTo("script[type='text/test']", content);
+          } catch (error) {
+              console.log(content);
+              throw error;
+          }
+      }});
+
+      Test.start({auto:true});
+    </script>
+    <script type="text/test">
+      <span id="quotes">
+        "7"
+        / '7'
+        / 7 afterwards }}
+      </span>
+      <span id="escapes">\123 / 7 / \\7</span>
+      <span id="adjacent">12\1233\\45</span>
+      <span id="empty-prefix">\\\7</span>
+      <span id="fragment-open">{{markupModel.value</span>
+      <span id="fragment-close">}}</span>
+      <span id="fragment-mixed">7 / {{unfinished</span>
+      <span id="escaped-body">}}{{</span>
+
+      <span id="escaped-declaration">a }} b {{</span>
+      <span id="alias">true</span>
+
+      <span id="declared">true</span>
+
+      <span id="declared-unary">true</span>
+      <span id="condition">visible</span>
+      <span id="escaped-condition">visible</span>
+      <div id="iteration">
+        <span>}} / a / </span>
+      </div>
+      <span id="attribute" title="a :and b" data-alias="a &amp;&amp; b" data-backslashes="\7" data-fragment="{{markupModel.value"></span>
+      <!--script
+        for (const [index, [source]] of markupCases.entries()) {
+            const element = document.createElement("span");
+            element.id = "markup-case-" + index;
+            element.setAttribute("output", source);
+            document.body.appendChild(element);
+            document.body.appendChild(document.createTextNode("\n"));
+        }
+      script--><span id="markup-case-0">7 afterwards }}</span>
+      <span id="markup-case-1">"7"</span>
+      <span id="markup-case-2">'7'</span>
+      <span id="markup-case-3">text</span>
+      <span id="markup-case-4">before 7 after</span>
+      <span id="markup-case-5">7 / 8</span>
+      <span id="markup-case-6">12</span>
+      <span id="markup-case-7">02</span>
+      <span id="markup-case-8">falsefalse</span>
+      <span id="markup-case-9">null1</span>
+      <span id="markup-case-10">undefined1</span>
+      <span id="markup-case-11">undefined after</span>
+      <span id="markup-case-12">\12378</span>
+      <span id="markup-case-13">\\78</span>
+      <span id="markup-case-14">undefined</span>
+      <span id="markup-case-15">undefined</span>
+      <span id="markup-case-16">ab</span>
+      <span id="markup-case-17">\\\</span>
+      <span id="markup-case-18">{{</span>
+      <span id="markup-case-19">{{value</span>
+      <span id="markup-case-20">}}</span>
+      <span id="markup-case-21">}} {{value</span>
+      <span id="markup-case-22">text 7 {{</span>
+      <span id="markup-case-23">7 {{value</span>
+      <span id="markup-case-24">a :and b</span>
+      <span id="markup-case-25">a :and b 7</span>
+      <span id="markup-case-26">7 a :or b</span>
+      <span id="markup-case-27">a :not b true</span>
+      <span id="markup-case-28">true after</span>
+      <span id="markup-case-29">before true</span>
+      <span id="markup-case-30">a &amp;&amp; b after</span>
+      <span id="markup-case-31">5</span>
+      <span id="markup-case-32">before 5 after</span>
+      <span id="markup-case-33">7 after</span>
+      <span id="markup-case-34">6</span>
+      <span id="markup-case-35">before 6 after</span>
+      <span id="markup-case-36">5</span>
+      <span id="markup-case-37">line
+      break</span>
+      <span id="markup-case-38">false</span>
+      <span id="markup-case-39">true</span>
+      <span id="markup-case-40">true</span>
+      <span id="markup-case-41">true</span>
+      <span id="markup-case-42">true</span>
+      <span id="markup-case-43">false</span>
+      <span id="markup-case-44">true</span>
+      <span id="markup-case-45">false</span>
+      <span id="markup-case-46">false</span>
+      <span id="markup-case-47">true</span>
+      <span id="markup-case-48">true</span>
+      <span id="markup-case-49">true</span>
+      <span id="markup-case-50">true</span>
+      <span id="markup-case-51">true</span>
+      <span id="markup-case-52">5</span>
+      <span id="markup-case-53">1</span>
+      <span id="markup-case-54">true</span>
+      <span id="markup-case-55">true</span>
+      <span id="markup-case-56">true</span>
+      <span id="markup-case-57"> &amp;&amp; || ! ! == === != !== &lt; &gt; &lt;= &gt;= / % </span>
+      <span id="markup-case-58">a:and b</span>
+      <span id="markup-case-59">a :and(b)</span>
+      <span id="markup-case-60">a :AND b</span>
+      <span id="markup-case-61">a :unknown b</span>
+      <span id="markup-case-62">a :and b</span>
+      <span id="markup-case-63">a &amp;&amp; b 3</span>
+      <span id="markup-case-64">a &amp;&amp; b</span>
+      <span id="markup-case-65">true</span>
+      <span id="markup-case-66">3</span>
+      <span id="markup-case-67">a :and b</span>
+      <span id="markup-case-68">\123 / 7</span>
+      <span id="markup-case-69">}}{{</span>
+      <span id="markup-case-70">{{</span>
+      <span id="markup-case-71">{{</span>
+      <span id="markup-case-72">a }} b {{</span>
+      <span id="markup-case-73">3</span>
+      <span id="markup-case-74">7</span>
+      <span id="markup-case-75">7</span>
+      <span id="markup-case-76">a
+      b 7</span>
+      <span id="markup-case-77">7</span>
+      <span id="markup-case-78">\7</span>
+      <span id="markup-case-79">\\7</span>
+      <span id="markup-case-80">\\\7</span>
+      <span id="markup-case-81">\\\\7</span>
+      <span id="markup-case-82">\\\\\7</span>
+      <span id="markup-case-83">\\\\\\7</span>
+      <span id="markup-case-84">\\\\\\\7</span>
+      <span id="markup-case-85">\\\\\\\\7</span>
+    </script>
+  </head>
+  <body>
+    <span id="quotes">
+      "{{markupModel.value}}"
+      / '{{markupModel.value}}'
+      / {{markupModel.value}} afterwards }}
+    </span>
+    <span id="escapes">\{{123}} / {{markupModel.value}} / \\{{markupModel.value}}</span>
+    <span id="adjacent">{{1}}{{2}}\{{123}}{{3}}\\{{4}}{{5}}</span>
+    <span id="empty-prefix">\{{}}\\{{ }}{{}}{{markupModel.value}}</span>
+    <span id="fragment-open">{{markupModel.value</span>
+    <span id="fragment-close">}}</span>
+    <span id="fragment-mixed">{{markupModel.value}} / {{unfinished</span>
+    <span id="escaped-body">{{ "\}\}" + "\{\{" }}</span>
+    {{markupEscaped: "a \}\} b \{\{"}}
+    <span id="escaped-declaration">{{markupEscaped}}</span>
+    <span id="alias">{{markupModel.and :and true}}</span>
+    {{markupResult: markupModel.and :and true}}
+    <span id="declared">{{markupResult}}</span>
+    {{markupNegated: :not false}}
+    <span id="declared-unary">{{markupNegated}}</span>
+    <span id="condition" condition="{{markupModel.and :and true}}">visible</span>
+    <span id="escaped-condition" condition="{{ '\}\}' :eeq '\}\}' }}">visible</span>
+    <div id="iteration">
+      <span iterate="{{entry: markupModel.and :and ['\}\}', 'a']}}">{{entry.item}} / </span>
+    </div>
+    <span id="attribute" title="a :and b"
+        data-alias="{{'a :and b'}}"
+        data-backslashes="\{{markupModel.value}}"
+        data-fragment="{{markupModel.value"></span>
+    <script>
+      for (const [index, [source]] of markupCases.entries()) {
+          const element = document.createElement("span");
+          element.id = "markup-case-" + index;
+          element.setAttribute("output", source);
+          document.body.appendChild(element);
+          document.body.appendChild(document.createTextNode("\n"));
+      }
+    </script>
+  </body>
+</html>

@@ -56,14 +56,14 @@
     {{n: }}
     {{n}}
   
-    A:1: {{(? scopeA) || ''}}
+    A:1: {{attempt(() => scopeA) || ''}}
     {{scopeA:Hallo}}
     A:2: {{scopeA}}
     {{scopeA:'Hallo'}}
     A:3: {{scopeA}}
     <article id="AB">
       AA:1: {{scopeA}}
-      AB:1: {{(? scopeAB) || ''}}
+      AB:1: {{attempt(() => scopeAB) || ''}}
       {{scopeAB:Hallo}}
       AA:2: {{scopeA}}
       AB:2: {{scopeAB}}
@@ -80,11 +80,11 @@
       AA:5: {{scopeA}}
       AB:5: {{scopeAB}}
     </article>
-    {{x : '1'}}
+    {{x: '1'}}
     X: {{x}}
-    {{x : '2'}}
+    {{x: '2'}}
     X: {{x}}
-    {{x :'1'}}
+    {{x: '1'}}
     X: {{x}}
     
     {{x:1}}

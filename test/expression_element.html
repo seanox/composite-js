@@ -11,7 +11,6 @@
     </style>
     <script src="composite-js-testing.js"></script>
     <script src="scripts/capture.js"></script>
-    <script src="expression.js"></script>
     <script type="text/javascript">
     
         Test.activate();
@@ -51,9 +50,9 @@
     </script>
   </head>
   <body>
-    A1-O: {{#InputTextA.value}}
+    A1-O: {{InputTextA.value}}
     A1-I: <input type="text" id="InputTextA" value="A1" autocomplete="off"
               events="input keydown keyup" render="body"/>
-    A1-O: {{#InputTextA.value}}
+    A1-O: {{InputTextA.value}}
   </body>
 </html>

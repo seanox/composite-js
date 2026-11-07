@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre-wrap;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        Test.create({test() {
+            const expected = document.querySelector("script[type=\"text/test\"]").textContent;
+            Assert.assertSameText(expected, document.body.textContent);
+        }});
+
+        Test.create({test() {
+            Assert.assertSame(window.moduleM, window.a.b.c);
+            Assert.assertEquals("exampleE_A1,exampleE_A2,exampleE_A3,exampleX_01",
+                Object.keys(window.moduleM).join(","));
+            for (const name of ["exampleE_A2", "exampleE_A3", "exampleX_01"])
+                Assert.assertFalse(name, Object.prototype.hasOwnProperty.call(window, name));
+        }});
+
+        let started = false;
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            if (selector !== document.body || started)
+                return;
+            started = true;
+            Test.start();
+        });
+    </script>
+    <script type="text/test">
+      before import + expose
+      ----
+      exampleE_A1: undefined
+      exampleE_A2: undefined
+      exampleE_A3: undefined
+      exampleX_01: undefined
+      moduleM.exampleE_A1: undefined
+      a.b.c: undefined
+      import + expose
+      ----
+      after import + expose
+      ----
+      exampleE_A1: object
+      exampleE_A1.exampleE_A1: A-AAA
+      exampleE_A2: undefined
+      exampleE_A3: undefined
+      exampleX_01: undefined
+      moduleM.exampleE_A1: A-AAA
+      moduleM.exampleE_A2: object
+      moduleM.exampleE_A2.value: A-BBB
+      moduleM.exampleE_A3: function
+      moduleM.exampleE_A3(): A-CCC
+      moduleM.exampleX_01: 123"456789'
+      a.b.c.exampleE_A1: A-AAA
+    </script>
+  </head>
+  <body>
+
+    before import + expose
+    ----
+    exampleE_A1: {{String(attempt(() => exampleE_A1))}}
+    exampleE_A2: {{String(attempt(() => exampleE_A2))}}
+    exampleE_A3: {{String(attempt(() => exampleE_A3))}}
+    exampleX_01: {{String(attempt(() => exampleX_01))}}
+    moduleM.exampleE_A1: {{String(attempt(() => moduleM.exampleE_A1))}}
+    a.b.c: {{String(attempt(() => a.b.c))}}
+
+    import + expose
+    ----
+    <div id="moduleM" composite></div>
+
+    after import + expose
+    ----
+    exampleE_A1: {{typeof exampleE_A1}}
+    exampleE_A1.exampleE_A1: {{exampleE_A1.exampleE_A1}}
+    exampleE_A2: {{String(attempt(() => exampleE_A2))}}
+    exampleE_A3: {{String(attempt(() => exampleE_A3))}}
+    exampleX_01: {{String(attempt(() => exampleX_01))}}
+    moduleM.exampleE_A1: {{moduleM.exampleE_A1}}
+    moduleM.exampleE_A2: {{typeof moduleM.exampleE_A2}}
+    moduleM.exampleE_A2.value: {{moduleM.exampleE_A2.value}}
+    moduleM.exampleE_A3: {{typeof moduleM.exampleE_A3}}
+    moduleM.exampleE_A3(): {{moduleM.exampleE_A3()}}
+    moduleM.exampleX_01: {{moduleM.exampleX_01}}
+    a.b.c.exampleE_A1: {{a.b.c.exampleE_A1}}
+  </body>
+</html>

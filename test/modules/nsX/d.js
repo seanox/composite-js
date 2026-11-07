@@ -4,4 +4,4 @@ const d = Reactive({
     }
 });
 
-#export d@nsX;
+expose(d, "nsX.d");

@@ -29,7 +29,7 @@
 
         const validateValues = [];
 
-        Namespace.use()["model"] = {
+        Object.use(window, "model", {
             email: "",
             password: "",
             input_1: null,
@@ -78,7 +78,7 @@
                     model.linkClicks++;
                 }
             }
-        };
+        });
         
         const snapshots = [];
         Composer.listen(Composer.EVENT_RENDER_END, () => {

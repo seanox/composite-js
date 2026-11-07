@@ -1,1 +1,1 @@
-#use nsA.a.ns3;
+use("nsA.a.ns3");

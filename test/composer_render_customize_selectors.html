@@ -13,8 +13,8 @@
     <script type="text/javascript">
     
         Test.activate();
-        
-        Namespace.use()["probeCondition"] = true;
+
+        Object.use(window, "probeCondition", true);
         let probeSelectorCount = 0;
         Composer.customize("[data-probe]", () => {
             probeSelectorCount++;
@@ -49,8 +49,8 @@
         }});
 
         Test.create({test() {
-            Assert.assertEquals("2", document.getElementById("probeText").textContent);
-            Assert.assertEquals("4", document.getElementById("probeTextHit").textContent);
+            Assert.assertEquals("2", window["probeText"].textContent);
+            Assert.assertEquals("4", window["probeTextHit"].textContent);
             Assert.assertTrue(probeSelectorCount > 0);
             Assert.assertFalse(String(console.output.error)
                 .includes("selector.matches is not a function"));
@@ -58,7 +58,7 @@
 
         Test.create({async test() {
             for (const condition of [false, true]) {
-                Namespace.use()["probeCondition"] = condition;
+                Object.use(window, "probeCondition", condition);
                 await new Promise(resolve => {
                     Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
                         if (selector === document.body)
@@ -67,7 +67,7 @@
                     Composer.render(document.body);
                 });
                 Assert.assertEquals(condition,
-                    Boolean(document.getElementById("probeCondition")));
+                    Boolean(window["probeCondition"]));
             }
         }});
         

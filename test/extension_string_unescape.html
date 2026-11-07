@@ -11,38 +11,156 @@
     </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
-    
+
         Test.activate();
-      
-        Test.create({test() {
-            Assert.assertEquals("a\tb", ("a\\tb").unescape());
+
+        Test.create({name: "Unescaped text is preserved", test() {
+            [
+                "", "plain text", "gr\u00f6\u00dfe", "\ud83d\ude00",
+                "\0\b\f\n\r\t\v", '"quoted"', "'quoted'", "`quoted`"
+            ].forEach(text => Assert.assertEquals(text, text.unescape()));
+        }});
+
+        Test.create({name: "Control character escapes", test() {
+            [
+                ["\\b", "\b"], ["\\f", "\f"], ["\\n", "\n"],
+                ["\\r", "\r"], ["\\t", "\t"], ["\\v", "\v"]
+            ].forEach(([escape, expected]) =>
+                Assert.assertEquals(expected, escape.unescape()));
             Assert.assertEquals("\r\nxxx", ("\\r\\nxxx").unescape());
-            Assert.assertNotEquals("\n\rxxx", ("\\r\\nxxx").unescape());
         }});
 
-        Test.create({test() {
-            Assert.assertEquals("+(function(){ throw new Error(INJECTED); })()//",
-                    ('"+(function(){ throw new Error("INJECTED"); })()//').unescape());
-            Assert.assertEquals("+(()=>{ throw new Error(INJECTED); })()//",
-                    ('"+(()=>{ throw new Error("INJECTED"); })()//').unescape());
-            Assert.assertEquals(";throw new Error(INJECTED);//",
-                    ('";throw new Error("INJECTED");//').unescape());
+        Test.create({name: "Octal escapes", test() {
+            [
+                ["\\0", "\0"],
+                ["\\7", String.fromCharCode(7)],
+                ["\\10", String.fromCharCode(8)],
+                ["\\123", "S"],
+                ["\\777", String.fromCharCode(511)],
+                ["\\1234", "S4"]
+            ].forEach(([escape, expected]) =>
+                Assert.assertEquals(expected, escape.unescape()));
         }});
 
-        Test.create({test() {
-            Assert.assertEquals("\\+(function(){ throw new Error(INJECTED); })()//",
-                    ('\\\\"+(function(){ throw new Error("INJECTED"); })()//').unescape());
-            Assert.assertEquals("\\\\+(function(){ throw new Error(INJECTED); })()//",
-                    ('\\\\\\\\"+(function(){ throw new Error("INJECTED"); })()//').unescape());
-            Assert.assertEquals("\\\\\\+(function(){ throw new Error(INJECTED); })()//",
-                    ('\\\\\\\\\\\\"+(function(){ throw new Error("INJECTED"); })()//').unescape());
+        Test.create({name: "Hexadecimal escapes", test() {
+            [
+                ["\\x00", "\0"],
+                ["\\x41", "A"],
+                ["\\x7a", "z"],
+                ["\\xE9", "\u00e9"]
+            ].forEach(([escape, expected]) =>
+                Assert.assertEquals(expected, escape.unescape()));
         }});
 
-        Test.create({test() {
-            Assert.assertEquals("+(eval('throw new Error(INJECTED)'))//",
-                    ('"+(eval(\'throw new Error("INJECTED")\'))//').unescape());
-            Assert.assertEquals("+(eval(\throw new Error('INJECTED')))//",
-                    ('"+(eval("throw new Error(\'INJECTED\')"))//').unescape());
+        Test.create({name: "Unicode code point escapes", test() {
+            [
+                ["\\u{0}", "\0"],
+                ["\\u{41}", "A"],
+                ["\\u{1F600}", "\ud83d\ude00"],
+                ["\\u{10FFFF}", String.fromCodePoint(0x10FFFF)]
+            ].forEach(([escape, expected]) =>
+                Assert.assertEquals(expected, escape.unescape()));
+        }});
+
+        Test.create({name: "Four-digit Unicode escapes", test() {
+            [
+                ["\\u0000", "\0"],
+                ["\\u0041", "A"],
+                ["\\u00e9", "\u00e9"],
+                ["\\uD800", "\ud800"],
+                ["\\uDC00", "\udc00"],
+                ["\\uD83D\\uDE00", "\ud83d\ude00"],
+                ["\\uFFFF", String.fromCharCode(0xFFFF)],
+                ["\\u00410", "A0"]
+            ].forEach(([escape, expected]) =>
+                Assert.assertEquals(expected, escape.unescape()));
+        }});
+
+        ["\\u{110000}", "\\u{FFFFFF}"].forEach(escape => {
+            Test.create({name: "Out-of-range Unicode code point: " + escape,
+                    expected: RangeError, test() {
+                escape.unescape();
+            }});
+        });
+
+        [
+            "\\", "\\x", "\\x4", "\\xGG", "\\x4G",
+            "\\u", "\\u0", "\\u00", "\\u000", "\\u00GG",
+            "\\u{}", "\\u{", "\\u{41", "\\u{XYZ}", "\\u{-1}",
+            "\\u{0000041}", "\\u{41X}"
+        ].forEach(escape => {
+            Test.create({name: "Malformed escape: " + JSON.stringify(escape),
+                    expected: SyntaxError, test() {
+                escape.unescape();
+            }});
+        });
+
+        Test.create({name: "Escaped quotes and generic escape pairs", test() {
+            const slash = "\\";
+            Assert.assertEquals('"', (slash + '"').unescape());
+            Assert.assertEquals("'", (slash + "'").unescape());
+            Assert.assertEquals("`", (slash + "`").unescape());
+            Assert.assertEquals("/", (slash + "/").unescape());
+            Assert.assertEquals("q", (slash + "q").unescape());
+            Assert.assertEquals("8", (slash + "8").unescape());
+            Assert.assertEquals("9", (slash + "9").unescape());
+            Assert.assertEquals(slash, (slash + slash).unescape());
+        }});
+
+        Test.create({name: "Escape sequences honor backslash parity", test() {
+            const slash = "\\";
+            [
+                ["0", "\0"], ["123", "S"], ["x41", "A"],
+                ["u0041", "A"], ["u{41}", "A"],
+                ["t", "\t"], ['"', '"'], ["q", "q"]
+            ].forEach(([escape, decoded]) => {
+                for (let count = 1; count <= 8; count++) {
+                    const expected = slash.repeat(Math.floor(count /2))
+                        + (count %2 ? decoded : escape);
+                    Assert.assertEquals(expected,
+                        (slash.repeat(count) + escape).unescape());
+                }
+            });
+        }});
+
+        Test.create({name: "Backslash pairs are decoded exactly once", test() {
+            const slash = "\\";
+            for (let count = 2; count <= 8; count += 2)
+                Assert.assertEquals(slash.repeat(count /2),
+                    slash.repeat(count).unescape());
+            ["x4", "u12", "u{XYZ}", "u{110000}"].forEach(escape =>
+                Assert.assertEquals(slash + escape,
+                    (slash.repeat(2) + escape).unescape()));
+        }});
+
+        Test.create({name: "Decoded text is not decoded again", test() {
+            [
+                ["\\134n", "\\n"],
+                ["\\x5cn", "\\n"],
+                ["\\u005cn", "\\n"],
+                ["\\u{5c}n", "\\n"],
+                ["\\134x41", "\\x41"],
+                ["\\x5cu0041", "\\u0041"],
+                ["\\u005cu{41}", "\\u{41}"],
+                ["\\u005cx4", "\\x4"],
+                ["\\u005c\\u006e", "\\n"]
+            ].forEach(([escape, expected]) =>
+                Assert.assertEquals(expected, escape.unescape()));
+        }});
+
+        Test.create({name: "Mixed adjacent escapes", test() {
+            Assert.assertEquals("prefix:\0\tAB\ud83d\ude00\n:suffix",
+                "prefix:\\0\\t\\x41\\u0042\\u{1F600}\\n:suffix".unescape());
+        }});
+
+        Test.create({name: "Rejected input does not affect subsequent calls", test() {
+            let error;
+            try {"\\u{XYZ}".unescape();
+            } catch (caught) {
+                error = caught;
+            }
+            Assert.assertTrue(error instanceof SyntaxError);
+            Assert.assertEquals("A", "\\u0041".unescape());
         }});
 
         Test.start({auto:true});

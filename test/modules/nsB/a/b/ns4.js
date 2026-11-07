@@ -1,1 +1,1 @@
-#use nsB.a.b.ns4;
+use("nsB.a.b.ns4");

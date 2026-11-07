@@ -19,9 +19,12 @@ const {
 } = require("./server");
 
 const PATTERN_USER_AGENT_HEADLESS_CHROME = /\bHeadlessChrome\//g;
-const PATTERN_TEST_CASES = /<script\b[^>]*\btype\s*=\s*(["'])text\/test-cases\1[^>]*>([\s\S]*?)<\/script>/i;
-const PATTERN_WHITESPACE = /\s+/;
 const PATTERN_HTML_TEST = /^[^/\\]+\.html$/i;
+const PATTERN_TEST_SCRIPTS = [
+    '<script src="composite-js.js">',
+    '<script src="composite-js-debug-testing.js">',
+    '<script src="composite-js-testing.js">'
+];
 
 const DEFAULT_TIMEOUT = 30000;
 const DEFAULT_TEMP_DIR = "./tmp";
@@ -56,11 +59,16 @@ const _browserContextOptions = async browser => {
     }
 };
 
-const _discoverTests = docRootDefaultDocument => {
-    const index = fs.readFileSync(docRootDefaultDocument, "utf8");
-    const declared = index.match(PATTERN_TEST_CASES)?.[2] || "";
-    return [...new Set(declared.trim().split(PATTERN_WHITESPACE)
-        .filter(test => test && !test.startsWith("*")))];
+const _discoverTests = (docRoot, availableFiles, workingDirectoryFilter, defaultDocument) => {
+    const candidates = availableFiles.filter(file =>
+            PATTERN_HTML_TEST.test(file)
+            && file !== defaultDocument
+            && (!workingDirectoryFilter
+                    || path.matchesGlob(file, workingDirectoryFilter)));
+    return candidates.filter(file => {
+        const content = fs.readFileSync(path.join(docRoot, file), "utf8");
+        return PATTERN_TEST_SCRIPTS.some(pattern => content.includes(pattern));
+    });
 };
 
 const _runTest = async (context, url, timeout, coverage = false) => {
@@ -156,6 +164,7 @@ const _configuration = (options = {}) => {
     return {
         tempDirectory: path.resolve(__dirname, options.tempDirectory ?? DEFAULT_TEMP_DIR),
         workingDirectory,
+        workingDirectoryFilter: options.workingDirectoryFilter,
         server: {
             docRoot: workingDirectory,
             docRootDefaultDocument: path.join(workingDirectory, defaultDocument),
@@ -201,12 +210,11 @@ const main = async ({config, runtime, serverFactory = createServer} = {}) => {
     const availableFiles = fs.readdirSync(config.server.docRoot, {withFileTypes: true})
         .filter(file => file.isFile())
         .map(file => file.name);
-    const availableTests = new Set(availableFiles.filter(file => PATTERN_HTML_TEST.test(file)));
-    const tests = testRuntime.discoverTests(config.server.docRootDefaultDocument)
-        .filter(test => availableTests.has(test)
-            && test !== config.server.defaultDocument);
+    const tests = testRuntime.discoverTests(config.server.docRoot, availableFiles,
+            config.workingDirectoryFilter, config.server.defaultDocument);
+    console.info(`[${config.engine}] Found ${tests.length} test(s)`);
     if (!tests.length)
-        throw new Error(`Missing test files in ${config.server.docRootDefaultDocument}`);
+        throw new Error(`Missing test files in ${config.server.docRoot}`);
     for (const file of ["composite-js-testing.js", "composite-js-debug-testing.js"])
         if (!availableFiles.includes(file))
             throw new Error(`Missing test file: ${file}`);
@@ -297,6 +305,7 @@ const _parseCommandLine = (args = process.argv.slice(2)) => {
             "runner-engine": {type: "string", short: "e"},
             "runner-timeout": {type: "string", short: "t"},
             "runner-working-directory": {type: "string", short: "d"},
+            "runner-working-directory-filter": {type: "string", short: "f"},
             "server-protocol": {type: "string"},
             "server-address": {type: "string", short: "a"},
             "server-port": {type: "string", short: "p"}
@@ -307,6 +316,7 @@ const _parseCommandLine = (args = process.argv.slice(2)) => {
         timeout: values["runner-timeout"],
         engine: values["runner-engine"],
         workingDirectory: values["runner-working-directory"],
+        workingDirectoryFilter: values["runner-working-directory-filter"],
         server: {
             docRoot: DEFAULT_DOCROOT,
             defaultDocument: DEFAULT_DOCUMENT,
@@ -327,6 +337,8 @@ const _parseCommandLine = (args = process.argv.slice(2)) => {
 //           timeout in milliseconds
 //     -d, --runner-working-directory <path>
 //           working directory
+//     -f, --runner-working-directory-filter <glob>
+//           file filter for the working directory
 //     -a, --server-address <address>
 //           server address
 //     -p, --server-port <port>

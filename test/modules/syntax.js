@@ -1,18 +1,22 @@
-#import syntaxA
-#import syntax
+require("syntaxA");
+require("syntax");
 
 const x1 = () => {throw new Error("xxx");}
 
-const _1 = (? xxx.xxx.xxx);
-const _2 = (? x1());
+const _1 = attempt(() => xxx.xxx.xxx);
+const _2 = attempt(() => x1());
 
-#export _1 _2;
+Object.assign(window, expose({_1}));
+Object.assign(window, expose({_2}));
 
-const _3 = (? xxx.xxx.xxx);
-const _4 = (? x1());
-const _5 = (?
+const _3 = attempt(() => xxx.xxx.xxx);
+const _4 = attempt(() =>  x1());
+const _5 = attempt(() =>
     xxx.xxx.xxx);
-const _6 = (?
+const _6 = attempt(() =>
     x1());
 
-#export _3 _4 _5 _6;
+Object.assign(window, expose({_3}));
+Object.assign(window, expose({_4}));
+Object.assign(window, expose({_5}));
+Object.assign(window, expose({_6}));

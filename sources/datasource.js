@@ -86,8 +86,8 @@
         /**
          * Transforms an XMLDocument based on a passed or derived stylesheet.
          * The data and the stylesheet can be passed as Locator, XMLDocument as
-         * a mix. The result as a DocumentFragment. Optionally, a meta-object
-         * as map with parameters for the XSLTProcessor can be passed.
+         * a mix. The result as a DocumentFragment. Optionally, a metadata
+         * object as map with parameters for the XSLTProcessor can be passed.
          *
          * The XML locator also supports XPath. In this case, the XPathResult
          * for the transformation is embedded in an artificial XML document with

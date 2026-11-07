@@ -33,6 +33,47 @@
         Test.create({test() {
             capture.validate();
         }});
+
+        Test.create({name: "Descriptive and resolved metadata use scope", test() {
+            const root = {
+                value: "global",
+                admin: {user: {value: "nested"}}
+            };
+            window.MountLookupScopeTest = root;
+            try {
+                for (const expected of [
+                    {id: "MountLookupScopeTest", scope: undefined, model: root,
+                        scopePath: "", name: "MountLookupScopeTest"},
+                    {id: "user@MountLookupScopeTest:admin", scope: root.admin,
+                        model: root.admin.user, scopePath: "MountLookupScopeTest.admin", name: "user"}
+                ]) {
+                    const composite = document.createElement("div");
+                    composite.id = expected.id;
+                    composite.setAttribute("composite", "");
+                    const locate = ___mount_locate(composite);
+                    Assert.assertFalse(Object.prototype.hasOwnProperty.call(locate, "namespace"));
+                    Assert.assertEquals(expected.scopePath, (locate.scope || []).join("."));
+
+                    const element = document.createElement("input");
+                    element.id = "value";
+                    composite.appendChild(element);
+                    Assert.assertEquals(expected.model.value, ___mount_lookup(element).target);
+
+                    for (const selector of [composite, element]) {
+                        const lookup = Composer.lookup(selector);
+                        Assert.assertSame(expected.scope, lookup.scope);
+                        Assert.assertSame(expected.model, lookup.model);
+                        Assert.assertFalse(Object.prototype.hasOwnProperty.call(lookup, "namespace"));
+                        Assert.assertFalse(Object.prototype.hasOwnProperty.call(lookup.meta, "namespace"));
+                        Assert.assertEquals(expected.scopePath, (lookup.meta.scope || []).join("."));
+                        Assert.assertEquals(expected.name, lookup.meta.model);
+                        Assert.assertFalse(Object.prototype.hasOwnProperty.call(lookup, "target"));
+                    }
+                }
+            } finally {
+                delete window.MountLookupScopeTest;
+            }
+        }});
     </script>
     <script type="text/test">
       a:
@@ -69,16 +110,16 @@
       </div>
     </div>
     <pre>
-      a: {{___mount_locate(#[a]).namespace}}
-      b: {{___mount_locate(#[b\@a]).namespace}}
-      c: {{___mount_locate(#[c\@a\:b]).namespace}}
-      d: {{___mount_locate(#[d]).namespace}}
-      e: {{___mount_locate(#[e\@d]).namespace}}
-      f: {{___mount_locate(#[f\@d\:e]).namespace}}
-      g: {{___mount_locate(#[g\@d\:e\:f]).namespace}}
-      h: {{___mount_locate(#[h]).namespace}}
-      i: {{___mount_locate(#[i\@h]).namespace}}
-      j: {{___mount_locate(#[j\@h\:i]).namespace}}
+      a: {{___mount_locate(window['a']).scope}}
+      b: {{___mount_locate(window['b@a']).scope}}
+      c: {{___mount_locate(window['c@a:b']).scope}}
+      d: {{___mount_locate(window['d']).scope}}
+      e: {{___mount_locate(window['e@d']).scope}}
+      f: {{___mount_locate(window['f@d:e']).scope}}
+      g: {{___mount_locate(window['g@d:e:f']).scope}}
+      h: {{___mount_locate(window['h']).scope}}
+      i: {{___mount_locate(window['i@h']).scope}}
+      j: {{___mount_locate(window['j@h:i']).scope}}
     </pre>
   </body>
 </html>

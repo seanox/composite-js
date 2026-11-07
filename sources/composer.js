@@ -40,7 +40,7 @@
  * expression.
  *
  * Clean Code Rendering - The composite-js relevant attributes are stored in
- * meta-objects to each element and are removed in the markup. The following
+ * metadata objects to each element and are removed in the markup. The following
  * attributes are essential: COMPOSITE, ID -- they are cached and remain at the
  * markup, these cannot be changed. The MutationObserver will restore them.
  *
@@ -78,7 +78,7 @@
     /**
      * Pattern for all accepted attributes.
      * Accepted attributes are all attributes, even without an expression
-     * that is cached in the meta-object. Other attributes are only cached
+     * that is cached in the metadata object. Other attributes are only cached
      * if they contain an expression.
      */
     const PATTERN_ATTRIBUTE_ACCEPT = /^(composite|condition|events|id|import|interval|iterate|message|output|release|render|validate)$/i;
@@ -86,34 +86,42 @@
     /**
      * Pattern for all static attributes.
      * Static attributes are not removed from the element during rendering,
-     * but are also set in the meta-object like non-static attributes. These
+     * but are also set in the metadata object like non-static attributes. These
      * attributes are also intended for direct use in JavaScript and CSS.
      */
     const PATTERN_ATTRIBUTE_STATIC = /^(composite|id)$/i;
 
-    /**
-     * Pattern to detect if a string contains an expression.
-     * Escaping characters via slash is supported.
-     */
-    const PATTERN_EXPRESSION_CONTAINS = /\{\{(.|\r|\n)*?\}\}/g;
+    /** Pattern for all markup expression operators */
+    const MARKUP_EXPRESSION_OPERATORS = {
+        and: "&&", empty: "!", div: "/", eq: "==", eeq: "===",
+        ge: ">=", gt: ">", le: "<=", lt: "<", mod: "%",
+        ne: "!=", nee: "!==", not: "!", or: "||"
+    };
+
+    /** Pattern for all markup expression operators as list for RegExp */
+    const MARKUP_EXPRESSION_OPERATORS_LIST = Object.keys(MARKUP_EXPRESSION_OPERATORS).join("|");
+
+    /** Pattern for all markup expression operators */
+    const PATTERN_MARKUP_EXPRESSION_OPERATOR = new RegExp(
+        "(^|\\s):(?:(" + MARKUP_EXPRESSION_OPERATORS_LIST + "))(?!\\S)", "g");
+
+    /** Pattern to detect if a string contains a complete markup expression. */
+    const PATTERN_EXPRESSION_CONTAINS = /\{\{([\s\S]*?)\}\}/g;
+
+    /** Detects an exclusive declaration expression, including its delimiters. */
+    const PATTERN_EXPRESSION_DECLARATION =
+        /^\s*\{\{\s*((?:_*[a-zA-Z]|_\w*)\w*):\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
 
     /**
-     * Patterns for condition expressions.
-     * Conditions are explicitly a single expression and not a variable
-     * expression.
+     * Detects complete {{...}} markup, ending at the first closing }}.
+     * Backslashes and JavaScript strings/comments do not mask delimiters.
+     * Unmatched delimiter fragments remain static text.
      */
-    const PATTERN_EXPRESSION_CONDITION = /^\s*\{\{\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;
+    const PATTERN_EXPRESSION_INTERPOLATION = PATTERN_EXPRESSION_CONTAINS;
 
-    /**
-     * Patterns for expressions with variable.
-     * Variables are at the beginning of the expression and are separated
-     * from the expression by a colon. The variable name must conform to the
-     * usual JavaScript conditions and starts with _ or a letter, other word
-     * characters (_ 0-9 a-z A-Z) may follow.
-     * - group 1: variable
-     * - group 2: expression
-     */
-    const PATTERN_EXPRESSION_VARIABLE = /^\s*\{\{\s*((?:(?:_*[a-z])|(?:_\w*))\w*)\s*:\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/i;
+    /** Detects an exclusive value expression, including its markup delimiters. */
+    const PATTERN_EXPRESSION_VALUE =
+        /^\s*\{\{\s*(?!\s*(?:_*[a-zA-Z]|_\w*)\w*:)(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
 
     /** Pattern for all to ignore (script-)elements */
     const PATTERN_ELEMENT_IGNORE = /script|style/i;
@@ -245,7 +253,7 @@
      * view scope. This keeps the active variables separate from
      * _view_scope_stack so that elements can render using their initial
      * context without modifying the stack, particularly for generated children
-     * with their own meta-objects.
+     * with their own metadata objects.
      */
     const _view_scope_workspace = [];
 
@@ -286,13 +294,14 @@
         get PATTERN_ATTRIBUTE_ACCEPT() {return PATTERN_ATTRIBUTE_ACCEPT;},
         get PATTERN_ATTRIBUTE_STATIC() {return PATTERN_ATTRIBUTE_STATIC;},
         get PATTERN_EXPRESSION_CONTAINS() {return PATTERN_EXPRESSION_CONTAINS;},
-        get PATTERN_EXPRESSION_CONDITION() {return PATTERN_EXPRESSION_CONDITION;},
-        get PATTERN_EXPRESSION_VARIABLE() {return PATTERN_EXPRESSION_VARIABLE;},
+        get PATTERN_EXPRESSION_DECLARATION() {return PATTERN_EXPRESSION_DECLARATION;},
+        get PATTERN_EXPRESSION_INTERPOLATION() {return PATTERN_EXPRESSION_INTERPOLATION;},
+        get PATTERN_EXPRESSION_VALUE() {return PATTERN_EXPRESSION_VALUE;},
+        get PATTERN_ELEMENT_ID() {return PATTERN_ELEMENT_ID;},
         get PATTERN_ELEMENT_IGNORE() {return PATTERN_ELEMENT_IGNORE;},
         get PATTERN_SCRIPT() {return PATTERN_SCRIPT;},
         get PATTERN_COMPOSITE_SCRIPT() {return PATTERN_COMPOSITE_SCRIPT;},
         get PATTERN_COMPOSITE_ID() {return PATTERN_COMPOSITE_ID;},
-        get PATTERN_ELEMENT_ID() {return PATTERN_ELEMENT_ID;},
         get PATTERN_CUSTOMIZE_SCOPE() {return PATTERN_CUSTOMIZE_SCOPE;},
 
         get EVENT_DOM_ADDED() {return EVENT_DOM_ADDED;},
@@ -434,9 +443,11 @@
         },  
 
         /**
-         * Determines the corresponding meta-object for the passed selector.
+         * Determines the corresponding metadata object for the passed selector.
+         * The resolved scope is separate from the path segments in meta.scope.
          * @param {Element|string} selector DOM element or a string
-         * @returns {object|null} the determined meta-object or null
+         * @returns {object|null} {meta, scope, model}, with route information
+         *     in meta for composite elements, or null
          * @throws {Error} If the selector is not unique (several nodes found).
          */
         lookup(selector) {
@@ -622,8 +633,9 @@
                         if (object.attributes.hasOwnProperty(ATTRIBUTE_MESSAGE))
                             message = String(object.attributes[ATTRIBUTE_MESSAGE] || "");
                         if ((message || "").match(PATTERN_EXPRESSION_CONTAINS))
-                            message = String(Expression.eval(serial + ":" + ATTRIBUTE_MESSAGE,
-                                _execution_context(),  message));
+                            message = String(_expression_eval(serial + ":" + ATTRIBUTE_MESSAGE,
+                                _execution_context(), message,
+                                EXPRESSION_TYPE_INTERPOLATION).result);
                     }
 
                     if (Object.usable(message)) {
@@ -670,9 +682,9 @@
          *
          *     Principles
          *     ----
-         * Application modules are static JavaScript objects. Namespaces are
-         * supported, but they must be syntactically valid. Objects in objects
-         * is possible through the namespaces (as static inner class).
+         * Application modules are static JavaScript objects organized into
+         * namespaces. These namespaces form an object tree that can be accessed
+         * through syntactically valid paths.
          *
          *     Binding
          *     ----
@@ -733,8 +745,8 @@
          *     to resume queued mounting
          * @param {object} [lock] Shared transaction lock for internal calls
          * @throws {Error} In the following cases:
-         *     - namespace is not valid or is not supported
-         *     - namespace cannot be created if it already exists as a method
+         *     - TOOD: composite or element ID is invalid
+         *     - TOOD: application module path traverses an unsupported object node
          */
         mount(selector, lock) {
 
@@ -983,8 +995,9 @@
                                     ? object.attributes[ATTRIBUTE_RENDER] : "";
                             render = String(render || "");
                             if ((render || "").match(PATTERN_EXPRESSION_CONTAINS))
-                                render = Expression.eval(serial + ":" + ATTRIBUTE_RENDER,
-                                    _execution_context(), render);
+                                render = _expression_eval(serial + ":" + ATTRIBUTE_RENDER,
+                                    _execution_context(), render,
+                                    EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
                             Composer.render(render);
                         }
                         
@@ -1086,7 +1099,7 @@
          *     
          * @param {...*} variants Variants for customization
          * @throws {Error} In following cases:
-         *     - Namespace is not valid or is not supported
+         *     - Scope is not valid or is not supported
          *     - Callback function is not implemented correctly
          */
         customize(...variants) {
@@ -1188,10 +1201,10 @@
          * that the concurrent execution works sequentially in the order of the
          * method call.
          *
-         *     Element meta-object
+         *     Element metadata object
          *     ---- 
          * With the processed HTML elements and text nodes, simplified
-         * meta-objects are created. The serial, the reference on the HTML
+         * metadata objects are created. The serial, the reference on the HTML
          * element and the initial attributes (which are required for rendering)
          * are stored there.
          * 
@@ -1257,8 +1270,9 @@
                 _view_scope_workspace.push(..._view_scope_stack);
                 let identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
                 if (identifier.match(PATTERN_EXPRESSION_CONTAINS)) {
-                    identifier = Expression.eval(selector.serial() + ":" + ATTRIBUTE_ID,
-                        _execution_context(), identifier);
+                    identifier = _expression_eval(selector.serial() + ":" + ATTRIBUTE_ID,
+                        _execution_context(), identifier,
+                        EXPRESSION_TYPE_INTERPOLATION).result;
                     selector.setAttribute(ATTRIBUTE_ID, identifier);
                 }
                 _view_scope_workspace.length = 0;
@@ -1439,7 +1453,8 @@
          * Loads a resource (JS, CSS, HTML are supported).
          * @param {string} resource Path to the resource
          * @param {boolean} [strict] Flag to enforce strict loading
-         * @returns {string|undefined} The content when loading an HTML resource
+         * @returns {object|string|undefined} Cached exports for JavaScript,
+         *     content for HTML, or undefined for CSS or unavailable resources
          * @throws {Error} In the following cases
          *     - Unsupported resource type
          *     - HTTP status other than 200 or 404 (with strict)
@@ -1460,18 +1475,21 @@
             resource = normalize(resource);
             if (!resource.startsWith(Composer.MODULES + "/"))
                 throw new Error("Resource not supported: " + resource);
-            if (resource in _render_cache
-                    && resource.match(/\.(js|css)(\?.*)?$/i))
-                return;
+            if (resource in _composer_resources) {
+                if (resource.match(/\.js(\?.*)?$/i))
+                    return _composer_scripting_exports.get(resource);
+                if (resource.match(/\.css(\?.*)?$/i))
+                    return;
+            }
 
             // Resource has already been requested, but with no useful
             // response and unsuccessful requests will not be repeated
-            if (resource in _render_cache
-                    && _render_cache[resource] === undefined)
+            if (resource in _composer_resources
+                    && _composer_resources[resource] === undefined)
                 return;
 
-            if (!(resource in _render_cache)) {
-                _render_cache[resource] = undefined;
+            if (!(resource in _composer_resources)) {
+                _composer_resources[resource] = undefined;
                 const request = new XMLHttpRequest();
                 request.overrideMimeType("text/plain");
                 request.open("GET", resource, false);
@@ -1484,7 +1502,7 @@
                     return;
                 if (request.status !== 200)
                     throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
-                _render_cache[resource] = request.responseText.trim();
+                _composer_resources[resource] = request.responseText.trim();
             }
 
             // CSS is inserted into the HEAD element as a style element.
@@ -1493,17 +1511,20 @@
             // JavaScript is not inserted as an element, it is executed
             // directly. For this purpose eval is used. Since the method may
             // form its own scope for variables, it is important to use the
-            // macro #export to be able to use variables and/or constants in the
-            // global scope.
+            // expose API to collect module exports and optionally publish
+            // variables and/or constants in the global scope.
 
             // HTML/Markup is preloaded into the render cache if available.
             // If markup exists for the composite, ATTRIBUTE_IMPORT with the URL
             // is added to the item. Inserting then takes over the import
             // implementation, which then also accesses the render cache.
 
-            const content = _render_cache[resource];
+            const content = _composer_resources[resource];
             if (resource.match(/\.js(\?.*)?$/i)) {
-                try {Scripting.eval(resource, _execution_context(), content);
+                try {
+                    const exports = Scripting.run(resource, _execution_context(), content);
+                    _composer_scripting_exports.set(resource, exports);
+                    return exports;
                 } catch (error) {
                     console.error(resource, String(error));
                     throw error;
@@ -1566,10 +1587,10 @@
                 if (!object)
                     throw new Error("Unknown composite");
                 const meta = _mount_locate(composite);
-                if (!meta.namespace)
-                    meta.namespace = [];
-                meta.namespace.push(meta.model);
-                resource = meta.namespace;
+                if (!meta.scope)
+                    meta.scope = [];
+                meta.scope.push(meta.model);
+                resource = meta.scope;
             }
 
             const context = Composer.MODULES + "/" + resource.join("/");
@@ -1588,9 +1609,9 @@
 
             // Was the composite module already loaded?
             // Initially EVENT_MODULE_LOAD is triggered.
-            if (_render_cache[context + ".composite"] === undefined)
+            if (_composer_resources[context + ".composite"] === undefined)
                 Composer.fire(EVENT_MODULE_LOAD, composite, resource);
-            _render_cache[context + ".composite"] = null;
+            _composer_resources[context + ".composite"] = null;
 
             // The sequence of loading is strictly defined: JS, CSS, HTML
 
@@ -1702,7 +1723,7 @@
      * the lock, even if the callback throws.
      * @param {Object} context Context (render or mount)
      * @param {string|Element} selector Selector to identify elements
-     * @returns {Object} The created lock as a meta-object
+     * @returns {Object} The created lock as a metadata object
      * @throws {Error} In case of an invalid context
      */
     const _lock = (context, selector) => {
@@ -1769,34 +1790,34 @@
      * target. The metadata is only determined as text information.
      * 
      * Composite:
-     *     {namespace, model}
+     *     {scope, model}
      * 
      * Composite Element:
-     *     {namespace, model, route, target}
-     *     {namespace, model, route, unique, target}
+     *     {scope, model, route, target}
+     *     {scope, model, route, unique, target}
      *
-     * namespace: namespace of the composite / application module
-     *            chain as array without the application module or undefined if
-     *            no chain
-     * model:     application module, corresponds to the enclosing composite
-     * route:     fully qualified route to the target,
-     *            starting with the application module, ends with the target
-     * unique:    unique identifier
-     *            not part of the route and without effect on the logic
-     * target:    final target in the chain
+     *
+     * scope:  object path segments leading to the application module,
+     *         excluding the module name; undefined if no parent path
+     * model:  application module name, corresponds to the enclosing composite
+     * route:  fully qualified route to the target,
+     *         starting with the application module, ends with the target
+     * unique: unique identifier
+     *         not part of the route and without effect on the logic
+     * target: final target in the chain
      *
      * A validation at object or application module level does not take place
-     * here. The fill levels of the meta-object can be different, depending on
-     * the collected data and the resulting derivation. Thus, it is possible to
-     * make the theoretical assumptions here by deriving them from the DOM.
-     * Especially the namespace of the application module is based on these
+     * here. The fill levels of the metadata object can be different, depending
+     * on the collected data and the resulting derivation. Thus, it is possible
+     * to make the theoretical assumptions here by deriving them from the DOM.
+     * Especially the scope path of the application module is based on these
      * theoretical assumptions.
      * 
      * If no meta information can be determined, e.g. because no IDs were found
      * or no enclosing composite was used, null is returned.
      *
      * @param {Element} element DOM element to determine metadata for
-     * @returns {object|null} Determined meta-object for the passed element,
+     * @returns {object|null} Determined metadata object for the passed element,
      *     otherwise null
      * @throws {Error} In case of an invalid IDs for composites and elements
      */
@@ -1805,11 +1826,11 @@
         if (!(element instanceof Element))
             return null;
 
-        // A composite stops the determination. Composites are static
-        // application units, comparable to managed beans or named beans, and
-        // therefore normally have no superordinate object levels. But the
-        // Composite-ID can contain a namespace, which is then taken into
-        // consideration.
+        // Composites are independent application units whose application
+        // modules are comparable to managed beans or named beans. The
+        // application module is determined by the composite ID, not by
+        // enclosing composites. An explicitly declared namespace supplies its
+        // scope path.
 
         const identifier = (element.getAttribute(ATTRIBUTE_ID) || "").trim();
         if (element.hasAttribute(ATTRIBUTE_COMPOSITE)) {
@@ -1818,7 +1839,7 @@
                 throw new Error(`Invalid composite id${identifier ? ": " + identifier : ""}`);
             if (!composite[2])
                 return {model:composite[1]};
-            return {namespace:composite[2].split(/:+/), model:composite[1]};
+            return {scope:composite[2].split(/:+/), model:composite[1]};
         }
 
         const locate = _mount_locate(element.parentNode);
@@ -1829,20 +1850,20 @@
         if (!matches)
             throw new Error(`Invalid element id${identifier ? ": " + identifier : ""}`);
 
-        const meta = {namespace:[], model:null, route:[], target:null};
+        const meta = {scope:[], model:null, route:[], target:null};
         if (locate) {
-            if (locate.namespace)
-                locate.namespace.push(locate.model);
-            else locate.namespace = [locate.model];
-            meta.namespace = locate.namespace;
+            if (locate.scope)
+                locate.scope.push(locate.model);
+            else locate.scope = [locate.model];
+            meta.scope = locate.scope;
             if (locate.route)
                 meta.route.push(...locate.route);
             else meta.route.push(locate.model);
         }
 
         if (matches[4]) {
-            meta.namespace = matches[4].split(/:/);
-            meta.route = [meta.namespace[meta.namespace.length -1]];
+            meta.scope = matches[4].split(/:/);
+            meta.route = [meta.scope[meta.scope.length -1]];
         }
         meta.route.push(matches[1]);
         if (matches[2])
@@ -1850,31 +1871,37 @@
         if (matches[3])
             meta.unique = matches[3];
         meta.target = meta.route[meta.route.length -1];
-        meta.model = meta.namespace.pop();
-        if (meta.namespace.length <= 0)
-            delete meta.namespace;
+        meta.model = meta.scope.pop();
+        if (meta.scope.length <= 0)
+            delete meta.scope;
 
         // an application module is always required
         return meta.model ? meta : null;
     };
 
     /**
-     * Determines the meta-object for an element based on its position in the
-     * DOM, so the surrounding composite and application module, the referenced
-     * route and target in the application module.
+     * Determines the metadata object for an element based on its position in
+     * the DOM, so the surrounding composite and application module, the
+     * referenced route and target in the application module.
      * 
      * Composite:
-     *     {meta:{namespace, model}, namespace, model}
+     *     {meta:{scope, model}, scope, model}
      * 
      * Composite Element:
-     *     {meta:{namespace, model, route, target}, namespace, model, route, target}
+     *     {meta:{scope, model, route, target}, scope, model, target}
+     *
+     * scope:      resolved parent object of the application module, or
+     *             undefined when the module is resolved directly from the
+     *             global scope
+     *
+     * meta-scope: namespace path segments, not the resolved scope object
      *
      * The method always requires a corresponding application module and an
      * element with a valid element ID in a valid enclosing composite, otherwise
      * the method will return null.
      *
      * @param {Element} element DOM element to determine metadata for
-     * @returns {object|null} Determined meta-object for the passed element,
+     * @returns {object|null} Determined metadata object for the passed element,
      *     otherwise null
      * @throws {Error} In case of an invalid IDs for composites and elements
      */
@@ -1884,26 +1911,39 @@
         if (!meta)
             return null;
 
-        const namespace = Namespace.lookup(...(meta.namespace || []));
-        const model = Object.lookup(namespace || window, meta.model)
-        if (!model)
+        const scope = Object.lookup(meta.scope
+            ? meta.scope.join(".") : undefined);
+        if (meta.scope && scope === undefined
+                || scope instanceof Element
+                || scope instanceof HTMLCollection)
+            return null;
+        const model = Object.lookup(scope, meta.model);
+        if (!model
+                || model instanceof Element
+                || model instanceof HTMLCollection)
             return null;
         if (meta.target === undefined)
-            return {meta, namespace, model};
+            return {meta, scope, model};
+
+        // Bindings traverse target paths within application data, including arrays.
+        const resolve = (levels) => levels.reduce((target, level) =>
+            target !== null && typeof target === "object"
+                ? target[level] : undefined,
+            Object.lookup(scope, meta.model));
 
         const lookup = {
             meta,
-            namespace,
+            scope,
             model,
             get target() {
-                return Object.lookup(this.namespace, ...(this.meta.route || []));
+                return resolve((this.meta.route || []).slice(1));
             },
             set target(value) {
                 let chain = [this.meta.model];
                 if (this.meta.route)
                     chain = this.meta.route;
                 const target = chain.pop();
-                Object.lookup(this.namespace, ...chain)[target] = value;
+                resolve(chain.slice(1))[target] = value;
             }
         };
 
@@ -1914,7 +1954,10 @@
     };
 
     /** Associative array of reusable content for rendering */
-    const _render_cache = {};
+    const _composer_resources = {};
+
+    /** Module exports by normalized JavaScript resource path */
+    const _composer_scripting_exports = new Map();
 
     /**
      * Creates the current execution scope for expressions and composite
@@ -1934,6 +1977,56 @@
         return context;
     };
 
+    const EXPRESSION_TYPE_VALUE = "value";
+    const EXPRESSION_TYPE_DECLARATION = "declaration";
+    const EXPRESSION_TYPE_INTERPOLATION = "interpolation";
+
+    /**
+     * Expression evaluation; includes the substitution of markup operators.
+     * Value expressions retain their result type when allowed; interpolation
+     * always produces text, including for a standalone expression.
+     * @param {string} identifier Identifier for the expression evaluation cache
+     * @param {object} context Execution scope
+     * @param {string} expression Expression value to interpret
+     * @param {...string} type Allowed expression types
+     * @returns {{type: (string|undefined), variable: (string|undefined), result: *}}
+     *     Object containing expression type, optional variable name, an result,
+     *     including errors as ordinary result values
+     */
+    const _expression_eval = (identifier, context, expression, ...type) => {
+
+        const source = expression.trim().replace(PATTERN_EXPRESSION_INTERPOLATION, match => {
+            const script = match.substring(2, match.length -2)
+                .replace(PATTERN_MARKUP_EXPRESSION_OPERATOR, (match, space, operator) =>
+                    space + MARKUP_EXPRESSION_OPERATORS[operator]);
+            return "{{" + script + "}}";
+        });
+
+        if (type.includes(EXPRESSION_TYPE_DECLARATION)
+                && source.match(PATTERN_EXPRESSION_DECLARATION))
+            return Object.assign({type: EXPRESSION_TYPE_DECLARATION},
+                Expression.eval(identifier, context, source));
+        if (type.includes(EXPRESSION_TYPE_VALUE)
+                && source.match(PATTERN_EXPRESSION_VALUE))
+            return Object.assign({type: EXPRESSION_TYPE_VALUE},
+                Expression.eval(identifier, context, source));
+        if (!type.includes(EXPRESSION_TYPE_INTERPOLATION)
+                || source.match(PATTERN_EXPRESSION_DECLARATION))
+            return {type: undefined, variable: undefined,
+                result: new Error("Unsupported expression type")};
+
+        let index = 0;
+        const interpolation = source.replace(
+            PATTERN_EXPRESSION_INTERPOLATION, (match, expression) => {
+                if (!expression.trim())
+                    return "";
+                const {result} = _expression_eval(
+                    identifier + ":" + index++, context, match, EXPRESSION_TYPE_VALUE);
+                return result;
+            });
+        return {type: EXPRESSION_TYPE_INTERPOLATION, variable: undefined, result: interpolation};
+    };
+
     /** Lock on rendering execution as a transaction */
     let _render_lock = null;
 
@@ -1941,7 +2034,7 @@
     const _render_queue = [];
 
     /**
-     * Map of element-related meta-objects created during rendering:
+     * Map of element-related metadata objects created during rendering:
      * (key:serial, value:meta)
      */
     const _render_meta = new Map();
@@ -1989,13 +2082,13 @@
     };
 
     /**
-     * Creates the meta-object for a node. Before that, the interceptors are
+     * Creates the metadata object for a node. Before that, the interceptors are
      * executed, which can manipulate the attributes and the markup of the
      * element, but only when it is processed initially.
      * Details are described to Composer.customize(...).
      * @param {Node} selector Node to be rendered
      * @param {number} serial Serial of the node
-     * @returns {object} The created meta-object
+     * @returns {object} The created metadata object
      */
     const _render_meta_initialize = (selector, serial) => {
         _interceptors.forEach((interceptor) =>
@@ -2009,9 +2102,9 @@
     /**
      * Analyses the attributes of an element initially. Attributes containing an
      * expression, attributes relevant for the rendering and static attributes
-     * are cached in the meta-object.
+     * are cached in the metadata object.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      */
     const _render_attributes_initialize = (selector, object) => {
         Array.from(selector.attributes).forEach((attribute) => {
@@ -2041,10 +2134,11 @@
                                 || attribute.name === ATTRIBUTE_ID
                                 || attribute.name === ATTRIBUTE_EVENTS
                                 || _statics.has(attribute.name)))
-                    attribute.value = Expression.eval(selector.serial() + ":" + attribute.name,
-                        _execution_context(), attribute.value);
+                    attribute.value = _expression_eval(selector.serial() + ":" + attribute.name,
+                        _execution_context(), attribute.value,
+                        EXPRESSION_TYPE_INTERPOLATION).result;
 
-                // The resolved value is written back to the meta-object, so
+                // The resolved value is written back to the metadata object, so
                 // that the object and event binding use the value of the
                 // expression and not the expression itself.
                 if (attribute.name.match(PATTERN_ATTRIBUTE_STATIC)
@@ -2072,13 +2166,13 @@
 
     /**
      * ATTRIBUTE_CONDITION: If an HTML element uses this attribute, a text node
-     * is created for the element as a marker with a corresponding meta-object
-     * for the details of the element, condition and the outer HTML as a
+     * is created for the element as a marker with a corresponding metadata
+     * object for the details of the element, condition and the outer HTML as a
      * template. Then the HTML element in the DOM is replaced by the marker as
      * text node. The original selector is switched to the text node and
      * rendering continues.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      * @param {number} serial Serial of the element
      * @param {object} lock Lock of the render cycle
      * @returns {boolean} true if the rendering has to be terminated
@@ -2090,10 +2184,10 @@
             return false;
 
         const expression = (object.attributes[ATTRIBUTE_CONDITION] || "").trim();
-        if (!expression.match(PATTERN_EXPRESSION_CONDITION))
+        if (!expression.match(PATTERN_EXPRESSION_VALUE))
             throw new Error(`Invalid condition${expression ? ": " + expression : ""}`);
 
-        // The marker and its meta-object are created. This prevents the
+        // The marker and its metadata object are created. This prevents the
         // MutationObserver from rendering the marker, because it is then
         // already known.
         const marker = document.createTextNode("");
@@ -2104,8 +2198,8 @@
             condition:{expression, template, marker, element:null, attributes, complete:false, share:null}};
         _render_meta.set(object.serial, object);
 
-        // The meta-object for the HTML element is removed, because only the new
-        // marker is relevant.
+        // The metadata object for the HTML element is removed, because only
+        // the new marker is relevant.
         _render_meta.delete(serial);
 
         // The marker is initially created and in the DOM.
@@ -2123,7 +2217,7 @@
      * This can be the marker or the element. Which one exactly is unimportant.
      * In both cases, we decide here what to do and what happens.
      * @param {Node} selector Node to be rendered
-     * @param {object} object Meta-object of the node
+     * @param {object} object Metadata object of the node
      * @param {number} serial Serial of the node
      * @param {object} lock Lock of the render cycle
      * @returns {boolean} true if the rendering has to be terminated
@@ -2152,8 +2246,8 @@
             // The condition must be explicitly true, otherwise the output is
             // removed from the DOM and the rendering ends. The cleanup will be
             // done by the MutationObserver.
-            const expression = Expression.eval(serial + ":" + ATTRIBUTE_CONDITION,
-                _execution_context(), condition.expression);
+            const {result: expression} = _expression_eval(serial + ":" + ATTRIBUTE_CONDITION,
+                _execution_context(), condition.expression, EXPRESSION_TYPE_VALUE);
             selector.nodeValue = expression instanceof Error ? expression : "";
             if (expression !== true) {
                 // Because a condition can consist of two elements (marker and
@@ -2217,18 +2311,17 @@
      *     e.g. "text {{expr}} + {{var:expr}}"
      *              ->  ["text ", {{expr}}, " + ", {{var:expr}}]
      *
-     * When the text nodes are split, meta-objects are created for them. The
-     * meta-objects are compatible with the meta-objects of the rendering
-     * methods but use the additional attributes:
-     *     Composer.ATTRIBUTE_TEXT, Composer.ATTRIBUTE_NAME and
-     *     Composer.ATTRIBUTE_VALUE
+     * When the text nodes are split, metadata objects are created for them. The
+     * metadata objects are compatible with the metadata objects of the
+     * rendering methods but use the additional attributes:
+     *     Composer.ATTRIBUTE_TEXT and Composer.ATTRIBUTE_VALUE
      * Only static content uses Composer.ATTRIBUTE_TEXT, dynamic content and
-     * parameters use Composer.ATTRIBUTE_VALUE, and only the parameters use
-     * Composer.ATTRIBUTE_NAME. For dynamic content the meta-objects also have
-     * their own rendering method for generating output. Static content is
-     * ignored later during rendering because it is unchangeable.
+     * parameters use Composer.ATTRIBUTE_VALUE. Expression identifies variable
+     * declarations during evaluation. Dynamic content has its own rendering
+     * method for generating output. Static content is ignored later during
+     * rendering because it is unchangeable.
      * @param {Node} selector Text node to be rendered
-     * @param {object} object Meta-object of the text node
+     * @param {object} object Metadata object of the text node
      */
     const _render_text_node = (selector, object) => {
 
@@ -2244,7 +2337,7 @@
             return;
 
         // New/unknown text nodes must be analyzed and prepared. If the
-        // meta-object for text nodes Composer.ATTRIBUTE_TEXT and
+        // metadata object for text nodes Composer.ATTRIBUTE_TEXT and
         // Composer.ATTRIBUTE_VALUE are not contained, it must be new.
         if (object.attributes.hasOwnProperty(ATTRIBUTE_VALUE)) {
             object.render();
@@ -2260,21 +2353,21 @@
         if (content.match(PATTERN_EXPRESSION_CONTAINS)) {
 
             // Step 2:
-            // All expressions are determined. A meta-object is created for all
-            // expressions. In the text content from the text node, the
+            // All expressions are determined. A metadata object is created for
+            // all expressions. In the text content from the text node, the
             // expressions are replaced by a placeholder in the format of the
             // expression with a serial. Empty expressions are removed/ignored.
 
-            // All created meta-objects with an expression have a special render
-            // method for updating the text content of the text node.
+            // All created metadata objects with an expression have a special
+            // render method for updating the text content of the text node.
 
             // Step 3:
-            // The format of the expression distinguishes whether it is a
-            // parameter or an output expression. Parameter expressions start
-            // with the name of the parameter and are interpreted later, but do
-            // not generate any output.
+            // Keep complete matches for later evaluation by Expression, which
+            // returns {variable, result} and identifies declarations itself.
+            // Composer binds named results to the view scope without output;
+            // unnamed results are rendered by the expression's text node.
 
-            content = content.replace(PATTERN_EXPRESSION_CONTAINS, (match) => {
+            content = content.replace(PATTERN_EXPRESSION_INTERPOLATION, (match) => {
                 if (!match.substring(2, match.length -2).trim())
                     return "";
                 const node = document.createTextNode("");
@@ -2282,25 +2375,17 @@
                 const object = {serial, element:node, attributes:{}, value:null,
                     context:[..._view_scope_workspace],
                     render() {
-                        let word = "";
-                        if (this.attributes.hasOwnProperty(ATTRIBUTE_NAME)) {
-                            const name = String(this.attributes[ATTRIBUTE_NAME] || "").trim();
-                            const value = String(this.attributes[ATTRIBUTE_VALUE] || "").trim();
-                            _view_scope[name] = Expression.eval(this.serial + ":" + ATTRIBUTE_VALUE,
-                                _execution_context(), value);
-                        } else {
-                            word = String(this.attributes[ATTRIBUTE_VALUE] || "");
-                            word = Expression.eval(this.serial + ":" + ATTRIBUTE_VALUE,
-                                _execution_context(), word);
-                        }
+                        const {type, variable, result} = _expression_eval(
+                            this.serial + ":" + ATTRIBUTE_VALUE,
+                            _execution_context(), this.attributes[ATTRIBUTE_VALUE],
+                            EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_DECLARATION);
+                        const word = type === EXPRESSION_TYPE_DECLARATION ? "" : result;
+                        if (type === EXPRESSION_TYPE_DECLARATION)
+                            _view_scope[variable] = result;
                         this.value = word;
                         this.element.textContent = word !== undefined ? word : "";
                     }};
-                const param = match.match(PATTERN_EXPRESSION_VARIABLE);
-                if (param) {
-                    object.attributes[ATTRIBUTE_NAME] = param[1];
-                    object.attributes[ATTRIBUTE_VALUE] = "{{" + param[2] + "}}";
-                } else object.attributes[ATTRIBUTE_VALUE] = match;
+                object.attributes[ATTRIBUTE_VALUE] = match;
                 _render_meta.set(serial, object);
                 return "{{" + serial + "}}";
             });
@@ -2362,13 +2447,13 @@
      * ATTRIBUTE_COMPOSITE: Only composites are mounted based on their
      * application module. This excludes markers of conditions as text nodes.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      */
     const _render_attribute_composite = (selector, object) => {
         if (!object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
             return;
         const locate = _mount_locate(selector);
-        let model = (locate.namespace || []).concat(locate.model).join(".");
+        let model = (locate.scope || []).concat(locate.model).join(".");
         if (_models.has(model))
             return;
         _models.add(model);
@@ -2443,8 +2528,9 @@
 
         let value = object.attributes[attribute];
         if ((value || "").match(PATTERN_EXPRESSION_CONTAINS))
-            value = Expression.eval(serial + ":" + attribute,
-                _execution_context(), String(value));
+            value = _expression_eval(serial + ":" + attribute,
+                _execution_context(), String(value),
+                EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
 
         if (value instanceof Document
                 || value instanceof DocumentFragment
@@ -2481,7 +2567,7 @@
      * After successful rendering, ATTRIBUTE_IMPORT is removed and the
      * rendering is not repeated.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      * @param {number} serial Serial of the element
      */
     const _render_attribute_import = (selector, object, serial) => {
@@ -2501,7 +2587,7 @@
      * The recursive rendering is initiated via the MutationObserver and
      * repeated on every render because ATTRIBUTE_OUTPUT remains present.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      * @param {number} serial Serial of the element
      */
     const _render_attribute_output = (selector, object, serial) => {
@@ -2517,7 +2603,7 @@
      * state. The interval ends automatically when the element is removed from
      * the DOM as is the case when combined with CONDITION.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      * @param {number} serial Serial of the element
      * @throws {Error} In case of an invalid interval
      */
@@ -2526,7 +2612,8 @@
         if (!interval || object.interval)
             return;
         const identifier = serial + ":" + ATTRIBUTE_INTERVAL;
-        interval = String(Expression.eval(identifier, _execution_context(), interval));
+        interval = String(_expression_eval(identifier, _execution_context(), interval,
+            EXPRESSION_TYPE_INTERPOLATION).result);
         if (!interval.match(/^\d*$/))
             throw new Error("Invalid interval: " + interval);
         interval = Number.parseInt(interval);
@@ -2549,16 +2636,17 @@
      * 2. A global variable is required for the iteration. If this variable
      *    already exists, the existing variable is saved and restored at the end
      *    of the iteration.
-     * 3. The variable with the partial meta-object is added at the beginning of
-     *    each iteration block as a value expression, so that no problems with
-     *    the temporary variable occur later during partial rendering. This way
-     *    the block keeps the meta information it is built on.
+     * 3. The variable with the partial metadata object is added at the
+     *    beginning of each iteration block as a value expression, so that no
+     *    problems with the temporary variable occur later during partial
+     *    rendering. This way the block keeps the meta information it is built
+     *    on.
      * 4. Variable with meta information about the iteration is used within the
      *    iteration:
      *    e.g iterate={{tempA:example.list}}
      *            -> tempA = {item, index, data}
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      * @param {number} serial Serial of the element
      * @param {object} lock Lock of the render cycle
      * @throws {Error} In case of an invalid iterate
@@ -2568,18 +2656,22 @@
         if (!object.attributes.hasOwnProperty(ATTRIBUTE_ITERATE))
             return;
 
+        const expression = object.iterate ? object.iterate.expression
+                : String(object.attributes[ATTRIBUTE_ITERATE] || "").trim();
+        if (!object.iterate && !expression.match(PATTERN_EXPRESSION_DECLARATION))
+            throw new Error(`Invalid iterate${expression ? ": " + expression : ""}`);
+
+        const identifier = serial + ":" + ATTRIBUTE_ITERATE;
+        let {variable: name, result: iterate} = _expression_eval(
+            identifier, _execution_context(), expression, EXPRESSION_TYPE_DECLARATION);
         if (!object.iterate) {
-            const iterate = String(object.attributes[ATTRIBUTE_ITERATE] || "").trim();
-            const match = iterate.match(PATTERN_EXPRESSION_VARIABLE);
-            if (!match)
-                throw new Error(`Invalid iterate${iterate ? ": " + iterate : ""}`);
-            object.iterate = {name:match[1].trim(), expression:"{{" + match[2].trim() + "}}"};
+            if (name === undefined)
+                throw new Error(`Invalid iterate: ${expression}`);
+            object.iterate = {name, expression};
             object.template = selector.cloneNode(true);
             selector.innerHTML = "";
         }
 
-        const identifier = serial + ":" + ATTRIBUTE_ITERATE;
-        let iterate = Expression.eval(identifier, _execution_context(), object.iterate.expression);
         if (iterate instanceof Error)
             throw iterate;
         if (iterate) {
@@ -2640,13 +2732,13 @@
 
     /**
      * EXPRESSION: The expression in the attributes is interpreted. The
-     * expression is stored in a meta-object and loaded from there, the
+     * expression is stored in a metadata object and loaded from there, the
      * attributes of the element can be overwritten in a render cycle and are
      * available (conserved) for further cycles. A special case is the text
      * element. The result is output here as textContent. Elements of type:
      * script + style are ignored.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      * @param {number} serial Serial of the element
      */
     const _render_attributes_update = (selector, object, serial) => {
@@ -2671,7 +2763,8 @@
             if (!value.match(PATTERN_EXPRESSION_CONTAINS))
                 return;
             const identifier = serial + ":" + attribute;
-            value = Expression.eval(identifier, _execution_context(), value);
+            value = _expression_eval(identifier, _execution_context(), value,
+                EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
             // If the type value is undefined, the attribute is removed. Since
             // the attribute contains an expression, the removal is only
             // temporary and is checked again at the next render cycle and
@@ -2730,7 +2823,7 @@
         const type = (selector.getAttribute(ATTRIBUTE_TYPE) || "").trim();
         if (!type.match(PATTERN_COMPOSITE_SCRIPT))
             return;
-        Scripting.eval(_execution_context(), selector.textContent);
+        Scripting.run(_execution_context(), selector.textContent);
     };
 
     /**
@@ -2742,7 +2835,7 @@
      * These elements manipulate the inner markup. This is intercepted by the
      * MutationObserver.
      * @param {Element} selector Element to be rendered
-     * @param {object} object Meta-object of the element
+     * @param {object} object Metadata object of the element
      * @param {object} lock Lock of the render cycle
      */
     const _render_element_children = (selector, object, lock) => {
@@ -2916,10 +3009,11 @@
             // composite is initially replaced by a marker. During replacement,
             // the initial composite is removed, which can cause an unwanted
             // undocking. The logic is based on the assumption that each
-            // composite has a meta-object. When replacing a composite, the
-            // corresponding meta-object is also deleted, so that the
+            // composite has a metadata object. When replacing a composite, the
+            // corresponding metadata object is also deleted, so that the
             // MutationObserver detects the composite to be removed in the DOM,
-            // but undocking is not performed without the matching meta-object.
+            // but undocking is not performed without the matching
+            // metadata object.
 
             const serial = node.uid;
             if (serial === undefined)
@@ -2935,7 +3029,7 @@
             if (object && object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE)) {
                 const meta = _mount_lookup(node);
                 if (meta && meta.meta && meta.meta.model && meta.model) {
-                    const model = (meta.meta.namespace || []).concat(meta.meta.model).join(".");
+                    const model = (meta.meta.scope || []).concat(meta.meta.model).join(".");
                     if (_models.has(model)) {
                         _models.delete(model);
                         if (typeof meta.model.undock === "function") {
@@ -2946,8 +3040,8 @@
                 }
             }
 
-            // meta-object assigned to the element must be deleted, because it
-            // is an indicator for existence and presence of composites and
+            // metadata object assigned to the element must be deleted, because
+            // it is an indicator for existence and presence of composites and
             // their application modules
             _render_meta.delete(serial);
         };
@@ -3102,10 +3196,13 @@
             // not affected, because they were not removed from the DOM.
             removed.forEach(_cleanup);
 
-            // Indirectly clear the Expressions script cache: Since serial is
-            // used only as a key prefix, an LRU cache can be truncated to the
-            // current cache size, effectively providing implicit cleanup
-            // without tracking serials.
+            // Indirectly reclaim cached expression names and scripts.
+            // Expression identifiers use serials only as prefixes; tracking all
+            // keys per removed node would require extra bookkeeping. Retained
+            // render metadata provides an approximate LRU budget, not an exact
+            // count of live cache entries. Apply the same budget to execution
+            // wrappers, whose cache keys describe execution scopes rather than
+            // DOM serials.
             Expression.prune(_render_meta.size);
             Scripting.prune(_render_meta.size);
 

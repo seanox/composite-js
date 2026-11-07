@@ -1,12 +1,13 @@
-#import syntaxA
-#import syntaxB
-#import syntaxC
-#import syntaxD
-#import syntax
+require("syntaxA");
+require("syntaxB");
+require("syntaxC");
+require("syntaxD");
+require("syntax");
 
 const x1 = () => {throw new Error("xxx");}
 
-const b1 = (? xxx.xxx.xxx);
-const b2 = (? x1());
+const b1 = attempt(() => xxx.xxx.xxx);
+const b2 = attempt(() => x1());
 
-#export b1 b2;
+Object.assign(window, expose({b1}));
+Object.assign(window, expose({b2}));

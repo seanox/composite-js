@@ -346,9 +346,24 @@
     <basename file="${release.file}" property="release.file.name"/>
     <length file="${release.file}" property="release.file.size"/>
     <echo message="${release.file.name}: ${release.file.size} bytes"/>
+    <basename file="${release.file.debug.testing}" property="release.file.debug.testing.name"/>
+    <length file="${release.file.debug.testing}" property="release.file.debug.testing.size"/>
+    <echo message="${release.file.debug.testing.name}: ${release.file.debug.testing.size} bytes"/>
     <basename file="${release.file.testing}" property="release.file.testing.name"/>
     <length file="${release.file.testing}" property="release.file.testing.size"/>
     <echo message="${release.file.testing.name}: ${release.file.testing.size} bytes"/>
+
+    <fileset id="test.files" dir="${workspace.test}" includes="*" casesensitive="true">
+      <or>
+        <contains text="&lt;script src=&quot;${release.file.name}&quot;&gt;"/>
+        <contains text="&lt;script src=&quot;${release.file.debug.testing.name}&quot;&gt;"/>
+        <contains text="&lt;script src=&quot;${release.file.testing.name}&quot;&gt;"/>
+      </or>
+    </fileset>
+    <pathconvert property="test.files.list" refid="test.files" pathsep="${line.separator}">
+      <mapper type="flatten"/>
+    </pathconvert>
+    <echo file="${workspace.test}/${ant.project.name}.tests" message="${test.files.list}"/>
   </target>
 
   <target name="release" depends="changes,compose">

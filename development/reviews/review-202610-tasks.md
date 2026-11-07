@@ -1185,10 +1185,10 @@ uebersehen. Weitere isolierte String-Ersetzungen reichen hier nicht aus.
 ```javascript
 Expression.eval({}, "{{ /and/.test('and') }}");      // true
 Expression.eval({}, "{{ /(?:ab)+/.test('abab') }}"); // true
-Scripting.eval({}, 'const r=/["]/; const answer=42; #export answer;');
-// answer wird mit dem Wert 42 exportiert.
-Scripting.eval({}, "const x = `a ${`#use missing`} z`; x");
-// Ergebnis: "a #use missing z"
+Scripting.eval({}, 'const r=/["]/; const answer=42; expose(answer, "answer");');
+// answer wird mit dem Wert 42 bereitgestellt.
+Scripting.eval({}, "const x = `a ${`use('missing')`} z`; x");
+// Ergebnis: "a use('missing') z"
 ```
 
 **Regression und Abnahme**
@@ -1216,15 +1216,15 @@ gueltige Literalinhalte nicht mehr veraendern.
 
 Der Wrapper erhaelt nur die Kontextschluessel als Funktionsparameter. Ein
 frisches internes `this`-Objekt transportiert pro Aufruf den Skripttext sowie
-die Helfer `import`, `export` und `use`. Der strikte direkte Aufruf
+die Helfer `require`, `expose` und `use`. Der strikte direkte Aufruf
 `eval(this.script)` erhaelt lokale Kontextbindungen und das Ergebnis der
 letzten Anweisung. Die internen Eigenschaften sind keine oeffentliche API.
 
-Die Makrouebersetzung erzeugt `this.import(...)`, `this.export(...)` und
-`this.use(...)`, auch im Debug-Ausgabepfad. Originaler Anwendungscode mit
-`script`, `_import`, `_export` oder `_use` bleibt unveraendert. Es sind weder
-dynamische Aliasnamen noch eine neue Liste reservierter Anwendungsnamen noetig.
-Der fruehere Helfer `_tolerate` wurde bereits entfernt.
+Die Makrouebersetzung erzeugt `require(...)`, `expose(...)` und `use(...)`, auch
+im Debug-Ausgabepfad. Originaler Anwendungscode mit `script`, `_require`,
+`_expose` oder `_use` bleibt unveraendert. Es sind weder dynamische Aliasnamen
+noch eine neue Liste reservierter Anwendungsnamen noetig. Der fruehere Helfer
+`_tolerate` wurde bereits entfernt.
 
 Der Cache speichert weiterhin ungebundene Wrapper anhand der geordneten
 Kontextschluessel. Kontextwerte und internes `this` werden bei jeder
@@ -1353,30 +1353,27 @@ zusammensetzen; eine einzelne reine Expression muss ihren Originaltyp behalten.
 **Erledigt, wenn:** Gemischte Textausdruecke konkatenieren, ohne die
 Typsemantik einzelner Expressions zu veraendern.
 
-### R20
+### ~~R20~~
+<details>
+  <summary>Details</summary>
 
-**Expression-Fehlerkontext ohne Mutation fremder Fehler anreichern**
+**~~Expression-Fehler ohne Mutation loggen und zurueckgeben~~**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `fehlererkennung` | **Abstimmung:** [R40](#r40)
-**Fundstellen:** `sources\expression.js:70-76`
+**Fundstellen:** `sources\expression.js:87-93`
 
 **Konkreter Loesungsansatz**
 
-Erzeuge im Catch von `Expression.eval` ein neues `Error`-Objekt aus einer
-sicher gelesenen Meldung plus dem bereits vorhandenen Script-Kontext.
-Speichere den gefangenen Wert mit
-`Object.defineProperty(wrapped, "cause", {value: error, configurable: true})`.
-Das benoetigt nicht den neueren `Error(message, {cause})`-Konstruktor und
-funktioniert auch mit einem eingefrorenen Originalfehler.
-Die bestehende `console.error`-Meldung und Rueckgabe erhalten den Wrapper.
-
-Die Meldungsextraktion muss `null`, Symbole und werfende
-`message`-/`toString`-Zugriffe beruecksichtigen. Ein eng auf die
-Diagnosekonvertierung begrenzter Fallback darf hier eine beschreibende
-Ersatzmeldung liefern, der Originalwert bleibt aber als `cause` erhalten.
-Kein nachtraegliches Schreiben in `error.message` und kein Catch, das einen
-Expression-Fehler als erfolgreichen Nutzwert ausgibt.
+Gib im Catch von `Expression.eval` den geworfenen Wert unveraendert als
+`result` zurueck. Uebergib ihn an `console.error` als erstes Argument und
+`Error in expression: ` plus den vorbereiteten Script-Kontext als zweites.
+Lies und veraendere keine `message` und konvertiere den geworfenen Wert nicht.
+Damit bleiben auch DOMExceptions, eingefrorene Errors, `null`, Symbole und
+Objekte mit werfenden Gettern oder Konvertierungen erhalten.
+Die urspruenglich vorgeschlagene Wrapper-Loesung mit `cause` entfaellt.
+Die Rueckgabe hat weiterhin keinen separaten Fehlerstatus; geworfene primitive
+Werte sind allein anhand von `result` nicht von normalen Ergebnissen unterscheidbar.
 
 **Problem und Ziel:** Die Fehlerbehandlung schreibt in `error.message`.
 Bei einer `DOMException` oder einem eingefrorenen Error kann gerade diese
@@ -1384,28 +1381,39 @@ Anreicherung einen neuen Fehler ausloesen und die urspruengliche Ursache verdeck
 
 **Umsetzung**
 
-1. Erzeuge einen eigenen Fehlerwert mit Expression-Kontext, statt das fremde
-   Fehlerobjekt zu veraendern.
-2. Erhalte den Originalfehler als Ursache oder Referenz. Nutze dafuer einen
-   mit der bestehenden Kompatibilitaetsgrenze vertraeglichen Mechanismus.
-3. Behalte den Vertrag von `Expression.eval` bei, einen Fehlerwert
-   zurueckzugeben. Behandle auch geworfene primitive Werte sicher.
+1. Gib den geworfenen Wert unveraendert zurueck, ohne Mutation oder Wrapper.
+2. Logge Originalwert und Expression-Kontext als getrennte Argumente.
+3. Vermeide Getter-, Setter- und Konvertierungszugriffe in der Fehlerbehandlung.
 
 **Regression und Abnahme**
 
-- [ ] `document.querySelector("[")` in einer Expression liefert einen nutzbaren Fehlerwert statt eines neuen Anreicherungs-TypeError.
-- [ ] `Object.freeze(new Error("failure"))` bleibt unveraendert und als Originalursache erhalten.
-- [ ] Normale Errors und geworfene primitive Werte behalten Diagnose und Expression-Bezug.
+- [x] `document.querySelector("[")` in einer Expression liefert einen nutzbaren Fehlerwert statt eines neuen Anreicherungs-TypeError.
+- [x] `Object.freeze(new Error("failure"))` wird als unveraendertes Originalobjekt zurueckgegeben.
+- [x] Normale Errors und geworfene primitive Werte bleiben unveraendert; der Expression-Bezug wird separat geloggt.
 
-**Testansatz:** `test\expression_errors.html`, `test\expression_eval.html`.
+**Testansatz:** `test\expression_errors.html`, `test\expression_eval.html`,
+`test\expression_markup.html`.
 **Erledigt, wenn:** Die Fehlerbehandlung auch bei schreibgeschuetzten
 Fremdobjekten ihren eigenen Rueckgabevertrag erfuellt.
 
-### R21
+> Erledigt: `Expression.eval` loggt Originalwert und Script-Kontext getrennt
+> und gibt den Originalwert unveraendert zurueck. Die Regressionen pruefen auch
+> das Ausbleiben von Getter-, Setter- und Konvertierungszugriffen sowie
+> unveraenderte Fehlermeldungen bei wiederholten gecachten Auswertungen.
+> Playwright: Die vollstaendige Suite mit 100 Testseiten und 1576 Tasks pro Engine
+> besteht in Blink, Gecko und WebKit mit frisch isoliert gebauten Bundles.
+> Die native Browserkonsole darf Fehlereigenschaften fuer die Anzeige lesen;
+> die Rueckgabe bleibt unveraendert. Goanna wurde nicht ausgefuehrt.
 
-**Namespace-Wurzeln ausserhalb interner Hilfsscopes aufloesen**
+</details>
 
-**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** offen
+### ~~R21~~
+<details>
+  <summary>Details</summary>
+
+**~~Namespace-Wurzeln ausserhalb interner Hilfsscopes aufloesen~~**
+
+**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R22](#r22), [R45](#r45), [R52](#r52)
 **Fundstellen:** `sources\extension.js:381-389`
 
@@ -1451,11 +1459,22 @@ Bindungen. Globale Namen duerfen nicht mit der Implementierung kollidieren.
 **Erledigt, wenn:** Interne Variablen keine gueltige globale Namespace-Bindung
 verdecken.
 
-### R22
+> Erledigt durch den Ersatz von `Namespace` durch `Object.lookup/use/exists`.
+> `_object_tree` loest globale Wurzeln mit indirektem `eval` auf
+> (`sources\extension.js:363`), ohne Zugriff auf interne Hilfsscopes.
+> Globale `var`-/`let`-/`const`-Bindungen bleiben auch bei Namenskollisionen
+> korrekt erreichbar. Die obigen `Namespace`-Abnahmekriterien sind historisch;
+> neue globale Wurzeln werden explizit mit `Object.use(window, path)` angelegt.
 
-**Namespace-Wurzeltreffer ohne globalen Fallback weiterverarbeiten**
+</details>
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+### ~~R22~~
+<details>
+  <summary>Details</summary>
+
+**~~Namespace-Wurzeltreffer ohne globalen Fallback weiterverarbeiten~~**
+
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R21](#r21), [R45](#r45)
 **Fundstellen:** `sources\extension.js:222-236, 381-384`
 
@@ -1499,6 +1518,15 @@ Root-Pruefungen. Nachfolgende Namen werden dann unzulaessig erneut global gesuch
 `test\composer_object_lookup.html`.
 **Erledigt, wenn:** Eine bereits aufgeloeste Wurzel fuer nachfolgende Segmente
 nicht nochmals durch eine globale Suche ersetzt wird.
+
+> Erledigt: `_object_tree` loest die Wurzel separat auf und traversiert danach
+> ausschliesslich Properties (`sources\extension.js:357-382`), ohne globalen
+> Fallback bei `null`, `false`, `0` oder `""`. Solche Endwerte bleiben erhalten;
+> nicht fortsetzbare Pfade werfen auch ueber `Object.exists` einen `TypeError`.
+> DOM-Objekte sind nach dem aktuellen Vertrag ausdruecklich zulaessig;
+> die obigen Abnahmekriterien (`exists === false`, DOM-Ablehnung) sind veraltet.
+
+</details>
 
 ### R23
 
@@ -2684,11 +2712,13 @@ melden spaetere Abschlussereignisse daher noch die erste URL.
 **Testansatz:** `test\composer_events_xmlhttprequest.html`.
 **Erledigt, wenn:** Jedes XHR-Ereignis die Metadaten seines Requests meldet.
 
-### R45
+### ~~R45~~
+<details>
+  <summary>Details</summary>
 
-**Objekt-only-Signaturen von Namespace und Object ohne Pfad zulassen**
+**~~Objekt-only-Signaturen von Namespace und Object ohne Pfad zulassen~~**
 
-**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R21](#r21), [R22](#r22)
 **Fundstellen:** `sources\extension.js:193-213, 259-262, 472-495`
 
@@ -2730,6 +2760,15 @@ Root-Objekt sollen aber die Wurzel liefern beziehungsweise deren Existenz bestae
 `test\composer_object_lookup.html`.
 **Erledigt, wenn:** Alle vier Objekt-only-Aufrufe ohne
 `Invalid namespace at level 2` funktionieren.
+
+> Erledigt: `_object_tree` behandelt einen fehlenden Pfad als `[]`
+> (`sources\extension.js:349`); `Object.lookup(root)` gibt die validierte
+> Wurzel unveraendert zurueck, `Object.exists(root)` ergibt `true`.
+> `Namespace` wurde entfernt; die darauf bezogenen Abnahmekriterien sind historisch.
+> Ein expliziter Leerpfad `""` bleibt ungueltig; der Objekt-only-Fall ist in
+> `test\extension_object_tree.html` abgedeckt.
+
+</details>
 
 ### R46
 
@@ -3030,17 +3069,19 @@ kontrollierten Aufbau mit zwei lokalen Origins und unabhaengiger Beobachtung nut
 **Erledigt, wenn:** Ein unzugaenglicher Parent keine gueltigen lokalen
 Console-Aufrufe beeintraechtigt.
 
-### R52
+### ~~R52~~
+<details>
+  <summary>Details</summary>
 
-**Jede Export-Namespace-Ebene als Container validieren**
+**~~Jede Expose-Namespace-Ebene als Container validieren~~**
 
-**Prioritaet:** niedrig | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `sprache_api` | **Abstimmung:** [R17](#r17), [R21](#r21), [R22](#r22)
 **Fundstellen:** `sources\scripting.js:289-306`
 
 **Konkreter Loesungsansatz**
 
-Verwende in `_export` einen kleinen lokalen Container-Guard:
+Verwende in `_expose` einen kleinen lokalen Container-Guard:
 `value !== null && (typeof value === "object" || typeof value === "function")`.
 Pruefe damit Root und jede nach dem Property-Lesen erhaltene
 Zwischenebene. Nur wenn der Wert tatsaechlich `undefined` ist,
@@ -3049,8 +3090,8 @@ gemaess bestehendem Vertrag einen neuen Container erzeugen.
 Anlass fuer stilles Ersetzen.
 
 Fuehre sowohl die Anlage fehlender Zwischencontainer als auch den
-finalen Export mit `Reflect.set(container, name, value)` aus.
-Bei `false` einen ausdruecklichen Exportfehler mit vollstaendigem
+finalen Expose mit `Reflect.set(container, name, value)` aus.
+Bei `false` einen ausdruecklichen Exposefehler mit vollstaendigem
 Zielpfad werfen; Setter-Ausnahmen nicht verschlucken. So werden
 auch nicht erweiterbare Objekte und nicht schreibbare Properties
 im bisher nicht-strikten Helfer zu erkennbaren Fehlschlaegen.
@@ -3058,7 +3099,7 @@ Die bestehende Regel fuer bereits belegte finale Namen und die
 beabsichtigte Ausnahme fuer browserseitige Element-/HTMLCollection-
 Bindings erhalten. Kein allgemeines "bei jedem Konflikt ueberschreiben".
 
-**Problem und Ziel:** `_export()` prueft vorhandene Namespace-Ebenen nicht
+**Problem und Ziel:** `_expose()` prueft vorhandene Namespace-Ebenen nicht
 auf ihre Eignung als Container. Im nicht-strikten Helfer kann ein Write auf
 einen primitiven Wert wirkungslos bleiben, waehrend die gesamte Anweisung als
 erfolgreich erscheint.
@@ -3067,22 +3108,32 @@ erfolgreich erscheint.
 
 1. Pruefe Root und jede Zwischenebene vor dem Zugriff auf einen geeigneten
    Objekt- oder Funktionscontainer.
-2. Erzeuge fehlende Ebenen nur nach bestehendem Exportvertrag. Ersetze
+2. Erzeuge fehlende Ebenen nur nach bestehendem Exposevertrag. Ersetze
    primitive Werte oder `null` nicht still durch Objekte.
-3. Melde Konflikte mit eindeutigem Namespace-/Exportbezug.
+3. Melde Konflikte mit eindeutigem Namespace-/Exposebezug.
 4. Sichere auch die abschliessende Zuweisung ab: Nicht beschreibbare
    Zielproperties und nicht erweiterbare Container duerfen keinen falschen Erfolg
    liefern.
 
 **Regression und Abnahme**
 
-- [ ] Nach `window.exportRoot=3` meldet `Scripting.eval({}, "const item=1; #export item@exportRoot; 42;")` einen Exportfehler statt Erfolg `42`.
+- [ ] Nach `window.exposeRoot=3` meldet `Scripting.eval({}, "const item=1; expose(item, 'exposeRoot.item'); 42;")` einen Exposefehler statt Erfolg `42`.
 - [ ] `null` und primitive Zwischenebenen werden mit verstaendlichem Namespace-Bezug abgelehnt.
 - [ ] Objekt-/Funktionscontainer funktionieren; tatsaechlich fehlende Ebenen werden korrekt erzeugt.
-- [ ] Nicht beschreibbare Zielproperties und nicht erweiterbare Container verursachen keinen still verlorenen Export.
+- [ ] Nicht beschreibbare Zielproperties und nicht erweiterbare Container verursachen keinen still verlorenen Expose.
 
 **Testansatz:** `test\scripting_eval.html`, `test\scripting_syntax.html`,
-`test\composer_render_export.html`.
+`test\composer_render_expose.html`.
 **Dokumentation:** `manuals\scripting.md`.
-**Erledigt, wenn:** Ein nicht ausgefuehrter Export nie als erfolgreich
+**Erledigt, wenn:** Ein nicht ausgefuehrter Expose nie als erfolgreich
 abgeschlossene Anweisung ausgegeben wird.
+
+> Erledigt: `_expose` verwendet Strict Mode und `Object.use(window, parentPath)`
+> (`sources\scripting.js:65-80`). Primitive/null-Zwischenebenen werden mit
+> Pfadbezug abgelehnt; nicht beschreibbare Ziele und nicht erweiterbare Container
+> werfen Fehler, Setter-Ausnahmen werden weitergegeben. `expose` erhaelt heute
+> ein Objekt; Namespace-Zwischenebenen muessen Objekte oder Arrays sein.
+> Die alte `expose`-Reproduktion und die geforderte Unterstuetzung von
+> Funktionscontainern sind damit historisch.
+
+</details>

@@ -38,23 +38,25 @@ a browser application runtime that composes such modules into applications at
 runtime.
 
 The framework treats an application as a composition of independently identified
-application units called composites. Each composite combines a declarative view,
-application logic, and the resources required for its realization within the
-DOM. The runtime resolves these resources, connects them with a concrete DOM
-context, and realizes the resulting composite in the browser.
+application units called composites. A composite combines a declarative view
+with optional application logic and associated resources. The runtime uses
+existing markup and application objects or loads separately stored resources
+within the application context as needed. It realizes the composite within a
+concrete DOM context in the browser.
 
 ## Composing Modules at Runtime
 The central idea of _composite-js_ is the composition of application units at
 runtime. An application is partitioned into loosely coupled composites, each
-with its own identity, resources, view, application logic, and runtime
-representation. That identity is the composite ID, declared in the markup and
-used by the runtime as the reference for every relationship of a composite.
+with its own identity, view, and runtime representation. Application logic and
+separately stored application resources are optional. That identity is the
+composite ID, declared in the markup and used by the runtime to resolve the
+corresponding application module and default resource paths.
 
-The runtime resolves and loads these resources and realizes each composite
-within a concrete DOM context, so composition is part of the running
-application rather than exclusively a build-time operation. Accordingly, the
-DOM is not merely the output of the application but also part of its running
-state, interpreted and processed by the runtime.
+The runtime resolves and loads these application resources as needed and
+realizes each composite within a concrete DOM context, so composition is part of
+the running application rather than exclusively a build-time operation.
+Accordingly, the DOM is not merely the output of the application but also part
+of its running state, interpreted and processed by the runtime.
 
 ## Declarative UI Concepts
 Seanox composite-js combines the browser's native programming model with
@@ -64,10 +66,10 @@ The corresponding application logic is provided by an application module and
 made available to the view through expressions and composite binding.
 
 ## Composite Binding
-Composite binding connects the view with explicitly exposed objects of the
-application module. It is established by the runtime while a composite is
-realized, so the view can access application logic without an additional wiring
-layer.
+Composite binding connects the view with application objects published under
+the namespace resolved from the composite ID. It is established by the runtime
+while a composite is realized, so the view can access application logic without
+an additional wiring layer.
 
 ## Rendering
 Rendering is the process by which the runtime transforms the declarative model
@@ -98,9 +100,9 @@ A view uses regular markup together with the declarative concepts and
 instructions processed by the runtime. CSS defines its presentation.
 
 ### JavaScript as the Primary Application Language
-Application logic is implemented in JavaScript. A composite script establishes
-the application module of a composite, but the runtime does not prescribe how
-that application module must be structured internally.
+Application logic is implemented in JavaScript. A composite script can establish
+the application module of a composite, but the runtime does not prescribe its
+internal structure.
 
 ### Composing Modules at Runtime
 Composition is part of the running application model rather than exclusively a
@@ -126,8 +128,8 @@ runtime remain independent of such a process.
 ## Summary
 Seanox composite-js is a browser application runtime for Single-Page
 Applications and micro-frontends. It structures applications as compositions of
-independently identified composites, each of which combines a declarative view,
-application logic, and associated resources within a DOM context.
+independently identified composites, each of which combines a declarative view
+with optional application logic and associated resources within a DOM context.
 
 Applications are composed at runtime, use the native programming model of the
 browser, and do not require compilation. The framework provides these mechanisms

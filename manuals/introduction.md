@@ -64,7 +64,7 @@ The corresponding application logic is provided by an application module and
 made available to the view through expressions and composite binding.
 
 ## Composite Binding
-Composite binding connects the view with explicitly exported objects of the
+Composite binding connects the view with explicitly exposed objects of the
 application module. It is established by the runtime while a composite is
 realized, so the view can access application logic without an additional wiring
 layer.

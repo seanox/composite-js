@@ -83,7 +83,7 @@ const example = {
     }
 };
 
-#export example;
+expose(example, "example");
 ```
 
 The composite script establishes the application module of the composite. The
@@ -99,6 +99,11 @@ Implement the view in `modules/example.html`:
 <p id="preview">{{example.message}}</p>
 ```
 
+On the [`input` and `change` events](markup.md#events), the runtime
+[validates the input](markup.md#validate) and, if valid, copies its value to
+`example.message`. [`render="#preview"`](markup.md#render) refreshes the
+preview. The validation method in this example accepts every value.
+
 Optional styles in `modules/example.css`:
 
 ```css
@@ -107,76 +112,65 @@ Optional styles in `modules/example.css`:
 }
 ```
 
+Composite CSS is inserted into the document and is not automatically scoped. Use
+selectors such as `#example` to target the composite explicitly.
+
 The view describes the declarative presentation of the composite. It contains
 markup and expressions and refers to application data provided by the
-application module. The expression `{{example.message}}` accesses data exposed
-by the application module through composite binding.
+application module. The expression `{{example.message}}` reads the property of
+the published application object. Composite binding connects the input element
+`id="message"` with that property.
+
+Serve the directory containing `index.html` and `modules` with a web server,
+then open `index.html` over HTTP or HTTPS. Enter text in the input field; the
+preview displays the same text.
 
 ## What Happens During Realization
-When the runtime encounters the composite declaration, it forms the composite ID
-from the `id` attribute and the `composite` attribute, resolves the
-corresponding composite module and loads its resources:
+For the empty composite in this example, the runtime forms the composite ID from
+the `id` attribute and the `composite` attribute and resolves the corresponding
+composite module. It loads and executes `example.js` before loading
+`example.css` and `example.html`:
 
 ```
 Composite Module
-    -> example.html
-    -> example.css
     -> example.js
+    -> example.css
+    -> example.html
 ```
 
-The composer then realizes the composite within the declared DOM context.
+Composite resources are optional. A composite can use an existing application
+module without loading a composite script. CSS is loaded for empty composite
+elements; HTML is loaded only if the element is empty and has neither `import`
+nor `output`. A missing resource (HTTP 404) is tolerated during automatic
+loading.
 
-Conceptually, the realization follows this dependency chain:
-
-```
-Composite declaration
-    -> Composite ID
-        -> Composite Module resolution
-            -> resource loading
-                -> Composite Script execution
-                    -> Application Module establishment
-                        -> View realization
-                            -> Composite Binding
-                                -> running Composite
-```
-
-As shown here, the composite lifecycle begins with the loading of the
-composite module. At the end of this process, the composite reaches its
-running state. The resulting composite consists of:
-
-```
-Composite
-    -> DOM context
-    -> JavaScript context
-    -> CSS context
-```
+The composer then realizes the composite within the declared DOM context. The
+general relationships and the contexts of a running composite are described in
+[Concept Relationships](architecture.md#concept-relationships) and
+[Composite](architecture.md#composite).
 
 ## Composite Script and Application Module
-The composite script and the application module are related but distinct
-concepts.
+In this example, `modules/example.js` is the composite script; the exposed
+`example` object is the application module used for binding. See
+[Composite Script](architecture.md#composite-script) and
+[Application Module](architecture.md#application-module) for their general
+responsibilities.
+
+Objects that participate in composite binding must be available under the
+namespace resolved from the Composite ID. A composite script can publish an
+object there with `expose(object, namespace)`:
 
 ```
-Composite Script
-    -> establishes
-        -> Application Module
+expose(example, "example");
 ```
 
-The composite script is the executable JavaScript program of the composite
-module, whose execution establishes the application module as the resulting
-runtime representation of the application logic.
-
-Objects that participate in composite binding must be explicitly exported:
-
-```
-#export example;
-```
-
-Without the export, the object would remain internal to the composite script
-and would not be available to the view.
+The namespace argument publishes the entire object as `window.example`. Without
+it, `expose(example)` only collects the object's properties as module exports.
+Composer does not make those exports available to the view.
 
 ## Composite Binding
-Composite binding connects the declarative DOM structure of the view with
-explicitly exported objects of the application module.
+Composite binding connects the declarative DOM structure of the view with the
+corresponding application module.
 
 ```
 View
@@ -190,6 +184,9 @@ application data available to the view.
 The previous example uses explicit rendering so that the data flow remains
 visible.
 
+To use reactive application data, replace `modules/example.js` and
+`modules/example.html` with the following versions.
+
 ```javascript
 const example = {
     message: "",
@@ -198,7 +195,7 @@ const example = {
     }
 }.reactive();
 
-#export example;
+expose(example, "example");
 ```
 
 ```html
@@ -207,10 +204,10 @@ const example = {
 <p>{{example.message}}</p>
 ```
 
-When reactive application data is used, the runtime reacts to changes of its
-properties. Any expression in the view that depends on a changed property is
-updated automatically, so explicit rendering is no longer required in this
-case.
+Properties read through the reactive object during rendering are tracked as
+dependencies. Changes made through that reactive object update the dependent
+parts of the view asynchronously, so the explicit `render` attribute is not
+needed in this example.
 
 ## Learning Path
 The following tutorials provide separate learning paths for micro-frontends and

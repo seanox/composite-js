@@ -4,221 +4,233 @@
 - - -
 
 # Expression Language
-The expression language provides access to client-side JavaScript and to the
-application modules in _composite-js_. Expressions support the JavaScript API
-and additional keywords for arithmetic and logical operators.
-
-```
-{{'Hello World!'}}
-```
-
-The expression language can be used in markup from the &lt;body&gt; element. It
-can be used as free text and in attributes. The content of &lt;style&gt; and
-&lt;script&gt; element is not supported.
-
-During rendering, the composer interprets the expression syntax `{{...}}`.
-Inside an expression, the character sequences `{{` and `}}` must be escaped as
-`\{\{` and `\}\}`.
+The expression language embeds JavaScript in composite-js markup. Expressions
+can access browser APIs and application objects available in their execution
+scope.
 
 ## Contents Overview
-- [Elements](#elements)
-  - [Text](#text)
-  - [Literal](#literal)
-  - [Keyword](#keyword)
-  - [Value](#value)
-  - [Method](#method)
-  - [Logic](#logic)
 - [Expressions](#expressions)
-  - [Value-Expression](#value-expression)
-  - [Method-Expression](#method-expression)
-  - [Element-Expression](#element-expression)
-  - [Variable-Expression](#variable-expression)
+  - [Values](#values)
+  - [Function Calls](#function-calls)
+  - [Declarations](#declarations)
   - [Combination](#combination)
-  - [(? ...) tolerate](#--tolerate)
+  - [Delimiters](#delimiters)
+  - [Line Breaks](#line-breaks)
+- [Markup Extensions for Expressions](#markup-extensions-for-expressions)
+- [JavaScript API](#javascript-api)
 - [Notes](#notes)
 
-## Elements
-An expression is a set of words. The words are classified by their
-characteristics.
+## Expressions
+Expressions use `{{...}}` to embed JavaScript in markup within text nodes and
+attributes of the `<body>` element, excluding the contents of `<style>` and
+`<script>` elements.
 
-```
-+-------------------------------------------------------------+
-|            Words (all elements of an expression)            |
-+--------+----------------------------------------------------+
-|  Text  |                     Expression                     |
-|        +-----------+----------------------------------------+
-|        |  Literal  |                 Script                 |
-|        |           +-----------+----------------------------+
-|        |           |  Keyword  |           Others           |
-|        |           |           +---------+----------+-------+
-|        |           |           |  Value  |  Method  | Logic |
-+--------+-----------+-----------+---------+----------+-------+
-```
-
-### Text
-Text is not a regular expression element. It occurs in attributes when the
-expression language is combined with text.
+Text outside of expressions can be combined in attributes and text nodes.
 
 ```html
-<p output="Today is {{Calendar.weekday}} and it's {{Clock.time}}."></p>
+<p>Today is {{Calendar.weekday}} and it's {{Clock.time}}.</p>
 ```
 
-### Literal
-Literals are text embedded in an expression with single, double or backtick
-quotation marks. They support the usual control characters and escape sequences.
+Standalone value expressions supply their JavaScript value to the surrounding
+markup; interpolation produces text.
 
-```
-{{'Hello World!'}}
-{{"Hello World!"}}
-{{`Hello World!`}}
-```
+The surrounding markup determines how results are rendered:
 
-### Keyword
-The JavaScript syntax for the expression language has been extended with these
-keywords to support valid markup:
+| Context                       | Example                              | Result                     |
+|-------------------------------|--------------------------------------|----------------------------|
+| Text node                     | `{{undefined}}` or `{{null}}`        | No output                  |
+| Ordinary attribute            | `title="{{undefined}}"`              | Attribute removed          |
+| Ordinary attribute            | `title="{{null}}"`                   | Attribute value `"null"`   |
+| Mixed attribute interpolation | `title="before {{undefined}} after"` | `"before undefined after"` |
+| Content instruction           | `output="{{}}"` or `import="{{}}"`   | Text `"undefined"`         |
 
-| Keyword | Function |
-|---------|----------|
-| `and`   | `&&`     |
-| `div`   | `/`      |
-| `empty` | `!`      |
-| `eeq`   | `===`    |
-| `eq`    | `==`     |
-| `ge`    | `>=`     |
-| `gt`    | `> `     |
-| `le`    | `<=`     |
-| `lt`    | `<`      |
-| `mod`   | `%`      |  
-| `ne`    | `!=`     |
-| `nee`   | `!==`    |
-| `not`   | `!`      |  
-| `or`    | `\|\|`   |
+Runtime instructions such as [condition](markup.md#condition) and [iterate](
+    markup.md#iterate) apply their own value requirements.
 
-### Value
-Anything that is not a literal or keyword is potentially a value. A Value
-represents an object property or variable. Object properties are accessed
-directly or through a corresponding getter. If neither an object property nor a
-variable can be determined, a method or other logic is assumed.
+Empty expressions are removed from text nodes and mixed interpolation. A
+standalone empty value expression evaluates to `undefined`.
 
-### Method
-Everything that is not literal, keyword and value is potentially a method. If no
-method can be determined, other logic is assumed.
+Synchronous execution errors are logged with the expression context, and their
+thrown values are processed as results rather than propagated. Errors can
+therefore appear in rendered output. Promises are not awaited, and later
+rejections are not handled.
 
-### Logic
-Everything that is not literal, keyword, value and method is potentially
-executable logic.
+For execution scope and shared state, see [Declarations](#declarations). Prefer
+side-effect-free rendering expressions; initialize application modules in
+[composite scripts](architecture.md#view).
 
-## Expressions
-Different expression types can be combined.
+### Values
+The examples assume that `Example` is available to the expression. Local
+composite-script bindings are not exposed automatically; see [expose](
+    scripting.md#expose) and [Scopes](architecture.md#scopes).
 
-Expressions output all values except the value `undefined`. The string
-`undefined` is interpreted as normal text.
-
-### Value-Expression
-Outputs a [value](#value) -- the value of an object property or a variable.
-
-```
+```text
 {{Example.object.field}}
 ```
 
-### Method-Expression
-Calls a [method](#method) and outputs its return value.
-
+```html
+<input id="ExampleInput" value="Hello World!">
+{{document.getElementById("ExampleInput").value}}
 ```
+
+Bare element-ID names may resolve through browser named access; they are not a
+composite-js expression feature.
+
+### Function Calls
+```text
 {{Example.getData()}}
 ```
 
-### Element-Expression
-If a variable starts with `#` in an expression, this variable refers to an HTML
-element with the same ID. If no matching HTML element can be found, the value of
-the variable corresponds to `undefined`.
+If a property may be absent and no output is acceptable:
 
-```
-{{#ExampleElement.value}}
-
-<input type="text" id="ExampleElement"/>
+```text
+{{attempt(() => Example.object.optional.value)}}
 ```
 
-More complex IDs that do not contain only word characters (`_ a-z A-Z 0-9`) can
-be enclosed in square brackets.
+[`attempt(callback)`](scripting.md#attempt) is automatically available in
+expressions. It returns the callback's result or `undefined` on a synchronous
+error, without logging. Use it only when a missing result is acceptable.
 
-```
-{{#[ExampleElement:1].value}}
+### Declarations
+In text nodes, `{{name: expression}}` creates or sets a variable in the view
+scope without producing output. The identifier uses `_ a-z A-Z 0-9`, cannot
+start with a digit, and must be followed immediately by the colon. This
+declaration syntax belongs to composite-js, not to JavaScript variable
+declarations.
 
-<input type="text" id="ExampleElement:1"/>
-```
-
-### Variable-Expression
-The expression language can create and set variables in the view scope at
-runtime. The expression must start with a variable name (identifier), which
-uses the word characters `_ a-z A-Z 0-9` and is separated from the expression by
-a colon.
-
-```
-{{foo:1 +2 +3 + 'x hello'}}
+```html
+{{label: Example.object.field}}
+<p>{{label}}</p>
 ```
 
-Creates or sets the value for variable `foo` in the view scope with `6x hello`.
+Subsequent expressions can read `label` by name. Declarations are evaluated
+again when their text nodes are rendered; they are not one-time initialization
+statements.
+
+Ordinary attributes do not support declaration expressions. The [iterate](
+    markup.md#iterate) instruction uses this syntax for its temporary iteration
+variable rather than a persistent view scope declaration.
 
 > [!IMPORTANT]
-> __View Scope Variables:__ Variables defined in markup can be referenced by
-> name in expressions and scripts, but they are not global JavaScript variables.
-> Expressions and scripts run in a temporary execution scope. Persistent view
-> and application scopes are accessed through the `view` and `application`
-> objects.  
-> See the [Scope overview](architecture.md#scopes) for details.
+> __View Scope Variables:__ These are shared across the running page, not
+> isolated per composite or global JavaScript bindings. Bare-name reassignment
+> affects only the current evaluation; use `view.name` for persistent
+> assignments. Mutations of referenced objects can persist. Access persistent
+> application state through `application`; see the [Scope overview](
+>     architecture.md#scopes).
 
 ### Combination
-All types of expressions can be combined.
+Encode markup-sensitive characters as required by HTML or XML, for example
+`&amp;&amp;`:
 
+```html
+{{label: Example.enabled &amp;&amp; Example.ready ? Example.title.toUpperCase() : ''}}
 ```
-{{foo:not empty Foo.data and not empty Foo.data.items ? String(Foo.data.items[0].fieldA).substring(2) : ''}}
+
+### Delimiters
+In markup, a match starts at `{{` and ends at the first subsequent `}}`.
+JavaScript strings, comments, template literals, and backslashes do not mask
+this boundary. For example, `\{{value}}` evaluates the expression and retains
+the preceding backslash. Unmatched `{{` and stray `}}` remain ordinary text.
+
+To include `}}` in a JavaScript string, write `\}\}`. Separate adjacent
+structural closing braces with whitespace:
+
+```text
+{{"\}\}"}}
+{{({outer: {value: 3} }).outer.value}}
 ```
 
-### (? ...) tolerate
-Expressions are evaluated like JavaScript and can cause errors. With object
-access, checks for individual object levels may be required.
+These expressions produce `}}` and `3`. JavaScript interprets the string
+escapes; the runtime does not decode them or parse nested expressions.
 
-The syntax `(? ...)` suppresses errors within the brackets -- __the ? must be
-followed by at least one whitespace character__. If an error occurs, the 
-expression evaluates to undefined and nothing is written to the browser console.
-Syntax errors are not suppressed.
+### Line Breaks
+Line breaks are preserved. Expressions execute in strict mode and may contain
+multiple statements; their result is the final expression value. A top-level
+`return` is not supported.
 
+```text
+{{
+    const amount = 2; // Number of items
+    amount * 3
+}}
 ```
-{{"Expression with an error " + (? object.that.does.not.exist()) + "!"}}
+
+The expression evaluates to `6`.
+
+## Markup Extensions for Expressions
+These optional, case-sensitive markup extensions provide markup-friendly
+spellings for JavaScript operators. Normal JavaScript operators are also
+supported. Composer translates the extensions in complete markup expressions
+before evaluation; direct calls to `Expression.eval` expect JavaScript
+operators.
+
+| Extension | JavaScript |
+|-----------|------------|
+| `:and`    | `&&`       |
+| `:div`    | `/`        |
+| `:empty`  | `!`        |
+| `:eeq`    | `===`      |
+| `:eq`     | `==`       |
+| `:ge`     | `>=`       |
+| `:gt`     | `>`        |
+| `:le`     | `<=`       |
+| `:lt`     | `<`        |
+| `:mod`    | `%`        |
+| `:ne`     | `!=`       |
+| `:nee`    | `!==`      |
+| `:not`    | `!`        |
+| `:or`     | `\|\|`     |
+
+An extension must be bounded by whitespace or the beginning/end of the
+expression body. `a :and b` and `:not value` are replaced; `a:and b`,
+`:not(value)`, and `:AND value` are not. `foo :and value` is an expression using
+an extension, not a declaration of `foo`.
+
+Replacement is textual and also applies inside strings, comments, regular
+expressions, and template literals: `{{'a :and b'}}` produces `a && b`. To
+retain that sequence in a string, use `{{'a \u003aand b'}}`, which produces
+`a :and b`. Replacement applies to source text, not evaluated string results.
+Bare words such as `and`, `not`, or `empty` are ordinary JavaScript identifiers.
+`:empty` means `!`, not a collection-size test.
+
+The [Combination](#combination) example can also use these extensions:
+
+```text
+{{label: Example.enabled :and Example.ready ? Example.title.toUpperCase() : ''}}
 ```
 
 ## Notes
-Expressions are interpreted by the composer during rendering after the page has
-loaded. They can therefore be visible during page loading. Use the attribute
-[release](markup.md#release) to prevent this.
+After runtime bootstrap, [release](markup.md#release) hides an element until
+rendering completes. To hide it before bootstrap, include
+`[release] { display: none !important; }` in the document's initial styles.
 
 ```html
 <h1 release>{{'Hello World!'}}</h1>
 ```
 
-Alternatively, content can be stored in the DataSource in combination with the
-attributes [output](markup.md#output) and [import](markup.md#import).
-
-```css
-h1:after {
-  content:attr(title)
-}
-```
+For attributes the browser processes before rendering, such as an image's `src`,
+use an [@-attribute](markup.md#-attributes) template:
 
 ```html
-<h1 title="{{'Hello World!'}}"/>
-
-<h1 output="{{'Hello World!'}}"/>
-<h1 output="{{'xml://example/content'}}"/>
-<h1 output="xml://example/content"/>
-<h1 output="{{Messages['hello']}}"/>
-
-<h1 import="{{'Hello World!'}}"/>
-<h1 import="{{'xml://example/content'}}"/>
-<h1 import="xml://example/content"/>
-<h1 import="{{Messages['hello']}}"/>
+<img @src="{{Example.imageUrl}}" alt="">
 ```
+
+Text-node expressions render plain text, not HTML. [output](markup.md#output)
+replaces the element's content on each render; [import](markup.md#import)
+inserts content once and is then consumed. Both instructions can interpret
+strings as HTML:
+
+```html
+<p>{{'<strong>Hello</strong>'}}</p>
+<p output="{{'<strong>Hello</strong>'}}"></p>
+```
+
+Use text-node interpolation for external or user-provided text rather than
+inserting it as [executable markup](architecture.md#trust-boundary).
+
+For DataSource locators and localized text, see [DataSource](
+    datasource.md#locator) and [Messages](message.md).
 
 
 

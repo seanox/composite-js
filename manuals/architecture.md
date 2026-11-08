@@ -112,24 +112,17 @@ This includes:
 - Expressions
 - executable markup
 
-These components execute within the same application context and are not
-sandboxed from each other.
+These components execute with application privileges in the same application
+context and are not sandboxed from each other. Dynamic code execution is
+intentional and part of the runtime model.
 
-The trust boundary is the configured application context. Runtime resources are
-resolved within this context path. Content outside this context is not
-considered application code unless explicitly included by the application.
+The configured application context defines where runtime resources are
+resolved. Content outside this context is not considered application code unless
+explicitly included by the application. This is a resource boundary, not an
+execution boundary.
 
-The application context is therefore a resource boundary, not a security
-sandbox. It does not isolate JavaScript execution or protect trusted application
-code from other trusted application code.
-
-The runtime is not a sandbox for untrusted content. External or user-provided
-data must be handled appropriately before being introduced as executable
-application content.
-
-Dynamic code execution is intentional and is part of the runtime execution
-model. Composite scripts and expressions execute with the privileges of the
-application context; they are not executed in an isolated JavaScript sandbox.
+External or user-provided data must be handled appropriately before being
+introduced as executable application content.
 
 ## Scopes
 The runtime distinguishes four scopes. They differ in lifetime, ownership, and
@@ -217,8 +210,8 @@ composite.
 ```
 
 The declaration establishes the element as the root of the DOM context of the
-composite. The combination of the `composite` attribute and the `id` attribute
-forms the composite ID.
+composite. Only the combination of the `composite` and `id` attributes forms a
+composite ID, `customer` in this example.
 
 ### Composite Responsibilities
 A composite provides the logical boundary within which its declarative
@@ -230,19 +223,8 @@ composite module, the runtime, and the composer.
 
 ## Composite ID
 The composite ID is the unique identity of a composite and its global namespace
-within the application.
-
-It is formed by the semantic combination of the `id` and `composite` attributes
-on an HTML element.
-
-```html
-<section id="customer" composite>
-</section>
-```
-
-In this declaration, `customer` is the composite ID because the value occurs on
-an element declared as a composite. The attribute value alone does not form a
-composite ID outside that relationship.
+within the application. It is established by the [composite declaration](
+    #composite-declaration).
 
 The Composite ID connects:
 - the Composite in the DOM
@@ -261,20 +243,17 @@ it, and none of these relationships exists without it.
 
 ## Conceptual Composition
 Several concepts in _composite-js_ are formed by the semantic association of
-existing elements rather than by separate language constructs or artifacts.
+existing browser concepts rather than by separate language constructs or
+artifacts. The runtime assigns these concepts additional semantics.
 
-The composite ID is an example of this principle. It is not merely an attribute
-value.
+For example, a [composite declaration](#composite-declaration) combines existing
+attributes:
 
 ```text
 id attribute
     + composite attribute
         -> Composite ID
 ```
-
-Conceptual composition is therefore a fundamental architectural principle of
-_composite-js_. Existing browser concepts are assigned additional semantics by
-the runtime and combined into framework concepts.
 
 ## Composite Module
 A composite module is the loadable resource unit of a composite.
@@ -388,10 +367,8 @@ an application module; composite binding requires that object to exist.
 > - identifies one composite
 > - addresses the application module, if provided
 
-The application module can organize its internal object structure hierarchically
-and thereby provide additional logical namespaces. These namespaces are part of
-the object structure of the application module and are addressed within the
-namespace defined by the composite ID.
+The application module can organize its objects hierarchically; see [Namespace](
+    #namespace).
 
 Objects that participate in composite binding must be accessible under the
 namespace resolved from the composite ID. A composite script can publish an
@@ -432,20 +409,9 @@ result values, which may appear in rendered output. Direct `Scripting.eval()`
 and `Scripting.run()` calls instead propagate execution failures to their
 caller. See [Expression error handling](expression.md#expressions).
 
-Expressions use the shared view scope managed by the composer, distinct from
-the application module's JavaScript context. Markup declarations create
-persistent view variables, not global JavaScript variables. Runtime instructions
-such as `iterate` provide additional temporary values in the execution scope.
-
-The runtime exposes the persistent scopes through two explicit objects:
-
-- `view` contains the persistent variables of the current view scope.
-- `application` contains persistent variables shared by the composite-js
-  application instance, including its modules.
-
-Expressions and composite scripts read and update these scopes through `view`
-and `application`. Bare view variables are supplied as values for each
-execution; assigning to them does not update the stored view variables.
+Expressions use the [execution scope](#execution-scope) managed by the composer,
+distinct from the application module's JavaScript context. See [Scopes](#scopes)
+for persistent variables, temporary values, and assignment rules.
 
 > __View__
 > - describes declarative presentation

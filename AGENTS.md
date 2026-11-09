@@ -208,6 +208,25 @@ run. No matching pages is an error, not a successful empty test run.
 - When build/test commands or paths change, update this guide and the related
   CI configuration so local and CI instructions remain consistent.
 
+### Self-Contained Entry Documents
+Readers deliberately use `manuals/introduction.md`, `manuals/architecture.md`,
+and `manuals/getting-started.md` as entry points into composite-js. Each must be
+understandable on its own, without requiring the reader to follow links or read
+the other manuals first:
+- `introduction.md` explains the purpose, core concepts, and design principles.
+- `architecture.md` explains the application and runtime model, responsibilities,
+  relationships, and boundaries.
+- `getting-started.md` provides the prerequisites and a complete, executable
+  first example with enough explanation to understand its behavior.
+
+Links supplement these documents; they must not replace essential explanations.
+When a linked topic is needed to understand the current document or execute its
+examples, include the required information locally in a compact but sufficiently
+informative form, then link to the detailed reference for further information.
+This intentional redundancy preserves each document's independence. Keep these
+summaries consistent with the detailed manuals when behavior changes, without
+duplicating entire reference sections or unrelated details.
+
 ## Working Rules for AI Agents
 ### Before making changes
 1. Inspect `git status` and the relevant diff. Preserve existing staged,

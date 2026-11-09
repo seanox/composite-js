@@ -20,6 +20,29 @@
  * variable declarations. Markup extraction, rendering, and operator aliases
  * belong to Composer.
  *
+ *     USAGE
+ *     ----
+ * Direct evaluation for custom extensions:
+ *
+ *     Expression.eval({value: 7}, "{{value}}");
+ *     // {variable: undefined, result: 7}
+ *     Expression.eval({value: 7}, "{{name: value}}");
+ *     // {variable: "name", result: 7}
+ *
+ * Composer handles markup extraction, interpolation, markup extensions for
+ * expressions, and view scope bindings; direct calls perform none of these
+ * steps.
+ *
+ * The outer {{...}} frame is required; surrounding whitespace is allowed.
+ * Direct value expressions allow internal delimiter sequences. An internal
+ * }} prevents declaration recognition, leaving variable undefined. To retain
+ * declaration recognition, escape closing delimiter characters in strings
+ * or separate adjacent structural closing braces with whitespace. Preserve
+ * string escapes with String.raw or doubled backslashes when constructing
+ * the expression string in JavaScript.
+ *
+ * See eval's JSDoc for signatures, return values, caching, and error behavior.
+ *
  * see also: https://seanox.github.io/composite-js/manuals/expression.html
  */
 (() => {
@@ -40,11 +63,15 @@
          * The variable name is undefined unless the expression declares one.
          * An optional identifier caches the variable name and prepared script,
          * but not the result or execution context.
+         * Reusing an identifier retains the original script while it is cached;
+         * use a different identifier when the source changes.
          *
          * Execution errors are handled uniformly, whether they occur during
          * script interpretation or are explicitly thrown by the expression.
          * Instead of propagating them, the function logs and returns the
          * original thrown values.
+         * There is no separate error status: result alone cannot distinguish
+         * a thrown value from the same normally returned value.
          *
          * The function uses variable parameters and has the following
          * signatures:
@@ -57,16 +84,29 @@
          *     available to the expression
          * @param {string} expression JavaScript expression enclosed in {{...}}
          * @returns {{variable: (string|undefined), result: *}}
-         *     Object containing the optional variable name and result,
+         *     New object with both properties present. The variable name may
+         *     be undefined; result retains the original value unchanged,
          *     including errors as ordinary result values
          * @throws {Error} In case of invalid data types
          * @throws {SyntaxError} If the outer {{...}} frame is missing
          */
         eval(...variants) {
 
-            const {identifier, context, expression} = Arguments.bind(variants, [
-                {context: [Object], expression: [String]},
-                {identifier: [String], context: [Object], expression: [String]}
+            // To reduce the number of executed instructions, the common
+            // argument-binding cases are handled directly.
+            let identifier, context, expression;
+            if (variants[0] !== null
+                    && typeof variants[0] === "object"
+                    && typeof variants[1] === "string")
+                [context, expression] = variants;
+            else if (typeof variants[0] === "string"
+                    && variants[1] !== null
+                    && typeof variants[1] === "object"
+                    && typeof variants[2] === "string")
+                [identifier, context, expression] = variants;
+            else Arguments.bind(variants, [
+                {context: [Object], script: [String]},
+                {url: [String], context: [Object], script: [String]}
             ]);
 
             const source = expression.trim();

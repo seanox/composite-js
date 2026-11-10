@@ -10,6 +10,8 @@
   - [Firewall](#firewall)
 - [Playground](#playground)
 - [Test](#test)
+  - [Playwright Tests](#playwright-tests)
+  - [Coverage Review](#coverage-review)
   - [Browsers for Testing](#browsers-for-testing)
   - [Procedure](#procedure)
 - [Release](#release)
@@ -20,8 +22,8 @@
 ## Automation and Build
 For automation and build processes, the project uses [Apache Ant](
     https://ant.apache.org/) as its automation tool. The build script
-`build.xml` is located in `./development` and is designed to be executed from
-the project root directory.
+`build.xml` is located in `./development` and is usually run from the project
+root directory.
 
 ```bash
 ant -f ./development/build.xml
@@ -33,6 +35,11 @@ referencing the script directly:
 ```bash
 ant -f build.xml
 ```
+
+The build file can also be invoked from any other working directory if `-f` is
+given a path that resolves to `development/build.xml` from there. The project
+root is derived from the build file's location, not the current working
+directory.
 
 ## Server
 The project contains a completely preconfigured web server, which can be started
@@ -93,23 +100,80 @@ http://127.0.0.1:8000/playground
 To use it, the [server](#server) must be started.
 
 ## Test
-Before a release, all tests in all relevant browser engines must run
-successfully.
-
-The test environment can be prepared in two variants:
+Testing covers four complementary areas: Playwright tests, manual browser tests,
+performance benchmarks and code coverage. Ant provides targets to prepare the
+test bundles used for these checks.
 
 ```bash
 ant -f ./development/build.xml compose
 ant -f ./development/build.xml compose-max
+ant -f ./development/build.xml compose-coverage
 ```
 
 - __compose__ prepares the environment for testing with the standard build
 - __compose-max__ prepares the environment for testing with an unminified build
   including comments
+- __compose-coverage__ prepares a coverage-enabled test bundle for the
+  Playwright coverage run described below; it depends on __compose-max__
 
-Both tasks can be combined with the task _start_.
+The __compose__ and __compose-max__ tasks can be combined with the task _start_
+for manual testing.
+
+### Playwright Tests
+After preparing the test bundles above, run the tests locally from
+`./test/playwright` with Node.js 24 or newer. Install the dependencies and
+browser binaries once:
+
+```bash
+npm install
+npx playwright install chromium firefox webkit
+```
+
+The runner starts its own local server. Run it for each supported engine. Using
+different ports is only recommended if the runners are to run in parallel. By
+default, all servers use port 8000.
+
+```bash
+node runner.js -p 8001 -e blink -d ..
+node runner.js -p 8002 -e gecko -d ..
+node runner.js -p 8003 -e webkit -d ..
+```
+
+To run selected test pages, use `-f` with a filename glob. It filters page
+filenames in the document root selected by `-d`, not individual test tasks:
+
+```bash
+node runner.js -e blink -d .. -f "composer_*.html"
+```
+
+### Coverage Review
+Coverage is collected with Playwright on Blink (Chromium). From the project
+root, prepare the coverage-enabled test bundle:
+
+```bash
+ant -f ./development/build.xml compose-coverage
+```
+
+Then, from `./test/playwright`, run the Playwright tests with Blink:
+
+```bash
+node runner.js -e blink -d ..
+```
+
+The runner writes `test/composite-js-testing.md` with total and per-file line,
+function and branch coverage, as well as `test/composite-js-testing.lcov`.
+Coverage is collected from discovered test pages that load
+`composite-js-testing.js`. Review the report before a release, especially
+uncovered code in changed runtime paths, and address relevant test gaps. No
+fixed project-wide coverage threshold is configured.
 
 ### Browsers for Testing
+The following browser list and procedure apply to the additional manual checks
+before a release. These checks complement Playwright by verifying visual
+rendering and browser behavior in real browser installations, especially across
+different devices and hardware configurations. Playwright WebKit tests do not
+replace testing native Safari on macOS or iOS.
+
 | Engine | Download                                                         |
 | ------ |------------------------------------------------------------------| 
 | Blink  | https://portableapps.com/apps/internet/google_chrome_portable    |
@@ -121,16 +185,23 @@ Overview of engines
 https://en.wikipedia.org/wiki/Comparison_of_browser_engines
 
 For testing, the latest stable releases of the relevant browser engines
-available at the time of the release must be used.
+available at the time of the release must be used for these manual checks.
 
 ### Procedure
-- Create a release and start the server
+- Prepare the manual test environment and start the server
   `ant -f ./development/build.xml compose start`
-- URLs to be tested
+- Run the manual test suite
   http://127.0.0.1:8000/  
+- Run the active benchmarks at the following URL, assess the results against
+  previous measurements and record the values for the new version in
+  `test/benchmarks/README.md`
   http://127.0.0.1:8000/benchmarks
 - Browser to be tested, based on prevalence  
   Google Chrome, Firefox, Pale Moon, Safari, Safari iOS
+
+For consistent results, use a fresh private/incognito window and close unrelated
+tabs or applications to reduce cache and background-activity effects. JIT
+warm-up may still affect benchmark timings.
 
 ## Release
 
@@ -139,10 +210,13 @@ available at the time of the release must be used.
 
 ### GitHub
 - Check that all ToDo's are done
-- Run all tests in all Engines (Blink, Gecko, Goanna, WebKit)
-- Check the benchmarks and enter the values for the new version
 - Finalize `CHANGES` and `README.md`
 - Update the tutorials and create a release there too
+- Run the Playwright tests for Blink, Gecko and WebKit
+- Generate and review the Blink coverage report as described in
+  [Coverage Review](#coverage-review)
+- Complete the manual tests in the latest stable relevant browsers and run and
+  assess the active benchmarks as described in [Procedure](#procedure)
 - Create a release
   ```bash
   ant -f ./development/build.xml release 

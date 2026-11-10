@@ -129,8 +129,8 @@ available at the time of the release must be used.
 - URLs to be tested
   http://127.0.0.1:8000/  
   http://127.0.0.1:8000/benchmarks
-- Broweser to be tested, based on prevalence  
-  MS Edge, Google Chrome, Firefox, Pale Moon, Safari, Safari iOS
+- Browser to be tested, based on prevalence  
+  Google Chrome, Firefox, Pale Moon, Safari, Safari iOS
 
 ## Release
 
@@ -164,7 +164,7 @@ available at the time of the release must be used.
 - Log in with your credentials: `npm login`
 - Publish the version: `npm publish --access public`
 - In case the old version should be deprecated:  
-  e.g. `npm deprecate seanox/aspect-js@"< 1.4.0" "WARNING: This version has been updated to 1.4.0."`
+  e.g. `npm deprecate seanox/composite-js@"< 2.0.0" "WARNING: This version has been updated to 2.0.0."`
 
 ### cdn.jsdelivr.net
 Nothing needs to be changed here, the content is synchronized with npmjs.com.

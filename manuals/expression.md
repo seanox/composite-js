@@ -21,8 +21,8 @@ scope.
 
 ## Expressions
 Expressions use `{{...}}` to embed JavaScript in markup within text nodes and
-attributes of the &gt;body&lt; element, excluding the contents of &gt;style&lt;
-and &gt;script&lt; elements.
+attributes of the &lt;body&gt; element, excluding the contents of &lt;style&gt;
+and &lt;script&gt; elements.
 
 Text outside of expressions can be combined in attributes and text nodes.
 

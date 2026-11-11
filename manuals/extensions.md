@@ -4,14 +4,12 @@
 - - -
 
 # API Extensions
-The JavaScript API for _composite-js_ has been extended by some general
-functions.
+The runtime extends the browser's JavaScript API with the functions and
+properties described below.
 
 ## Contents Overview
-- [Namespace](#namespace)
-  - [Namespace.use](#namespaceuse)
-  - [Namespace.lookup](#namespacelookup)
-  - [Namespace.exists](#namespaceexists)
+- [Arguments](#arguments)
+  - [Arguments.bind](#argumentsbind)
 - [Math](#math)
   - [Math.serial](#mathserial)
 - [Object](#object)
@@ -19,6 +17,7 @@ functions.
   - [Object.lookup](#objectlookup)
   - [Object.exists](#objectexists)
   - [Object.use](#objectuse)
+  - [Object.usable](#objectusable)
 - [RegExp](#regexp)
   - [RegExp.quote](#regexpquote)
 - [String](#string)
@@ -37,78 +36,44 @@ functions.
   - [window.compliant.version](#windowcompliantversion)
   - [window.location.combine](#windowlocationcombine)
   - [window.location.contextPath](#windowlocationcontextpath)
-- [XMLHttpRequest](#xmlhttprequest)
 
-## Namespace
-Comparable to packages in other programming languages, namespaces can be used
-for hierarchical structuring of components, resources and business logic.
+## Arguments
 
-Although packages are not a feature of JavaScript, they can be mapped at the
-object level by concatenating objects into an object tree. Here, each level of
-the object tree forms a namespace, which can also be considered a domain.
+### Arguments.bind
+`Arguments.bind(values, signatures)` maps positional argument values to named
+parameters using the first matching signature. It returns a new, shallow-frozen
+object; referenced objects are neither copied nor frozen.
 
-As is typical for the identifiers of objects, namespaces also use letters,
-numbers and underscores separated by a dot. As a special feature, arrays are
-also supported. If a layer in the namespace uses an integer, this layer is
-interpreted as an array.
-
-### Namespace.use
-Retrieves or creates a namespace from a string or based on an existing object.
-Without arguments, the method returns the global namespace window.
+Both arguments must be arrays. Each signature maps parameter names to arrays of
+allowed types. Parameter positions follow `Object.keys(signature)` order.
 
 ```javascript
-Namespace.use("app.example");
-// creates window["app", {example: {}}]
-// returns window["app"] / {example: {}}
-
-Namespace.use("app.example", "more");
-// creates window["app", {example: {more: {}}}]
-// returns window["app"] / {example: {more: {}}}
-
-Namespace.use(app, "example");
-// creates window["app", {example: {}}]
-// returns window["app"] / {example: {}}
-
-Namespace.use()
-// returns window
+const options = Arguments.bind(["items", 10], [
+    {name: [String]},
+    {name: [String], limit: [Number]}
+]);
+// returns {name: "items", limit: 10}, frozen
 ```
 
-### Namespace.lookup
-Resolves a namespace and returns the determined object(-level). If the namespace
-does not exist, `undefined` is returned. Without argument, the method returns
-the global namespace `window`.
+Only signatures with the effective argument count are considered: the smaller of
+`values.length` and the longest signature's parameter count. Surplus values
+beyond that maximum are ignored. Missing values are not filled in, and type
+mismatches do not cause a retry with a shorter signature. An empty signature
+`{}` supports calls with no values.
 
-```javascript
-Namespace.use("app.example.more");
+Among signatures with that count, the first matching signature wins; more
+specific types do not receive priority. Type checks do not coerce values:
 
-Namespace.lookup("app.example.more")
-// returns app.example.more
+| Allowed type                                    | Accepted values                                                           |
+|-------------------------------------------------|---------------------------------------------------------------------------|
+| `String`, `Number`, `Boolean`                   | Corresponding primitives, including `NaN` for `Number`; not boxed values. |
+| `Function`                                      | Functions.                                                                |
+| `Object`                                        | Non-null objects, including arrays; not functions.                        |
+| Other types, such as `Array`, `Date`, `Element` | Values accepted by `instanceof` for that type.                            |
 
-Namespace.lookup(app.example, "more")
-// returns app.example.more
-
-Namespace.lookup()
-// returns window
-```
-
-### Namespace.exists
-Checks whether a namespace exists.
-
-```javascript
-Namespace.use("app.example.more");
-
-Namespace.exists("app.example.more")
-// returns boolean true
-
-Namespace.exists(app.example, "more")
-// returns boolean true
-
-Namespace.exists(app.example, "nothing")
-// returns boolean false
-
-Namespace.exists()
-// returns boolean true
-```
+Invalid definitions, missing matching argument counts and type mismatches throw
+`TypeError`. All signature definitions are validated before matching. An empty
+type list accepts no value; an empty signatures array matches no call.
 
 ## Math
 
@@ -123,11 +88,78 @@ Math.serial()
 ```
 
 ## Object
+`Object.lookup`, `Object.exists` and `Object.use` address namespaces as object
+trees. They share the same arguments: an optional object or array root and a
+single complete string path, for example `Object.lookup(model,
+"items[0].name")`. Variadic path fragments are not supported.
+
+The supported signatures are `method()`, `method(path)`, `method(root)`,
+`method(root, path)` and `method(undefined, path)`. A defined path requires an
+object/array root or `undefined` and must be a string. An `undefined` path is
+treated as omitted. `lookup` and `exists` ignore arguments after the path. `use`
+additionally supports `Object.use(root, path, value)`, which requires an
+explicit non-null object/array root and a valid path, and ignores arguments
+after the value. In the assignment form, missing `root` and `path` arguments are
+checked first and throw `TypeError` with `Missing argument: root` or `Missing
+argument: path`. An `undefined` value is treated as omitted: `use` ensures the
+object structure without assigning `undefined`.
+
+| Method                         | Operation                                                     | Result                                                                             |
+|--------------------------------|---------------------------------------------------------------|------------------------------------------------------------------------------------|
+| [Object.lookup](#objectlookup) | Read without mutation.                                        | Resolved value of any type, or `undefined`.                                        |
+| [Object.use](#objectuse)       | Ensure a structure, or assign a value below an explicit root. | Last object/array, assigned value, or `undefined` if the implicit root is missing. |
+| [Object.exists](#objectexists) | Check for a value other than `null`/`undefined`.              | Boolean; not a property-presence or truthiness test.                               |
+
+__Prefer an explicit root in application code.__ Resolution then stays on that
+object, without global lookup or publication. Without a root, or with
+`undefined` as the root argument, the first fragment determines the search:
+
+| Initial fragment            | Root resolution                                                                                     |
+|-----------------------------|-----------------------------------------------------------------------------------------------------|
+| `App`                       | Global name, including `const`/`let` in classic scripts; if `undefined`, fall back to `window.App`. |
+| `[App]`, `["App"]`, `"App"` | `window.App` only, without lexical name lookup.                                                     |
+
+Local function and ES-module bindings require an explicit root. Remaining
+fragments always use property access, including inherited properties. Accessing
+a global `const`/`let` binding before its initialization throws
+`ReferenceError`; there is no fallback to `window` in that case. Passing only an
+object/array returns it from `lookup`/`use`, and `true` from `exists`. Without
+arguments, or with only `undefined`, the results are `undefined`, `undefined`
+and `false`, respectively.
+
+__Paths are an addressing grammar, not JavaScript expressions:__
+
+| Path notation                                  | Meaning                                                       |
+|------------------------------------------------|---------------------------------------------------------------|
+| `a.b`                                          | ASCII identifiers matching `[A-Za-z_$][A-Za-z0-9_$]*`.        |
+| `a[property]`                                  | Fixed key `"property"`, not a variable.                       |
+| `items[007]`                                   | Numeric key `"7"`, normalized without rounding.               |
+| `items["007"]`                                 | Exact string key `"007"`.                                     |
+| `a["-1"]`, `a["child.name"]`, `a."child.name"` | Literal keys; single quotes and backticks are also supported. |
+
+Literals allow any string key, including Unicode and empty keys. Escapes are
+decoded once; decoded dots/brackets stay inside the key. Backticks do not
+interpolate. Whitespace is allowed only inside literals and bracket padding.
+`[-1]`, `[1.5]`, `items.7` and numeric path arguments are invalid. Beyond the
+native array-index range, numeric keys are ordinary array properties and do not
+change `length`.
+
+The complete path is validated before traversal or mutation. Required branches
+must be non-null objects or arrays; DOM objects are supported and functions
+cannot serve as branches. Invalid arguments/branches throw `TypeError`, invalid
+paths or malformed escapes throw `SyntaxError`, and out-of-range Unicode escapes
+throw `RangeError`.
 
 ### Object.prototype.serial
-Returns the unique identifier (UID) of an object instance, generated lazily on
-first invocation and immutable thereafter. Analogous to a serial number, it
-provides a unique runtime identifier for the object instance.
+Returns the object's `uid`. If `uid` is `undefined`, generates a numeric
+identifier from a runtime-local counter and stores it using
+`Object.defineProperty`. A newly created property is non-enumerable,
+non-writable and non-configurable. Native property-definition errors propagate.
+
+An existing `uid` value other than `undefined`, including an inherited value, is
+returned unchanged; its uniqueness and immutability are not enforced. Native
+property-definition errors propagate, for example when creating a UID on a
+non-extensible object after `Object.freeze` or `Object.seal`.
 
 ```javascript
 const object1 = {};
@@ -142,66 +174,99 @@ element1.serial() != element2.serial();
 ```
 
 ### Object.lookup
-Equivalent to [Namespace.lookup](#namespacelookup). Determines an object for a
-namespace.
+Reads a path without changing the tree. The end value is returned unchanged,
+including arrays, primitives, functions and `null`. A missing root or branch
+returns `undefined`; traversing through an incompatible value throws.
 
 ```javascript
-const earth = {
-    europe: {
-        germany: {
-            countPopulation() {
-                return 83000000;
-            }
-        }
-    }
-}
-
-Object.lookup("earth.europe.germany");
-// returns object {countPopulation() {return 83000000;}}
-
-Object.lookup("earth.europe.germany.countPopulation");
-// returns function () => {return 83000000;}
-
-Object.lookup("foo");
-// returns null
+const model = {items: [{name: "Wolf"}], keys: {"x\ny": 1}};
+Object.lookup(model, "items[000].name"); // "Wolf"
+Object.lookup(model, "missing.child");  // undefined; no mutation
+Object.lookup(model, 'keys["x\\ny"]');  // 1; splitter decodes the escape
+Object.lookup(model, 'keys["x\ny"]');   // 1; JavaScript already decoded it
 ```
 
 ### Object.exists
-Equivalent to [Namespace.exists](#namespaceexists). Determines whether an object
-exists in a namespace.
+Equivalent to `Object.usable(Object.lookup(root, path))`: only `null` and
+`undefined` produce `false`; `false`, `0` and `""` produce `true`. This is
+__not__ an `in`/own-property check or a Boolean conversion. Lookup errors
+propagate; no objects are created.
 
 ```javascript
-Object.exists("earth.europe.germany.countPopulation");
-// returns booelan true
-
-Object.exists("foo");
-// returns booelan false
+const settings = {enabled: false, theme: null};
+Object.exists(settings, "enabled"); // true
+Object.exists(settings, "theme");   // false, although the property is present
+"theme" in settings;                // true
+Object.exists(settings, "missing"); // false
 ```
 
 ### Object.use
-Equivalent to [Namespace.use](#namespaceuse). Retrieves or creates a namespace
-from a string or based on an existing object.
+Without a value, or with `undefined`, an __ensure operation__, not just a
+lookup: creates missing structure below an existing root and returns the last
+object/array reference. Existing containers are reused, never converted or
+overwritten with a different type.
+
+A missing container becomes `[]` if the __next fragment__ is an unquoted
+all-digit index; otherwise it becomes `{}`. Quoted numeric keys do not request
+arrays. A missing last level is always `{}`; an existing last level must be a
+non-null object or array.
 
 ```javascript
-Object.use("app.example");
-// returns object window["app.example"] / {}
+const root = {};
+const details = Object.use(root, "items[007].details");
+// creates root.items as [], root.items[7] and its details as {}
+details === root.items[7].details; // true
+Object.use(root, 'named["007"]["-1"]');
+// creates {} containers and preserves the literal keys
+```
 
-Object.use("app.example", "more");
-// returns object window["app.example.more"] / {}
+An implicit root must already exist: `Object.use("MissingApp.settings")` returns
+`undefined` if `MissingApp` is absent. To create a global root, pass `window`
+explicitly: `Object.use(window, "NewApp.settings")`. No lexical bindings are
+created. Native assignment errors propagate, including writes to frozen
+containers or missing indexed `window` properties, which represent child frames
+rather than writable array slots.
 
-Object.use(app, "example");
-// creates window["app", {example: {}}]
-// returns window["app"] / {example: {}}
+With a value other than `undefined`, `Object.use(root, path, value)` creates
+missing intermediate branches, assigns `value` to the final key using normal
+strict-mode JavaScript assignment, and returns `value` unchanged. The root must
+be an explicit non-null object or array, and the path must be a valid nonempty
+string. An implicit or `undefined` root is not allowed in this mode.
 
-Object.use()
-// returns object window
+All defined values are accepted, including `null`, `false`, `0`, `""` and
+functions. Existing end values are overwritten; intermediate objects/arrays are
+reused without conversion, and incompatible intermediate values still throw. The
+final property is not read before assignment, so setters receive the value once
+without an intermediate placeholder. Native assignment errors propagate.
+
+```javascript
+const root = {};
+Object.use(root, "a.b.c[10]", "a"); // returns "a"; c is [], c[10] is "a"
+Object.use(root, 'named["a"]', 10); // returns 10; named is {}, named.a is 10
+Object.use(root, "a.b.c[11]", undefined); // ensures and returns {} at c[11]
+Object.use(root, "named", false); // overwrites the final object with false
+```
+
+### Object.usable
+Checks a value directly, without resolving an object path. Returns `false` only
+for `null` and `undefined`, including an argumentless call. All other values
+return `true`, including `false`, `0`, `NaN` and `""`.
+
+```javascript
+Object.usable();          // false
+Object.usable(null);      // false
+Object.usable(false);     // true
+Object.usable(0);         // true
+Object.usable("");        // true
+Object.usable("missing"); // true; the string is not looked up
 ```
 
 ## RegExp
 
 ### RegExp.quote
 Creates a literal pattern for the specified text. Metacharacters or escape
-sequences in the text thus lose their meaning.
+sequences in the text thus lose their meaning. Returns `null` for `null` or
+`undefined`; other values are converted to strings before escaping.
 
 ```javascript
 RegExp.quote("only a text with a + b (as an example)");
@@ -211,7 +276,7 @@ RegExp.quote("only a text with a + b (as an example)");
 ## String
 
 ### String.prototype.capitalize
-Capitalized the string.
+Converts the first character to uppercase, leaving the rest unchanged.
 
 ```javascript
 ("hello world").capitalize();
@@ -219,31 +284,48 @@ Capitalized the string.
 ```
 
 ### String.prototype.uncapitalize
-Uncapitalized the string.
+Converts the first character to lowercase, leaving the rest unchanged.
 
 ```javascript
-("Hello World").capitalize();
+("Hello World").uncapitalize();
 // returns string "hello World"
 ```
 
 ### String.prototype.encodeHex
-Encodes the string hexadecimal.
+Encodes each UTF-16 code unit as uppercase hexadecimal with at least two digits
+and prefixes the result with `0x`. An empty string returns `""`.
+
+This is neither UTF-8 encoding nor fixed-width UTF-16 encoding. Code units above
+`0xFF` do not round-trip through [decodeHex](#stringprototypedecodehex).
 
 ```javascript
 ("hello world").encodeHex();
 // returns string "0x68656C6C6F20776F726C64"
+
+("\u20AC").encodeHex();
+// returns string "0x20AC"
 ```
 
 ### String.prototype.decodeHex
-Decodes the hexadecimal string.
+Reads the characters after the `0x` prefix in groups of up to two hexadecimal
+digits, converting each group to one character. These values are not interpreted
+as UTF-8 or UTF-16 sequences.
+
+An empty string returns `""`. Nonempty input without the case-sensitive `0x`
+prefix throws `Error("Malformed hexadecimal character sequence")`. The remaining
+content is not fully validated; do not use this method to validate hex input.
 
 ```javascript
 ("0x68656C6C6F20776F726C64").decodeHex();
 // returns string "hello world"
+
+("0x20AC").decodeHex();
+// returns string "\u0020\u00AC", not "\u20AC"
 ```
 
 ### String.prototype.encodeBase64
-Encodes the string in Base64.
+Encodes the string as UTF-8 text in Base64. Malformed Unicode input, such as an
+unpaired surrogate, throws `Error("Malformed character sequence")`.
 
 ```javascript
 ("hello world").encodeBase64();
@@ -251,7 +333,9 @@ Encodes the string in Base64.
 ```
 
 ### String.prototype.decodeBase64
-Decodes the Base64 encoded string.
+Decodes Base64 containing UTF-8 text. Invalid Base64 or invalid UTF-8 data
+throws `Error("Malformed character sequence")`; this is not a decoder for
+arbitrary binary data.
 
 ```javascript
 ("aGVsbG8gd29ybGQ=").decodeBase64();
@@ -259,7 +343,9 @@ Decodes the Base64 encoded string.
 ```
 
 ### String.prototype.encodeHtml
-Escapes HTML characters in the string.
+Escapes the string for use as text in HTML markup by assigning it to a temporary
+element's `textContent` and returning its `innerHTML`. Quotes are not escaped;
+this is not an encoder for HTML attribute values, JavaScript or URLs.
 
 ```javascript
 ("<hello world> & abc").encodeHtml();
@@ -275,116 +361,96 @@ Calculates an alphanumeric hash value for the string.
 ```
 
 ### String.prototype.unescape
-Decodes slash sequences (control characters) in the string.
+Decodes control, octal, hexadecimal, and Unicode escape sequences, including
+four-digit Unicode escapes and Unicode code point escapes. Supported numeric
+forms are `\0` to `\777` (one to three octal digits), `\xHH`, `\uHHHH`, and
+`\u{H}` (one to six hexadecimal digits).
+
+Decoding happens once from left to right. Each `\\` pair becomes one literal
+backslash; decoded characters are not interpreted as another escape sequence.
+Unknown simple escapes such as `\q` yield the escaped character (`q`). Malformed
+hexadecimal or Unicode escapes and a trailing unpaired backslash throw
+`SyntaxError`. Unicode code points above U+10FFFF throw `RangeError`.
 
 ```javascript
 ("a\\tb").unescape();
-// returns string "a   b"
+// returns string "a\tb" (one tab character)
+
+("\\u0041").unescape();
+// returns string "A"
+
+("\\x5cn").unescape();
+// returns the literal backslash followed by "n", not a newline
 ```
 
 ## window
 
 ### window.serial
-Get the time based alphanumeric serial identifier for the window instance that
-is chronologically sortable as text and contains the time and a counter if
-serial are created at the same time.
+Returns the time-based alphanumeric identifier generated for this window when
+the runtime loads. Every call returns the same string, using the format of
+[Math.serial](#mathserial).
 
 ```javascript
-window.serial
-// returns string e.g. "2YG490NMYY87TSF1I9R"
+window.serial()
+// returns string e.g. "89BFASDV910"
 ```
 
 ### window.compliant
-Creates variables, objects or functions for a defined namespace. If an entry
-with the same name already exists in the API, the method will cause an error.
+`window.compliant(context, payload)` assigns `payload` to the JavaScript target
+specified by `context` and returns the assigned value. If the target already
+resolves to a value other than `undefined`, it throws `Error("JavaScript
+incompatibility detected for: " + context)`. An existing property with value
+`undefined` can be assigned.
 
-Originally, the method was introduced as an internal helper to ensure that
-manipulations and extensions to the JavaScript API are compliant and that there
-are no collisions with existing API components. Since the method has proven to
-be generally helpful for developing modules, it has been officially added to the
-Seanox composite-js API.
+A simple identifier publishes a property on `window`. For nested targets, the
+parent object must already exist; missing parents and native assignment errors
+propagate.
 
 ```javascript
+window.compliant("example", {});
 window.compliant("example.variable", "...");
+window.compliant("example.object", {});
+window.compliant("example.function", (param1, param2, param3) => {});
 ```
 
-Creates the variable `example.variable`. The method causes errors if the base
-object `example` does not exist or the object `example` already contains an
-entry `variable`.
+The target is evaluated as JavaScript, not parsed with the
+[Object path grammar](#object). Use application-defined targets, not untrusted
+input.
 
-```javascript
-window.compliant("example.object", {...});
-```
-
-Creates the object `example.object`. The method causes errors if the base object
-`example` does not exist or the object `example` already contains an entry
-`object`.
-
-```javascript
-window.compliant("example.function", (param1, param2, param3) => {...});
-```
-
-Creates the method `example.function`. The method causes errors if the base
-object `example` does not exist or the object `example` already contains an
-entry `function`.
+With `null` or `undefined` as `context`, the method simply returns `payload`
+without assigning it. An omitted payload is `undefined`; assigning it does not
+reserve the target against subsequent calls.
 
 ### window.compliant.version
 Property to get the version of Seanox composite-js.
 
 ```javascript
 window.compliant.version
-// returns string e.g. "2.1.0"
+// returns a string containing the runtime version
 ```
 
 ### window.location.combine
 Combines text elements to a path. The method has an optimizing effect in the use
-of slash and backslash. The result will always start with a slash but ends
-without it.
+of slash and backslash. The result always starts with a slash and has no
+trailing slash, except when the result is the root path `/`.
 
 ```javascript
 window.location.combine("a", "b", "c")
 // returns string "/a/b/c"
+
+window.location.combine("/")
+// returns string "/"
 ```
 
 ### window.location.contextPath
-Property to get the context path. The context path is a part of the request URI
-and can be compared with the current working directory. The context path does
-not end with a slash and can be empty if the application is located directly
-under the main domain of the server.
+Context path captured from `window.location.pathname` when the runtime loads:
+the pathname before its last slash. It is empty for a page directly under the
+server root and is not recomputed after navigation through the History API.
 
 ```javascript
 window.location.contextPath
 // returns string e.g. /apps/test for URL https://example.local/apps/test/index.html
 ```
-
-## XMLHttpRequest
-XMLHttpRequest was indirectly extended by Composer HTTP events.
-
-```javascript
-Composer.EVENT_HTTP_START
-Composer.EVENT_HTTP_PROGRESS
-Composer.EVENT_HTTP_RECEIVE
-Composer.EVENT_HTTP_LOAD
-Composer.EVENT_HTTP_ABORT
-Composer.EVENT_HTTP_TIMEOUT
-Composer.EVENT_HTTP_ERROR
-Composer.EVENT_HTTP_END
-```
-
-These can be used to react centrally and application-wide at HTTP events.
-
-```javascript
-Composer.listen(Composer.EVENT_HTTP_START, function(event, ...varargs) {
-    // show spinner
-});
-
-Composer.listen(Composer.EVENT_HTTP_END, function(event, ...varargs) {
-    // hide spinner
-});
-```
-
-For each event, multiple callback methods can be registered, which are then
-called according to the order in which they were registered.
 
 
 

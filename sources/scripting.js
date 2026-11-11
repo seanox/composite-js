@@ -185,7 +185,19 @@
          */
         eval(...variants) {
 
-            let {url, context, script} = Arguments.bind(variants, [
+            // To reduce the number of executed instructions, the common
+            // argument-binding cases are handled directly.
+            let url, context, script;
+            if (variants[0] !== null
+                    && typeof variants[0] === "object"
+                    && typeof variants[1] === "string")
+                [context, script] = variants;
+            else if (typeof variants[0] === "string"
+                    && variants[1] !== null
+                    && typeof variants[1] === "object"
+                    && typeof variants[2] === "string")
+                [url, context, script] = variants;
+            else Arguments.bind(variants, [
                 {context: [Object], script: [String]},
                 {url: [String], context: [Object], script: [String]}
             ]);
@@ -226,7 +238,19 @@
          */
         run(...variants) {
 
-            let {url, context, script} = Arguments.bind(variants, [
+            // To reduce the number of executed instructions, the common
+            // argument-binding cases are handled directly.
+            let url, context, script;
+            if (variants[0] !== null
+                    && typeof variants[0] === "object"
+                    && typeof variants[1] === "string")
+                [context, script] = variants;
+            else if (typeof variants[0] === "string"
+                    && variants[1] !== null
+                    && typeof variants[1] === "object"
+                    && typeof variants[2] === "string")
+                [url, context, script] = variants;
+            else Arguments.bind(variants, [
                 {context: [Object], script: [String]},
                 {url: [String], context: [Object], script: [String]}
             ]);

@@ -73,6 +73,8 @@ The current language can be retrieved via `DataSource.locale`.
 `DataSource.locales` returns all available languages as an array that starts
 with the language declared as default.
 
+For localized text, see [Messages](message.md).
+
 ## Locator
 Data in the data storage is addressed through a locator URL (`xml://...` or
 `xslt://...`), supporting percent-encoded URLs. Single and double slashes are
@@ -166,7 +168,7 @@ the stylesheet is derived from the XML locators.
 DataSource.transform("xml://paper");
 ```
 
-A meta-object with data for the XSLT processor can be passed to the
+A metadata object with data for the XSLT processor can be passed to the
 transformation and used in the XSLT stylesheet.
 
 ```javascript

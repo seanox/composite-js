@@ -4,27 +4,26 @@
 - - -
 
 # Scripting
-Seanox composite-js uses composite script, an extension of standard ECMAScript
-that provides a small set of [macros](#macros) for browser-based module
-execution.
+Seanox composite-js executes composite scripts as JavaScript in a separate
+function scope. The runtime provides helper functions for loading modules,
+collecting exports, publishing objects and creating __namespaces__ -- these are
+object structures rooted in `window`, which are referred to below as namespaces.
 
-Composite script resources are executed as functions rather than &lt;script&gt;
-elements. Variables, constants and functions declared in a module remain local
-to that module and are not automatically available in the global scope or in
-other modules. Runtime values are evaluated in the [Execution-Scope](
-    architecture.md#execution-scope). Their lifetime and sharing behavior is
-summarized in the [Scope overview](architecture.md#scopes). The [macros](
-    #macros) provide language extensions for tasks such as loading further
-JavaScript resources, exporting declarations and creating namespaces.
+Variables, constants and functions declared in a script remain local to that
+script unless they are explicitly exported or published. Runtime values are
+evaluated in the [Execution-Scope](architecture.md#execution-scope). Their
+lifetime and sharing behavior is summarized in the [scope overview](
+    architecture.md#scopes).
 
 ## Contents Overview
 - [Embedded Composite Script](#embedded-composite-script)
 - [Modules](#modules)
-- [Macros](#macros)
-  - [#export](#export)
-  - [#import](#import)
-  - [#use](#use)
-  - [(? ...) tolerate](#--tolerate)
+- [API](#api)
+  - [expose](#expose)
+  - [require](#require)
+  - [use](#use)
+  - [attempt](#attempt)
+  - [Script API](#script-api)
 - [Debugging](#debugging)
 
 ## Embedded Composite Script
@@ -43,21 +42,17 @@ JavaScript code and executes it in every relevant render cycle. This allows
 </script>
 ```
 
-Embedded Composite scripts run in the current [Execution-Scope](
+Embedded Composite scripts run in the current [execution-scope](
     architecture.md#execution-scope). They access the view- and application
 scope through `view` and `application`. View scope variables are passed to the
 script as values; use `view` to persist changes within the current view. Use
-`application` for values shared across Composites:
-
-```javascript
-view.counter++;
-application.sharedValue = true;
-```
+`application` for values shared across Composites.
 
 ## Modules
-The module directory contains composite modules, each grouping the resources of
-a composite. A JavaScript resource within a composite module is called a
-[composite script](composite.md#javascript) and provides the application module.
+Each composite module groups the resources of one composite. These resources are
+stored in the module directory. A JavaScript resource within a composite module
+is called a [composite script](composite.md#javascript) and provides the
+application module.
 
 JavaScript resources in the module directory can also exist independently of a
 composite. These are referred to informally as modules and can be used without
@@ -80,108 +75,81 @@ platform and modules in micro-frontends.
 - index.html
 ```
 
-The modules are then loaded programmatically with `Composer.include(...)`,
-`Composer.load(...)` or preferably with the macro [#import](#import).
+Use `Composer.include(...)` for composite modules and `Composer.load(...)` for
+specific resources; from a composite script, prefer [`require(...)`](#require)
+for JavaScript modules.
+
+## API
+Composite scripts run in a separate function scope with a runtime-provided
+context. It contains the current view-scope values, the `view` and `application`
+objects, and helper functions for loading modules, handling optional errors,
+creating namespaces and publishing objects for composite binding.
+
+### expose
+`expose(object)` collects the object's own enumerable string-keyed properties
+as flat exports of the current script. It returns the original object; repeated
+calls replace exports with matching names. Collected exports are available to
+scripts that load this module with `require(...)`.
 
 ```javascript
-#import moduleA moduleB
-#import example/moduleE example/moduleF
+const properties = {...};
+const builder = {...};
+const request = {...};
+
+expose({properties, builder, request});
 ```
 
-## Macros
-Macros are abbreviated notations for common JavaScript statements. A
-preprocessor resolves them before execution, so the JavaScript engine only
-executes standard ECMAScript and the surrounding language constructs remain
-effective.
-
-### #export
-The `#export` macro makes selected variables, constants and functions of the
-separate function scope available in the global scope. Objects that participate
-in composite binding must be exported in this way. The macro expects a
-space-separated list of names that extends to the end of the line or the next
-semicolon.
+With `expose(object, namespace)`, the original object is also published at the
+specified dot-separated path in the object structure rooted at `window`. Use
+this form to make an object available for [composite binding](
+    composite-binding.md#composite-binding); collecting exports alone does not
+publish the object.
 
 ```javascript
-const connector = {
-    ...
+const login = {
+    validate(element, value) {
+    },
+    logon: {
+        onClick(event) {
+        }
+    }
 };
 
-const utilities = {
-    ...
-};
-
-#export connector utilities;
+expose(login, "login");
 ```
 
-Export names can include namespaces so that the elements are added there
-explicitly.
+### require
+`require(path)` loads a JavaScript module from the module directory and returns
+one exports object, which can contain multiple values or objects. The path uses
+`/` for subdirectories and omits the `.js` extension. A module is executed only
+once; later calls return its cached exports.
 
 ```javascript
-const connector = {
-    ...
-};
-
-const utilities = {
-    ...
-};
-
-#export connector@io.example utilities@io.example;
+const connector = require("example/io/connector");
+const {properties, builder, request} = require("example/io/api");
 ```
 
-### #import
-The macro loads one or several modules implemented as composite script resources
-from the module directory. Modules are loaded only once, regardless of whether
-they are loaded directly via `#import` or indirectly as a resource of a
-composite.
-
-__When calling modules, the file extension is omitted.__
+### use
+`use(namespace)` creates the dot-separated namespace on `window` if it does not
+already exist. Repeated calls leave an existing namespace in place.
 
 ```javascript
-#import moduleA
-#import moduleA moduleB moduleC
+use("a");
+use("a.b.c");
 ```
 
-It should be noted that the macro will result in an error if the server state is
-different from 200. The error can be caught as usual with try-catch.
+### attempt
+`attempt(value)` returns a non-function value unchanged. For a function, it
+invokes the callback synchronously with `window` as `this`; if the callback
+throws, `attempt(...)` returns `undefined`. Promise rejections are not handled.
 
 ```javascript
-try {#import moduleA;
-} catch (error) {
-    ...    
-}    
-```
-
-In the module directory subdirectories are also supported, which is represented
-in the module names by the slash.
-
-```javascript
-#import example/io/connector;
-```
-
-### #use
-The macro expects one or more space-separated namespaces to be created at the
-object level if they do not already exist.
-
-```javascript
-#use a
-#use a b c
-#use a.b.c d.e.f g.h.i
-```
-
-### (? ...) tolerate
-The tolerating syntax `(? ...)` is a special macro -- __the ? must be followed
-by at least one whitespace character__. If the logic inside the brackets causes
-an error, no error is raised and no output is written to the browser console.
-Instead, the brackets represent the value `undefined`. Syntax errors are
-excluded from this tolerating behavior.
-
-```javascript
-const value = (? object.that.does.not.exist());
+const value = attempt(() => object.that.does.not.exist());
 ```
 
 ## Debugging
-When loading composite scripts, the runtime automatically appends a `sourceURL`
-directive mapping the evaluated script to its original module path:
+When loading composite scripts, the runtime supplies their module path as a
+`sourceURL` directive:
 
 ```javascript
 //# sourceURL=/modules/example/module.js

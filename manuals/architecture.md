@@ -60,7 +60,7 @@ application logic, declarative presentation, and runtime mechanisms.
 > - has a JavaScript context
 > - has a CSS context
 > - is realized from a composite module
-> - is associated with an application module
+> - can be associated with an application module
 > - participates in the composite lifecycle
 >
 > __Composite Module__
@@ -70,9 +70,9 @@ application logic, declarative presentation, and runtime mechanisms.
 > - can provide additional resources
 >
 > __Composite Script__
-> - is ECMAScript extended by composite-specific macros
+> - is JavaScript with access to the composite-specific script API
 > - is executed in a separate function scope
-> - establishes the application module
+> - can provide the application module
 >
 > __View__
 > - describes the declarative presentation
@@ -82,7 +82,7 @@ application logic, declarative presentation, and runtime mechanisms.
 > __Application Module__
 > - provides the application logic
 > - is addressed through the composite ID
-> - provides exported objects for composite binding
+> - provides exposed objects for composite binding
 >
 > __Composite Binding__
 > - connects the view with the application module
@@ -112,24 +112,17 @@ This includes:
 - Expressions
 - executable markup
 
-These components execute within the same application context and are not
-sandboxed from each other.
+These components execute with application privileges in the same application
+context and are not sandboxed from each other. Dynamic code execution is
+intentional and part of the runtime model.
 
-The trust boundary is the configured application context. Runtime resources are
-resolved within this context path. Content outside this context is not
-considered application code unless explicitly included by the application.
+The configured application context defines where runtime resources are
+resolved. Content outside this context is not considered application code unless
+explicitly included by the application. This is a resource boundary, not an
+execution boundary.
 
-The application context is therefore a resource boundary, not a security
-sandbox. It does not isolate JavaScript execution or protect trusted application
-code from other trusted application code.
-
-The runtime is not a sandbox for untrusted content. External or user-provided
-data must be handled appropriately before being introduced as executable
-application content.
-
-Dynamic code execution is intentional and is part of the runtime execution
-model. Composite scripts and expressions execute with the privileges of the
-application context; they are not executed in an isolated JavaScript sandbox.
+External or user-provided data must be handled appropriately before being
+introduced as executable application content.
 
 ## Scopes
 The runtime distinguishes four scopes. They differ in lifetime, ownership, and
@@ -138,8 +131,8 @@ application context resource boundary described above.
 
 ### Global Scope
 The browser page and its `window` object. It provides access to browser APIs and
-globally available application objects such as `window`, `document`, and
-`console`. It is not used for application state or expression variables.
+globally available application objects, including objects used for composite
+binding. Variables declared by markup expressions are not global variables.
 
 ### Application Scope
 Persistent for one running composite-js application instance. It contains shared
@@ -147,20 +140,22 @@ state and services used by multiple composites and modules. Use `application` to
 access state or services that must remain available independently of one view.
 
 ### View Scope
-Persistent for the current view. It contains state belonging to one view,
-including variables declared by markup expressions. Use `view` for view-local
-state such as render variables or UI state.
+Shared storage for variables declared by markup expressions and values assigned
+through `view`. It persists for the running page and is not isolated per
+composite or automatically cleared when a composite is removed or a view changes.
 
 ### Execution Scope
 Created for one expression evaluation or composite script invocation. It
-contains temporary values, runtime instruction variables, and the current values
-from the persistent scopes. It is discarded afterwards; assigning to a bare
-variable does not persist the value.
+contains the current view scope values, temporary runtime instruction variables,
+and the persistent scope objects `view` and `application`. It is discarded
+afterwards; assigning to a bare variable does not update the persistent scope.
+Object values retain their identity, so changes to their properties persist.
 
-The scopes are not interchangeable. Use each scope according to the lifetime and
-visibility required by the data or service.
+Use `view` for markup variables and render-related state, and `application` for
+shared application state and services. Neither scope is automatically isolated
+per composite.
 
-Expressions and composite scripts execute in the execution scope. view scope
+Expressions and composite scripts execute in the execution scope. View scope
 variables are available there by name, while the persistent scopes are reached
 through the reserved objects `view` and `application`. These explicit objects
 make the intended lifetime and sharing of a value clear:
@@ -175,6 +170,9 @@ The execution scope may contain temporary variables with the same name as view
 scope variables. Such temporary values take precedence only for the current
 evaluation; they do not overwrite the persistent view scope value.
 
+Expressions and composite scripts execute in strict mode. Available helpers
+depend on the execution method; see the [Script API](scripting.md#script-api).
+
 ## Composite
 A composite is an independently identified, domain-oriented application unit
 within the DOM. Its runtime representation consists of three related contexts:
@@ -186,9 +184,12 @@ within the DOM. Its runtime representation consists of three related contexts:
 
 The DOM context is defined by the HTML element that declares the composite and
 includes the DOM region associated with that element. The JavaScript context is
-provided by the corresponding application module. The CSS context consists of
-the stylesheets and CSS rules associated with the composite. None of them
-represents the composite independently.
+provided by the corresponding application module, if one exists. The CSS context
+consists of the stylesheets and CSS rules associated with the composite. None of
+them represents the composite independently.
+
+Composite styles are not automatically scoped. Use selectors that target the
+composite explicitly; loaded composite CSS is inserted into the document.
 
 A composite is not a single JavaScript object, an ECMAScript module, or a
 reusable UI component, but a logical application unit spanning these contexts.
@@ -209,8 +210,8 @@ composite.
 ```
 
 The declaration establishes the element as the root of the DOM context of the
-composite. The combination of the `composite` attribute and the `id` attribute
-forms the composite ID.
+composite. Only the combination of the `composite` and `id` attributes forms a
+composite ID, `customer` in this example.
 
 ### Composite Responsibilities
 A composite provides the logical boundary within which its declarative
@@ -222,19 +223,8 @@ composite module, the runtime, and the composer.
 
 ## Composite ID
 The composite ID is the unique identity of a composite and its global namespace
-within the application.
-
-It is formed by the semantic combination of the `id` and `composite` attributes
-on an HTML element.
-
-```html
-<section id="customer" composite>
-</section>
-```
-
-In this declaration, `customer` is the composite ID because the value occurs on
-an element declared as a composite. The attribute value alone does not form a
-composite ID outside that relationship.
+within the application. It is established by the [composite declaration](
+    #composite-declaration).
 
 The Composite ID connects:
 - the Composite in the DOM
@@ -253,20 +243,17 @@ it, and none of these relationships exists without it.
 
 ## Conceptual Composition
 Several concepts in _composite-js_ are formed by the semantic association of
-existing elements rather than by separate language constructs or artifacts.
+existing browser concepts rather than by separate language constructs or
+artifacts. The runtime assigns these concepts additional semantics.
 
-The composite ID is an example of this principle. It is not merely an attribute
-value.
+For example, a [composite declaration](#composite-declaration) combines existing
+attributes:
 
 ```text
 id attribute
     + composite attribute
         -> Composite ID
 ```
-
-Conceptual composition is therefore a fundamental architectural principle of
-_composite-js_. Existing browser concepts are assigned additional semantics by
-the runtime and combined into framework concepts.
 
 ## Composite Module
 A composite module is the loadable resource unit of a composite.
@@ -307,43 +294,42 @@ It does not:
 - replace the ECMAScript module system
 
 ## Composite Script
-A composite script is ECMAScript code extended by _composite-js_-specific
-[macros](scripting.md#macros) that the runtime resolves before execution:
-- `#import`
-- `#export`
-- `#use`
-- `(? ...)`
+A composite script is JavaScript code with access to the _composite-js_-specific
+[Script API](scripting.md#script-api): `require`, `expose`, `use` and
+`attempt`. The runtime injects these helpers as local functions. They are not
+registered as global functions or automatically provided to ECMAScript modules.
 
-The composite script of a composite module is loaded and executed by the runtime
-as part of realizing the composite. Its execution establishes the application
-module that provides the application logic of the composite.
+The separately stored script resource comes from the module directory within the
+application context, not from an arbitrary external source. It is loaded and
+executed at most once. When a corresponding application object already exists,
+the runtime skips loading it. The script can provide the application module that
+implements the application logic of the composite.
 
-The same language and macros can also be used in standalone modules loaded via
-[#import](scripting.md#import) and in JavaScript embedded in markup (see
-[Embedded Composite Script](scripting.md#embedded-composite-script)). In these
-cases, a composite script is not bound to a composite module and does not
-establish an application module.
+The same language and API can also be used in standalone modules loaded via
+[require](scripting.md#require) and in JavaScript embedded in markup (see
+[Embedded Composite Script](scripting.md#embedded-composite-script)). These
+scripts need not belong to a composite module, but can also provide application
+objects for composite binding.
 
 > __Composite Module__
 > - contains a composite script
 >
 > __Composite Script__
 > - is processed and executed by the Runtime
-> - establishes the application module
+> - can provide the application module
 
-Composite scripts execute in a separate function scope. This scope is specific
-to the execution of the composite script and does not replace regular ECMAScript
-mechanisms. Standard `import` and `export` mechanisms remain available for
-working with ECMAScript modules.
+Composite scripts execute in a separate function scope, not an ECMAScript module
+context. Static `import` and `export` declarations are not supported in these
+scripts. Where supported by the browser, `import()` can load ECMAScript modules.
 
-The composite-specific macros provide integration points between the composite
-script, the composite module, and the runtime. Objects that participate in
-composite binding must be explicitly exported from the composite script.
+The script API supports loading script modules, publishing application objects,
+and creating namespaces. For composite binding, an application object must be
+available under the namespace resolved from the composite ID.
 
 ### Composite Script Responsibilities
 The composite script is not itself the application module. The script is the
-executable program, whereas the application module is the application logic
-established by its execution.
+executable program, whereas the application module is the application logic it
+can provide or initialize.
 
 ## ECMAScript Module
 An ECMAScript module is a JavaScript module defined by the ECMAScript standard.
@@ -360,12 +346,12 @@ A composite module is not an ECMAScript module, a composite script is not an
 application module, and a composite is not a module.
 
 ## Application Module
-The application module is the application logic of a composite established by
-the execution of its composite script.
+The application module provides the application logic of a composite. It can be
+provided by a composite script or by an existing application object.
 
 ```text
 Composite Script
-    -> establishes
+    -> can provide
         -> Application Module
 ```
 
@@ -373,23 +359,24 @@ The runtime does not prescribe the internal structure of an application module.
 It can be implemented using objects, functions, classes, multiple classes, or
 any combination of these structures.
 
-Following the [static runtime model](#static-runtime-model), exactly one
-application module exists for each composite, and that application module is
-addressed through the composite ID.
+Following the [static runtime model](#static-runtime-model), the composite ID
+addresses the corresponding application object. A composite can render without
+an application module; composite binding requires that object to exist.
 
 > __Composite ID__
 > - identifies one composite
-> - addresses one application module
+> - addresses the application module, if provided
 
-The application module can organize its internal object structure hierarchically
-and thereby provide additional logical namespaces. These namespaces are part of
-the object structure of the application module and are addressed within the
-namespace defined by the composite ID.
+The application module can organize its objects hierarchically; see [Namespace](
+    #namespace).
 
-Objects that participate in composite binding must be explicitly exported from
-the composite script. Internal objects that are not exported remain part of the
-implementation of the application module and are not directly available to the
-view through composite binding.
+Objects that participate in composite binding must be accessible under the
+namespace resolved from the composite ID. A composite script can publish an
+object there with [expose(object, namespace)](scripting.md#expose). The
+one-argument form only collects module exports; Composer does not use these
+exports for binding. Internal objects that are not accessible through the
+application module remain implementation details and are not directly available
+to the view through composite binding.
 
 ### Application Module Responsibilities
 
@@ -410,21 +397,21 @@ rendering.
 The view does not provide the application logic. Instead, it refers to objects
 provided by the application module through expressions and composite binding.
 
-Expressions use a separate view scope managed by the composer. It contains
-persistent variables declared by expressions and temporary variables provided by
-runtime instructions such as `iterate`. The view scope is distinct from the
-JavaScript context of the application module and does not create global
-JavaScript variables.
+Expressions contain JavaScript enclosed in `{{...}}` and receive only `attempt`
+automatically, not `require`, `use` or `expose`. The
+[Markup Extensions for Expressions](expression.md#keyword) provide optional
+operator aliases such as `:and` (`&&`), `:or` (`||`) and `:not` (`!`) as
+markup-friendly spellings. They are translated before evaluation; normal
+JavaScript operators remain supported.
 
-The runtime exposes the persistent scopes through two explicit objects:
+Expression execution failures are logged and returned unchanged as ordinary
+result values, which may appear in rendered output. Direct `Scripting.eval()`
+and `Scripting.run()` calls instead propagate execution failures to their
+caller. See [Expression error handling](expression.md#expressions).
 
-- `view` contains the persistent variables of the current view scope.
-- `application` contains persistent variables shared by the composite-js
-  application instance, including its modules.
-
-Expressions and composite scripts do not access these scopes directly. They run
-in the execution scope, which the composer creates for each
-evaluation from the view scope and the two scope objects.
+Expressions use the [execution scope](#execution-scope) managed by the composer,
+distinct from the application module's JavaScript context. See [Scopes](#scopes)
+for persistent variables, temporary values, and assignment rules.
 
 > __View__
 > - describes declarative presentation
@@ -450,8 +437,9 @@ It does not implement the application logic, establish its own binding, load
 resources, or manage runtime state transitions.
 
 ## Namespace
-A namespace is a logical name and structure space used for the unique addressing
-and hierarchical organization of objects and other namespaces.
+Namespaces organize application objects by name. They are represented by nested
+JavaScript objects; the Object API provides methods to create and resolve these
+structures.
 
 Every composite has a namespace defined by its composite ID. This namespace is
 the outer, global addressing space of the corresponding application module
@@ -460,7 +448,7 @@ within the application.
 ```text
 Composite ID
     -> defines the outer namespace
-        -> addresses the application module
+        -> addresses the application module, if provided
             -> can contain an internal object structure
                 -> can provide additional logical namespaces
 ```
@@ -475,9 +463,27 @@ subordinate to the outer namespace defined by the composite ID:
 > __Application Module__
 > - internal hierarchical organization
 
-The namespace defined by a composite ID addresses the same runtime instance of
-the application module throughout the existence of the composite, as described
-in the [static runtime model](#static-runtime-model).
+The namespace defined by a composite ID is used to resolve the corresponding
+application object, as described in the [static runtime model](
+    #static-runtime-model). DOM nesting does not create namespaces.
+
+For example, the following declaration resolves to the application object
+`shop.customer` and the module resources `modules/shop/customer.js`,
+`modules/shop/customer.css` and `modules/shop/customer.html`:
+
+```html
+<section id="customer@shop" composite></section>
+```
+
+The composite script `modules/shop/customer.js` can publish the object as
+follows:
+
+```javascript
+const customer = {
+    name: "Jone"
+};
+expose(customer, "shop.customer");
+```
 
 The runtime provides the addressing mechanism, while the application determines
 the meaning and organization of the objects within the application module. This
@@ -501,8 +507,8 @@ the view.
 > - associates the element with a bindable object
 
 During realization, the composer resolves these relationships and establishes
-the composite binding. Objects that participate in the binding must be
-explicitly exported from the composite script.
+the composite binding when a corresponding application object exists. Objects
+that participate in binding must be accessible through that object.
 
 Composite binding is part of the runtime representation of a composite. It is
 neither part of the composite module nor part of the application module itself.
@@ -510,7 +516,7 @@ It arises through the runtime while the composite is being realized.
 
 ### Composite Binding Responsibilities
 Composite binding is responsible for connecting the declarative DOM structure
-with explicitly exported objects of the application module.
+with accessible objects of the application module.
 
 It does not provide application logic, define the view, or independently manage
 the lifecycle of the composite.
@@ -657,22 +663,21 @@ composite within the DOM.
 Seanox composite-js uses a static runtime model for the relationship between a
 composite and its application module.
 
-For each composite, exactly one application module exists. The composite ID
-addresses that application module and its outer namespace.
+The composite ID resolves an application object by its namespace. Realizing a
+DOM element does not create a separate application object instance.
 
 ```text
-one Composite ID
-    -> one Composite
-        -> one Application Module
+Composite ID
+    -> resolves the application object, if provided
 ```
 
-The internal state and object structure of the application module can change
-during execution. The identity-based relationship between the composite and its
-application module remains stable.
+Removing a composite from the DOM does not discard its application object.
+Application logic is responsible for resetting state or releasing its own
+resources when needed.
 
-The static runtime model does not require the internal application logic to be
-static. It defines the cardinality and identity of the relationship, not the
-mutability of application state.
+The internal state and object structure can change during execution. The static
+model describes the namespace-based association, not an immutability guarantee
+for the application object.
 
 ## Concept Relationships
 The realization of a composite follows the conceptual dependency chain:
@@ -682,10 +687,10 @@ Composite declaration
     -> Composite ID
         -> Composite Module resolution
             -> resource loading
-                -> Composite Script processing
-                    -> Application Module establishment
+                -> Composite Script processing, if needed
+                    -> Application Module resolution, if provided
                         -> View realization
-                            -> Composite Binding
+                            -> Composite Binding, if applicable
                                 -> running Composite
 ```
 
@@ -697,16 +702,18 @@ repeated as required by rendering and lifecycle management.
 The architecture establishes the following invariants:
 1.  Every composite has a unique composite ID.
 2.  Every composite ID defines the outer namespace of its composite.
-3.  Every composite has exactly one application module.
-4.  The application module is established by the composite script.
+3.  A composite can render without an application module.
+4.  An application module can be provided by a composite script or an existing
+    application object.
 5.  A composite module provides resources but is not the running composite.
-6.  A composite script is not the application module it establishes.
+6.  A composite script is not the application module it can provide.
 7.  An ECMAScript module is independent of composite module and lifecycle semantics.
 8.  A view provides declarative presentation but not the application logic.
 9.  Expressions and composite scripts are evaluated in a non-persistent
-    execution scope; persistent state is held by the view and application
-    scopes.
-10. Objects participating in composite binding must be explicitly exported.
+    execution scope; persistent state can be held in the view and application
+    scopes or in application objects.
+10. Composite binding requires an application object resolvable under the
+    composite ID, with accessible binding targets.
 11. Composite binding is established by the runtime during realization.
 12. The composer performs the concrete realization of composites.
 13. The composer is part of the runtime but is not the complete runtime.

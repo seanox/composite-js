@@ -9,13 +9,14 @@
 - [Prerequisites](#prerequisites)
 - [Choose a Runtime Variant](#choose-a-runtime-variant)
 - [First Composite](#first-composite)
-- [What Happens During Realization](#what-happens-during-realization)
-- [Composite Script and Application Module](#composite-script-and-application-module)
-- [Composite Binding](#composite-binding)
-- [Optional Next Step: Reactive Application Data](#optional-next-step-reactive-application-data)
+- [How the Example Is Realized](#how-the-example-is-realized)
+- [Optional Next Step: Reactive Application Data](
+      #optional-next-step-reactive-application-data)
 - [Learning Path](#learning-path)
-  - [Micro-Frontend](https://seanox.github.io/composite-js/tutorials/#micro-frontend)
-  - [SPA (Single Page Application)](https://seanox.github.io/composite-js/tutorials/#spa-single-page-application)
+  - [Micro-Frontend](
+        https://seanox.github.io/composite-js/tutorials/#micro-frontend)
+  - [SPA (Single Page Application)](
+        https://seanox.github.io/composite-js/tutorials/#spa-single-page-application)
 
 ## Prerequisites
 - Browser with ECMAScript 6 support or higher
@@ -29,21 +30,21 @@ release-channel URL or downloaded as a release.
 Release channels continuously provide the latest final major versions.
 
 Each release provides versions for different purposes. These versions are
-available in two variants. The standard variant is compressed for production
-environments. The uncompressed and documented max variant is available for
-development and error analysis.
+available in two variants. The standard variant is minified for production
+environments. The unminified and documented max variant is available for
+development and debugging.
 
 - https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js.js  
   __for deployment without Test API__
 
 - https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js-max.js  
-  __for deployment without Test API__ not compressed and with comments
+  __for deployment without Test API__ unminified and with comments
 
 - https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js-testing.js  
   for development and testing
 
 - https://cdn.jsdelivr.net/npm/@seanox/composite-js/release/composite-js-testing-max.js  
-  for development and testing not compressed and with comments
+  for development and testing unminified and with comments
 
 ## First Composite
 Create `index.html` and declare a composite:
@@ -73,6 +74,9 @@ Create the resources of the composite module:
 - index.html
 ```
 
+The runtime automatically loads the resources associated with the composite ID
+from `modules`. Individual resources are optional.
+
 Implement the composite script in `modules/example.js`:
 
 ```
@@ -83,13 +87,15 @@ const example = {
     }
 };
 
-#export example;
+expose(example, "example");
 ```
 
-The composite script establishes the application module of the composite. The
-runtime does not prescribe how application logic must be structured. It can be
-implemented using objects, functions, classes, or combinations of these
-structures.
+`modules/example.js` is the executable composite script; the published `example`
+object is the application module that provides application logic at runtime.
+`expose(example, "example")` makes the object available as `window.example` for
+composite binding.
+
+The example's object structure does not prescribe an application architecture.
 
 Implement the view in `modules/example.html`:
 
@@ -99,6 +105,14 @@ Implement the view in `modules/example.html`:
 <p id="preview">{{example.message}}</p>
 ```
 
+The expression `{{example.message}}` displays the current property value in the
+preview.
+
+Composite binding connects `id="message"` to `example.message`. The `events`
+attribute selects `input` and `change` as triggers. On these events, `validate`
+calls `example.validate(element, value)`; if it returns `true`, the input value
+is copied to the property. `render="#preview"` refreshes the preview.
+
 Optional styles in `modules/example.css`:
 
 ```css
@@ -107,88 +121,39 @@ Optional styles in `modules/example.css`:
 }
 ```
 
-The view describes the declarative presentation of the composite. It contains
-markup and expressions and refers to application data provided by the
-application module. The expression `{{example.message}}` accesses data exposed
-by the application module through composite binding.
+Composite CSS is inserted into the document and is not automatically scoped. Use
+selectors such as `#example` to target the composite explicitly.
 
-## What Happens During Realization
-When the runtime encounters the composite declaration, it forms the composite ID
-from the `id` attribute and the `composite` attribute, resolves the
-corresponding composite module and loads its resources:
+Serve the directory containing `index.html` and `modules` with a web server,
+then open `index.html` over HTTP or HTTPS. Enter text in the input field; the
+preview displays the same text.
 
-```
-Composite Module
-    -> example.html
-    -> example.css
-    -> example.js
-```
+## How the Example Is Realized
+The runtime uses the composite ID `example` to resolve the corresponding
+composite module. For the empty composite in this example, its resources are
+processed in this order:
 
-The composer then realizes the composite within the declared DOM context.
-
-Conceptually, the realization follows this dependency chain:
-
-```
-Composite declaration
-    -> Composite ID
-        -> Composite Module resolution
-            -> resource loading
-                -> Composite Script execution
-                    -> Application Module establishment
-                        -> View realization
-                            -> Composite Binding
-                                -> running Composite
+```text
+modules/example.js
+    -> modules/example.css
+        -> modules/example.html
 ```
 
-As shown here, the composite lifecycle begins with the loading of the
-composite module. At the end of this process, the composite reaches its
-running state. The resulting composite consists of:
+Executing `example.js` creates the `example` application module and publishes it
+as `window.example` before the view is inserted. The composer realizes the view
+within the declared `<section>`, evaluates expressions and establishes composite
+binding:
 
-```
-Composite
-    -> DOM context
-    -> JavaScript context
-    -> CSS context
+```text
+View <-> Composite Binding <-> Application Module
 ```
 
-## Composite Script and Application Module
-The composite script and the application module are related but distinct
-concepts.
-
-```
-Composite Script
-    -> establishes
-        -> Application Module
-```
-
-The composite script is the executable JavaScript program of the composite
-module, whose execution establishes the application module as the resulting
-runtime representation of the application logic.
-
-Objects that participate in composite binding must be explicitly exported:
-
-```
-#export example;
-```
-
-Without the export, the object would remain internal to the composite script
-and would not be available to the view.
-
-## Composite Binding
-Composite binding connects the declarative DOM structure of the view with
-explicitly exported objects of the application module.
-
-```
-View
-    <-> Composite Binding <-> Application Module
-```
-
-The runtime resolves this relationship during realization and makes the
-application data available to the view.
+Together, the realized DOM, application logic and applied styles form the
+running composite.
 
 ## Optional Next Step: Reactive Application Data
-The previous example uses explicit rendering so that the data flow remains
-visible.
+To use reactive application data, replace `modules/example.js` and
+`modules/example.html` with the following versions.
 
 ```javascript
 const example = {
@@ -198,7 +163,7 @@ const example = {
     }
 }.reactive();
 
-#export example;
+expose(example, "example");
 ```
 
 ```html
@@ -207,10 +172,10 @@ const example = {
 <p>{{example.message}}</p>
 ```
 
-When reactive application data is used, the runtime reacts to changes of its
-properties. Any expression in the view that depends on a changed property is
-updated automatically, so explicit rendering is no longer required in this
-case.
+During rendering, the runtime tracks properties accessed through the reactive
+object. When one of these properties is changed through that object, the
+dependent parts of the view are updated asynchronously. The explicit `render`
+attribute is therefore not needed in this example.
 
 ## Learning Path
 The following tutorials provide separate learning paths for micro-frontends and

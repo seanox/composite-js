@@ -47,7 +47,6 @@
     /** Shadow constant for locator schemas */
     const LOCATOR_SCHEMA_XML = Locator.SCHEMA_XML;
     const LOCATOR_SCHEMA_XSLT = Locator.SCHEMA_XSLT;
-    const LOCATOR_SCHEMA_RAW = Locator.SCHEMA_RAW;
 
     let _locales_selection = null;
 
@@ -238,8 +237,8 @@
                 throw new Error("Invalid locator: " + String(locator));
             const source = locator;
             locator = Locator.parse(locator);
-            if (locator.schema === LOCATOR_SCHEMA_RAW)
-                throw new Error("Invalid locator: " + source);
+            if (![LOCATOR_SCHEMA_XML, LOCATOR_SCHEMA_XSLT].includes(locator.schema))
+                throw new Error("Unsupported schema: " + source);
             if (locator.schema === LOCATOR_SCHEMA_XSLT
                     && locator.query !== undefined)
                 throw new Error("Invalid xslt locator: " + source);

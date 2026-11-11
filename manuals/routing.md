@@ -158,8 +158,8 @@ The view and possible sub-views are not shown.
 
 ### string
 A string does not trigger a redirect. Like any return value other than
-`undefined` or `true`, it denies approval and the view and possible sub-views are
-not shown. Use an interceptor for navigation redirects.
+`undefined` or `true`, it denies approval and the view and possible sub-views
+are not shown. Use an interceptor for navigation redirects.
 
 ```javascript
 const example = {

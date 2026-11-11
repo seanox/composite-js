@@ -179,11 +179,15 @@ including arrays, primitives, functions and `null`. A missing root or branch
 returns `undefined`; traversing through an incompatible value throws.
 
 ```javascript
-const model = {items: [{name: "Wolf"}], keys: {"x\ny": 1}};
-Object.lookup(model, "items[000].name"); // "Wolf"
-Object.lookup(model, "missing.child");  // undefined; no mutation
-Object.lookup(model, 'keys["x\\ny"]');  // 1; splitter decodes the escape
-Object.lookup(model, 'keys["x\ny"]');   // 1; JavaScript already decoded it
+const model = {items: [{name: "example"}], keys: {"x\ny": 1}};
+Object.lookup(model, "items[000].name");
+// returns "example"
+Object.lookup(model, "missing.child");
+// returns undefined; no mutation
+Object.lookup(model, 'keys["x\\ny"]');
+// returns 1; splitter decodes the escape
+Object.lookup(model, 'keys["x\ny"]');
+// returns 1; JavaScript already decoded it
 ```
 
 ### Object.exists
@@ -194,10 +198,14 @@ propagate; no objects are created.
 
 ```javascript
 const settings = {enabled: false, theme: null};
-Object.exists(settings, "enabled"); // true
-Object.exists(settings, "theme");   // false, although the property is present
-"theme" in settings;                // true
-Object.exists(settings, "missing"); // false
+Object.exists(settings, "enabled");
+// returns true
+Object.exists(settings, "theme");
+// returns false, although the property is present
+"theme" in settings;
+// returns true
+Object.exists(settings, "missing");
+// returns false
 ```
 
 ### Object.use
@@ -241,10 +249,14 @@ without an intermediate placeholder. Native assignment errors propagate.
 
 ```javascript
 const root = {};
-Object.use(root, "a.b.c[10]", "a"); // returns "a"; c is [], c[10] is "a"
-Object.use(root, 'named["a"]', 10); // returns 10; named is {}, named.a is 10
-Object.use(root, "a.b.c[11]", undefined); // ensures and returns {} at c[11]
-Object.use(root, "named", false); // overwrites the final object with false
+Object.use(root, "a.b.c[10]", "a");
+// returns "a"; c is [], c[10] is "a"
+Object.use(root, 'named["a"]', 10);
+// returns 10; named is {}, named.a is 10
+Object.use(root, "a.b.c[11]", undefined);
+// ensures and returns {} at c[11]
+Object.use(root, "named", false);
+// overwrites the final object with false
 ```
 
 ### Object.usable
@@ -253,12 +265,18 @@ for `null` and `undefined`, including an argumentless call. All other values
 return `true`, including `false`, `0`, `NaN` and `""`.
 
 ```javascript
-Object.usable();          // false
-Object.usable(null);      // false
-Object.usable(false);     // true
-Object.usable(0);         // true
-Object.usable("");        // true
-Object.usable("missing"); // true; the string is not looked up
+Object.usable();
+// returns false
+Object.usable(null);
+// returns false
+Object.usable(false);
+// returns true
+Object.usable(0);
+// returns true
+Object.usable("");
+// returns true
+Object.usable("missing");
+// returns true; the string is not looked up
 ```
 
 ## RegExp

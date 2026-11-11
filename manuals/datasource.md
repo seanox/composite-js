@@ -1,5 +1,5 @@
 &#9665; [Routing](routing.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#runtime)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#datasource)
 &nbsp;&nbsp;&nbsp;&nbsp; [Resource Bundle](message.md) &#9655;
 - - -
 
@@ -21,11 +21,11 @@ application-provided data accessed through queries and transformations.
 - [Notes](#notes)
 
 ## Data Storage
-By default, the data storage is located in `./data` relative to the application
-directory. It contains the supported languages as subdirectories. Each language
-contains its own content. Redundant data/fields and additional subdirectories
-belong to the concept. DataSource primarily uses XML files. XSLT transformations
-are optional.
+The data storage is located in `./data` relative to the application directory.
+It contains the supported languages as subdirectories. Each language contains
+its own content. Redundant data/fields and additional subdirectories belong to
+the concept. DataSource primarily uses XML files. XSLT transformations are
+optional.
 
 ```
 + data
@@ -44,8 +44,6 @@ are optional.
 + resources
 + index.html
 ```
-
-The data storage can be changed via `DataSource.DATA`. 
 
 ## Locales
 The supported languages are organized in locales in the `locales.xml` file.
@@ -88,12 +86,13 @@ supported. A locator can be used contextually or explicitly.
 
 - __Explicit locator__: Uses a fully qualified URL with a file extension
   (`xml://....xml` or `xslt://....xslt`). This locator addresses an absolute
-  path based on the current URL and is not enriched with the locale.
+  path under the current application context and is not enriched with the
+  locale. Requests outside the application context are rejected.
 
-Each locator starts with a protocol that corresponds to the file extension in
-the data storage. __Only lowercase letters are accepted here__, because deriving
-the corresponding file extension is too time-consuming when uppercase and
-lowercase letters are combined.
+The locator scheme determines how the data is processed. Schemes are
+case-insensitive and normalized to lowercase. Contextual locators have the
+extension associated with their scheme appended. For explicit locators, the file
+extension remains part of the path but does not determine the processing type.
 
 ```
 xml://fileA -> ./data/en/fileA.xml
@@ -154,8 +153,10 @@ const data = DataSource.fetch("xml://paper?//*/@price");
 ## transform
 XSLT (1.0) transformation of XML data provides another way to create dynamic
 data and content. This can already be done with the locator-based fetch method.
-If direct access to the XMLDocument is required, use the transform method. It
-accepts XMLDocument and locators, also in combination.
+The method accepts an XMLDocument or an XML locator as input and an optional
+stylesheet as an XMLDocument or XSLT locator, including combinations of these
+types. It returns the transformed nodes in a _DocumentFragment_. To access the
+XMLDocument fetched from a locator without transforming it, use `fetch`.
 
 ```javascript
 DataSource.transform("xml://paper", "xslt://article");
@@ -187,15 +188,13 @@ DataSource.transform("xml://paper?//*/@price", {...});
 DataSource.transform("xml://paper?//*/@price", "xslt://article", {...});
 ```
 
-During transformation, a new XMLDocument is created. Its structure depends on
-the browser and XSLT processor. By default, the root entity is returned as a
-node. The option `raw` changes this behavior. If `raw` is `true`, the original
-XMLDocument is returned.
+During transformation, a new _DocumentFragment_ is created. Its structure
+depends on the browser and XSLT processor.
 
-JavaScript elements are also handled. Their type is changed automatically to
-`composite/javascript` so that they are not executed during embedding, but are
-interpreted by the composer during rendering. This is important when using
-[condition](markup.md#condition).
+JavaScript &lt;script&gt; elements without a type or with the type
+`text/javascript` are changed to `composite/javascript`. They are therefore not
+executed during embedding, but are interpreted by the composer during
+rendering. This is important when using [condition](markup.md#condition).
 
 Text creation/output during transformation has another special behavior. The
 XSLT Processor always generates XML-valid text output. Any XML syntax in text is
@@ -234,9 +233,16 @@ escaping.
 ```
 
 ## collect
-Content from multiple XML files can be collected and concatenated into a new
-XMLDocument. The contents are combined under one collector with a configurable
-name.
+Results from one or more XML locators can be collected into a new XMLDocument.
+Locators may include XPath. XMLDocument results are added under the collector
+root, node results are appended as nodes, and scalar XPath results are wrapped
+in &lt;text&gt; elements.
+
+
+Results from one or more XML locators can be combined in a new XMLDocument.
+Locators may include XPath; their results are added under a root element named
+`collection` by default. XPath results that are strings, numbers, or booleans
+are wrapped in &lt;text&gt; elements.
 
 As an example, 3 XML files: paper.xml, envelope.xml, pen.xml
 
@@ -263,7 +269,7 @@ As an example, 3 XML files: paper.xml, envelope.xml, pen.xml
 </article>
 ```
 
-Collecting with the standard collector.
+Collecting with the default `collection` root.
 
 ```javascript
 DataSource.collect("xml://paper", "xml://envelope", "xml://pen");
@@ -271,7 +277,7 @@ DataSource.collect("xml://paper", "xml://envelope", "xml://pen");
 
 ```xml
 <?xml version="1.0"?>
-<collector>
+<collection>
   <article>
     <id>100</id>
     <description>Paper</description>
@@ -287,7 +293,7 @@ DataSource.collect("xml://paper", "xml://envelope", "xml://pen");
     <description>Pen</description>
     <price>3.00</price>
   </article>
-</collector>
+</collection>
 ```
 
 Collecting with an own _articles_ collector.
@@ -297,7 +303,7 @@ DataSource.collect("articles", "xml://paper", "xml://envelope", "xml://pen");
 ```
 
 The result is the same as before, but with `articles` as the root element
-instead of `collector`.
+instead of `collection`.
 
 ## Notes
 The datasource can also be used directly in the markup with the attributes
@@ -336,5 +342,5 @@ derived from the name of the XML locator and used for the transformation.
 
 - - -
 &#9665; [Routing](routing.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#runtime)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#datasource)
 &nbsp;&nbsp;&nbsp;&nbsp; [Resource Bundle](message.md) &#9655;

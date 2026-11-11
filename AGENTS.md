@@ -228,6 +228,7 @@ summaries consistent with the detailed manuals when behavior changes, without
 duplicating entire reference sections or unrelated details.
 
 ## Working Rules for AI Agents
+
 ### Before making changes
 1. Inspect `git status` and the relevant diff. Preserve existing staged,
    unstaged and untracked work; do not reset, clean, overwrite or stage it.

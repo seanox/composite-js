@@ -21,8 +21,8 @@ scope.
 
 ## Expressions
 Expressions use `{{...}}` to embed JavaScript in markup within text nodes and
-attributes of the `<body>` element, excluding the contents of `<style>` and
-`<script>` elements.
+attributes of the &gt;body&lt; element, excluding the contents of &gt;style&lt;
+and &gt;script&lt; elements.
 
 Text outside of expressions can be combined in attributes and text nodes.
 
@@ -54,7 +54,7 @@ context and used as expression results.
 ### Values
 The examples assume that `Example` is available to the expression. Local
 composite-script bindings are not exposed automatically; see [expose](
-    scripting.md#expose) and [Scopes](architecture.md#scopes).
+    scripting.md#expose) and [scopes](architecture.md#scopes).
 
 ```text
 {{Example.object.field}}
@@ -102,7 +102,7 @@ statements.
 > isolated per composite or global JavaScript bindings. Bare-name reassignment
 > affects only the current evaluation; use `view.name` for persistent
 > assignments. Mutations of referenced objects can persist. Access persistent
-> application state through `application`; see the [Scope overview](
+> application state through `application`; see the [scope overview](
 >     architecture.md#scopes).
 
 ### Markup Encoding
@@ -111,11 +111,8 @@ markup. The browser resolves character references before expression evaluation;
 for example, `&amp;&amp;` becomes JavaScript's `&&`:
 
 ```html
-{{label: Example.enabled &amp;&amp; Example.ready ? Example.title.toUpperCase() : ''}}
+{{label: example.enabled &amp;&amp; example.ready ? example.title.toUpperCase() : ''}}
 ```
-
-Use unencoded JavaScript when setting expressions through `textContent` or
-`setAttribute`, or passing them directly to `Expression.eval`.
 
 ### Delimiters
 In markup, a match starts at `{{` and ends at the first subsequent `}}`.
@@ -160,7 +157,7 @@ an extension, not a declaration of `foo`.
 Usage example
 
 ```text
-{{label: Example.enabled :and Example.ready ? Example.title.toUpperCase() : ''}}
+{{label: example.enabled :and example.ready ? example.title.toUpperCase() : ''}}
 ```
 
 

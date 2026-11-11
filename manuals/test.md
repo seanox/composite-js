@@ -68,7 +68,7 @@ The smallest component in an integration test is called _task_ because _case_ is
 a JavaScript keyword. A task can be implemented alone, but is always used in a
 scenario.
 
-Task is primarily a meta-object.
+Task is defined by a metadata object.
 
 ```
 {name:..., test:..., timeout:..., expected:..., ignore:...}
@@ -78,7 +78,8 @@ Task is primarily a meta-object.
 Optional name of the test task.
 
 ### test
-An implemented method to be executed as a test.
+An implemented method to be executed as a test. It may return a Promise or
+thenable; the task completes when the returned value settles.
 
 ### timeout
 Optional maximum runtime of the test item in milliseconds. Exceeding this limit
@@ -87,7 +88,9 @@ timeout is ignored.
 
 ### expected
 Optional definition for expected errors. The error must occur for the test to be
-successful. The value must be an error object or a RegExp.
+successful. Set this to an error constructor or function, matched with
+`instanceof`, or a RegExp matched against the string representation of the
+thrown value. This also applies to errors from rejected Promises.
 
 ### ignore
 Optional `true` if the test is to be ignored.
@@ -140,7 +143,7 @@ Assert.assertTrue("message", true);
 ```
 
 ### assertFalse
-Asserts that a value is `false`, as negation of `Assert.assertTrue(...)`.
+Asserts that a value is `false`.
 
 ```javascript
 Assert.assertFalse(false);
@@ -156,7 +159,7 @@ Assert.assertEquals("message", expected, value);
 ```
 
 ### assertNotEquals
-Asserts that two values are not equal, as negation of `Assert.assertEquals(...)`.
+Asserts that two values are not equal.
 
 ```javascript
 Assert.assertNotEquals(unexpected, value);
@@ -172,8 +175,7 @@ Assert.assertSame("message", expected, value);
 ```
 
 ### assertNotSame
-Asserts that two values are not the same, as negation of
-`Assert.assertSame(...)`.
+Asserts that two values are not the same.
 
 ```javascript
 Assert.assertNotSame(unexpected, value);
@@ -193,7 +195,7 @@ Assert.assertNull("message", null);
 ```
 
 ### assertNotNull
-Asserts that a value is not `null`, as negation of `Assert.assertNull(...)`.
+Asserts that a value is not `null`.
 
 ```javascript
 Assert.assertNotNull("value");
@@ -209,7 +211,7 @@ Assert.assertUndefined("message", undefined);
 ```
 
 ### assertNotUndefined
-Asserts that a value is not `undefined`, as negation of `Assert.assertUndefined(...)`.
+Asserts that a value is not `undefined`.
 
 ```javascript
 Assert.assertNotUndefined("value");
@@ -225,7 +227,7 @@ Assert.fail("message");
 ```
 
 ## Configuration
-Optionally, the Test API can be configured with each start. A meta-object is
+Optionally, the Test API can be configured with each start. A metadata object is
 expected as parameter. The configuration contained in it is partially adopted
 and the unknown is ignored.
 
@@ -242,8 +244,8 @@ Test.start({auto: true});
 ```
 
 ### output
-Function or object for outputting messages and errors. If not specified, console
-object is used.
+Object with `log` and `error` methods for outputting messages and errors. If not
+specified, the console object is used.
 
 ```javascript
 Test.start({output: {
@@ -291,9 +293,9 @@ Test.start({monitor: {
 }});
 ```
 
-The current status is passed to all monitor methods as an meta-object. The
-status contains details of the current task and the queue. The details are
-read-only and cannot be changed.
+The current status is passed to every monitor method as an object. It contains
+details of the current task and the queue. Status properties are read-only;
+`task.meta` references the metadata object supplied to `Test.create`.
 
 ```javascript
 {
@@ -308,14 +310,13 @@ read-only and cannot be changed.
         timing:
             start time from the test task in milliseconds
         timeout:
-            optional, the time in milliseconds when a timeout is
-            expected
+            timeout deadline timestamp in milliseconds, or false if no timeout
+            is set
         duration:
             total execution time of the test task in milliseconds, is
             set with the end of the test task
         error:
-            optional, if an unexpected error (also assertion error) has
-            occurred, which terminated the test task
+            error object if the test failed, otherwise null
     },
     queue: {
         timing:
@@ -325,7 +326,7 @@ read-only and cannot be changed.
         length:
             number of outstanding tests,
         progress:
-            number of tests performed,
+            number of tasks started,
         lock:
             indicator when a test is performed and the queue is waiting,
         faults:
@@ -350,10 +351,9 @@ To be able to include console output in tests, the activated Test API supports
 forwarding, listeners and buffers for console output.
 
 ### Forwarding
-The forwarding runs completely in the background and distributes the output to
-the browser console output and to the components of the Test API. In the case of
-(I)Frames, the output is forwarded to enclosing or superordinate window-objects
-and is accessible there via buffer and listener with an activated Test API.
+Forwarding distributes output to the browser console and the components of the
+Test API. In frames, output is also forwarded to parent windows where the Test
+API is activated, and is available there through the buffer and listeners.
 
 ### Buffer
 When the Test API is enabled, the console object of the JavaScript API is
@@ -379,10 +379,9 @@ console.listen(function(level, ...parameters) {
 });
 ```
 
-The callback methods are then called at each console output and the log level is
-passed as the first parameter. The additional number of parameters is variable
-and depends on the initial call of the corresponding console methods. Which
-often makes it easier to use the spread syntax `...`.
+The callback is called for each console output with the log level as its first
+parameter, followed by the arguments passed to the corresponding console method.
+The variable number of arguments can be handled with the spread syntax `...`.
 
 ## Monitoring
 Monitoring is configured with the monitor of the Test API and is informed of the
@@ -428,7 +427,7 @@ Test.status();
 ```
 
 Returns a snapshot of the status of the current test, with the same structure as
-the status passed to the [monitor](#monitor). If no test is executed, false is
+the status passed to the [monitor](#monitor). If no test run is active, false is
 returned.
 
 ## Events
@@ -443,9 +442,11 @@ Playwright to observe them. The event's type is the event name (e.g.
 property with the same name (e.g. `event.testStart`).
 
 When events originate in nested views such as frames or iframes, corresponding
-events are also dispatched on each parent window. Test callbacks are invoked in
-registration order. Synchronous callback errors are reported asynchronously so
-subsequent callbacks and parent-window propagation can continue.
+events are also dispatched on each parent window. `Test.listen` callbacks
+receive the event name and status; monitor methods receive only the status. Test
+callbacks are invoked in registration order. Synchronous callback errors are
+reported asynchronously so subsequent callbacks and parent-window propagation
+can continue.
 
 List of available events:
 
@@ -458,9 +459,6 @@ Test.EVENT_RESUME
 Test.EVENT_START
 Test.EVENT_SUSPEND
 ```
-
-The event constants use `testCamelCase` values, for example `Test.EVENT_FINISH`
-is `testFinish`. The pattern also accepts lowercase names for custom events.
 
 Examples of use:
 
@@ -484,14 +482,14 @@ The Test API also activates extensions of the JavaScript API.
 ### Element
 
 #### Element.prototype.typeValue
-Method that simulates keyboard input for HTML elements.  
-The following events are triggered during simulation: 
-    focus, keydown, keyup, change
+Method that simulates keyboard input for HTML elements. It focuses the element,
+triggers `keydown` and `keyup` for each character, then triggers a bubbling
+`input` event.
 
 ```html
 <form action="/api/example" method="POST">
-  <input type="text" id="inputText"/>
-  <input type="submit"/> 
+  <input type="text" id="inputText">
+  <input type="submit">
 </form>
 ```
 
@@ -513,8 +511,8 @@ The string is based on `Element.prototype.outerHTML`.
 
 ```html
 <form action="/api/example" method="POST">
-  <input type="text" id="inputText"/>
-  <input type="submit"/> 
+  <input type="text" id="inputText">
+  <input type="submit">
 </form>
 ```
 
@@ -525,9 +523,9 @@ console.log(document.querySelector("form").toPlainString());
 Output:
 
 ```
-<form xmlns="http://www.w3.org/1999/xhtml" action="/api/example" method="POST">
-  <input type="text" id="inputText"/>
-  <input type="submit"/> 
+<form action="/api/example" method="POST">
+  <input type="text" id="inputText">
+  <input type="submit">
 </form>
 ```
 
@@ -574,7 +572,8 @@ Output:
 
 #### Object.prototype.toPlainString
 Method that creates a simple string for an object.  
-The string is based on `JSON.stringify(object)`.
+The string is based on `JSON.stringify(object)`. Iterable objects are first
+converted to arrays.
 
 ```javascript
 const example = {a:1, b:2, c() {return;}};

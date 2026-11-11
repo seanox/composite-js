@@ -23,7 +23,6 @@ lifetime and sharing behavior is summarized in the [scope overview](
   - [require](#require)
   - [use](#use)
   - [attempt](#attempt)
-  - [Script API](#script-api)
 - [Debugging](#debugging)
 
 ## Embedded Composite Script

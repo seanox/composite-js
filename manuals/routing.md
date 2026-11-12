@@ -101,7 +101,7 @@ provides interfaces, events, permission concepts and interceptors with which the
 view flow can be controlled and influenced.
 
 ## Navigation
-Navigation is based on paths that use the URL hash. It is triggered by changing
+Navigation uses paths written in URL-hash notation. It is triggered by changing
 the URL hash in the browser, by using hash links and in JavaScript with
 `window.location.hash`, `window.location.href`, `Routing.route(path)` and
 `Routing.forward(path)`.
@@ -126,10 +126,18 @@ Routing.forward("##");
 Routing.forward("##x");
 ```
 
-`Routing.route(path)` changes the URL hash asynchronously. Forwarding dispatches
-a `hashchange` event directly without changing the URL. Interceptors receive the
-requested target, but view approval still uses the current URL hash. Use
-`Routing.route(path)` to change the active path.
+`Routing.route(path)` changes the URL hash asynchronously. In contrast,
+`Routing.forward(path)` processes navigation to the requested target
+synchronously without changing the browser URL. The target becomes the effective
+routing path used by `Routing.location`, path coverage, view approval,
+`Routing.locate()` and the internal routing history. Relative navigation uses
+this effective path as its base. Rendering follows the composer's normal
+scheduling.
+
+> [!NOTE]
+> Known implementation issue: `Routing.forward()` does not yet apply this
+> contract consistently. View approval and the internal routing history still
+> use the browser URL instead of the forwarded target.
 
 __Routing accepts paths without a matching view and covers the destinations from
 the root. Subsequent path components are treated as path parameters and can be
@@ -157,9 +165,11 @@ are shown and any additional `condition` is explicitly `true`.
 The view and possible sub-views are not shown.
 
 ### string
-A string does not trigger a redirect. Like any return value other than
-`undefined` or `true`, it denies approval and the view and possible sub-views
-are not shown. Use an interceptor for navigation redirects.
+The return value is a path. The view and possible sub-views are not shown, and
+navigation is redirected to the returned path. The target follows the same path
+rules as other navigation; relative targets use the effective routing path as
+their base. Redirect handling must prevent endless self-redirects and redirect
+cycles.
 
 ```javascript
 const example = {
@@ -169,6 +179,8 @@ const example = {
             return;        
         if (this.condition === 2)
             return true;
+        if (this.condition === 3)
+            return "#redirect";
         return false;
     }    
 };
@@ -201,8 +213,9 @@ Interceptors are executed in the order in which they were registered.
 
 All registered interceptors are checked. If an interceptor matches the requested
 path, its actor function is executed. Matching and callback arguments use the
-hashes captured from the current event; changing the URL does not change them
-for following interceptors in that event.
+effective navigation target. If an interceptor redirects navigation, following
+interceptors match against and receive the updated target within the same
+navigation processing.
 
 An interceptor can stop further processing of the current navigation by
 returning `false` explicitly. This skips the remaining interceptors, routing
@@ -220,8 +233,8 @@ Any other return value does not affect routing.
 ### Path matching
 A string interceptor matches the specified path and all nested paths below it.
 String patterns must start with `#` and use the supported ASCII range; invalid
-string patterns are ignored. Matching uses the event's target hash before
-normalization.
+string patterns are ignored. Matching uses the effective navigation target,
+including redirects by preceding interceptors.
 
 ```javascript
 Routing.customize("#a", actor);
@@ -265,8 +278,9 @@ Routing.customize("#old-path", (oldHash, newHash) => {
 });
 ```
 
-__Changes to the URL affect the following path resolution and view approval.
-They can also trigger another `hashchange` event.__
+__The changed target is used by subsequent interceptors, path resolution, view
+approval and the internal routing history. Changes to the URL can also trigger
+another `hashchange` event.__
 
 ## Paths
 Paths are used for navigation, routing and view flow control. The target can be

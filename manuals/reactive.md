@@ -26,7 +26,7 @@ with the message `Invalid object type`.
 
 ```javascript
 const data = {
-    value: 0
+    value: ...
 }.reactive();
 ```
 

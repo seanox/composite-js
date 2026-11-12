@@ -4,10 +4,11 @@
 - - -
 
 # Reactivity Rendering
-In the reactive approach, changes to reactive data objects trigger a partial
-refresh of the consumers in the view. Consumers are all expressions that read
-the changed value of a data object. In the view, expressions can be used in HTML
-elements and free text.
+Reactive behavior means that changes to data trigger updates to the parts of a
+view that use that data. In composite-js, expressions in HTML attributes and
+text nodes read properties of reactive objects and act as consumers. Changes
+made through these objects trigger a partial refresh of the affected parts of
+the view.
 
 ## Contents Overview
 - [Creating Reactive Objects](#creating-reactive-objects)
@@ -19,24 +20,27 @@ elements and free text.
 
 ## Creating Reactive Objects
 Data objects must use `Reactive(object)` or `Object.prototype.reactive()` for
-reactive rendering.
+reactive rendering. `Reactive(object)` accepts a non-null object, including an
+array, and returns its reactive proxy. Other argument types cause a `TypeError`
+with the message `Invalid object type`.
 
 ```javascript
 const data = {
-    value: ...
+    value: 0
 }.reactive();
 ```
 
-In this example, the composer automatically re-renders all HTML elements in the
-DOM and free text that use the `value` property directly or indirectly in an
-expression. Rendering occurs when the changed value is final in the data object,
-which can be relevant when using getters and setters.
+In this example, the composer re-renders the registered consumers that read the
+`value` property directly or indirectly. Rendering is scheduled asynchronously
+after assignment, so expressions read the resulting property values, which can
+be relevant when using getters and setters. A change to `undefined` also updates
+registered consumers.
 
 No new reactive instance can be created from an existing one &ndash;
 `Object.prototype.reactive()` and `Reactive(...)` always return a reference to
-the same instance. However, if a reactive object is assigned as a value to
-another (different) reactive instance, a new reactive instance is created from
-its underlying original object.
+the same instance. The same original object also yields the same reactive
+instance when accessed through another reactive object, including after
+assignment as a property value.
 
 ```javascript
 const objectA = ({}).reactive();
@@ -59,22 +63,31 @@ objectC.objectB = objectB;
 objectC.objectB === objectB
 ```
 
-Reactive rendering can be stopped by selectively deleting reactive instances
-with the `delete` method.
+Successful structural changes made through a reactive instance also trigger
+reactive rendering for the affected consumers. This includes deleting a
+property with `delete`, redefining a property with `Object.defineProperty(...)`,
+and array operations that remove entries, such as `pop()`.
 
 ## Consumers
 __Reactive behavior is based on notifications within reactive that trigger
 rendering. To create these notifications, reactive must know the consumers of
-the reactive data. It collects this information while parsing and rendering the
-markup, including markup inserted at runtime. Reactive must therefore exist
-before the consumers.__
+the reactive data. It collects this information while rendering the markup,
+including markup inserted at runtime. Reactive instances must therefore be
+used when the consumers are rendered.__
+
+Dependencies are recorded for model properties read through the reactive
+instance during rendering. This includes properties read by getters, whether
+the getter is defined on the object itself or inherited from a prototype.
+Changing an underlying model property therefore also updates consumers of the
+computed getter value. Initialize properties before rendering their consumers,
+even if their initial value is `null` or `undefined`. Subscriptions for consumers
+removed from the DOM are released automatically.
 
 ## Synchronization
-__Reactive is a substitute for another object and controls access to the
-original object. Reactive and the object are independent instances, but reactive
-is tightly bound to the original object but logically separated from it. This
-logical separation is necessary so that the composer can generate notifications
-when data changes and thus trigger rendering of the consumers in the view.__
+__Reactive is a proxy for another object and controls access to the original
+object. The reactive instance and the original have distinct identities but
+share the same property data. Writes through the reactive instance update the
+original object and notify the composer to render the consumers in the view.__
 
 ```javascript
 const objectA = {};
@@ -87,13 +100,14 @@ typeof objectB.value === "string"
 objectA.value === objectB.value
 ```
 
-As a proxy, reactive supports synchronization in both directions after
-initialization, but each individual synchronization step is monodirectional and
-driven separately by Get and Set. From the reactive instance perspective, Get
-synchronizes from the original object to the reactive instance (object &rarr;
-reactive). Set synchronizes from the reactive instance to the original object
-(reactive &rarr; object). Changes to the original object are considered when
-data is accessed, without affecting the view.
+As a proxy, reactive forwards reads and writes to the original object rather
+than maintaining a separate copy of its data. Get reads the current property
+value from the original object; Set writes to the original object and schedules
+reactive rendering after successful assignment. Exceptions thrown by setters
+propagate to the caller; a failed assignment does not trigger reactive
+rendering. Changes made directly to the original object are visible on
+subsequent reads through the reactive instance, but do not themselves trigger a
+view update.
 
 ```javascript
 const object = {valueA:1};
@@ -112,17 +126,25 @@ window.setTimeout(() =>
     instance.valueA = 5, 6000);
 ```
 
-In this example, after approx. 5 seconds, reactive instance `instance` reads the
-original object as a reactive instance and takes over `valueB`. After approx. 6
-seconds, the write access to `instance` triggers the view update.
+In this example, after approx. 2 and 5 seconds, `instance.valueB` reads `2` from
+the original object. After approx. 4 seconds, `instance.valueA` reads `3`.
+These reads do not trigger view updates. After approx. 6 seconds, the write
+access to `instance` schedules rendering of any registered consumers of
+`valueA`.
 
 ## Nested Objects
-Reactive works permanently recursively on all object levels and also on the
-objects which are added later as values. Even if these objects do not explicitly
-use reactive, new instances are created for the referenced objects. Views and
-reactive instances, like instances internally, use proxies that behave and can
-be used like the initiating originals. However, proxies are separate instances
-that are compatible but not identical to the initiating object.
+Reactive works recursively on nested objects, including arrays and objects
+added later as property values. Their reactive proxies are created on first
+read and reused for subsequent accesses. Nested proxies forward property
+access to the original objects, but are separate instances and not identical
+to them.
+
+Methods of native objects, such as `Date` and `Map`, retain their JavaScript
+behavior. If a property stores an object and cannot be reassigned or redefined,
+reading it returns that object unchanged rather than a reactive proxy, for
+example with `Object.freeze(...)`.
+Values that are instances of `Node`, `NodeList` or `HTMLCollection` are returned
+unchanged rather than wrapped in reactive proxies.
 
 ```javascript
 const objectA = {}
@@ -135,7 +157,7 @@ objectA.objectB === objectB
 const objectC = objectA.reactive();
 
 // Assertions
-objectC.objectB !== objectA
+objectC.objectB !== objectA.objectB
 objectC.objectB !== objectB
 objectA.objectB === objectB
 
@@ -168,15 +190,20 @@ objectF.text === "C"
 ## Proxies
 Further Proxies can be used with reactive instances. Due to the logical
 separation, reactive instances always act recursively on the level of the
-original objects. Adding Proxies on the object levels of reactive instances has
-no effect because they are not addressed. Proxies should exist before the
-reactive instance is created or be placed around the reactive instance later, so
-that the Proxy and not the reactive instance is used as the data object.
+original objects. Assigning a reactive instance as a property value stores its
+underlying original object. An additional Proxy around that instance can
+therefore be bypassed when assigned to another reactive instance. Proxies
+should exist before the reactive instance is created or be placed around the
+reactive instance later, so that the Proxy and not the reactive instance is
+used as the data object.
 
 ```javascript
 const object = {a:{valueA:1}};
 const instance = new Proxy(Reactive(object), {
-    ...
+    get(target, key) {
+        console.log(key);
+        return target[key];
+    }
 });
 ```
 

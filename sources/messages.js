@@ -79,10 +79,12 @@
 
         window.Messages = {
             populate(label, ...values) {
-                let text = Messages[label] || "";
-                for (let index = 0; index < values.length; index++)
-                    text = text.replace(new RegExp("\\{" + index + "\\}", "g"), values[index]);
-                return text.replace(/\{\d+\}/g, "");
+                const text = Messages[label] || "";
+                return text.replace(/\{(\d+)\}/g, (match, digits) => {
+                    const index = Number(digits);
+                    return String(index) === digits && index < values.length
+                        ? String(values[index]) : "";
+                });
             }
         }
 

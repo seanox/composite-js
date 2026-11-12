@@ -7,6 +7,9 @@
     <label key="xx" value="xxX2"/>
     <label key="xx" value="xxX3"/>
     <label key="placeholder" value="placeholders 1:{1} 1:{1} 3:{3} 2:{2} 98:{98} 99:{99}--"/>
+    <label key="placeholder.single" value="Hello {0}!"/>
+    <label key="placeholder.pair" value="Hello {0} {1}!"/>
+    <label key="placeholder.indices" value="{0}|{00}|{01}|{1}|{10}"/>
   </xx>
   <xde>
     <label key="all.a" value="xdeA"/>

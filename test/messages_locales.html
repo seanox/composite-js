@@ -69,6 +69,51 @@
             Assert.assertEquals("placeholders 1:B 1:B 3:D 2:C 98: 99:--", Messages.populate("placeholder", "A", "B", "C", "D"));
         }});
 
+        ["$&", "$$", "$`", "$'"].forEach(value => {
+            Test.create({name:"Messages.populate keeps " + value + " literal", test() {
+                DataSource.localize("xx");
+                Assert.assertEquals("Hello " + value + "!", Messages.populate("placeholder.single", value));
+            }});
+        });
+
+        Test.create({name:"Messages.populate does not replace inserted later placeholders", test() {
+            DataSource.localize("xx");
+            Assert.assertEquals("Hello {1} WORLD!", Messages.populate("placeholder.pair", "{1}", "WORLD"));
+        }});
+
+        Test.create({name:"Messages.populate does not remove inserted earlier placeholders", test() {
+            DataSource.localize("xx");
+            Assert.assertEquals("Hello WORLD {0}!", Messages.populate("placeholder.pair", "WORLD", "{0}"));
+        }});
+
+        Test.create({name:"Messages.populate does not remove inserted missing placeholders", test() {
+            DataSource.localize("xx");
+            Assert.assertEquals("Hello {99}!", Messages.populate("placeholder.single", "{99}"));
+        }});
+
+        Test.create({name:"Messages.populate preserves repeated and canonical placeholder indices", test() {
+            DataSource.localize("xx");
+            const values = Array.from({length:100}, (value, index) => String(index));
+            Assert.assertEquals("placeholders 1:1 1:1 3:3 2:2 98:98 99:99--", Messages.populate("placeholder", ...values));
+            Assert.assertEquals("0|||1|10", Messages.populate("placeholder.indices", ...values));
+        }});
+
+        Test.create({name:"Messages.populate distinguishes missing arguments from supplied values", test() {
+            DataSource.localize("xx");
+            Assert.assertEquals("Hello !", Messages.populate("placeholder.single"));
+            Assert.assertEquals("Hello !", Messages.populate("placeholder.single", ""));
+            Assert.assertEquals("Hello undefined!", Messages.populate("placeholder.single", undefined));
+            Assert.assertEquals("Hello null!", Messages.populate("placeholder.single", null));
+            Assert.assertEquals("Hello false!", Messages.populate("placeholder.single", false));
+            Assert.assertEquals("Hello 0!", Messages.populate("placeholder.single", 0));
+        }});
+
+        Test.create({name:"Messages.populate ignores unused values and returns empty text for missing labels", test() {
+            DataSource.localize("xx");
+            Assert.assertEquals("Hello A B!", Messages.populate("placeholder.pair", "A", "B", "unused"));
+            Assert.assertEquals("", Messages.populate("missing.placeholder", "unused"));
+        }});
+
         Test.start({auto:true});
     </script>
   </head>

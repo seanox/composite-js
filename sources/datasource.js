@@ -50,6 +50,12 @@
 
     let _locales_selection = null;
 
+    // XML/XSLT document cache keyed by normalized resource URL
+    const _documents = new Map();
+
+    // Collections cache keyed by collector and ordered normalized locator URIs
+    const _collections = new Map();
+
     compliant("DataSource");
     compliant(null, window.DataSource = {
 
@@ -260,20 +266,19 @@
                             && !address.pathname.startsWith(`${context}/`)))
                 throw new Error(`Invalid locator outside application context: ${source}`);
 
-            const data = ((locator) => {
-                const hash = locator.hashCode();
-                if (_cache.hasOwnProperty(hash))
-                    return _cache[hash].clone();;
+            const data = ((resource) => {
+                if (_documents.has(resource))
+                    return _documents.get(resource).clone();
                 const request = new XMLHttpRequest();
                 request.overrideMimeType("application/xslt+xml");
-                request.open("GET", address.href, false);
+                request.open("GET", resource, false);
                 request.send();
                 if (request.status !== 200)
                     throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
                 const data = request.responseXML;
                 if (!data || !data.documentElement)
-                    throw new Error(`Invalid XML for ${address.href}`);
-                _cache[hash] = data;
+                    throw new Error(`Invalid XML for ${resource}`);
+                _documents.set(resource, data);
                 return data.clone();
             })(address.href);
 
@@ -350,17 +355,15 @@
                     && typeof variants[0] === "string"
                     && variants[0].match(PATTERN_WORD)
                 ? [variants[0], variants.slice(1)] : ["collection", variants];
-            locators.forEach(entry => {
+            locators = locators.map(entry => {
                 if (typeof entry !== "string")
                     throw new TypeError(`Invalid xml locator: ${typeof entry}`);
-                Locator.parse(LOCATOR_SCHEMA_XML, entry);
+                return Locator.parse(LOCATOR_SCHEMA_XML, entry).uri;
             });
 
-            let hash = collector.hashCode() + ":" + locators.join().hashCode();
-            locators.forEach(entry =>
-                hash += ":" + String(entry).hashCode());
-            if (_cache.hasOwnProperty(hash))
-                return _cache[hash].clone();
+            const signature = JSON.stringify([collector, locators]);
+            if (_collections.has(signature))
+                return _collections.get(signature).clone();
 
             const data = window.document.implementation.createDocument(null, collector, null);
             locators.forEach(entry => {
@@ -377,7 +380,7 @@
                 }
             });
 
-            _cache[hash] = data;
+            _collections.set(signature, data);
             return data.clone();
         }
     });
@@ -393,9 +396,6 @@
         clone.appendChild(clone.importNode(this.documentElement, true));
         return clone; 
     });
-
-    // XML/XSLT data cache
-    const _cache = {};
 
     // DataSource.locales
     // List of available locales (as standard marked are at the beginning)

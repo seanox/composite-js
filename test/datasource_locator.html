@@ -57,6 +57,39 @@
             DataSource.fetch("xml://data/xx/locator_a.xml?count(//*)");
         }});
 
+        Test.create({name:"Review #31: fetch distinguishes colliding resource URLs", test() {
+            const paths = [
+                "/data/xx/datasource_hash_Aa.xml",
+                "/data/xx/datasource_hash_BB.xml"
+            ];
+            const addresses = paths.map(path =>
+                new URL(window.location.contextPath + path, window.location.href).href);
+            Assert.assertEquals("Fixture URLs must have colliding hashes",
+                addresses[0].hashCode(), addresses[1].hashCode());
+            const loads = [];
+            const listener = event => {
+                const meta = event[Composer.EVENT_HTTP_LOAD];
+                if (meta.type === "XMLHttpRequest" && addresses.includes(meta.url))
+                    loads.push(meta.url);
+            };
+            window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
+            try {
+                const first = DataSource.fetch("xml:" + paths[0]);
+                Assert.assertEquals("Aa", first.documentElement.getAttribute("id"));
+                Assert.assertEquals("BB", DataSource.fetch("xml:" + paths[1]).documentElement.getAttribute("id"));
+                first.documentElement.setAttribute("id", "changed");
+                const repeated = DataSource.fetch("xml://data//xx/./datasource_hash_Aa.xml?");
+                Assert.assertTrue(first !== repeated);
+                Assert.assertEquals("Aa", repeated.documentElement.getAttribute("id"));
+                Assert.assertEquals("Aa", DataSource.fetch("xml:" + paths[0] + "?string(/test/@id)"));
+                Assert.assertEquals(2, loads.length);
+                Assert.assertEquals(addresses[0], loads[0]);
+                Assert.assertEquals(addresses[1], loads[1]);
+            } finally {
+                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
+            }
+        }});
+
         Test.create({name:"Review #43: invalid XML is not cached", test() {
             const path = "/data/xx/datasource_invalid.xml";
             const address = new URL(window.location.contextPath + path, window.location.href).href;

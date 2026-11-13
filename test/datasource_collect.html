@@ -86,6 +86,55 @@
             DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_b", {});
         }});
 
+        Test.create({name:"Review #31: collect distinguishes colliding collector names", test() {
+            const locator = "xml://datasource_collect_a";
+            Assert.assertEquals("Aa".hashCode(), "BB".hashCode());
+            Assert.assertEquals("Aa", DataSource.collect("Aa", locator).documentElement.nodeName);
+            Assert.assertEquals("BB", DataSource.collect("BB", locator).documentElement.nodeName);
+        }});
+
+        Test.create({name:"Review #31: collect preserves colliding inputs and their order", test() {
+            const first = "xml:/data/xx/datasource_hash_Aa.xml";
+            const second = "xml:/data/xx/datasource_hash_BB.xml";
+            Assert.assertEquals(first.hashCode(), second.hashCode());
+            const ids = collection => Array.from(collection.documentElement.children)
+                .map(node => node.getAttribute("id")).join(",");
+            Assert.assertEquals("Aa", ids(DataSource.collect(first)));
+            Assert.assertEquals("BB", ids(DataSource.collect(second)));
+            Assert.assertEquals("Aa,BB", ids(DataSource.collect(first, second)));
+            Assert.assertEquals("BB,Aa", ids(DataSource.collect(second, first)));
+            Assert.assertEquals("Aa,Aa", ids(DataSource.collect(first, first)));
+        }});
+
+        Test.create({name:"Review #31: collect includes XPath in its cache identity", test() {
+            const locator = "xml:/data/xx/datasource_hash_Aa.xml";
+            Assert.assertEquals("Aa", DataSource.collect(locator + "?string(/test/@id)").documentElement.textContent);
+            Assert.assertEquals("1", DataSource.collect(locator + "?count(/test)").documentElement.textContent);
+            Assert.assertEquals("a,bc", DataSource.collect(locator + '?concat("a,b", "c")').documentElement.textContent);
+            Assert.assertEquals("ab,c", DataSource.collect(locator + '?concat("a", "b,c")').documentElement.textContent);
+        }});
+
+        Test.create({name:"Review #31: collect reuses normalized inputs and returns independent clones", test() {
+            const fetch = DataSource.fetch;
+            let calls = 0;
+            DataSource.fetch = locator => {
+                calls++;
+                return fetch.call(DataSource, locator);
+            };
+            try {
+                const first = DataSource.collect("cache", "xml:/data/xx/./datasource_hash_Aa.xml");
+                first.documentElement.setAttribute("changed", "yes");
+                first.documentElement.firstChild.setAttribute("id", "changed");
+                const repeated = DataSource.collect("cache", "xml://data//xx/datasource_hash_Aa.xml");
+                Assert.assertEquals(1, calls);
+                Assert.assertNotEquals(first, repeated);
+                Assert.assertFalse(repeated.documentElement.hasAttribute("changed"));
+                Assert.assertEquals("Aa", repeated.documentElement.firstChild.getAttribute("id"));
+            } finally {
+                DataSource.fetch = fetch;
+            }
+        }});
+
         Test.start({auto:true});
     </script>
   </head>

@@ -229,7 +229,8 @@
          * @returns {XMLDocument|string|boolean|number|NodeList|null}
          *     The fetched data as an XMLDocument. When using XPath, it can be
          *     boolean, number, string, NodeList or null.
-         * @throws {Error} In case of invalid arguments
+         * @throws {Error} In case of invalid arguments, resource URL or
+         *     response data
          */
         fetch(locator) {
 
@@ -270,6 +271,8 @@
                 if (request.status !== 200)
                     throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
                 const data = request.responseXML;
+                if (!data || !data.documentElement)
+                    throw new Error(`Invalid XML for ${address.href}`);
                 _cache[hash] = data;
                 return data.clone();
             })(address.href);

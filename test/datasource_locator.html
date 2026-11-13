@@ -14,6 +14,13 @@
 
         Test.activate();
 
+        Test.create({expected:/\bUnsupported schema: raw:\/item/i, test() {
+            DataSource.fetch("raw:/item");
+        }});
+        Test.create({expected:/\bUnsupported schema: json:\/item/i, test() {
+            DataSource.fetch("json:/item");
+        }});
+
         // Tests for invalid XML Locators
         Test.create({expected:/\bInvalid locator: xml/i, test() {
             DataSource.fetch("xml");
@@ -48,6 +55,32 @@
             DataSource.fetch("xml://data/xx/locator_a.xml?");
             DataSource.fetch("xml://data/xx/locator_a.xml?//*");
             DataSource.fetch("xml://data/xx/locator_a.xml?count(//*)");
+        }});
+
+        Test.create({name:"Review #43: invalid XML is not cached", test() {
+            const path = "/data/xx/datasource_invalid.xml";
+            const address = new URL(window.location.contextPath + path, window.location.href).href;
+            const loads = [];
+            const listener = event => {
+                const meta = event[Composer.EVENT_HTTP_LOAD];
+                if (meta.type === "XMLHttpRequest" && meta.url === address)
+                    loads.push(meta.request.status);
+            };
+            window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
+            try {
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    let error;
+                    try {DataSource.fetch("xml:" + path);
+                    } catch (exception) {
+                        error = exception;
+                    }
+                    Assert.assertEquals("Error: Invalid XML for " + address, String(error));
+                    Assert.assertEquals("Each failed fetch must load via HTTP", attempt + 1, loads.length);
+                    Assert.assertEquals(200, loads[attempt]);
+                }
+            } finally {
+                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
+            }
         }});
 
         // Tests for invalid XSLT Locators
@@ -141,8 +174,7 @@
             XMLHttpRequest.prototype.send = () => {};
             try {
                 let error;
-                try {
-                    DataSource.fetch(source);
+                try {DataSource.fetch(source);
                 } catch (exception) {
                     error = exception;
                 }

@@ -18,7 +18,7 @@ Paths below are relative to the repository root.
 | Path                                  | Responsibility                                                   |
 |:--------------------------------------|:-----------------------------------------------------------------|
 | `sources/`                            | Authoritative browser runtime source                             |
-| `release/`                            | Generated bundles; do not edit manually                          |
+| `release/`                            | Generated bundles; can be modified but not pushed                |
 | `test/`                               | HTML test pages, fixtures, helpers and generated test bundles    |
 | `test/playwright/`                    | Node.js test runner, HTTP server and coverage tooling            |
 | `development/build.xml`               | Ant build targets, source order, minification and bundle linting |

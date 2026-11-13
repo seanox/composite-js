@@ -6,6 +6,9 @@
     <label key="xx" value="xxX"/>
     <label key="xx" value="xxX2"/>
     <label key="xx" value="xxX3"/>
+    <label key="overwrite.title" value="first"/>
+    <label key="overwrite.title" value="last"/>
+    <label key="overwrite.title.child" value="child"/>
     <label key="placeholder" value="placeholders 1:{1} 1:{1} 3:{3} 2:{2} 98:{98} 99:{99}--"/>
     <label key="placeholder.single" value="Hello {0}!"/>
     <label key="placeholder.pair" value="Hello {0} {1}!"/>
@@ -17,6 +20,7 @@
     <label key="xde" value="xdeX"/>
     <label key="xde" value="xdeX2"/>
     <label key="xde" value="xdeX3"/>
+    <label key="overwrite.title" value="localized"/>
   </xde>
   <xen>
     <label key="all.a" value="xenA"/>

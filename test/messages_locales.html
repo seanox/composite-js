@@ -18,8 +18,8 @@
             DataSource.localize("xx");
             Assert.assertEquals("xxA", Messages["all.a"]);
             Assert.assertEquals("xxB", Messages["all.b"]);
-            // xx is declared multiple times, the first one wins
-            Assert.assertEquals("xxX", Messages["xx"]);
+            // xx is declared multiple times, the last one wins
+            Assert.assertEquals("xxX3", Messages["xx"]);
             Assert.assertEquals(undefined, Messages["xde"]);
             Assert.assertEquals(undefined, Messages["xen"]);
         }});
@@ -28,8 +28,8 @@
             DataSource.localize("xde");
             Assert.assertEquals("xdeA", Messages["all.a"]);
             Assert.assertEquals("xdeB", Messages["all.b"]);
-            // xde is declared multiple times, the first one wins
-            Assert.assertEquals("xdeX", Messages["xde"]);
+            // xde is declared multiple times, the last one wins
+            Assert.assertEquals("xdeX3", Messages["xde"]);
             Assert.assertEquals(undefined, Messages["xx"]);
             Assert.assertEquals(undefined, Messages["xen"]);
         }});
@@ -38,8 +38,8 @@
             DataSource.localize("xen");
             Assert.assertEquals("xenA", Messages["all.a"]);
             Assert.assertEquals("xenB", Messages["all.b"]);
-            // xde is declared multiple times, the first one wins
-            Assert.assertEquals("xenX", Messages["xen"]);
+            // xen is declared multiple times, the last one wins
+            Assert.assertEquals("xenX3", Messages["xen"]);
             Assert.assertEquals(undefined, Messages["xx"]);
             Assert.assertEquals(undefined, Messages["xde"]);
         }});
@@ -62,6 +62,8 @@
 
         Test.create({test() {
             DataSource.localize("xx");
+            Assert.assertEquals("last", Messages["overwrite.title"]);
+            Assert.assertEquals("last", String(messages.overwrite.title));
             Assert.assertEquals("placeholders 1:{1} 1:{1} 3:{3} 2:{2} 98:{98} 99:{99}--", Messages["placeholder"]);
             Assert.assertEquals("placeholders 1: 1: 3: 2: 98: 99:--", Messages.populate("placeholder", "A"));
             Assert.assertEquals("placeholders 1:B 1:B 3: 2: 98: 99:--", Messages.populate("placeholder", "A", "B"));

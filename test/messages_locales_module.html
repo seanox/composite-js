@@ -33,12 +33,51 @@
         Test.create({test() {
             capture.validate();
         }});
+
+        const warnings = [];
+        const label = messages.overwrite.title;
+        messages.overwrite.blocked = 7;
+        messages.overwrite.frozen = Object.freeze({});
+        console.listen((level, error) => {
+          if (level === "warn")
+            warnings.push(error);
+        });
+
+        Test.create({test() {
+            const invalidKeys = ["foo-bar", "1name", "overwrite..title", ""];
+            Assert.assertEquals(3 + invalidKeys.length, warnings.length);
+            Assert.assertTrue(warnings.every(error => error instanceof Error));
+            ["overwrite.blocked.child", "overwrite.frozen", "overwrite.toString", ...invalidKeys]
+                .forEach(key => Assert.assertFalse(Object.prototype.hasOwnProperty.call(Messages, key)));
+            invalidKeys.forEach(key =>
+                Assert.assertTrue(warnings.some(error => error.message === "Invalid message key: " + key)));
+            Assert.assertEquals(7, messages.overwrite.blocked);
+            Assert.assertSame(label, messages.overwrite.title);
+            Messages["overwrite.title"] = "assigned";
+            Assert.assertEquals("assigned", String(label));
+            DataSource.localize("xde");
+            Assert.assertEquals("localized", String(messages.overwrite.title));
+            Assert.assertEquals("assigned", String(label));
+            DataSource.localize("xx");
+            Assert.assertEquals("Hello module!", Messages.populate("placeholder.single", "module"));
+            Assert.assertEquals("module", Messages["overwrite.title"]);
+            Assert.assertEquals("module", String(messages.overwrite.title));
+            Assert.assertEquals("child", String(messages.overwrite.title.child));
+        }});
     </script>
     <script type="text/test">
-      xxX
+      xxX3
       undefined
-      xxX
+      xxX3_nsA_a_ns3
       oo_nsA_a_ns3
+      Hello module!
+      dollar
+      dollar
+      nested dollar
+      nested dollar
+      module
+      module
+      child
     </script>
   </head>
   <body>
@@ -47,5 +86,13 @@
     <div id="ns3@nsA:a" composite></div>
     {{messages.xx}}
     {{(attempt(() => messages.nsA.a.ns3.oo))}}
+    {{Messages.populate("placeholder.single", "module")}}
+    {{Messages["$label"]}}
+    {{messages.$label}}
+    {{Messages["overwrite.$title"]}}
+    {{messages.overwrite.$title}}
+    {{Messages["overwrite.title"]}}
+    {{messages.overwrite.title}}
+    {{messages.overwrite.title.child}}
   </body>
 </html>

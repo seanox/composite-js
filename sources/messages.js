@@ -29,6 +29,8 @@
 
     "use strict";
 
+    const PATTERN_IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+
     compliant("messages");
     compliant(null, window.messages = {});
     compliant("Messages");
@@ -44,29 +46,23 @@
         const result = data.evaluate(xpath, data, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
         for (let node; node = result.iterateNext();) {
             const key = (node.getAttribute("key") || "").trim();
-            if (!map.has(key)) {
-                const value = ((node.getAttribute("value") || "").trim()
-                    || (node.textContent || "").trim()).unescape();
-                map.set(key, value);
-            }
+            const value = ((node.getAttribute("value") || "").trim()
+                || (node.textContent || "").trim()).unescape();
+            map.set(key, value);
         }
+        const messages = Messages;
         new Map([...map.entries()].sort()).forEach((value, key) => {
-            const match = key.match(/^(?:((?:\w+\.)*\w+)\.)*(\w+)$/);
-            if (match) {
-                // In order for the object tree to branch from each level, each
-                // level must be an object. Therefore, an anonymous object is
-                // used for the level, which returns the actual text via
-                // Object.prototype.toString().
-                const namespace = "messages" + (match[1] ? "." + match[1] : "");
-                if (!Object.exists(window, namespace + "." + match[2]))
-                    Object.defineProperty(Object.use(window, namespace), match[2], {
-                        value: {toString() {return value;}}
-                    });
-                if (!Object.prototype.hasOwnProperty.call(Messages, key))
-                    Object.defineProperty(Messages, key, {
-                        value
-                    });
+            try {
+                if (!key.split(".").every(part => PATTERN_IDENTIFIER.test(part)))
+                    throw new Error("Invalid message key: " + key);
+                Object.use(window, "messages." + key).toString = () => messages[key];
+            } catch (error) {
+                console.warn(error);
+                return;
             }
+            Object.defineProperty(Messages, key, {
+                value, writable: true
+            });
         });
     };
 

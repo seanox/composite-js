@@ -656,24 +656,16 @@
 
     /**
      * Enhancement of the JavaScript API
-     * Function to calculate a hash value for a string.
+     * Function to calculate a 32-bit hash value for a string.
      * @returns {string} The calculated hash value
      */
     compliant("String.prototype.hashCode");
     compliant(null, String.prototype.hashCode = function() {
         let hash = 0;
-        let hops = 0;
-        for (let loop = 0; loop < this.length; loop++) {
-            const temp = 31 *hash +this.charCodeAt(loop);
-            if (!Number.isSafeInteger(temp)) {
-                hops++;
-                hash = Number.MAX_SAFE_INTEGER -hash +this.charCodeAt(loop);
-            } else hash = temp;
-        }
-        hash = Math.abs(hash).toString(36);
-        hash = hash.length.toString(36) + hash;
-        hash = (hash + hops.toString(36)).toUpperCase();
-        return hash;
+        for (let loop = 0; loop < this.length; loop++)
+            hash = (Math.imul(31, hash) + this.charCodeAt(loop)) | 0;
+        hash = (hash >>> 0).toString(36);
+        return (hash.length.toString(36) + hash).toUpperCase();
     });
 
     const PATTERN_UNESCAPE_OCTAL = /([0-7]{1,3})/;

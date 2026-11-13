@@ -29,6 +29,16 @@
             Assert.assertEquals(1, collection.querySelectorAll("collection > test").length);
             Assert.assertEquals(1, collection.querySelectorAll("collection > test[id='collect_a']").length);
         }});
+
+        Test.create({name:"Review #33: collect handles XPath selecting the document node", test() {
+            const locator = "xml:/data/xx/datasource_collect_a.xml";
+            const document = DataSource.collect(locator);
+            const collection = DataSource.collect(locator + "?/");
+            Assert.assertTrue(document.documentElement.isEqualNode(collection.documentElement));
+            const mixed = DataSource.collect("documents", locator + "?/ | /*");
+            Assert.assertEquals(2, mixed.querySelectorAll("documents > test[id='collect_a']").length);
+        }});
+
         Test.create({test() {
             const collection = DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_a");
             Assert.assertEquals(2, collection.querySelectorAll("collection > test").length);

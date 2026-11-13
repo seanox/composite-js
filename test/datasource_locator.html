@@ -57,6 +57,43 @@
             DataSource.fetch("xml://data/xx/locator_a.xml?count(//*)");
         }});
 
+        Test.create({name:"Review #33: fetch accepts XPath selecting the document node", test() {
+            const locator = "xml:/data/xx/datasource_collect_a.xml";
+            const root = DataSource.fetch(locator).documentElement;
+            ["/", ".", "/test/.."].forEach(query => {
+                const result = DataSource.fetch(locator + "?" + query);
+                Assert.assertTrue(result instanceof NodeList);
+                Assert.assertEquals(1, result.length);
+                Assert.assertTrue(root.isEqualNode(result[0]));
+                result[0].setAttribute("id", "changed");
+            });
+            Assert.assertTrue(root.isEqualNode(DataSource.fetch(locator).documentElement));
+        }});
+
+        Test.create({name:"Review #33: fetch preserves document and element results separately", test() {
+            const locator = "xml:/data/xx/datasource_collect_a.xml";
+            const root = DataSource.fetch(locator).documentElement;
+            const result = DataSource.fetch(locator + "?/ | /*");
+            Assert.assertTrue(result instanceof NodeList);
+            Assert.assertEquals(2, result.length);
+            Assert.assertTrue(root.isEqualNode(result[0]));
+            Assert.assertTrue(root.isEqualNode(result[1]));
+            Assert.assertNotEquals(result[0], result[1]);
+            result[0].setAttribute("id", "changed");
+            Assert.assertEquals("collect_a", result[1].getAttribute("id"));
+        }});
+
+        Test.create({name:"Review #33: transform receives the document element", test() {
+            const style = new DOMParser().parseFromString(
+                '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
+                + '<xsl:output method="xml"/><xsl:template match="/">'
+                + '<result><xsl:value-of select="/data/test/title"/></result>'
+                + '</xsl:template></xsl:stylesheet>', "text/xml");
+            const result = DataSource.transform("xml:/data/xx/datasource_collect_a.xml?/", style);
+            Assert.assertTrue(result instanceof DocumentFragment);
+            Assert.assertEquals("Collect A", result.textContent);
+        }});
+
         Test.create({name:"Review #31: fetch distinguishes colliding resource URLs", test() {
             const paths = [
                 "/data/xx/datasource_hash_Aa.xml",

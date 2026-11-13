@@ -247,6 +247,7 @@
          * attribute are represented in the node as attributes name and value.
          * Text nodes are also returned as nodes with the name text.
          * The current implementation creates an empty text wrapper node.
+         * Document nodes are returned as deep clones of their document element.
          *
          * @param {string} locator Locator to fetch data for as XMLDocument.
          *     Optionally, an XPath query is also supported. The XPath is
@@ -325,6 +326,8 @@
             else nodes.push(result.singleNodeValue);
             nodes = nodes.map(node => {
                 switch (node.nodeType) {
+                    case Node.DOCUMENT_NODE:
+                        return node.documentElement.cloneNode(true);
                     case Node.ATTRIBUTE_NODE:
                         const attribute = xml.createElement("attribute");
                         attribute.setAttributeNode(node.cloneNode(true));

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-debug-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const CACHE_LIMIT = 32;
+
+        const locator = index => "xml:/cache_" + index + ".xml";
+        const address = index => new URL(window.location.contextPath
+            + "/cache_" + index + ".xml", window.location.href).href;
+        const signature = index =>
+            JSON.stringify(["cached_" + index, DataSource.locale, [locator(0)]]);
+
+        const withCache = async test => {
+            Assert.assertEquals("function", typeof ___cache_storage);
+            Assert.assertTrue(___documents instanceof Map);
+            Assert.assertTrue(___collections instanceof Map);
+            ___documents.clear();
+            ___collections.clear();
+
+            const request = window.XMLHttpRequest;
+            const timeout = window.setTimeout;
+            const response = {
+                status:200,
+                xml:new DOMParser().parseFromString("<test>fixture</test>", "text/xml")
+            };
+            const loads = [];
+            let scheduled = 0;
+            const delay = () => new Promise(resolve => timeout.call(window, resolve, 0));
+
+            window.XMLHttpRequest = class {
+                constructor() {
+                    this.status = response.status;
+                    this.responseXML = response.xml;
+                }
+                overrideMimeType() {}
+                open(method, resource) {
+                    this.responseURL = resource;
+                }
+                send() {
+                    loads.push(this.responseURL);
+                }
+            };
+            window.setTimeout = function(...variants) {
+                scheduled++;
+                return timeout.apply(window, variants);
+            };
+            try {
+                await test({response, loads, delay,
+                    scheduled:() => scheduled});
+            } finally {
+                window.XMLHttpRequest = request;
+                window.setTimeout = timeout;
+                await delay();
+                ___documents.clear();
+                ___collections.clear();
+            }
+        };
+
+        Test.create({name:"Cache writes return retained values and refresh LRU order", test() {
+            return withCache(cache => {
+                [___documents, ___collections].forEach(entries => {
+                    const first = {};
+                    const second = {};
+                    const replacement = {};
+                    Assert.assertSame(first, ___cache_storage(entries, "first", first));
+                    Assert.assertSame(second, ___cache_storage(entries, "second", second));
+                    Assert.assertSame(replacement, ___cache_storage(entries, "first", replacement));
+                    Assert.assertSame(replacement, entries.get("first"));
+                    Assert.assertEquals(2, entries.size);
+                    Assert.assertEquals("second,first", Array.from(entries.keys()).join(","));
+                    Assert.assertSame(second, ___cache_storage(entries, "second", second));
+                    Assert.assertEquals("first,second", Array.from(entries.keys()).join(","));
+                });
+                Assert.assertEquals(0, cache.scheduled());
+            });
+        }});
+
+        Test.create({name:"DataSource batches LRU pruning for both caches", timeout:10000, test() {
+            return withCache(async cache => {
+                for (let index = 0; index < CACHE_LIMIT; index++)
+                    DataSource.fetch(locator(index));
+                for (let index = 0; index < CACHE_LIMIT; index++)
+                    DataSource.collect("cached_" + index, locator(0));
+                Assert.assertEquals(CACHE_LIMIT, ___documents.size);
+                Assert.assertEquals(CACHE_LIMIT, ___collections.size);
+                Assert.assertEquals("Caches within the limit must not schedule pruning", 0, cache.scheduled());
+                Assert.assertEquals(CACHE_LIMIT, cache.loads.length);
+
+                const document = DataSource.fetch(locator(1));
+                document.documentElement.textContent = "changed";
+                Assert.assertEquals("fixture", DataSource.fetch(locator(1) + "?string(/test)"));
+                const collection = DataSource.collect("cached_0", locator(0));
+                collection.documentElement.firstChild.textContent = "changed";
+                Assert.assertEquals("fixture", DataSource.collect("cached_0", locator(0)).documentElement.textContent);
+
+                DataSource.fetch(locator(CACHE_LIMIT));
+                DataSource.fetch(locator(CACHE_LIMIT + 1));
+                DataSource.collect("cached_" + CACHE_LIMIT, locator(0));
+                DataSource.collect("cached_" + (CACHE_LIMIT + 1), locator(0));
+                DataSource.fetch(locator(2));
+                DataSource.collect("cached_1", locator(0));
+                Assert.assertEquals("Both caches must share one pending timeout", 1, cache.scheduled());
+                Assert.assertEquals("Pruning must be deferred", CACHE_LIMIT + 2, ___documents.size);
+                Assert.assertEquals("Pruning must be deferred", CACHE_LIMIT + 2, ___collections.size);
+
+                await cache.delay();
+                Assert.assertEquals(CACHE_LIMIT, ___documents.size);
+                Assert.assertEquals(CACHE_LIMIT, ___collections.size);
+                Assert.assertTrue(___documents.has(address(0)));
+                Assert.assertTrue(___documents.has(address(1)));
+                Assert.assertTrue("Accesses while pruning is pending must refresh LRU order",
+                    ___documents.has(address(2)));
+                Assert.assertFalse(___documents.has(address(3)));
+                Assert.assertFalse(___documents.has(address(4)));
+                Assert.assertTrue(___collections.has(signature(0)));
+                Assert.assertTrue(___collections.has(signature(1)));
+                Assert.assertFalse(___collections.has(signature(2)));
+                Assert.assertFalse(___collections.has(signature(3)));
+
+                const scheduled = cache.scheduled();
+                Assert.assertEquals("fixture", DataSource.fetch(locator(3)).documentElement.textContent);
+                Assert.assertEquals("Evicted documents must be loaded again", CACHE_LIMIT + 3, cache.loads.length);
+                Assert.assertEquals("Completed pruning must allow a new timeout", scheduled + 1, cache.scheduled());
+                await cache.delay();
+                Assert.assertEquals(CACHE_LIMIT, ___documents.size);
+                Assert.assertEquals(CACHE_LIMIT, ___collections.size);
+            });
+        }});
+
+        Test.create({name:"Collection misses trigger pruning without document misses", timeout:10000, test() {
+            return withCache(async cache => {
+                for (let index = 0; index < CACHE_LIMIT; index++)
+                    DataSource.collect("cached_" + index, locator(0));
+                Assert.assertEquals(1, ___documents.size);
+                Assert.assertEquals(CACHE_LIMIT, ___collections.size);
+                Assert.assertEquals(0, cache.scheduled());
+
+                DataSource.collect("cached_" + CACHE_LIMIT, locator(0));
+                DataSource.collect("cached_" + (CACHE_LIMIT + 1), locator(0));
+                DataSource.collect("cached_0", locator(0));
+                Assert.assertEquals(1, cache.scheduled());
+                Assert.assertEquals(1, cache.loads.length);
+                Assert.assertEquals(CACHE_LIMIT + 2, ___collections.size);
+
+                await cache.delay();
+                Assert.assertEquals(1, ___documents.size);
+                Assert.assertEquals(CACHE_LIMIT, ___collections.size);
+                Assert.assertTrue(___collections.has(signature(0)));
+                Assert.assertFalse(___collections.has(signature(1)));
+                Assert.assertFalse(___collections.has(signature(2)));
+
+                const scheduled = cache.scheduled();
+                DataSource.collect("cached_" + (CACHE_LIMIT + 2), locator(0));
+                Assert.assertEquals(scheduled + 1, cache.scheduled());
+                await cache.delay();
+                Assert.assertEquals(1, ___documents.size);
+                Assert.assertEquals(CACHE_LIMIT, ___collections.size);
+                Assert.assertEquals("Rebuilding collections must reuse the source document", 1, cache.loads.length);
+            });
+        }});
+
+        Test.create({name:"Failed fetches do not cache or schedule pruning", timeout:10000, test() {
+            return withCache(async cache => {
+                for (let index = 0; index < CACHE_LIMIT; index++)
+                    DataSource.fetch(locator(index));
+                const xml = cache.response.xml;
+                cache.response.status = 503;
+                let failure;
+                try {DataSource.fetch(locator(CACHE_LIMIT));
+                } catch (error) {
+                    failure = error;
+                }
+                Assert.assertTrue(failure instanceof Error);
+                Assert.assertTrue(/HTTP status 503/.test(String(failure)));
+
+                cache.response.status = 200;
+                cache.response.xml = null;
+                failure = undefined;
+                try {DataSource.fetch(locator(CACHE_LIMIT + 1));
+                } catch (error) {
+                    failure = error;
+                }
+                Assert.assertTrue(failure instanceof Error);
+                Assert.assertTrue(/Invalid XML/.test(String(failure)));
+                Assert.assertEquals(CACHE_LIMIT, ___documents.size);
+                Assert.assertEquals(0, ___collections.size);
+                Assert.assertFalse(___documents.has(address(CACHE_LIMIT)));
+                Assert.assertFalse(___documents.has(address(CACHE_LIMIT + 1)));
+                Assert.assertEquals("Failed loads must not schedule pruning", 0, cache.scheduled());
+
+                cache.response.xml = xml;
+                Assert.assertEquals("fixture", DataSource.fetch(locator(CACHE_LIMIT)).documentElement.textContent);
+                Assert.assertEquals(1, cache.scheduled());
+                await cache.delay();
+                Assert.assertEquals(CACHE_LIMIT, ___documents.size);
+                Assert.assertTrue(___documents.has(address(CACHE_LIMIT)));
+                Assert.assertFalse(___documents.has(address(CACHE_LIMIT + 1)));
+                Assert.assertEquals("Failed loads must remain retryable", CACHE_LIMIT + 3, cache.loads.length);
+            });
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

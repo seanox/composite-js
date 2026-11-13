@@ -48,13 +48,33 @@
     const LOCATOR_SCHEMA_XML = Locator.SCHEMA_XML;
     const LOCATOR_SCHEMA_XSLT = Locator.SCHEMA_XSLT;
 
+    const CACHE_LIMIT = 32;
+
     let _locales_selection = null;
 
     // XML/XSLT document cache keyed by normalized resource URL
     const _documents = new Map();
 
-    // Collections cache keyed by collector and ordered normalized locator URIs
+    // Collections cache keyed by collector, locale and locator URIs
     const _collections = new Map();
+
+    let _cache_storage_timeout = null;
+
+    const _cache_storage = (cache, key, value) => {
+        cache.delete(key);
+        cache.set(key, value);
+        if (_cache_storage_timeout
+                || cache.size <= CACHE_LIMIT)
+            return value;
+        _cache_storage_timeout = window.setTimeout(() => {
+            _cache_storage_timeout = null;
+            [_documents, _collections].forEach(cache => {
+                while (cache.size > CACHE_LIMIT)
+                    cache.delete(cache.keys().next().value);
+            });
+        });
+        return value;
+    };
 
     compliant("DataSource");
     compliant(null, window.DataSource = {
@@ -268,7 +288,7 @@
 
             const data = ((resource) => {
                 if (_documents.has(resource))
-                    return _documents.get(resource).clone();
+                    return _cache_storage(_documents, resource, _documents.get(resource)).clone();
                 const request = new XMLHttpRequest();
                 request.overrideMimeType("application/xslt+xml");
                 request.open("GET", resource, false);
@@ -278,8 +298,7 @@
                 const data = request.responseXML;
                 if (!data || !data.documentElement)
                     throw new Error(`Invalid XML for ${resource}`);
-                _documents.set(resource, data);
-                return data.clone();
+                return _cache_storage(_documents, resource, data).clone();
             })(address.href);
 
             if (locator.query === undefined
@@ -361,9 +380,9 @@
                 return Locator.parse(LOCATOR_SCHEMA_XML, entry).uri;
             });
 
-            const signature = JSON.stringify([collector, locators]);
+            const signature = JSON.stringify([collector, DataSource.locale, locators]);
             if (_collections.has(signature))
-                return _collections.get(signature).clone();
+                return _cache_storage(_collections, signature, _collections.get(signature)).clone();
 
             const data = window.document.implementation.createDocument(null, collector, null);
             locators.forEach(entry => {
@@ -380,8 +399,7 @@
                 }
             });
 
-            _collections.set(signature, data);
-            return data.clone();
+            return _cache_storage(_collections, signature, data).clone();
         }
     });
 

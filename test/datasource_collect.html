@@ -135,6 +135,118 @@
             }
         }});
 
+        Test.create({name:"Review #32: collect follows locale changes", test() {
+            const locale = DataSource.locale;
+            const locator = "xml:/datasource_collect_locale";
+            try {
+                DataSource.localize("xen");
+                Assert.assertEquals("English", DataSource.collect(locator).documentElement.textContent);
+
+                DataSource.localize("xde");
+                Assert.assertEquals("Deutsch", DataSource.fetch(locator).documentElement.textContent);
+                Assert.assertEquals("Collection must use the current locale",
+                    "Deutsch", DataSource.collect(locator).documentElement.textContent);
+
+                DataSource.localize("xen");
+                Assert.assertEquals("English", DataSource.collect(locator).documentElement.textContent);
+            } finally {
+                DataSource.localize(locale);
+            }
+        }});
+
+        Test.create({name:"Review #32: collect with a custom collector and XPath follows locale changes", test() {
+            const locale = DataSource.locale;
+            const locator = "xml:/datasource_collect_locale?string(/test)";
+            try {
+                DataSource.localize("xde");
+                Assert.assertEquals("Deutsch", DataSource.collect("localized", locator).documentElement.textContent);
+
+                DataSource.localize("xen");
+                Assert.assertEquals("English", DataSource.fetch(locator));
+                const collection = DataSource.collect("localized", locator);
+                Assert.assertEquals("localized", collection.documentElement.nodeName);
+                Assert.assertEquals("Collection with XPath must use the current locale",
+                    "English", collection.documentElement.textContent);
+
+                DataSource.localize("xde");
+                Assert.assertEquals("Deutsch", DataSource.collect("localized", locator).documentElement.textContent);
+            } finally {
+                DataSource.localize(locale);
+            }
+        }});
+
+        Test.create({name:"Review #32: collect caches collections per locale and preserves documents", test() {
+            const locale = DataSource.locale;
+            const locator = "xml:/datasource_collect_locale";
+            const explicit = "xml:/data/xen/datasource_collect_locale.xml";
+            const fetch = DataSource.fetch;
+            const addresses = ["xen", "xde"].map(language =>
+                new URL(window.location.contextPath
+                    + "/data/" + language + "/datasource_collect_locale.xml", window.location.href).href);
+            const loads = [];
+            const listener = event => {
+                const meta = event[Composer.EVENT_HTTP_LOAD];
+                if (meta.type === "XMLHttpRequest" && addresses.includes(meta.url))
+                    loads.push(meta.url);
+            };
+            let calls = 0;
+            DataSource.fetch = entry => {
+                calls++;
+                return fetch.call(DataSource, entry);
+            };
+            try {
+                DataSource.localize("xen");
+                fetch.call(DataSource, explicit);
+                fetch.call(DataSource, "xml:/data/xde/datasource_collect_locale.xml");
+                window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
+                const first = DataSource.collect("localeCache", locator);
+                Assert.assertEquals("English", first.documentElement.textContent);
+                first.documentElement.firstChild.textContent = "changed";
+                const repeated = DataSource.collect("localeCache", locator);
+                Assert.assertNotEquals(first, repeated);
+                Assert.assertEquals("English", repeated.documentElement.textContent);
+                Assert.assertEquals(1, calls);
+                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
+                Assert.assertEquals(2, calls);
+
+                DataSource.localize(" XEN ");
+                Assert.assertEquals("English", DataSource.collect("localeCache", locator).documentElement.textContent);
+                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
+                Assert.assertEquals("Selecting the same locale must retain collections", 2, calls);
+
+                DataSource.localize("xde");
+                Assert.assertEquals("Deutsch", DataSource.collect("localeCache", locator).documentElement.textContent);
+                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
+                Assert.assertEquals("A new locale must have separate collection cache entries", 4, calls);
+
+                DataSource.localize("xen");
+                Assert.assertEquals("English", DataSource.collect("localeCache", locator).documentElement.textContent);
+                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
+                Assert.assertEquals("Switching back must reuse both cached collections", 4, calls);
+                Assert.assertEquals("Locale changes must retain source documents without HTTP reloads", 0, loads.length);
+            } finally {
+                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
+                DataSource.fetch = fetch;
+                DataSource.localize(locale);
+            }
+        }});
+
+        Test.create({name:"Review #32: collect localizes mixed contextual and explicit inputs", test() {
+            const locale = DataSource.locale;
+            const locator = "xml:/datasource_collect_locale";
+            const explicit = "xml:/data/xen/datasource_collect_locale.xml";
+            try {
+                DataSource.localize("xen");
+                Assert.assertEquals("EnglishEnglish",
+                    DataSource.collect("mixed", locator, explicit).documentElement.textContent);
+                DataSource.localize("xde");
+                Assert.assertEquals("DeutschEnglish",
+                    DataSource.collect("mixed", locator, explicit).documentElement.textContent);
+            } finally {
+                DataSource.localize(locale);
+            }
+        }});
+
         Test.start({auto:true});
     </script>
   </head>

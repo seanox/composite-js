@@ -67,6 +67,9 @@ the intended behavior.
   handling and the existing global namespace registration patterns.
 - Keep changes focused; do not refactor unrelated code or silently suppress
   failures.
+- Seek the solution with the least effort that fulfills the task as well as
+  possible according to the applicable quality, project and compatibility
+  criteria.
 
 ## Architectural Invariants
 - Preserve composite identity, namespace boundaries, resource resolution and

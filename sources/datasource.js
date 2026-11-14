@@ -23,9 +23,6 @@
  * targeting application-provided data that is accessed primarily through
  * queries and transformations.
  *
- * Because DataSource is based on static data, the implementation uses a cache
- * to minimize network access.
- *
  * see also: https://seanox.github.io/composite-js/manuals/datasource.html
  */
 (() => {
@@ -48,33 +45,7 @@
     const LOCATOR_SCHEMA_XML = Locator.SCHEMA_XML;
     const LOCATOR_SCHEMA_XSLT = Locator.SCHEMA_XSLT;
 
-    const CACHE_LIMIT = 32;
-
     let _locales_selection = null;
-
-    // XML/XSLT document cache keyed by normalized resource URL
-    const _documents = new Map();
-
-    // Collections cache keyed by collector, locale and locator URIs
-    const _collections = new Map();
-
-    let _cache_storage_timeout = null;
-
-    const _cache_storage = (cache, key, value) => {
-        cache.delete(key);
-        cache.set(key, value);
-        if (_cache_storage_timeout
-                || cache.size <= CACHE_LIMIT)
-            return value;
-        _cache_storage_timeout = window.setTimeout(() => {
-            _cache_storage_timeout = null;
-            [_documents, _collections].forEach(cache => {
-                while (cache.size > CACHE_LIMIT)
-                    cache.delete(cache.keys().next().value);
-            });
-        });
-        return value;
-    };
 
     compliant("DataSource");
     compliant(null, window.DataSource = {
@@ -287,20 +258,16 @@
                             && !address.pathname.startsWith(`${context}/`)))
                 throw new Error(`Invalid locator outside application context: ${source}`);
 
-            const data = ((resource) => {
-                if (_documents.has(resource))
-                    return _cache_storage(_documents, resource, _documents.get(resource)).clone();
-                const request = new XMLHttpRequest();
-                request.overrideMimeType("application/xslt+xml");
-                request.open("GET", resource, false);
-                request.send();
-                if (request.status !== 200)
-                    throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
-                const data = request.responseXML;
-                if (!data || !data.documentElement)
-                    throw new Error(`Invalid XML for ${resource}`);
-                return _cache_storage(_documents, resource, data).clone();
-            })(address.href);
+            const request = new XMLHttpRequest();
+            request.overrideMimeType("application/xslt+xml");
+            request.open("GET", address.href, false);
+            request.send();
+            if (request.status !== 200)
+                throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
+            const response = request.responseXML;
+            if (!response || !response.documentElement)
+                throw new Error(`Invalid XML for ${address.href}`);
+            const data = response.clone();
 
             if (locator.query === undefined
                     || locator.query === "")
@@ -383,10 +350,6 @@
                 return Locator.parse(LOCATOR_SCHEMA_XML, entry).uri;
             });
 
-            const signature = JSON.stringify([collector, DataSource.locale, locators]);
-            if (_collections.has(signature))
-                return _cache_storage(_collections, signature, _collections.get(signature)).clone();
-
             const data = window.document.implementation.createDocument(null, collector, null);
             locators.forEach(entry => {
                 const result = DataSource.fetch(entry);
@@ -402,7 +365,7 @@
                 }
             });
 
-            return _cache_storage(_collections, signature, data).clone();
+            return data;
         }
     });
 
@@ -441,8 +404,7 @@
     request.open("GET", DATA + "/locales.xml", false);
     request.send();
     
-    // DataSource.data
-    // Cache of locales.xml, can also be used by other components
+    // Locale configuration from locales.xml, also available to other components
     Object.defineProperty(DataSource, "data", {
         value: request.status === 200 ? new DOMParser().parseFromString(request.responseText,"text/xml") : null
     });

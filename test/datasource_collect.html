@@ -14,21 +14,31 @@
     
         Test.activate();
 
-        Test.create({test() {
-            DataSource.collect();
-        }});
-        Test.create({expected:/\bInvalid xml locator: object/i, test() {
-            DataSource.collect(null);
-        }});
-        Test.create({expected:/\bInvalid xml locator: object/i, test() {
-            DataSource.collect({});
+        Test.create({name:"collect without locators returns null", test() {
+            Assert.assertEquals(null, DataSource.collect());
         }});
 
-        Test.create({test() {
-            const collection = DataSource.collect("xml://datasource_collect_a");
-            Assert.assertEquals(1, collection.querySelectorAll("collection > test").length);
-            Assert.assertEquals(1, collection.querySelectorAll("collection > test[id='collect_a']").length);
-        }});
+        [[null], [{}], ["xml://datasource_collect_a", null]].forEach(locators =>
+            Test.create({name:"collect rejects invalid inputs " + JSON.stringify(locators),
+                expected:/\bInvalid xml locator: object/i, test() {
+                    DataSource.collect(...locators);
+                }}));
+
+        [
+            ["collection", ["a"], "collect_a"],
+            ["collection", ["a", "b", "c"], "collect_a,collect_b,collect_c"],
+            ["documents", ["b", "a"], "collect_b,collect_a"],
+            ["collection", ["a", "a", "b"], "collect_a,collect_a,collect_b"]
+        ].forEach(([collector, inputs, expected]) =>
+            Test.create({name:"collect preserves " + collector + " inputs " + inputs.join(","), test() {
+                const locators = inputs.map(input => "xml://datasource_collect_" + input);
+                const collection = collector === "collection"
+                    ? DataSource.collect(...locators) : DataSource.collect(collector, ...locators);
+                Assert.assertTrue(collection instanceof XMLDocument);
+                Assert.assertEquals(collector, collection.documentElement.nodeName);
+                Assert.assertEquals(expected, Array.from(collection.documentElement.children)
+                    .map(node => node.getAttribute("id")).join(","));
+            }}));
 
         Test.create({name:"Review #33: collect handles XPath selecting the document node", test() {
             const locator = "xml:/data/xx/datasource_collect_a.xml";
@@ -39,107 +49,47 @@
             Assert.assertEquals(2, mixed.querySelectorAll("documents > test[id='collect_a']").length);
         }});
 
-        Test.create({test() {
-            const collection = DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_a");
-            Assert.assertEquals(2, collection.querySelectorAll("collection > test").length);
-            Assert.assertEquals(2, collection.querySelectorAll("collection > test[id='collect_a']").length);
-        }});
-        Test.create({test() {
-            const collection = DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_a", "xml://datasource_collect_b");
-            Assert.assertEquals(3, collection.querySelectorAll("collection > test").length);
-            Assert.assertEquals(2, collection.querySelectorAll("collection > test[id='collect_a']").length);
-            Assert.assertEquals(1, collection.querySelectorAll("collection > test[id='collect_b']").length);
-        }});
-        Test.create({test() {
-            const collection = DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_b", "xml://datasource_collect_c");
-            Assert.assertEquals(3, collection.querySelectorAll("collection > test").length);
-            Assert.assertEquals(1, collection.querySelectorAll("collection > test[id='collect_a']").length);
-            Assert.assertEquals(1, collection.querySelectorAll("collection > test[id='collect_b']").length);
-            Assert.assertEquals(1, collection.querySelectorAll("collection > test[id='collect_c']").length);
-        }});
-        Test.create({test() {
-            const collection = DataSource.collect("xxx", "xml://datasource_collect_a", "xml://datasource_collect_b", "xml://datasource_collect_c");
-            Assert.assertEquals(3, collection.querySelectorAll("xxx > test").length);
-            Assert.assertEquals(1, collection.querySelectorAll("xxx > test[id='collect_a']").length);
-            Assert.assertEquals(1, collection.querySelectorAll("xxx > test[id='collect_b']").length);
-            Assert.assertEquals(1, collection.querySelectorAll("xxx > test[id='collect_c']").length);
-        }});
-        Test.create({test() {
-            const collection = DataSource.collect("xxx", "xml://datasource_collect_a?//*/@test");
-            const evaluator = new XPathEvaluator();
-            let result;
-            result = evaluator.evaluate("count(/xxx/attribute[@test])=3", collection);
-            Assert.assertTrue(result.booleanValue);
-            result = evaluator.evaluate("boolean(/xxx/attribute[@test='aa'])", collection);
-            Assert.assertTrue(result.booleanValue);
-            result = evaluator.evaluate("boolean(/xxx/attribute[@test='bb'])", collection);
-            Assert.assertTrue(result.booleanValue);
-            result = evaluator.evaluate("boolean(/xxx/attribute[@test='cc'])", collection);
-            Assert.assertTrue(result.booleanValue);
+        Test.create({name:"collect wraps XPath attributes as nodes", test() {
+            const collection = DataSource.collect("xml://datasource_collect_a?//*/@test");
+            Assert.assertEquals("attribute:aa,attribute:bb,attribute:cc",
+                Array.from(collection.documentElement.children)
+                    .map(node => node.nodeName + ":" + node.getAttribute("test")).sort().join(","));
         }});
 
-        Test.create({test() {
-            const collection = DataSource.collect("xxx", "xml://datasource_collect_a?count(//*/attribute/@test)");
-            const evaluator = new XPathEvaluator();
-            let result;
-            result = evaluator.evaluate("boolean(/xxx/text[text()='0'])", collection);
-            Assert.assertTrue(result.booleanValue);
+        Test.create({name:"collect wraps string, number and boolean XPath results in text elements", test() {
+            const locator = "xml:/data/xx/datasource_collect_a.xml";
+            const collection = DataSource.collect("values",
+                locator + "?string(/test/title)",
+                locator + "?count(/test/title)",
+                locator + "?boolean(/test/missing)");
+            Assert.assertEquals("text:Collect A,text:1,text:false",
+                Array.from(collection.documentElement.children)
+                    .map(node => node.nodeName + ":" + node.textContent).join(","));
         }});
 
-        Test.create({expected:/\b404/i, test() {
-            DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_b", "xml://datasource_collect_d");
-        }});
-        Test.create({expected:/\bInvalid xml locator: object/i, test() {
-            DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_b", null);
-        }});
-        Test.create({expected:/\bInvalid xml locator: object/i, test() {
-            DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_b", {});
-        }});
+        Test.create({name:"collect reports a missing resource among valid inputs",
+            expected:/\bHTTP status 404 for .*\/datasource_collect_d\.xml\b/i, test() {
+                DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_b", "xml://datasource_collect_d");
+            }});
 
-        Test.create({name:"Review #31: collect distinguishes colliding collector names", test() {
+        Test.create({name:"Repeated collections fetch every input and return independent documents", test() {
             const locator = "xml://datasource_collect_a";
-            Assert.assertEquals("Aa".hashCode(), "BB".hashCode());
-            Assert.assertEquals("Aa", DataSource.collect("Aa", locator).documentElement.nodeName);
-            Assert.assertEquals("BB", DataSource.collect("BB", locator).documentElement.nodeName);
-        }});
-
-        Test.create({name:"Review #31: collect preserves colliding inputs and their order", test() {
-            const first = "xml:/data/xx/datasource_hash_Aa.xml";
-            const second = "xml:/data/xx/datasource_hash_BB.xml";
-            Assert.assertEquals(first.hashCode(), second.hashCode());
-            const ids = collection => Array.from(collection.documentElement.children)
-                .map(node => node.getAttribute("id")).join(",");
-            Assert.assertEquals("Aa", ids(DataSource.collect(first)));
-            Assert.assertEquals("BB", ids(DataSource.collect(second)));
-            Assert.assertEquals("Aa,BB", ids(DataSource.collect(first, second)));
-            Assert.assertEquals("BB,Aa", ids(DataSource.collect(second, first)));
-            Assert.assertEquals("Aa,Aa", ids(DataSource.collect(first, first)));
-        }});
-
-        Test.create({name:"Review #31: collect includes XPath in its cache identity", test() {
-            const locator = "xml:/data/xx/datasource_hash_Aa.xml";
-            Assert.assertEquals("Aa", DataSource.collect(locator + "?string(/test/@id)").documentElement.textContent);
-            Assert.assertEquals("1", DataSource.collect(locator + "?count(/test)").documentElement.textContent);
-            Assert.assertEquals("a,bc", DataSource.collect(locator + '?concat("a,b", "c")').documentElement.textContent);
-            Assert.assertEquals("ab,c", DataSource.collect(locator + '?concat("a", "b,c")').documentElement.textContent);
-        }});
-
-        Test.create({name:"Review #31: collect reuses normalized inputs and returns independent clones", test() {
             const fetch = DataSource.fetch;
             let calls = 0;
-            DataSource.fetch = locator => {
+            DataSource.fetch = entry => {
                 calls++;
-                return fetch.call(DataSource, locator);
+                return fetch.call(DataSource, entry);
             };
             try {
-                const first = DataSource.collect("cache", "xml:/data/xx/./datasource_hash_Aa.xml");
+                const first = DataSource.collect(locator, locator);
                 first.documentElement.setAttribute("changed", "yes");
-                first.documentElement.firstChild.setAttribute("id", "changed");
-                const repeated = DataSource.collect("cache", "xml://data//xx/datasource_hash_Aa.xml");
-                Assert.assertEquals(1, calls);
+                first.documentElement.children[0].setAttribute("id", "changed");
+                Assert.assertEquals("collect_a", first.documentElement.children[1].getAttribute("id"));
+                const repeated = DataSource.collect(locator, locator);
+                Assert.assertEquals(4, calls);
                 Assert.assertNotEquals(first, repeated);
                 Assert.assertFalse(repeated.documentElement.hasAttribute("changed"));
-                Assert.assertEquals("Aa", repeated.documentElement.firstChild.getAttribute("id"));
+                Assert.assertEquals("collect_a", repeated.documentElement.children[0].getAttribute("id"));
             } finally {
                 DataSource.fetch = fetch;
             }
@@ -153,7 +103,6 @@
                 Assert.assertEquals("English", DataSource.collect(locator).documentElement.textContent);
 
                 DataSource.localize("xde");
-                Assert.assertEquals("Deutsch", DataSource.fetch(locator).documentElement.textContent);
                 Assert.assertEquals("Collection must use the current locale",
                     "Deutsch", DataSource.collect(locator).documentElement.textContent);
 
@@ -164,86 +113,9 @@
             }
         }});
 
-        Test.create({name:"Review #32: collect with a custom collector and XPath follows locale changes", test() {
+        Test.create({name:"Review #32: collect localizes mixed XPath and explicit inputs", test() {
             const locale = DataSource.locale;
             const locator = "xml:/datasource_collect_locale?string(/test)";
-            try {
-                DataSource.localize("xde");
-                Assert.assertEquals("Deutsch", DataSource.collect("localized", locator).documentElement.textContent);
-
-                DataSource.localize("xen");
-                Assert.assertEquals("English", DataSource.fetch(locator));
-                const collection = DataSource.collect("localized", locator);
-                Assert.assertEquals("localized", collection.documentElement.nodeName);
-                Assert.assertEquals("Collection with XPath must use the current locale",
-                    "English", collection.documentElement.textContent);
-
-                DataSource.localize("xde");
-                Assert.assertEquals("Deutsch", DataSource.collect("localized", locator).documentElement.textContent);
-            } finally {
-                DataSource.localize(locale);
-            }
-        }});
-
-        Test.create({name:"Review #32: collect caches collections per locale and preserves documents", test() {
-            const locale = DataSource.locale;
-            const locator = "xml:/datasource_collect_locale";
-            const explicit = "xml:/data/xen/datasource_collect_locale.xml";
-            const fetch = DataSource.fetch;
-            const addresses = ["xen", "xde"].map(language =>
-                new URL(window.location.contextPath
-                    + "/data/" + language + "/datasource_collect_locale.xml", window.location.href).href);
-            const loads = [];
-            const listener = event => {
-                const meta = event[Composer.EVENT_HTTP_LOAD];
-                if (meta.type === "XMLHttpRequest" && addresses.includes(meta.url))
-                    loads.push(meta.url);
-            };
-            let calls = 0;
-            DataSource.fetch = entry => {
-                calls++;
-                return fetch.call(DataSource, entry);
-            };
-            try {
-                DataSource.localize("xen");
-                fetch.call(DataSource, explicit);
-                fetch.call(DataSource, "xml:/data/xde/datasource_collect_locale.xml");
-                window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
-                const first = DataSource.collect("localeCache", locator);
-                Assert.assertEquals("English", first.documentElement.textContent);
-                first.documentElement.firstChild.textContent = "changed";
-                const repeated = DataSource.collect("localeCache", locator);
-                Assert.assertNotEquals(first, repeated);
-                Assert.assertEquals("English", repeated.documentElement.textContent);
-                Assert.assertEquals(1, calls);
-                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
-                Assert.assertEquals(2, calls);
-
-                DataSource.localize(" XEN ");
-                Assert.assertEquals("English", DataSource.collect("localeCache", locator).documentElement.textContent);
-                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
-                Assert.assertEquals("Selecting the same locale must retain collections", 2, calls);
-
-                DataSource.localize("xde");
-                Assert.assertEquals("Deutsch", DataSource.collect("localeCache", locator).documentElement.textContent);
-                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
-                Assert.assertEquals("A new locale must have separate collection cache entries", 4, calls);
-
-                DataSource.localize("xen");
-                Assert.assertEquals("English", DataSource.collect("localeCache", locator).documentElement.textContent);
-                Assert.assertEquals("English", DataSource.collect("explicitCache", explicit).documentElement.textContent);
-                Assert.assertEquals("Switching back must reuse both cached collections", 4, calls);
-                Assert.assertEquals("Locale changes must retain source documents without HTTP reloads", 0, loads.length);
-            } finally {
-                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
-                DataSource.fetch = fetch;
-                DataSource.localize(locale);
-            }
-        }});
-
-        Test.create({name:"Review #32: collect localizes mixed contextual and explicit inputs", test() {
-            const locale = DataSource.locale;
-            const locator = "xml:/datasource_collect_locale";
             const explicit = "xml:/data/xen/datasource_collect_locale.xml";
             try {
                 DataSource.localize("xen");

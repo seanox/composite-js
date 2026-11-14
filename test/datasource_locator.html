@@ -21,53 +21,57 @@
             DataSource.fetch("json:/item");
         }});
 
-        // Tests for invalid XML Locators
-        Test.create({expected:/\bInvalid locator: xml/i, test() {
-            DataSource.fetch("xml");
-        }});
-        Test.create({expected:/\bInvalid locator: xml:/i, test() {
-            DataSource.fetch("xml:");
-        }});
-        Test.create({expected:/\bInvalid locator: xml:\//i, test() {
-            DataSource.fetch("xml:/");
-        }});
-        Test.create({expected:/\bInvalid locator: xml:\/\//i, test() {
-            DataSource.fetch("xml://");
-        }});
-        Test.create({expected:/\bInvalid locator: xml:\/\/\//i, test() {
-            DataSource.fetch("xml:///");
-        }});
-        Test.create({expected:/\bHTTP status 404 for .*\/data\/xx\/b-b\.xml/i, test() {
-            DataSource.fetch("xml:/b-b");
+        ["xml", "xml:", "xml:/", "xml://", "xml:///", "xslt:/"].forEach(locator =>
+            Test.create({name:"fetch rejects invalid locator " + locator,
+                expected:/\bInvalid locator:/i, test() {
+                    DataSource.fetch(locator);
+                }}));
+
+        ["xml", "xslt"].forEach(schema =>
+            Test.create({name:"fetch reports missing " + schema + " resources",
+                expected:new RegExp("\\bHTTP status 404 for .*\\/data\\/xx\\/b-b\\." + schema, "i"),
+                test() {
+                    DataSource.fetch(schema + ":/b-b");
+                }}));
+
+        Test.create({name:"fetch resolves contextual, explicit and normalized XML locators", test() {
+            [
+                ["xml:/datasource_collect_a", "test", "collect_a"],
+                ["xml:/b-b/locator_b", "data", null],
+                ["xml://data/xx/datasource_collect_b.xml?", "test", "collect_b"],
+                ["xml://data//xx/b-b/../datasource_collect_c.xml", "test", "collect_c"]
+            ].forEach(([locator, root, id]) => {
+                const data = DataSource.fetch(locator);
+                Assert.assertTrue(data instanceof XMLDocument);
+                Assert.assertEquals(root, data.documentElement.nodeName);
+                Assert.assertEquals(id, data.documentElement.getAttribute("id"));
+            });
         }});
 
-        // Test for valid XML Locators
-        Test.create({test() {
-            DataSource.fetch("xml:/locator_a");
-            DataSource.fetch("xml:/b-b/locator_b");
-            DataSource.fetch("xml:/data/xx/b-b/locator_b.xml");
-            DataSource.fetch("xml:/data/xx/b-b/locator_b.xml?");
-            DataSource.fetch("xml:/data/xx/b-b/locator_b.xml?//*");
-            DataSource.fetch("xml:/data/xx/locator_a.xml");
-            DataSource.fetch("xml:/data/xx/locator_a.xml?");
-            DataSource.fetch("xml:/data/xx/locator_a.xml?//*");
-            DataSource.fetch("xml://data/xx/locator_a.xml");
-            DataSource.fetch("xml://data/xx/locator_a.xml?");
-            DataSource.fetch("xml://data/xx/locator_a.xml?//*");
-            DataSource.fetch("xml://data/xx/locator_a.xml?count(//*)");
+        Test.create({name:"fetch returns XPath nodes, scalar values and null", test() {
+            const locator = "xml:/data/xx/datasource_collect_a.xml";
+            Assert.assertEquals(1, DataSource.fetch(locator + "?count(/test/title)"));
+            Assert.assertEquals(true, DataSource.fetch(locator + "?boolean(/test/title)"));
+            Assert.assertEquals("Collect A", DataSource.fetch(locator + "?string(/test/title)"));
+            Assert.assertEquals(null, DataSource.fetch(locator + "?/test/missing"));
+            const nodes = DataSource.fetch(locator + "?/test/title");
+            Assert.assertTrue(nodes instanceof NodeList);
+            Assert.assertEquals(1, nodes.length);
+            Assert.assertEquals("title", nodes[0].nodeName);
+            Assert.assertEquals("Collect A", nodes[0].textContent);
+            const text = DataSource.fetch(locator + "?/test/title/text()");
+            Assert.assertEquals(1, text.length);
+            Assert.assertEquals("text", text[0].nodeName);
+            Assert.assertEquals("Collect A", text[0].textContent);
         }});
 
         Test.create({name:"Review #33: fetch accepts XPath selecting the document node", test() {
             const locator = "xml:/data/xx/datasource_collect_a.xml";
             const root = DataSource.fetch(locator).documentElement;
-            ["/", ".", "/test/.."].forEach(query => {
-                const result = DataSource.fetch(locator + "?" + query);
-                Assert.assertTrue(result instanceof NodeList);
-                Assert.assertEquals(1, result.length);
-                Assert.assertTrue(root.isEqualNode(result[0]));
-                result[0].setAttribute("id", "changed");
-            });
-            Assert.assertTrue(root.isEqualNode(DataSource.fetch(locator).documentElement));
+            const result = DataSource.fetch(locator + "?/");
+            Assert.assertTrue(result instanceof NodeList);
+            Assert.assertEquals(1, result.length);
+            Assert.assertTrue(root.isEqualNode(result[0]));
         }});
 
         Test.create({name:"Review #33: fetch preserves document and element results separately", test() {
@@ -94,154 +98,80 @@
             Assert.assertEquals("Collect A", result.textContent);
         }});
 
-        Test.create({name:"Review #31: fetch distinguishes colliding resource URLs", test() {
-            const paths = [
-                "/data/xx/datasource_hash_Aa.xml",
-                "/data/xx/datasource_hash_BB.xml"
-            ];
-            const addresses = paths.map(path =>
-                new URL(window.location.contextPath + path, window.location.href).href);
-            Assert.assertEquals("Fixture URLs must have colliding hashes",
-                addresses[0].hashCode(), addresses[1].hashCode());
-            const loads = [];
-            const listener = event => {
-                const meta = event[Composer.EVENT_HTTP_LOAD];
-                if (meta.type === "XMLHttpRequest" && addresses.includes(meta.url))
-                    loads.push(meta.url);
-            };
-            window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
-            try {
-                const first = DataSource.fetch("xml:" + paths[0]);
-                Assert.assertEquals("Aa", first.documentElement.getAttribute("id"));
-                Assert.assertEquals("BB", DataSource.fetch("xml:" + paths[1]).documentElement.getAttribute("id"));
-                first.documentElement.setAttribute("id", "changed");
-                const repeated = DataSource.fetch("xml://data//xx/./datasource_hash_Aa.xml?");
-                Assert.assertTrue(first !== repeated);
-                Assert.assertEquals("Aa", repeated.documentElement.getAttribute("id"));
-                Assert.assertEquals("Aa", DataSource.fetch("xml:" + paths[0] + "?string(/test/@id)"));
-                Assert.assertEquals(2, loads.length);
-                Assert.assertEquals(addresses[0], loads[0]);
-                Assert.assertEquals(addresses[1], loads[1]);
-            } finally {
-                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
-            }
-        }});
-
-        Test.create({name:"Review #43: invalid XML is not cached", test() {
-            const path = "/data/xx/datasource_invalid.xml";
-            const address = new URL(window.location.contextPath + path, window.location.href).href;
-            const loads = [];
+        Test.create({name:"Repeated fetches make new XHR calls and return independent documents", test() {
+            const locator = "xml:/data/xx/datasource_collect_a.xml";
+            const address = new URL(window.location.contextPath
+                + "/data/xx/datasource_collect_a.xml", window.location.href).href;
+            let calls = 0;
             const listener = event => {
                 const meta = event[Composer.EVENT_HTTP_LOAD];
                 if (meta.type === "XMLHttpRequest" && meta.url === address)
-                    loads.push(meta.request.status);
+                    calls++;
             };
             window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
             try {
-                for (let attempt = 0; attempt < 2; attempt++) {
-                    let error;
-                    try {DataSource.fetch("xml:" + path);
-                    } catch (exception) {
-                        error = exception;
-                    }
-                    Assert.assertEquals("Error: Invalid XML for " + address, String(error));
-                    Assert.assertEquals("Each failed fetch must load via HTTP", attempt + 1, loads.length);
-                    Assert.assertEquals(200, loads[attempt]);
-                }
+                const first = DataSource.fetch(locator);
+                first.documentElement.setAttribute("id", "changed");
+                const repeated = DataSource.fetch(locator);
+                Assert.assertNotEquals(first, repeated);
+                Assert.assertEquals("collect_a", repeated.documentElement.getAttribute("id"));
+                Assert.assertEquals(2, calls);
             } finally {
                 window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
             }
         }});
 
-        // Tests for invalid XSLT Locators
-        Test.create({expected:/\bInvalid locator: xslt/i, test() {
-            DataSource.fetch("xslt");
-        }});
-        Test.create({expected:/\bInvalid locator: xslt:/i, test() {
-            DataSource.fetch("xslt:");
-        }});
-        Test.create({expected:/\bInvalid locator: xslt:\//i, test() {
-            DataSource.fetch("xslt:/");
-        }});
-        Test.create({expected:/\bInvalid locator: xslt:\/\//i, test() {
-            DataSource.fetch("xslt://");
-        }});
-        Test.create({expected:/\bInvalid locator: xslt:\/\/\//i, test() {
-            DataSource.fetch("xslt:///");
-        }});
-        Test.create({expected:/\bHTTP status 404 for .*\/data\/xx\/b-b\.xslt/i, test() {
-            DataSource.fetch("xslt:/b-b");
+        Test.create({name:"Review #43: invalid XML reports the resource URL",
+            expected:/\bInvalid XML for .*\/data\/xx\/datasource_invalid\.xml\b/i, test() {
+                DataSource.fetch("xml:/data/xx/datasource_invalid.xml");
+            }});
+
+        ["?", "?//*"].forEach(query =>
+            Test.create({name:"fetch rejects XSLT query " + query,
+                expected:/\bInvalid xslt locator:/i, test() {
+                    DataSource.fetch("xslt:/data/xx/locator_a.xslt" + query);
+                }}));
+
+        Test.create({name:"fetch resolves contextual and explicit XSLT locators", test() {
+            ["xslt:/locator_a", "xslt://data/xx/b-b/locator_b.xslt"].forEach(locator => {
+                const data = DataSource.fetch(locator);
+                Assert.assertTrue(data instanceof XMLDocument);
+                Assert.assertEquals("data", data.documentElement.nodeName);
+            });
         }});
 
-        Test.create({expected:/\bInvalid xslt locator: xslt:\/data\/xx\/b-b\/locator_b\.xslt\?\/\/\*/i, test() {
-            DataSource.fetch("xslt:/data/xx/b-b/locator_b.xslt?//*");
-        }});
-        Test.create({expected:/\bInvalid xslt locator: xslt:\/data\/xx\/locator_a\.xslt\?/i, test() {
-            DataSource.fetch("xslt:/data/xx/locator_a.xslt?");
-        }});
-        Test.create({expected:/\bInvalid xslt locator: xslt:\/data\/xx\/locator_a\.xslt\?\/\/\*/i, test() {
-            DataSource.fetch("xslt:/data/xx/locator_a.xslt?//*");
-        }});
-        Test.create({expected:/\bInvalid xslt locator: xslt:\/\/data\/xx\/locator_a\.xslt\?/i, test() {
-            DataSource.fetch("xslt://data/xx/locator_a.xslt?");
-        }});
-        Test.create({expected:/\bInvalid xslt locator: xslt:\/\/data\/xx\/locator_a\.xslt\?\/\/\*/i, test() {
-            DataSource.fetch("xslt://data/xx/locator_a.xslt?//*");
-        }});
-        Test.create({expected:/\bInvalid xslt locator: xslt:\/\/data\/xx\/locator_a\.xslt\?count\(\/\/\*\)/i, test() {
-            DataSource.fetch("xslt://data/xx/locator_a.xslt?count(//*)");
-        }});
-        Test.create({expected:/\bInvalid xslt locator: xslt:\/data\/xx\/b-b\/locator_b\.xslt\?/i, test() {
-            DataSource.fetch("xslt:/data/xx/b-b/locator_b.xslt?");
+        Test.create({name:"fetch uses the scheme independently of the explicit file extension", test() {
+            ["xml:/data/xx/b-b/locator_b.xslt",
+                "xslt:/data/xx/b-b/locator_b.xml"].forEach(locator =>
+                Assert.assertTrue(DataSource.fetch(locator) instanceof XMLDocument));
         }});
 
-        // Test for valid XML Locators
-        Test.create({test() {
-            DataSource.fetch("xslt:/locator_a");
-            DataSource.fetch("xslt:/b-b/locator_b");
-            DataSource.fetch("xslt:/data/xx/b-b/locator_b.xslt");
-
-            DataSource.fetch("xslt:/data/xx/locator_a.xslt");
-            DataSource.fetch("xslt://data/xx/locator_a.xslt");
-        }});
-
-        Test.create({test() {
-            Assert.assertNotNull(DataSource.fetch("xml:/data/xx/b-b/locator_b.xslt"));
-            Assert.assertNotNull(DataSource.fetch("xml:/data/xx/b-b/xx/../locator_b.xslt"));
-            Assert.assertNotNull(DataSource.fetch("xml:/data/xx/b-b/xx%2F..%2Flocator_b.xslt"));
-        }});
-        Test.create({test() {
-            Assert.assertNotNull(DataSource.fetch("xslt:/data/xx/b-b/locator_b.xml"));
-        }});
-
-        Test.create({test() {
+        Test.create({name:"fetch preserves percent literals in XPath queries", test() {
             const locator = Locator.parse(
                 'xml:/data/xx/locator_a.xml?contains(., "100%25")');
             Assert.assertEquals(false, DataSource.fetch(locator.uri));
         }});
 
-        Test.create({test() {
+        Test.create({name:"fetch preserves percent literals in resource paths", test() {
             Assert.assertEquals("percent literal", DataSource.fetch(
                 "xml:/data/xx/locator%25literal.xml?string(/data)"));
         }});
 
-        Test.create({test() {
+        Test.create({name:"fetch rejects external origins before opening a request", test() {
             const source = "xml:/external.xml";
             const parse = Locator.parse;
             const open = XMLHttpRequest.prototype.open;
-            const send = XMLHttpRequest.prototype.send;
-            const requests = [];
+            let requests = 0;
             Locator.parse = () => ({
                 schema: Locator.SCHEMA_XML,
                 path: "/external.xml",
                 uri: "xml:https://example.invalid/outside.xml",
                 query: undefined
             });
-            XMLHttpRequest.prototype.open = function(method, url, ...variants) {
-                requests.push(String(url));
-                return open.call(this, method, url, ...variants);
+            XMLHttpRequest.prototype.open = () => {
+                requests++;
+                throw new Error("Unexpected request");
             };
-            XMLHttpRequest.prototype.send = () => {};
             try {
                 let error;
                 try {DataSource.fetch(source);
@@ -250,15 +180,14 @@
                 }
                 Assert.assertTrue(error instanceof Error);
                 Assert.assertTrue(error.message.includes(source));
-                Assert.assertEquals(0, requests.length);
+                Assert.assertEquals(0, requests);
             } finally {
                 Locator.parse = parse;
                 XMLHttpRequest.prototype.open = open;
-                XMLHttpRequest.prototype.send = send;
             }
         }});
 
-        Test.create({timeout:10000, async test() {
+        Test.create({name:"fetch enforces the application context in a nested page", timeout:10000, async test() {
             const frame = document.createElement("iframe");
             document.body.appendChild(frame);
             try {

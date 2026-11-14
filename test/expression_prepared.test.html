@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+      Test.activate();
+
+      Test.create({name: "Prepared components are reusable without retaining context or results", test() {
+          const expression = Object.freeze({variable: "$answer", script: "value"});
+          const value = {answer: 7};
+          const first = Expression.eval({value}, expression.variable, expression.script);
+          first.variable = "changed";
+          first.result = null;
+          const second = Expression.eval({value}, expression.variable, expression.script);
+          Assert.assertNotSame(first, second);
+          Assert.assertEquals("variable,result", Object.keys(second).join(","));
+          Assert.assertEquals("$answer", second.variable);
+          Assert.assertSame(value, second.result);
+          Assert.assertEquals(8,
+              Expression.eval({value: 8}, expression.variable, expression.script).result);
+          Assert.assertEquals("variable,script", Object.keys(expression).join(","));
+          Assert.assertEquals("value", expression.script);
+      }});
+
+      Test.create({name: "An omitted variable is returned as undefined", test() {
+          const result = Expression.eval({}, "3");
+          Assert.assertEquals("variable,result", Object.keys(result).join(","));
+          Assert.assertUndefined(result.variable);
+          Assert.assertEquals(3, result.result);
+      }});
+
+      Test.create({name: "Both signatures preserve empty scripts and undefined variables", test() {
+          const value = {answer: 7};
+          const unnamed = Expression.eval({value}, "value");
+          const explicit = Expression.eval({value}, undefined, "value");
+          const named = Expression.eval({value}, "$answer", "value");
+          Assert.assertUndefined(unnamed.variable);
+          Assert.assertUndefined(explicit.variable);
+          Assert.assertEquals("$answer", named.variable);
+          for (const result of [unnamed, explicit, named])
+              Assert.assertSame(value, result.result);
+          const empty = Expression.eval({}, "");
+          const emptyUnnamed = Expression.eval({}, undefined, "");
+          const emptyNamed = Expression.eval({}, "answer", "");
+          Assert.assertUndefined(empty.variable);
+          Assert.assertUndefined(emptyUnnamed.variable);
+          Assert.assertEquals("answer", emptyNamed.variable);
+          for (const result of [empty, emptyUnnamed, emptyNamed])
+              Assert.assertUndefined(result.result);
+      }});
+
+      Test.create({name: "Prepared scripts are executed without markup interpretation", test() {
+          Assert.assertEquals("a }} b",
+              Expression.eval({}, "'a }} b'").result);
+          Assert.assertEquals("a :and b",
+              Expression.eval({}, "'a :and b'").result);
+          Assert.assertEquals(7,
+              Expression.eval({value: 7}, "label: value").result);
+          const label = Expression.eval({value: 7}, "{{label: value}}");
+          Assert.assertUndefined(label.variable);
+          Assert.assertEquals(7, label.result);
+          Assert.assertUndefined(Expression.eval({}, "").result);
+      }});
+
+      for (const script of [undefined, null, 7, [], {}, {script: "1"}, new String("1")])
+          for (const prefix of [[], ["answer"]])
+              Test.create({name: "Invalid scripts are rejected in both signatures", expected: TypeError, test() {
+                  Expression.eval({}, ...prefix, script);
+              }});
+
+      for (const variable of [null, 7, [], {}, () => 1])
+          Test.create({name: "Invalid variable types are rejected", expected: TypeError, test() {
+              Expression.eval({}, variable, "1");
+          }});
+
+      for (const variants of [[], [{}], [{}, "answer", "1", true]])
+          Test.create({name: "Invalid argument counts are rejected", expected: TypeError, test() {
+              Expression.eval(...variants);
+          }});
+
+      for (const context of [undefined, null, "", 7, () => 1])
+          Test.create({name: "Invalid contexts are rejected", expected: TypeError, test() {
+              Expression.eval(context, "1");
+          }});
+
+      Test.create({name: "A missing third script is not treated as the short signature", test() {
+          let error;
+          try {Expression.eval({}, "answer", undefined);
+          } catch (caught) {
+              error = caught;
+          }
+          Assert.assertTrue(error instanceof TypeError);
+          Assert.assertEquals("Invalid script: undefined", error.message);
+      }});
+
+      Test.create({name: "The identifier signature and global expression cache are removed", test() {
+          Assert.assertUndefined(Expression.prune);
+          Assert.assertUndefined(Expression.parse);
+          let error;
+          try {Expression.eval("old-identifier", {}, "1");
+          } catch (caught) {
+              error = caught;
+          }
+          Assert.assertTrue(error instanceof TypeError);
+      }});
+
+      Test.start({auto: true});
+    </script>
+  </head>
+  <body></body>
+</html>

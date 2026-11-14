@@ -15,22 +15,18 @@
       const nativeConsoleError = console.error;
       Test.activate();
 
-      for (const source of ["", "1 + 2", "{{", "}}", "{{1 + 2",
-          "Text {{1 + 2}}", "{{1 + 2}} text", " {{1 + 2}} text "])
+      for (const [script, expected] of [["", undefined], ["1 + 2", 3], ["{{1 + 2}}", 3]])
           Test.create({test() {
-              let error;
-              try {Expression.eval({}, source);
-              } catch (caught) {
-                  error = caught;
-              }
-              Assert.assertTrue(source, error instanceof SyntaxError);
+              const result = Expression.eval({}, script);
+              Assert.assertUndefined(result.variable);
+              Assert.assertEquals(expected, result.result);
           }});
 
       Test.create({test() {
-          Assert.assertEquals(3, Expression.eval({}, " \t{{1 + 2}}\r\n").result);
-          Assert.assertEquals(undefined, Expression.eval({}, "{{ }}").result);
-          Assert.assertEquals(5, Expression.eval({}, "{{let value = 2; value + 3}}").result);
-          Assert.assertEquals(3, Expression.eval({}, "{{1 /* } } { { */ + 2}}").result);
+          Assert.assertEquals(3, Expression.eval({}, " \t1 + 2\r\n").result);
+          Assert.assertEquals(undefined, Expression.eval({}, " ").result);
+          Assert.assertEquals(5, Expression.eval({}, "let value = 2; value + 3").result);
+          Assert.assertEquals(3, Expression.eval({}, "1 /* } } { { */ + 2").result);
       }});
 
       Test.create({test() {
@@ -54,31 +50,43 @@
               ["attempt(() => model.value)", 42],
               ["attempt(() => empty)", null]
           ])
-              Assert.assertSame(expected, Expression.eval(context, "{{" + source + "}}").result);
+              Assert.assertSame(expected, Expression.eval(context, source).result);
       }});
 
-      for (const [source, variable, expected] of [
-          ["{{}}", undefined, undefined],
-          ["{{value}}", undefined, 7],
-          ["{{answer: value + 1}}", "answer", 8],
-          ["{{answer:\r\n value + 1\n}}", "answer", 8],
-          ["{{answer: !false}}", "answer", true],
-          ["{{answer:}}", "answer", undefined],
-          ["{{answer:\n}}", "answer", undefined],
-          [String.raw`{{answer: 'line\nbreak'}}`, "answer", "line\nbreak"],
-          ["{{answer: `line\nbreak`}}", "answer", "line\nbreak"],
-          [String.raw`{{"a \}\} b \{\{"}}`, undefined, "a }} b {{"],
-          [String.raw`{{answer: "a \}\} b \{\{"}}`, "answer", "a }} b {{"],
-          ["{{({outer: {value: 3} }).outer.value}}", undefined, 3],
-          ["{{answer: ({outer: {value: 3} }).outer.value}}", "answer", 3],
-          ["{{value == 7}}", undefined, true],
-          [String.raw`{{'line\nbreak'}}`, undefined, "line\nbreak"],
-          ["{{`line\nbreak`}}", undefined, "line\nbreak"],
-          ["{{_1: value}}", "_1", 7]
+      for (const [script, variable, expected] of [
+          ["", undefined, undefined],
+          ["value", undefined, 7],
+          ["value + 1", "answer", 8],
+          ["value", "$", 7],
+          ["value + 1", "$amount", 8],
+          ["value", "item$2", 7],
+          ["value", "__", 7],
+          ["answer : value", undefined, 7],
+          ["value ? 1 : 2", undefined, 1],
+          ["({key: value}).key", undefined, 7],
+          ["'left:right'", undefined, "left:right"],
+          ["`value:${value}`", undefined, "value:7"],
+          ["'left:right'", "answer", "left:right"],
+          ["answer: 'a }} b'", undefined, "a }} b"],
+          ["'a {{ b'", "answer", "a {{ b"],
+          ["\r\n value + 1\n", "answer", 8],
+          ["!false", "answer", true],
+          ["", "answer", undefined],
+          ["\n", "answer", undefined],
+          [String.raw`'line\nbreak'`, "answer", "line\nbreak"],
+          ["`line\nbreak`", "answer", "line\nbreak"],
+          [String.raw`"a \}\} b \{\{"`, undefined, "a }} b {{"],
+          [String.raw`"a \}\} b \{\{"`, "answer", "a }} b {{"],
+          ["({outer: {value: 3} }).outer.value", undefined, 3],
+          ["({outer: {value: 3} }).outer.value", "answer", 3],
+          ["value == 7", undefined, true],
+          [String.raw`'line\nbreak'`, undefined, "line\nbreak"],
+          ["`line\nbreak`", undefined, "line\nbreak"],
+          ["value", "_1", 7]
       ])
           Test.create({test() {
               const context = {value:7};
-              const evaluation = Expression.eval(context, source);
+              const evaluation = Expression.eval(context, variable, script);
               Assert.assertFalse(Array.isArray(evaluation));
               Assert.assertEquals("variable,result", Object.keys(evaluation).join(","));
               Assert.assertEquals(variable, evaluation.variable);
@@ -86,11 +94,47 @@
               Assert.assertEquals("value", Object.keys(context).join(","));
           }});
 
+      Test.create({name: "Long declarations preserve their script and current context", test() {
+          const expression = {variable: "$answer", script: "const text = '"
+              + "a: b; ".repeat(1000) + "'; text.length + value"};
+          for (const value of [7, 8]) {
+              const result = Expression.eval({value}, expression.variable, expression.script);
+              Assert.assertEquals("$answer", result.variable);
+              Assert.assertEquals(6000 + value, result.result);
+          }
+      }});
+
+      Test.create({name: "Whitespace in JavaScript labels is preserved", test() {
+          for (const whitespace of [" ", "\t", "\n", "\r", "\r\n", "\u2028", "\u2029"]) {
+              const result = Expression.eval({value:7}, "answer" + whitespace + ": value");
+              Assert.assertEquals(undefined, result.variable);
+              Assert.assertEquals(7, result.result);
+          }
+      }});
+
+      Test.create({name: "A comment before the colon is passed to JavaScript unchanged", test() {
+          const original = Scripting.eval;
+          const context = {value:7};
+          Scripting.eval = (scope, script) => {
+              Assert.assertSame(context, scope);
+              Assert.assertEquals("answer/* comment */: value", script);
+              return 7;
+          };
+          try {
+              const result = Expression.eval(context, "answer/* comment */: value");
+              Assert.assertEquals(undefined, result.variable);
+              Assert.assertEquals(7, result.result);
+          } finally {
+              Scripting.eval = original;
+          }
+      }});
+
       Test.create({test() {
           for (const value of [undefined, null, false, 0, -0, NaN, "", [1, 2],
               {variable: "payload", result: 7}, Symbol("value"), () => 7])
               for (const prefix of ["", "items: "]) {
-                  const evaluation = Expression.eval({value}, "{{" + prefix + "value}}");
+                  const evaluation = Expression.eval({value},
+                      prefix ? "items" : undefined, "value");
                   Assert.assertEquals("variable,result", Object.keys(evaluation).join(","));
                   Assert.assertSame(Object.prototype, Object.getPrototypeOf(evaluation));
                   Assert.assertEquals(prefix ? "items" : undefined, evaluation.variable);
@@ -100,26 +144,25 @@
 
       Test.create({test() {
           const value = {answer: 7};
-          const first = Expression.eval("result-object-cache", {value}, "{{item: value}}");
+          const expression = Object.freeze({variable: "item", script: "value"});
+          const first = Expression.eval({value}, expression.variable, expression.script);
           first.variable = "changed";
           first.result = undefined;
-          const second = Expression.eval("result-object-cache", {value}, "{{ignored: 0}}");
+          const second = Expression.eval({value}, expression.variable, expression.script);
           Assert.assertFalse(first === second);
           Assert.assertEquals("variable,result", Object.keys(second).join(","));
           Assert.assertEquals("item", second.variable);
           Assert.assertSame(value, second.result);
-          Expression.prune(0);
       }});
 
-      for (const [index, lineBreak] of ["\n", "\r", "\r\n"].entries())
+      for (const lineBreak of ["\n", "\r", "\r\n"])
           Test.create({test() {
               const script = "const amount = value; // Number of items" + lineBreak
                   + "amount * 3";
               for (const prefix of ["", "answer: "]) {
-                  const identifier = "line-break-" + index + ":" + prefix.length;
-                  const source = "{{" + prefix + script + "}}";
+                  const expression = {variable: prefix ? "answer" : undefined, script};
                   for (const value of [2, 4]) {
-                      const result = Expression.eval(identifier, {value}, source);
+                      const result = Expression.eval({value}, expression.variable, expression.script);
                       Assert.assertEquals(prefix ? "answer" : undefined, result.variable);
                       Assert.assertEquals(value * 3, result.result);
                   }
@@ -134,9 +177,9 @@
                   console.error = error => errors.push(error);
                   try {
                       for (const quote of ["'", '"']) {
-                          const source = "{{" + prefix + quote + "line" + lineBreak
-                              + "break" + quote + "}}";
-                          const result = Expression.eval({}, source);
+                          const script = quote + "line" + lineBreak + "break" + quote;
+                          const result = Expression.eval({},
+                              prefix ? "answer" : undefined, script);
                           Assert.assertEquals("variable,result", Object.keys(result).join(","));
                           Assert.assertEquals(prefix ? "answer" : undefined, result.variable);
                           Assert.assertTrue(result.result instanceof SyntaxError);
@@ -149,43 +192,38 @@
 
       Test.create({test() {
           const value = [1, 2];
-          const result = Expression.eval({value}, "{{items: value}}");
+          const result = Expression.eval({value}, "items", "value");
           Assert.assertEquals("variable,result", Object.keys(result).join(","));
           Assert.assertEquals("items", result.variable);
           Assert.assertSame(value, result.result);
 
-          let cached = Expression.eval("declaration-cache", {value:7}, "{{first: value}}");
-          Assert.assertEquals("first", cached.variable);
-          Assert.assertEquals(7, cached.result);
-          cached = Expression.eval("declaration-cache", {value:8}, "{{second: other}}");
-          Assert.assertEquals("first", cached.variable);
-          Assert.assertEquals(8, cached.result);
-          Expression.prune(0);
-          cached = Expression.eval("declaration-cache", {other:9}, "{{second: other}}");
-          Assert.assertEquals("second", cached.variable);
-          Assert.assertEquals(9, cached.result);
+          const first = {variable: "first", script: "value"};
+          const second = {variable: "second", script: "other"};
+          Assert.assertEquals("first", Expression.eval({value:7}, first.variable, first.script).variable);
+          Assert.assertEquals(7, Expression.eval({value:7}, first.variable, first.script).result);
+          Assert.assertEquals("second", Expression.eval({other:8}, second.variable, second.script).variable);
+          Assert.assertEquals(8, Expression.eval({other:8}, second.variable, second.script).result);
+          Assert.assertEquals(9, Expression.eval({value:9}, first.variable, first.script).result);
       }});
 
       Test.create({test() {
-          Assert.assertEquals(1, Expression.eval("framing-cache", {}, "{{1}}").result);
+          Assert.assertEquals(1, Expression.eval({}, "1").result);
           let error;
-          try {Expression.eval("framing-cache", {}, "unframed");
+          try {Expression.eval({}, {});
           } catch (caught) {
               error = caught;
           }
-          Assert.assertTrue(error instanceof SyntaxError);
-          Assert.assertEquals(1, Expression.eval("framing-cache", {}, "{{2}}").result);
+          Assert.assertTrue(error instanceof TypeError);
+          Assert.assertEquals(2, Expression.eval({}, "2").result);
       }});
 
       Test.create({test() {
-          for (const source of ["{{}}", "{{7}}"]) {
-              const result = Expression.eval("empty-script-cache", {}, source);
+          for (const [script, expected] of [["", undefined], ["7", 7]]) {
+              const result = Expression.eval({}, script);
               Assert.assertEquals("variable,result", Object.keys(result).join(","));
               Assert.assertEquals(undefined, result.variable);
-              Assert.assertEquals(undefined, result.result);
+              Assert.assertEquals(expected, result.result);
           }
-          Expression.prune(0);
-          Assert.assertEquals(7, Expression.eval("empty-script-cache", {}, "{{7}}").result);
       }});
 
       Test.create({test() {
@@ -194,7 +232,7 @@
           const original = console.error;
           let result;
           console.error = (...variants) => errors.push(variants);
-          try {result = Expression.eval({failure}, "{{throw failure}}");
+          try {result = Expression.eval({failure}, "throw failure");
           } finally {
               console.error = original;
           }
@@ -208,23 +246,22 @@
           Assert.assertEquals("Error in expression: throw failure", errors[0][1]);
       }});
 
-      Test.create({name: "Cached errors keep their identity and log the prepared context", test() {
-          const failure = new Error("cached failure");
+      Test.create({name: "Reused structures keep thrown values and log the prepared script", test() {
+          const failure = new Error("prepared failure");
+          const expression = Object.freeze({variable: "value", script: "throw failure"});
           const errors = [];
           const original = console.error;
           console.error = (...variants) => errors.push(variants);
           try {
-              for (const source of [" \n{{value:\n throw failure\n}} \t",
-                  "{{ignored: throw missing}}"]) {
-                  const result = Expression.eval("failure-context-cache", {failure}, source);
+              for (let index = 0; index < 2; index++) {
+                  const result = Expression.eval({failure}, expression.variable, expression.script);
                   Assert.assertEquals("variable,result", Object.keys(result).join(","));
                   Assert.assertEquals("value", result.variable);
                   Assert.assertSame(failure, result.result);
-                  Assert.assertEquals("cached failure", failure.message);
+                  Assert.assertEquals("prepared failure", failure.message);
               }
           } finally {
               console.error = original;
-              Expression.prune(0);
           }
           Assert.assertEquals(2, errors.length);
           for (const variants of errors) {
@@ -239,7 +276,7 @@
           const original = console.error;
           let result;
           console.error = (...variants) => errors.push(variants);
-          try {result = Expression.eval({}, "{{document.querySelector('[')}}");
+          try {result = Expression.eval({}, "document.querySelector('[')");
           } finally {
               console.error = original;
           }
@@ -259,7 +296,7 @@
           const original = console.error;
           let result;
           console.error = (...variants) => errors.push(variants);
-          try {result = Expression.eval({failure}, "{{throw failure}}");
+          try {result = Expression.eval({failure}, "throw failure");
           } finally {
               console.error = original;
           }
@@ -337,7 +374,7 @@
               const original = console.error;
               let result;
               console.error = (...variants) => errors.push(variants);
-              try {result = Expression.eval({failure}, "{{throw failure}}");
+              try {result = Expression.eval({failure}, "throw failure");
               } finally {
                   console.error = original;
               }
@@ -358,7 +395,7 @@
           console.error = (...variants) => nativeConsoleError.apply(console, variants);
           try {
               for (const failure of thrownValues) {
-                  const result = Expression.eval({failure}, "{{throw failure}}");
+                  const result = Expression.eval({failure}, "throw failure");
                   Assert.assertEquals("variable,result", Object.keys(result).join(","));
                   Assert.assertEquals(undefined, result.variable);
                   Assert.assertTrue(Object.is(failure, result.result));
@@ -376,7 +413,7 @@
           const original = console.error;
           console.error = value => errors.push(value);
           try {
-              const result = Expression.eval({error}, "{{failure: error}}");
+              const result = Expression.eval({error}, "failure", "error");
               Assert.assertEquals("variable,result", Object.keys(result).join(","));
               Assert.assertEquals("failure", result.variable);
               Assert.assertSame(error, result.result);
@@ -393,22 +430,22 @@
               _expose: "application expose",
               _use: "application use"
           };
-          Assert.assertEquals(3, Expression.eval(context, "{{1 + 2}}").result);
+          Assert.assertEquals(3, Expression.eval(context, "1 + 2").result);
           Assert.assertEquals(
                   Object.values(context).join(","),
-                  Expression.eval(context, "{{[script, _include, _expose, _use].join(',')}}").result
+                  Expression.eval(context, "[script, _include, _expose, _use].join(',')").result
           );
           Assert.assertEquals(
                   "application script/application use",
-                  Expression.eval(context, "{{script + '/' + _use}}").result
+                  Expression.eval(context, "script + '/' + _use").result
           );
           Assert.assertEquals(
                   "first",
-                  Expression.eval("runtime-context", {script: "first"}, "{{script}}").result
+                  Expression.eval({script: "first"}, "script").result
           );
           Assert.assertEquals(
                   "second",
-                  Expression.eval("runtime-context", {script: "second"}, "{{script}}").result
+                  Expression.eval({script: "second"}, "script").result
           );
       }});
 

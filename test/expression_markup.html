@@ -116,7 +116,7 @@
               const source = "{{value // " + "\\".repeat(count) + "}} afterwards }}";
               const match = new RegExp(Composer.PATTERN_EXPRESSION_INTERPOLATION).exec(source);
               Assert.assertEquals("{{value // " + "\\".repeat(count) + "}}", match[0]);
-              Assert.assertEquals(7, Expression.eval({value:7}, match[0]).result);
+              Assert.assertEquals(7, Expression.eval({value:7}, match[1]).result);
           }});
 
       for (const source of [
@@ -139,7 +139,7 @@
               console.error = error => errors.push(error);
               try {
                   const match = new RegExp(Composer.PATTERN_EXPRESSION_INTERPOLATION).exec(source);
-                  result = Expression.eval({value:7}, match[0]);
+                  result = Expression.eval({value:7}, match[1]);
               } finally {
                   console.error = original;
               }
@@ -152,7 +152,8 @@
       Test.create({test() {
           for (const source of ["{{value: and}}", "{{value: 1}}",
               "{{value: !false}}", String.raw`{{value: '\}\}'}}`])
-              Assert.assertEquals("value", Expression.eval({}, source).variable);
+              Assert.assertEquals("value",
+                  source.match(Composer.PATTERN_EXPRESSION_DECLARATION)[1]);
           Assert.assertNull("{{true}} afterwards }}".match(
               Composer.PATTERN_EXPRESSION_VALUE));
           Assert.assertNull("{{true}}{{false}}".match(
@@ -168,7 +169,7 @@
 
       for (const whitespace of ["", " ", "\t", "\n", "\r\n", " \t\r\n "])
           Test.create({test() {
-              for (const name of ["value", "_value", "_1", "_"]) {
+              for (const name of ["value", "_value", "_1", "_", "$", "$amount", "item$2"]) {
                   const source = "{{" + whitespace + name + ": true}}";
                   Assert.assertNull(source.match(Composer.PATTERN_EXPRESSION_VALUE));
                   Assert.assertEquals(name,
@@ -218,9 +219,9 @@
       Test.create({test() {
           const context = {object:{value:7}};
           Assert.assertEquals(context.object,
-              Expression.eval(context, "{{object}}").result);
-          Assert.assertEquals(true, Expression.eval({}, "{{true}}").result);
-          Assert.assertNull(Expression.eval({}, "{{null}}").result);
+              Expression.eval(context, "object").result);
+          Assert.assertEquals(true, Expression.eval({}, "true").result);
+          Assert.assertNull(Expression.eval({}, "null").result);
       }});
 
       Test.create({test() {
@@ -235,7 +236,7 @@
               return 3;
           };
           try {
-              Assert.assertEquals(3, Expression.eval(context, "{{1 + 2}}").result);
+              Assert.assertEquals(3, Expression.eval(context, "1 + 2").result);
               Assert.assertEquals(1, calls);
           } finally {
               Scripting.eval = original;
@@ -261,6 +262,35 @@
               Assert.assertEquals("6", element.querySelector(".value").textContent);
               Assert.assertEquals("visible", element.querySelector(".condition").textContent);
               Assert.assertEquals("6", element.querySelector(".iterate").textContent);
+          }).then(cleanup, error => {
+              cleanup();
+              throw error;
+          });
+      }});
+
+      Test.create({name: "Dollar declarations work in view scopes and iterations", test() {
+          const element = document.createElement("div");
+          element.innerHTML = "{{$markupValue: const values = [1, 2, 3];"
+              + " values.reduce((sum, value) => sum + value, 0)}}"
+              + '<span class="value" title="before {{$markupValue}} after">{{$markupValue}}</span>'
+              + '<span class="condition" condition="{{$markupValue === 6}}">visible</span>'
+              + '<span class="iterate" iterate="{{$markupEntry: [$markupValue]}}">'
+              + "{{$markupEntry.item}}</span>"
+              + '<span class="colon" output="{{markupModel.value ? 1 : 2}}"></span>'
+              + '<span class="colon" output="{{({key: markupModel.value}).key}}"></span>'
+              + '<span class="colon" output="{{\'left:right\'}}"></span>'
+              + '<span class="colon" output="{{markupSpaced : markupModel.value}}"></span>';
+          const cleanup = () => element.remove();
+          return new Promise(resolve => {
+              document.body.appendChild(element);
+              window.setTimeout(resolve, 0);
+          }).then(() => {
+              Assert.assertEquals("before 6 after", element.querySelector(".value").title);
+              Assert.assertEquals("6", element.querySelector(".value").textContent);
+              Assert.assertEquals("visible", element.querySelector(".condition").textContent);
+              Assert.assertEquals("6", element.querySelector(".iterate").textContent);
+              Assert.assertEquals("1,7,left:right,7", Array.from(element.querySelectorAll(".colon"))
+                  .map(node => node.textContent).join(","));
           }).then(cleanup, error => {
               cleanup();
               throw error;
@@ -295,10 +325,10 @@
               Assert.assertEquals("85", element.querySelector(".temporary").title);
               Assert.assertEquals("12 items", element.querySelector(".interpolation").title);
               Assert.assertEquals("5", element.querySelector(".iterate").textContent);
-              for (const source of ["{{1\n+ 1}}", "{{3}}", "{{tupleScoped: 5}}",
-                  "{{tupleItem: [tupleScoped]}}"])
-                  Assert.assertTrue(source, calls.includes(source));
-              Assert.assertFalse(calls.some(source => source.includes('"before "')));
+              for (const script of ["1\n+ 1", "3", "5", "[tupleScoped]"])
+                  Assert.assertTrue(script, calls.includes(script));
+              Assert.assertTrue(calls.every(script => typeof script === "string"));
+              Assert.assertFalse(calls.some(script => script.includes('"before "')));
           }).then(cleanup, error => {
               cleanup();
               throw error;

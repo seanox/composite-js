@@ -16,32 +16,25 @@
  *
  *     DESCRIPTION
  *     ----
- * Expressions evaluate JavaScript enclosed in {{...}}, including optional
- * variable declarations. Markup extraction, rendering, and operator aliases
- * belong to Composer.
+ * Expressions evaluate prepared JavaScript and return its value together with
+ * an optional variable name. Parsing, markup extraction, rendering, and
+ * operator aliases belong to Composer.
  *
  *     USAGE
  *     ----
  * Direct evaluation for custom extensions:
  *
- *     Expression.eval({value: 7}, "{{value}}");
+ *     Expression.eval({value: 7}, "value");
  *     // {variable: undefined, result: 7}
- *     Expression.eval({value: 7}, "{{name: value}}");
- *     // {variable: "name", result: 7}
+ *     Expression.eval({value: 7}, "variable", "value");
+ *     // {variable: "variable", result: 7}
  *
- * Composer handles markup extraction, interpolation, markup extensions for
- * expressions, and view scope bindings; direct calls perform none of these
- * steps.
+ * The script is JavaScript without an outer {{...}} frame. Direct calls do not
+ * interpret markup delimiters, declarations, or operator aliases, and do not
+ * bind the returned variable. Prepared scripts can be reused with different
+ * execution contexts; neither contexts nor evaluation results are retained.
  *
- * The outer {{...}} frame is required; surrounding whitespace is allowed.
- * Direct value expressions allow internal delimiter sequences. An internal
- * }} prevents declaration recognition, leaving variable undefined. To retain
- * declaration recognition, escape closing delimiter characters in strings
- * or separate adjacent structural closing braces with whitespace. Preserve
- * string escapes with String.raw or doubled backslashes when constructing
- * the expression string in JavaScript.
- *
- * See eval's JSDoc for signatures, return values, caching, and error behavior.
+ * See eval's JSDoc for the signatures, return values, and error behavior.
  *
  * see also: https://seanox.github.io/composite-js/manuals/expression.html
  */
@@ -49,22 +42,13 @@
 
     "use strict";
 
-    /** Cache of variable names and prepared expression scripts */
-    const _cache = new Map();
-
-    const PATTERN_EXPRESSION_DECLARATION =
-        /^\s*\{\{\s*((?:_*[a-zA-Z]|_\w*)\w*):\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
-
     compliant("Expression");
     compliant(null, window.Expression = {
 
         /**
-         * Executes a framed expression and returns {variable, result}.
-         * The variable name is undefined unless the expression declares one.
-         * An optional identifier caches the variable name and prepared script,
-         * but not the result or execution context.
-         * Reusing an identifier retains the original script while it is cached;
-         * use a different identifier when the source changes.
+         * Executes a prepared expression and returns {variable, result}.
+         * The optional variable name is passed through without binding it.
+         * Scripts, execution contexts, and results are not cached here.
          *
          * Execution errors are handled uniformly, whether they occur during
          * script interpretation or are explicitly thrown by the expression.
@@ -73,73 +57,47 @@
          * There is no separate error status: result alone cannot distinguish
          * a thrown value from the same normally returned value.
          *
-         * The function uses variable parameters and has the following
-         * signatures:
+         * The signatures are distinguished by argument count:
          *
-         *     function(context, expression)
-         *     function(identifier, context, expression)
+         *     function(context, script)
+         *     function(context, variable, script)
          *
-         * @param {string} [identifier] Optional identifier for caching
+         * The three-argument signature also accepts an undefined variable.
+         *
          * @param {object} context Execution context containing values
          *     available to the expression
-         * @param {string} expression JavaScript expression enclosed in {{...}}
+         * @param {string} [variable] Optional variable name returned unchanged
+         * @param {string} script Prepared JavaScript without markup delimiters
          * @returns {{variable: (string|undefined), result: *}}
          *     New object with both properties present. The variable name may
          *     be undefined; result retains the original value unchanged,
          *     including errors as ordinary result values
-         * @throws {Error} In case of invalid data types
-         * @throws {SyntaxError} If the outer {{...}} frame is missing
+         * @throws {TypeError} In case of invalid argument count or data types
          */
         eval(...variants) {
 
-            // To reduce the number of executed instructions, the common
-            // argument-binding cases are handled directly.
-            let identifier, context, expression;
-            if (variants[0] !== null
-                    && typeof variants[0] === "object"
-                    && typeof variants[1] === "string")
-                [context, expression] = variants;
-            else if (typeof variants[0] === "string"
-                    && variants[1] !== null
-                    && typeof variants[1] === "object"
-                    && typeof variants[2] === "string")
-                [identifier, context, expression] = variants;
-            else Arguments.bind(variants, [
-                {context: [Object], script: [String]},
-                {url: [String], context: [Object], script: [String]}
-            ]);
+            if (variants.length < 2)
+                if (variants.length < 1)
+                    throw new TypeError("Invalid context: undefined");
+                else throw new TypeError("Invalid script: undefined");
+            const [context, variable, script] = variants.length === 2
+                ? [variants[0], undefined, variants[1]]
+                : variants;
 
-            const source = expression.trim();
-            if (!source.startsWith("{{")
-                    || !source.endsWith("}}"))
-                throw new SyntaxError("Invalid expression: " + expression);
-
-            let [variable, script] = (identifier ? _cache.get(identifier) : null) || [];
-            if (script === undefined) {
-                const declaration = source.match(PATTERN_EXPRESSION_DECLARATION);
-                variable = declaration ? declaration[1] : undefined;
-                script = (declaration ? declaration[2] : source.substring(2, source.length -2)).trim();
-            }
-            if (identifier) {
-                _cache.delete(identifier);
-                _cache.set(identifier, [variable, script]);
-            }
+            if (context === null
+                    || typeof context !== "object")
+                throw new TypeError("Invalid context: " + typeof context);
+            if (typeof script !== "string")
+                throw new TypeError("Invalid script: " + typeof script);
+            if (variable !== undefined
+                    && typeof variable !== "string")
+                throw new TypeError("Invalid variable: " + typeof variable);
 
             try {return {variable, result: Scripting.eval(context, script)};
             } catch (error) {
                 console.error(error, ("Error in expression: " + script).trim());
                 return {variable, result: error};
             }
-        },
-
-        /**
-         * Removes cached expression scripts until the cache size is <= size.
-         * @param {number} size Maximum number of cached scripts.
-         */
-        prune(size) {
-            size = Math.max(0, size);
-            while (_cache.size > size)
-                _cache.delete(_cache.keys().next().value);
         }
     });
 })();

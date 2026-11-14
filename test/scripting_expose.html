@@ -28,7 +28,7 @@
             for (const name of ["_execute", "_run"])
                 Assert.assertEquals("undefined", Scripting.eval({}, "typeof " + name));
             Assert.assertEquals("undefined,undefined,undefined,function",
-                Expression.eval({}, "{{" + types + "}}").result);
+                Expression.eval({}, types).result);
         }});
 
         Test.create({test() {
@@ -461,7 +461,7 @@
         Test.create({test() {
             const object = {answer: 42};
             const evaluate = () => {
-                Assert.assertSame(object, Expression.eval({object, expose}, "{{expose(object)}}").result);
+                Assert.assertSame(object, Expression.eval({object, expose}, "expose(object)").result);
                 Assert.assertEquals(3, Scripting.eval({expose}, "expose({temporary: true}); 1 + 2"));
                 const nested = Scripting.run("nested.js", {}, "expose({nested: true});");
                 Assert.assertTrue(nested.nested);
@@ -513,7 +513,7 @@
                 Assert.assertTrue(result.error.stack, result.error.stack.includes("scripting_run_source.js"));
             }
             Assert.assertUndefined(Scripting.eval({}, ""));
-            Assert.assertEquals(3, Expression.eval({}, "{{1 + 2}}").result);
+            Assert.assertEquals(3, Expression.eval({}, "1 + 2").result);
         }});
 
         Test.start({auto: true});

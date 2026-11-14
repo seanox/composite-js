@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-debug-testing.js"></script>
+    <script>
+      Test.activate();
+
+      const scope = window.___view_scope;
+      const application = window.___application_scope;
+      const workspace = window.___view_scope_workspace;
+      const evaluate = (source, ...type) =>
+          window.___expression_eval(window.___expression_parse(source), ...type);
+      const delay = () => new Promise(resolve => window.setTimeout(resolve, 0));
+
+      Test.create({name: "Expressions obtain the current view, application and temporary scopes", test() {
+          const length = workspace.length;
+          scope.expressionContextValue = 1;
+          application.expressionContextValue = 10;
+          workspace.push({expressionContextValue: 2}, {expressionContextValue: 3});
+          try {
+              const result = evaluate("{{expressionContextValue + view.expressionContextValue"
+                  + " + application.expressionContextValue}}", "value");
+              Assert.assertEquals("value", result.type);
+              Assert.assertUndefined(result.variable);
+              Assert.assertEquals(14, result.result);
+              workspace.pop();
+              Assert.assertEquals(2, evaluate("{{expressionContextValue}}", "value").result);
+          } finally {
+              workspace.length = length;
+              delete scope.expressionContextValue;
+              delete application.expressionContextValue;
+          }
+      }});
+
+      Test.create({name: "Interpolation shares one context and subsequent evaluations obtain a fresh one", test() {
+          const original = Expression.eval;
+          const contexts = [];
+          scope.expressionContextValue = 1;
+          Expression.eval = function(context, ...variants) {
+              contexts.push(context);
+              return original.call(this, context, ...variants);
+          };
+          try {
+              const source = "{{view.expressionContextValue = 2}} / {{expressionContextValue}}";
+              Assert.assertEquals("2 / 1", evaluate(source, "interpolation").result);
+              Assert.assertEquals(2, scope.expressionContextValue);
+              Assert.assertEquals(2, contexts.length);
+              Assert.assertSame(contexts[0], contexts[1]);
+              Assert.assertNotSame(scope, contexts[0]);
+              Assert.assertEquals("2 / 2", evaluate(source, "interpolation").result);
+              Assert.assertEquals(4, contexts.length);
+              Assert.assertSame(contexts[2], contexts[3]);
+              Assert.assertNotSame(contexts[0], contexts[2]);
+          } finally {
+              Expression.eval = original;
+              delete scope.expressionContextValue;
+          }
+      }});
+
+      Test.create({name: "Nested outer evaluations do not replace the surrounding interpolation context", test() {
+          scope.expressionContextValue = 1;
+          scope.expressionContextEvaluate = () =>
+              evaluate("{{expressionContextValue}}", "value").result;
+          try {
+              Assert.assertEquals("2 / 2 / 1", evaluate(
+                  "{{view.expressionContextValue = 2}} / {{expressionContextEvaluate()}}"
+                      + " / {{expressionContextValue}}", "interpolation").result);
+          } finally {
+              delete scope.expressionContextValue;
+              delete scope.expressionContextEvaluate;
+          }
+      }});
+
+      Test.create({name: "Declarations retain their result without binding the returned variable", test() {
+          const result = evaluate("{{expressionContextDeclared: 7}}", "declaration");
+          Assert.assertEquals("declaration", result.type);
+          Assert.assertEquals("expressionContextDeclared", result.variable);
+          Assert.assertEquals(7, result.result);
+          Assert.assertFalse(Object.prototype.hasOwnProperty.call(scope, "expressionContextDeclared"));
+      }});
+
+      Test.create({name: "Unsupported declaration parts remain errors without execution", test() {
+          scope.expressionContextValue = 1;
+          try {
+              const source = "{{expressionContextDeclared: view.expressionContextValue = 2}}";
+              const result = evaluate(source, "value");
+              Assert.assertUndefined(result.type);
+              Assert.assertUndefined(result.variable);
+              Assert.assertTrue(result.result instanceof Error);
+              Assert.assertEquals("Unsupported expression type", result.result.message);
+              Assert.assertEquals("before Error: Unsupported expression type after",
+                  evaluate("before " + source + " after", "interpolation").result);
+              Assert.assertEquals(1, scope.expressionContextValue);
+          } finally {
+              delete scope.expressionContextValue;
+          }
+      }});
+
+      Test.create({name: "Attribute rendering retains the interpolation snapshot across rerenders", async test() {
+          const fixture = document.createElement("span");
+          scope.expressionContextValue = 1;
+          fixture.setAttribute("title",
+              "{{view.expressionContextValue = 2}} / {{expressionContextValue}}");
+          document.body.appendChild(fixture);
+          try {
+              await delay();
+              Assert.assertEquals("2 / 1", fixture.title);
+              Composer.render(fixture);
+              await delay();
+              Assert.assertEquals("2 / 2", fixture.title);
+          } finally {
+              fixture.remove();
+              delete scope.expressionContextValue;
+              await delay();
+          }
+      }});
+
+      Test.start({auto: true});
+    </script>
+  </head>
+  <body></body>
+</html>

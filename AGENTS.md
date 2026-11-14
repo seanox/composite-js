@@ -15,21 +15,21 @@ other architectures, but the runtime must not depend on any of them.
 ## Project Structure and Starting Points
 Paths below are relative to the repository root.
 
-| Path                                  | Responsibility                                                   |
-|:--------------------------------------|:-----------------------------------------------------------------|
-| `sources/`                            | Authoritative browser runtime source                             |
-| `release/`                            | Generated bundles; can be modified but not pushed                |
-| `test/`                               | HTML test pages, fixtures, helpers and generated test bundles    |
-| `test/playwright/`                    | Node.js test runner, HTTP server and coverage tooling            |
-| `development/build.xml`               | Ant build targets, source order, minification and bundle linting |
-| `development/package.json`            | Build dependencies: ESLint and UglifyJS                          |
-| `development/eslint.config.js`        | ES2015 syntax constraint for runtime bundles                     |
-| `.github/actions/compose/action.yaml` | CI build setup and composition command                           |
-| `.github/workflows/playwright.yaml`   | Browser installation and three-engine test matrix                |
-| `manuals/`                            | Architecture, public API and testing documentation               |
-| `tutorials/`                          | Executable application examples                                  |
-| `server/`                             | Supporting development server infrastructure                     |
-| `README.md`, `CHANGES`                | Public overview, requirements and change history                 |
+| Path                                  | Responsibility                                                                        |
+|:--------------------------------------|:--------------------------------------------------------------------------------------|
+| `sources/`                            | Authoritative browser runtime source                                                  |
+| `release/`                            | Generated bundles; changeable and usable for temporary testing, but not to be pushed. |
+| `test/`                               | HTML test pages, fixtures, helpers and generated test bundles                         |
+| `test/playwright/`                    | Node.js test runner, HTTP server and coverage tooling                                 |
+| `development/build.xml`               | Ant build targets, source order, minification and bundle linting                      |
+| `development/package.json`            | Build dependencies: ESLint and UglifyJS                                               |
+| `development/eslint.config.js`        | ES2015 syntax constraint for runtime bundles                                          |
+| `.github/actions/compose/action.yaml` | CI build setup and composition command                                                |
+| `.github/workflows/playwright.yaml`   | Browser installation and three-engine test matrix                                     |
+| `manuals/`                            | Architecture, public API and testing documentation                                    |
+| `tutorials/`                          | Executable application examples                                                       |
+| `server/`                             | Supporting development server infrastructure                                          |
+| `README.md`, `CHANGES`                | Public overview, requirements and change history                                      |
 
 Use this source map to locate the relevant implementation and manual:
 
@@ -82,8 +82,10 @@ the intended behavior.
 - Preserve declarative routing, nested view flows, permission checks,
   interceptors and navigation history.
 - Preserve the immutable XML DataSource model, XPath/XSLT semantics, resource
-  resolution, locale handling, and resource bundles. The DataSource resolves and
-  fetches resources on every call; it does not cache documents or collections.
+  resolution, locale handling, and resource bundles. Resources are resolved on
+  every call, with source documents cached only temporarily within each collect
+  call. Projections use independent copies; no cache is shared between calls,
+  and collections are never cached.
 
 ### Application Trust Boundary
 Composite scripts, expressions and executable markup are trusted application

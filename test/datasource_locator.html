@@ -65,7 +65,7 @@
             Assert.assertEquals("Collect A", text[0].textContent);
         }});
 
-        Test.create({name:"Review #33: fetch accepts XPath selecting the document node", test() {
+        Test.create({name:"fetch accepts XPath selecting the document node", test() {
             const locator = "xml:/data/xx/datasource_collect_a.xml";
             const root = DataSource.fetch(locator).documentElement;
             const result = DataSource.fetch(locator + "?/");
@@ -74,7 +74,7 @@
             Assert.assertTrue(root.isEqualNode(result[0]));
         }});
 
-        Test.create({name:"Review #33: fetch preserves document and element results separately", test() {
+        Test.create({name:"fetch preserves document and element results separately", test() {
             const locator = "xml:/data/xx/datasource_collect_a.xml";
             const root = DataSource.fetch(locator).documentElement;
             const result = DataSource.fetch(locator + "?/ | /*");
@@ -87,7 +87,7 @@
             Assert.assertEquals("collect_a", result[1].getAttribute("id"));
         }});
 
-        Test.create({name:"Review #33: transform receives the document element", test() {
+        Test.create({name:"transform receives the document element", test() {
             const style = new DOMParser().parseFromString(
                 '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">'
                 + '<xsl:output method="xml"/><xsl:template match="/">'
@@ -121,7 +121,7 @@
             }
         }});
 
-        Test.create({name:"Review #43: invalid XML reports the resource URL",
+        Test.create({name:"invalid XML reports the resource URL",
             expected:/\bInvalid XML for .*\/data\/xx\/datasource_invalid\.xml\b/i, test() {
                 DataSource.fetch("xml:/data/xx/datasource_invalid.xml");
             }});

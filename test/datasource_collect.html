@@ -55,7 +55,7 @@
                     .map(node => node.getAttribute("id")).join(","));
             }}));
 
-        Test.create({name:"Review #33: collect handles XPath selecting the document node", test() {
+        Test.create({name:"collect handles XPath selecting the document node", test() {
             const locator = "xml:/data/xx/datasource_collect_a.xml";
             const document = DataSource.collect(locator);
             const collection = DataSource.collect(locator + "?/");
@@ -266,7 +266,7 @@
             });
         }});
 
-        Test.create({name:"Review #32: collect follows locale changes", test() {
+        Test.create({name:"collect follows locale changes", test() {
             const locale = DataSource.locale;
             const locator = "xml:/datasource_collect_locale";
             try {
@@ -284,7 +284,7 @@
             }
         }});
 
-        Test.create({name:"Review #32: collect localizes mixed XPath and explicit inputs", test() {
+        Test.create({name:"collect localizes mixed XPath and explicit inputs", test() {
             const locale = DataSource.locale;
             const locator = "xml:/datasource_collect_locale?string(/test)";
             const explicit = "xml:/data/xen/datasource_collect_locale.xml";

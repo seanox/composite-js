@@ -14,6 +14,21 @@
     
         Test.activate();
 
+        const trackRequests = test => {
+            const requests = [];
+            const listener = event => {
+                const meta = event[Composer.EVENT_HTTP_LOAD];
+                if (meta.type === "XMLHttpRequest")
+                    requests.push(meta.url);
+            };
+            window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
+            try {
+                test(requests);
+            } finally {
+                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
+            }
+        };
+
         Test.create({name:"collect without locators returns null", test() {
             Assert.assertEquals(null, DataSource.collect());
         }});
@@ -72,27 +87,183 @@
                 DataSource.collect("xml://datasource_collect_a", "xml://datasource_collect_b", "xml://datasource_collect_d");
             }});
 
-        Test.create({name:"Repeated collections fetch every input and return independent documents", test() {
+        Test.create({name:"Repeated collections return independent documents", test() {
             const locator = "xml://datasource_collect_a";
-            const fetch = DataSource.fetch;
-            let calls = 0;
-            DataSource.fetch = entry => {
-                calls++;
-                return fetch.call(DataSource, entry);
-            };
-            try {
+            const first = DataSource.collect(locator, locator);
+            first.documentElement.setAttribute("changed", "yes");
+            first.documentElement.children[0].setAttribute("id", "changed");
+            Assert.assertEquals("collect_a", first.documentElement.children[1].getAttribute("id"));
+            const repeated = DataSource.collect(locator, locator);
+            Assert.assertNotEquals(first, repeated);
+            Assert.assertFalse(repeated.documentElement.hasAttribute("changed"));
+            Assert.assertEquals("collect_a", repeated.documentElement.children[0].getAttribute("id"));
+        }});
+
+        Test.create({name:"collect reuses documents across normalized locators and independent projections", test() {
+            trackRequests(requests => {
+                const locator = "xml:/data/xx/datasource_collect_a.xml";
+                const collection = DataSource.collect("projections",
+                    locator + "?/test/title",
+                    "xml://data//xx/b-b/../datasource_collect_a.xml?/test/title",
+                    "xml://datasource_collect_a?string(/test/title)",
+                    locator + "?count(/test/title)",
+                    locator + "?boolean(/test/title)",
+                    locator + "?/",
+                    locator);
+                Assert.assertEquals(1, requests.length);
+                const nodes = collection.documentElement.children;
+                Assert.assertEquals(7, nodes.length);
+                Assert.assertEquals("title", nodes[0].nodeName);
+                Assert.assertEquals("Collect A", nodes[0].textContent);
+                Assert.assertTrue(nodes[0].isEqualNode(nodes[1]));
+                nodes[0].textContent = "changed";
+                Assert.assertEquals("Collect A", nodes[1].textContent);
+                Assert.assertEquals("text:Collect A,text:1,text:true",
+                    Array.from(nodes).slice(2, 5)
+                        .map(node => node.nodeName + ":" + node.textContent).join(","));
+                Assert.assertTrue(nodes[5].isEqualNode(nodes[6]));
+                Assert.assertEquals("Collect A", nodes[5].querySelector("title").textContent);
+                nodes[5].setAttribute("id", "changed");
+                Assert.assertEquals("collect_a", nodes[6].getAttribute("id"));
+            });
+        }});
+
+        Test.create({name:"collect discards documents between calls and leaves standalone fetch uncached", test() {
+            trackRequests(requests => {
+                const locator = "xml:/data/xx/datasource_collect_a.xml";
                 const first = DataSource.collect(locator, locator);
-                first.documentElement.setAttribute("changed", "yes");
                 first.documentElement.children[0].setAttribute("id", "changed");
-                Assert.assertEquals("collect_a", first.documentElement.children[1].getAttribute("id"));
                 const repeated = DataSource.collect(locator, locator);
-                Assert.assertEquals(4, calls);
-                Assert.assertNotEquals(first, repeated);
-                Assert.assertFalse(repeated.documentElement.hasAttribute("changed"));
+                Assert.assertEquals(2, requests.length);
                 Assert.assertEquals("collect_a", repeated.documentElement.children[0].getAttribute("id"));
-            } finally {
-                DataSource.fetch = fetch;
-            }
+                DataSource.fetch(locator);
+                DataSource.fetch(locator);
+                Assert.assertEquals(4, requests.length);
+            });
+        }});
+
+        Test.create({name:"Public fetch stays uncached during collect and does not share its documents", test() {
+            trackRequests(requests => {
+                const locator = "xml:/data/xx/datasource_collect_a.xml";
+                const clone = XMLDocument.prototype.clone;
+                let nested = false;
+                let first;
+                let repeated;
+                XMLDocument.prototype.clone = function() {
+                    const result = clone.call(this);
+                    if (!nested) {
+                        nested = true;
+                        first = DataSource.fetch(locator);
+                        first.documentElement.setAttribute("id", "changed");
+                        repeated = DataSource.fetch(locator);
+                    }
+                    return result;
+                };
+                try {
+                    const collection = DataSource.collect(locator, locator);
+                    Assert.assertTrue(nested);
+                    Assert.assertEquals(3, requests.length);
+                    Assert.assertNotEquals(first, repeated);
+                    Assert.assertEquals("collect_a", repeated.documentElement.getAttribute("id"));
+                    Assert.assertEquals("collect_a,collect_a",
+                        Array.from(collection.documentElement.children)
+                            .map(node => node.getAttribute("id")).join(","));
+                } finally {
+                    XMLDocument.prototype.clone = clone;
+                }
+            });
+        }});
+
+        [
+            ["xml:/data/xx/datasource_collect_d.xml", /\bHTTP status 404\b/],
+            ["xml:/data/xx/datasource_invalid.xml", /\bInvalid XML for\b/],
+            ["xml:/data/xx/datasource_collect_a.xml?[", null]
+        ].forEach(([invalid, expected]) =>
+            Test.create({name:"collect releases documents after an error for " + invalid, test() {
+                trackRequests(requests => {
+                    const locator = "xml:/data/xx/datasource_collect_a.xml";
+                    const address = new URL(window.location.contextPath
+                        + "/data/xx/datasource_collect_a.xml", window.location.href).href;
+                    let error;
+                    try {
+                        DataSource.collect(locator, invalid);
+                    } catch (exception) {
+                        error = exception;
+                    }
+                    Assert.assertNotNull(error);
+                    if (expected)
+                        Assert.assertTrue(expected.test(error.message));
+                    DataSource.fetch(locator);
+                    DataSource.fetch(locator);
+                    Assert.assertEquals(3, requests.filter(url => url === address).length);
+                    DataSource.collect(locator, locator);
+                    Assert.assertEquals(4, requests.filter(url => url === address).length);
+                });
+            }}));
+
+        [false, true].forEach(fail =>
+            Test.create({name:"Nested collections isolate document caches after "
+                + (fail ? "an error" : "success"), test() {
+                trackRequests(requests => {
+                    const locator = "xml:/data/xx/datasource_collect_a.xml";
+                    const send = XMLHttpRequest.prototype.send;
+                    let nested = false;
+                    XMLHttpRequest.prototype.send = function(...variants) {
+                        const result = send.apply(this, variants);
+                        if (!nested) {
+                            nested = true;
+                            if (fail) {
+                                let error;
+                                try {
+                                    DataSource.collect(locator, locator + "?[");
+                                } catch (exception) {
+                                    error = exception;
+                                }
+                                Assert.assertNotNull(error);
+                            } else {
+                                const collection = DataSource.collect(locator, locator);
+                                collection.documentElement.children[0].setAttribute("id", "changed");
+                            }
+                        }
+                        return result;
+                    };
+                    try {
+                        const collection = DataSource.collect(locator, locator);
+                        Assert.assertTrue(nested);
+                        Assert.assertEquals(2, requests.length);
+                        Assert.assertEquals("collect_a,collect_a",
+                            Array.from(collection.documentElement.children)
+                                .map(node => node.getAttribute("id")).join(","));
+                    } finally {
+                        XMLHttpRequest.prototype.send = send;
+                    }
+                    DataSource.fetch(locator);
+                    Assert.assertEquals(3, requests.length);
+                });
+            }}));
+
+        Test.create({name:"collect keys documents by the resolved locale-specific URL", test() {
+            trackRequests(requests => {
+                const locale = DataSource.locale;
+                const send = XMLHttpRequest.prototype.send;
+                const locales = ["xde", "xen"];
+                XMLHttpRequest.prototype.send = function(...variants) {
+                    const result = send.apply(this, variants);
+                    if (locales.length)
+                        DataSource.localize(locales.shift());
+                    return result;
+                };
+                try {
+                    DataSource.localize("xen");
+                    const locator = "xml:/datasource_collect_locale";
+                    const collection = DataSource.collect(locator, locator, locator);
+                    Assert.assertEquals("EnglishDeutschEnglish", collection.documentElement.textContent);
+                    Assert.assertEquals(2, requests.length);
+                } finally {
+                    XMLHttpRequest.prototype.send = send;
+                    DataSource.localize(locale);
+                }
+            });
         }});
 
         Test.create({name:"Review #32: collect follows locale changes", test() {

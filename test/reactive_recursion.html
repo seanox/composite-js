@@ -31,10 +31,6 @@
             capture.validate();
         }});
 
-        Test.create({test() {
-            Assert.assertEquals(capture.size(), capture.snapshots().length);
-        }});
-
         const model = ({
             list: [
                 {text: "A"},

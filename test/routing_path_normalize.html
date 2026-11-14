@@ -99,10 +99,10 @@
             Path.normalize(true);
         }});
         Test.create({expected:/\bInvalid data type/i, test() {
-            Path.normalize({}, "#");
+            Path.normalize("#", {});
         }});
         Test.create({expected:/\bInvalid data type/i, test() {
-            Path.normalize(true, "#");
+            Path.normalize("#", true);
         }});
 
         Test.create({test() {

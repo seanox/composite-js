@@ -25,14 +25,19 @@
         });
 
         Test.create({test() {
-            let content = Output.textContent;
-            content = content.replace(/undefined/, "");
-            content = content.replace(/\s+/g, " ").trim();
-            Assert.assertEquals("ma mb true EA EA mercedes", content);
+            Assert.assertSameTo("script[type='text/test']", Output.textContent);
         }});
         Composer.listen(Composer.EVENT_RENDER_END, () => {
             Test.start();
         });
+    </script>
+    <script type="text/test">
+      ma
+      mb
+      true
+      EA
+      EA
+      mercedes
     </script>
   </head>
   <body>

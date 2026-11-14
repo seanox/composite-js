@@ -80,7 +80,7 @@ const _countCoverage = counts => {
 };
 
 const _formatCoverage = ({covered, total}) => total > 0
-    ? `${covered}/${total} (${(covered / total * 100).toFixed(1)}%)` : "n/a";
+    ? `${covered}/${total} (${(Math.floor(covered * 10000 / total) / 100).toFixed(2)}%)` : "n/a";
 
 const _createCoverageMarkdown = coverage => {
     const files = Object.entries(coverage).map(([source, report]) => ({
@@ -111,9 +111,9 @@ const _createCoverageMarkdown = coverage => {
         "",
         "| Source | Lines | Functions | Branches |",
         "| --- | ---: | ---: | ---: |",
-        `| __Total__ | ${_formatCoverage(total.lines)} `
-            + `| ${_formatCoverage(total.functions)} `
-            + `| ${_formatCoverage(total.branches)} |`,
+        `| __Total__ | __${_formatCoverage(total.lines)}__ `
+            + `| __${_formatCoverage(total.functions)}__ `
+            + `| __${_formatCoverage(total.branches)}__ |`,
         ...rows,
         "",
         "Lines are derived from V8 coverage and include comments and blank lines.",

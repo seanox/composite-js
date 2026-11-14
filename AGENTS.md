@@ -82,7 +82,8 @@ the intended behavior.
 - Preserve declarative routing, nested view flows, permission checks,
   interceptors and navigation history.
 - Preserve the immutable XML DataSource model, XPath/XSLT semantics, resource
-  caching, locale handling and resource bundles.
+  resolution, locale handling, and resource bundles. The DataSource resolves and
+  fetches resources on every call; it does not cache documents or collections.
 
 ### Application Trust Boundary
 Composite scripts, expressions and executable markup are trusted application

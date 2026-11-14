@@ -302,7 +302,8 @@
                     // Unwanted recursions due to repeated value assignments:
                     // a = a / a = c = b = a must be avoided so that no infinite
                     // render cycle is initiated.
-                    if (this.cache.get(key) === value)
+                    if (this.cache.has(key)
+                            && this.cache.get(key) === value)
                         return true;
                     this.cache.set(key, value);
 

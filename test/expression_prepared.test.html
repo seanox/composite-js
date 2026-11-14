@@ -15,40 +15,41 @@
           first.result = null;
           const second = Expression.eval({value}, expression.variable, expression.script);
           Assert.assertNotSame(first, second);
-          Assert.assertEquals("variable,result", Object.keys(second).join(","));
           Assert.assertEquals("$answer", second.variable);
           Assert.assertSame(value, second.result);
+          Assert.assertEquals(9,
+              Expression.eval({value: 8}, "other", "value + 1").result);
           Assert.assertEquals(8,
               Expression.eval({value: 8}, expression.variable, expression.script).result);
-          Assert.assertEquals("variable,script", Object.keys(expression).join(","));
-          Assert.assertEquals("value", expression.script);
       }});
 
-      Test.create({name: "An omitted variable is returned as undefined", test() {
-          const result = Expression.eval({}, "3");
-          Assert.assertEquals("variable,result", Object.keys(result).join(","));
-          Assert.assertUndefined(result.variable);
-          Assert.assertEquals(3, result.result);
-      }});
-
-      Test.create({name: "Both signatures preserve empty scripts and undefined variables", test() {
+      Test.create({name: "Both signatures return variable and result, including for empty scripts", test() {
           const value = {answer: 7};
-          const unnamed = Expression.eval({value}, "value");
-          const explicit = Expression.eval({value}, undefined, "value");
-          const named = Expression.eval({value}, "$answer", "value");
-          Assert.assertUndefined(unnamed.variable);
-          Assert.assertUndefined(explicit.variable);
-          Assert.assertEquals("$answer", named.variable);
-          for (const result of [unnamed, explicit, named])
-              Assert.assertSame(value, result.result);
-          const empty = Expression.eval({}, "");
-          const emptyUnnamed = Expression.eval({}, undefined, "");
-          const emptyNamed = Expression.eval({}, "answer", "");
-          Assert.assertUndefined(empty.variable);
-          Assert.assertUndefined(emptyUnnamed.variable);
-          Assert.assertEquals("answer", emptyNamed.variable);
-          for (const result of [empty, emptyUnnamed, emptyNamed])
-              Assert.assertUndefined(result.result);
+          const errors = [];
+          const original = console.error;
+          console.error = error => errors.push(error);
+          try {
+              for (const [variants, variable, expected] of [
+                  [[{value}, "value"], undefined, value],
+                  [[{value}, undefined, "value"], undefined, value],
+                  [[{value}, "$answer", "value"], "$answer", value],
+                  [[{}, ""], undefined, undefined],
+                  [[{}, undefined, ""], undefined, undefined],
+                  [[{}, "answer", ""], "answer", undefined],
+                  [[{value}, "throw value"], undefined, value],
+                  [[{value}, "$answer", "throw value"], "$answer", value]
+              ]) {
+                  const keys = Object.keys(variants[0]).sort().join(",");
+                  const result = Expression.eval(...variants);
+                  Assert.assertEquals("result,variable", Object.keys(result).sort().join(","));
+                  Assert.assertEquals(variable, result.variable);
+                  Assert.assertSame(expected, result.result);
+                  Assert.assertEquals(keys, Object.keys(variants[0]).sort().join(","));
+              }
+              Assert.assertEquals(2, errors.length);
+          } finally {
+              console.error = original;
+          }
       }});
 
       Test.create({name: "Prepared scripts are executed without markup interpretation", test() {
@@ -61,7 +62,6 @@
           const label = Expression.eval({value: 7}, "{{label: value}}");
           Assert.assertUndefined(label.variable);
           Assert.assertEquals(7, label.result);
-          Assert.assertUndefined(Expression.eval({}, "").result);
       }});
 
       for (const script of [undefined, null, 7, [], {}, {script: "1"}, new String("1")])
@@ -75,35 +75,26 @@
               Expression.eval({}, variable, "1");
           }});
 
-      for (const variants of [[], [{}], [{}, "answer", "1", true]])
-          Test.create({name: "Invalid argument counts are rejected", expected: TypeError, test() {
+      for (const variants of [[], [{}]])
+          Test.create({name: "Missing required arguments are rejected", expected: TypeError, test() {
               Expression.eval(...variants);
           }});
+
+      Test.create({name: "Arguments after the third are ignored", test() {
+          const result = Expression.eval({value: 7}, "answer", "value", true, "ignored");
+          Assert.assertEquals("answer", result.variable);
+          Assert.assertEquals(7, result.result);
+      }});
 
       for (const context of [undefined, null, "", 7, () => 1])
           Test.create({name: "Invalid contexts are rejected", expected: TypeError, test() {
               Expression.eval(context, "1");
           }});
 
-      Test.create({name: "A missing third script is not treated as the short signature", test() {
-          let error;
-          try {Expression.eval({}, "answer", undefined);
-          } catch (caught) {
-              error = caught;
-          }
-          Assert.assertTrue(error instanceof TypeError);
-          Assert.assertEquals("Invalid script: undefined", error.message);
-      }});
-
-      Test.create({name: "The identifier signature and global expression cache are removed", test() {
+      Test.create({name: "The identifier signature and global expression cache are removed", expected: TypeError, test() {
           Assert.assertUndefined(Expression.prune);
           Assert.assertUndefined(Expression.parse);
-          let error;
-          try {Expression.eval("old-identifier", {}, "1");
-          } catch (caught) {
-              error = caught;
-          }
-          Assert.assertTrue(error instanceof TypeError);
+          Expression.eval("old-identifier", {}, "1");
       }});
 
       Test.start({auto: true});

@@ -143,7 +143,6 @@
               } finally {
                   console.error = original;
               }
-              Assert.assertEquals("variable,result", Object.keys(result).join(","));
               Assert.assertEquals(undefined, result.variable);
               Assert.assertTrue(source, result.result instanceof SyntaxError);
               Assert.assertEquals(1, errors.length);

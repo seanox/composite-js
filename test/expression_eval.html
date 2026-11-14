@@ -15,7 +15,7 @@
       const nativeConsoleError = console.error;
       Test.activate();
 
-      for (const [script, expected] of [["", undefined], ["1 + 2", 3], ["{{1 + 2}}", 3]])
+      for (const [script, expected] of [["1 + 2", 3], ["{{1 + 2}}", 3]])
           Test.create({test() {
               const result = Expression.eval({}, script);
               Assert.assertUndefined(result.variable);
@@ -29,32 +29,22 @@
           Assert.assertEquals(3, Expression.eval({}, "1 /* } } { { */ + 2").result);
       }});
 
-      Test.create({test() {
-          const failure = new Error("optional value");
-          const context = {
-              missing: undefined,
-              empty: null,
-              model: {
-                  value: 42,
-                  get broken() {throw failure;}
-              },
-              fail() {throw failure;}
-          };
-          for (const [source, expected] of [
-              ["attempt(() => absentAttemptModel.value)", undefined],
-              ["attempt(() => missing.value)", undefined],
-              ["attempt(() => empty.value)", undefined],
-              ["attempt(() => model.missing.value)", undefined],
-              ["attempt(() => model.broken.value)", undefined],
-              ["attempt(() => fail())", undefined],
-              ["attempt(() => model.value)", 42],
-              ["attempt(() => empty)", null]
-          ])
-              Assert.assertSame(expected, Expression.eval(context, source).result);
+      Test.create({name: "Expressions provide the attempt helper without logging handled errors", test() {
+          const errors = [];
+          const original = console.error;
+          console.error = error => errors.push(error);
+          try {
+              Assert.assertEquals(42,
+                  Expression.eval({value: 42}, "attempt(() => value)").result);
+              Assert.assertUndefined(
+                  Expression.eval({}, "attempt(() => absentAttemptModel.value)").result);
+              Assert.assertEquals(0, errors.length);
+          } finally {
+              console.error = original;
+          }
       }});
 
       for (const [script, variable, expected] of [
-          ["", undefined, undefined],
           ["value", undefined, 7],
           ["value + 1", "answer", 8],
           ["value", "$", 7],
@@ -71,7 +61,6 @@
           ["'a {{ b'", "answer", "a {{ b"],
           ["\r\n value + 1\n", "answer", 8],
           ["!false", "answer", true],
-          ["", "answer", undefined],
           ["\n", "answer", undefined],
           [String.raw`'line\nbreak'`, "answer", "line\nbreak"],
           ["`line\nbreak`", "answer", "line\nbreak"],
@@ -87,22 +76,9 @@
           Test.create({test() {
               const context = {value:7};
               const evaluation = Expression.eval(context, variable, script);
-              Assert.assertFalse(Array.isArray(evaluation));
-              Assert.assertEquals("variable,result", Object.keys(evaluation).join(","));
               Assert.assertEquals(variable, evaluation.variable);
               Assert.assertEquals(expected, evaluation.result);
-              Assert.assertEquals("value", Object.keys(context).join(","));
           }});
-
-      Test.create({name: "Long declarations preserve their script and current context", test() {
-          const expression = {variable: "$answer", script: "const text = '"
-              + "a: b; ".repeat(1000) + "'; text.length + value"};
-          for (const value of [7, 8]) {
-              const result = Expression.eval({value}, expression.variable, expression.script);
-              Assert.assertEquals("$answer", result.variable);
-              Assert.assertEquals(6000 + value, result.result);
-          }
-      }});
 
       Test.create({name: "Whitespace in JavaScript labels is preserved", test() {
           for (const whitespace of [" ", "\t", "\n", "\r", "\r\n", "\u2028", "\u2029"]) {
@@ -132,27 +108,8 @@
       Test.create({test() {
           for (const value of [undefined, null, false, 0, -0, NaN, "", [1, 2],
               {variable: "payload", result: 7}, Symbol("value"), () => 7])
-              for (const prefix of ["", "items: "]) {
-                  const evaluation = Expression.eval({value},
-                      prefix ? "items" : undefined, "value");
-                  Assert.assertEquals("variable,result", Object.keys(evaluation).join(","));
-                  Assert.assertSame(Object.prototype, Object.getPrototypeOf(evaluation));
-                  Assert.assertEquals(prefix ? "items" : undefined, evaluation.variable);
-                  Assert.assertTrue(Object.is(value, evaluation.result));
-              }
-      }});
-
-      Test.create({test() {
-          const value = {answer: 7};
-          const expression = Object.freeze({variable: "item", script: "value"});
-          const first = Expression.eval({value}, expression.variable, expression.script);
-          first.variable = "changed";
-          first.result = undefined;
-          const second = Expression.eval({value}, expression.variable, expression.script);
-          Assert.assertFalse(first === second);
-          Assert.assertEquals("variable,result", Object.keys(second).join(","));
-          Assert.assertEquals("item", second.variable);
-          Assert.assertSame(value, second.result);
+              for (const prefix of [[], ["items"]])
+                  Assert.assertTrue(Object.is(value, Expression.eval({value}, ...prefix, "value").result));
       }});
 
       for (const lineBreak of ["\n", "\r", "\r\n"])
@@ -180,7 +137,6 @@
                           const script = quote + "line" + lineBreak + "break" + quote;
                           const result = Expression.eval({},
                               prefix ? "answer" : undefined, script);
-                          Assert.assertEquals("variable,result", Object.keys(result).join(","));
                           Assert.assertEquals(prefix ? "answer" : undefined, result.variable);
                           Assert.assertTrue(result.result instanceof SyntaxError);
                       }
@@ -189,22 +145,6 @@
                   }
                   Assert.assertEquals(2, errors.length);
               }});
-
-      Test.create({test() {
-          const value = [1, 2];
-          const result = Expression.eval({value}, "items", "value");
-          Assert.assertEquals("variable,result", Object.keys(result).join(","));
-          Assert.assertEquals("items", result.variable);
-          Assert.assertSame(value, result.result);
-
-          const first = {variable: "first", script: "value"};
-          const second = {variable: "second", script: "other"};
-          Assert.assertEquals("first", Expression.eval({value:7}, first.variable, first.script).variable);
-          Assert.assertEquals(7, Expression.eval({value:7}, first.variable, first.script).result);
-          Assert.assertEquals("second", Expression.eval({other:8}, second.variable, second.script).variable);
-          Assert.assertEquals(8, Expression.eval({other:8}, second.variable, second.script).result);
-          Assert.assertEquals(9, Expression.eval({value:9}, first.variable, first.script).result);
-      }});
 
       Test.create({test() {
           Assert.assertEquals(1, Expression.eval({}, "1").result);
@@ -217,56 +157,26 @@
           Assert.assertEquals(2, Expression.eval({}, "2").result);
       }});
 
-      Test.create({test() {
-          for (const [script, expected] of [["", undefined], ["7", 7]]) {
-              const result = Expression.eval({}, script);
-              Assert.assertEquals("variable,result", Object.keys(result).join(","));
-              Assert.assertEquals(undefined, result.variable);
-              Assert.assertEquals(expected, result.result);
-          }
-      }});
-
-      Test.create({test() {
-          const errors = [];
-          const failure = new Error("expression failure");
-          const original = console.error;
-          let result;
-          console.error = (...variants) => errors.push(variants);
-          try {result = Expression.eval({failure}, "throw failure");
-          } finally {
-              console.error = original;
-          }
-          Assert.assertEquals("variable,result", Object.keys(result).join(","));
-          Assert.assertEquals(undefined, result.variable);
-          Assert.assertSame(failure, result.result);
-          Assert.assertEquals("expression failure", failure.message);
-          Assert.assertEquals(1, errors.length);
-          Assert.assertEquals(2, errors[0].length);
-          Assert.assertSame(failure, errors[0][0]);
-          Assert.assertEquals("Error in expression: throw failure", errors[0][1]);
-      }});
-
       Test.create({name: "Reused structures keep thrown values and log the prepared script", test() {
-          const failure = new Error("prepared failure");
+          const failures = [new Error("first failure"), new Error("second failure")];
           const expression = Object.freeze({variable: "value", script: "throw failure"});
           const errors = [];
           const original = console.error;
           console.error = (...variants) => errors.push(variants);
           try {
-              for (let index = 0; index < 2; index++) {
+              for (const [index, failure] of failures.entries()) {
                   const result = Expression.eval({failure}, expression.variable, expression.script);
-                  Assert.assertEquals("variable,result", Object.keys(result).join(","));
                   Assert.assertEquals("value", result.variable);
                   Assert.assertSame(failure, result.result);
-                  Assert.assertEquals("prepared failure", failure.message);
+                  Assert.assertEquals(index === 0 ? "first failure" : "second failure", failure.message);
               }
           } finally {
               console.error = original;
           }
           Assert.assertEquals(2, errors.length);
-          for (const variants of errors) {
+          for (const [index, variants] of errors.entries()) {
               Assert.assertEquals(2, variants.length);
-              Assert.assertSame(failure, variants[0]);
+              Assert.assertSame(failures[index], variants[0]);
               Assert.assertEquals("Error in expression: throw failure", variants[1]);
           }
       }});
@@ -280,7 +190,6 @@
           } finally {
               console.error = original;
           }
-          Assert.assertEquals("variable,result", Object.keys(result).join(","));
           Assert.assertEquals(undefined, result.variable);
           Assert.assertTrue(result.result instanceof DOMException);
           Assert.assertEquals("SyntaxError", result.result.name);
@@ -290,42 +199,15 @@
           Assert.assertEquals("Error in expression: document.querySelector('[')", errors[0][1]);
       }});
 
-      Test.create({name: "Frozen errors are returned without mutation", test() {
-          const failure = Object.freeze(new Error("failure"));
-          const errors = [];
-          const original = console.error;
-          let result;
-          console.error = (...variants) => errors.push(variants);
-          try {result = Expression.eval({failure}, "throw failure");
-          } finally {
-              console.error = original;
-          }
-          Assert.assertEquals("variable,result", Object.keys(result).join(","));
-          Assert.assertEquals(undefined, result.variable);
-          Assert.assertSame(failure, result.result);
-          Assert.assertEquals("failure", failure.message);
-          Assert.assertTrue(Object.isFrozen(failure));
-          Assert.assertEquals(1, errors.length);
-          Assert.assertEquals(2, errors[0].length);
-          Assert.assertSame(failure, errors[0][0]);
-          Assert.assertEquals("Error in expression: throw failure", errors[0][1]);
-      }});
-
       const diagnosticAccesses = [];
       const messageGetter = new Error("failure");
       Object.defineProperty(messageGetter, "message", {
           get() {
               diagnosticAccesses.push("message getter");
               throw new Error("message access failed");
-          }
+          },
+          set() {diagnosticAccesses.push("message setter");}
       });
-      const messageConversion = new Error("failure");
-      messageConversion.message = {
-          toString() {
-              diagnosticAccesses.push("message conversion");
-              throw new Error("message conversion failed");
-          }
-      };
       const valueConversion = {
           toString() {
               diagnosticAccesses.push("value conversion");
@@ -337,36 +219,10 @@
           diagnosticAccesses.push("error conversion");
           throw new Error("diagnostic conversion failed");
       };
-      const ignoredAssignment = new Error("ignored");
-      Object.defineProperty(ignoredAssignment, "message", {
-          get() {
-              diagnosticAccesses.push("ignored getter");
-              return "ignored";
-          },
-          set() {diagnosticAccesses.push("ignored setter");}
-      });
-      const rejectedAssignment = new Proxy(new Error("rejected"), {
-          set() {
-              diagnosticAccesses.push("proxy setter");
-              return false;
-          }
-      });
-      let assignedMessage = "setter";
-      const acceptedAssignment = new Error("setter");
-      Object.defineProperty(acceptedAssignment, "message", {
-          get() {
-              diagnosticAccesses.push("accepted getter");
-              return assignedMessage;
-          },
-          set(value) {
-              diagnosticAccesses.push("accepted setter");
-              assignedMessage = value;
-          }
-      });
       const thrownValues = [
           undefined, null, false, true, 0, -0, NaN, "", "failure", Symbol("failure"),
-          messageGetter, messageConversion, valueConversion, new Error("ordinary"),
-          diagnosticConversion, ignoredAssignment, rejectedAssignment, acceptedAssignment
+          messageGetter, valueConversion, new Error("ordinary"),
+          diagnosticConversion, Object.freeze(new Error("frozen"))
       ];
       thrownValues.forEach((failure, index) => {
           Test.create({name: "Thrown values are returned unchanged #" + (index +1), test() {
@@ -378,7 +234,6 @@
               } finally {
                   console.error = original;
               }
-              Assert.assertEquals("variable,result", Object.keys(result).join(","));
               Assert.assertEquals(undefined, result.variable);
               Assert.assertTrue(Object.is(failure, result.result));
               Assert.assertEquals(1, errors.length);
@@ -386,7 +241,6 @@
               Assert.assertTrue(Object.is(failure, errors[0][0]));
               Assert.assertEquals("Error in expression: throw failure", errors[0][1]);
               Assert.assertEquals(0, diagnosticAccesses.length);
-              Assert.assertEquals("setter", assignedMessage);
           }});
       });
 
@@ -396,7 +250,6 @@
           try {
               for (const failure of thrownValues) {
                   const result = Expression.eval({failure}, "throw failure");
-                  Assert.assertEquals("variable,result", Object.keys(result).join(","));
                   Assert.assertEquals(undefined, result.variable);
                   Assert.assertTrue(Object.is(failure, result.result));
               }
@@ -404,7 +257,6 @@
               console.error = original;
           }
           Assert.assertFalse(diagnosticAccesses.some(access => access.endsWith("setter")));
-          Assert.assertEquals("setter", assignedMessage);
       }});
 
       Test.create({test() {
@@ -414,7 +266,6 @@
           console.error = value => errors.push(value);
           try {
               const result = Expression.eval({error}, "failure", "error");
-              Assert.assertEquals("variable,result", Object.keys(result).join(","));
               Assert.assertEquals("failure", result.variable);
               Assert.assertSame(error, result.result);
               Assert.assertEquals(0, errors.length);

@@ -47,9 +47,10 @@
             Test.create({test() {
                 const timing = Date.now();
                 let expression = document.querySelector("script[type='text/expression']");
-                expression = expression.innerHTML;
+                expression = expression.innerHTML.trim().slice(2, -2).trim();
                 for (let loop = 0; loop < 2500; loop++)
-                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval({}, expression).result);
+                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]",
+                        Expression.eval({}, expression).result);
                 const duration = Date.now() -timing;
                 const message = `${duration}`;
                 console.log(`Benchmark 2: ${message} ms`);
@@ -57,9 +58,10 @@
             Test.create({test() {
                 const timing = Date.now();
                 let expression = document.querySelector("script[type='text/expression']");
-                expression = expression.innerHTML;
+                expression = expression.innerHTML.trim().slice(2, -2).trim();
                 for (let loop = 0; loop < 25000; loop++)
-                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]", Expression.eval("ceb_1", {}, expression).result);
+                    Assert.assertEquals(" A:f11[0]->x->y B:12 C:4 D:1[0]",
+                        Expression.eval({}, expression).result);
                 const duration = Date.now() -timing;
                 const message = `${duration} ms`;
                 console.log(`Benchmark 3: ${message}`);

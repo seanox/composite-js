@@ -30,9 +30,6 @@
             Composer.customize("", null);
         }});
         Test.create({expected:/\bInvalid scope: object/i, test() {
-            Composer.customize(new Object(), () => {});
-        }});
-        Test.create({expected:/\bInvalid scope: object/i, test() {
             Composer.customize({}, () => {});
         }});
         Test.create({expected:/\bInvalid scope: function/i, test() {

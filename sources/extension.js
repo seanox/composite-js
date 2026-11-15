@@ -217,7 +217,7 @@
     ].map(pattern => pattern.source).join("|"), "g");
     const PATTERN_OBJECT_PATH_BRACKET_WHITESPACE = /\[\s+|\s+\]/g;
     const PATTERN_OBJECT_PATH_BRACKET_OPEN = /\[/g;
-    const PATTERN_OBJECT_PATH_IDENTIFIER = /[A-Za-z_$][A-Za-z0-9_$]*/;
+    const PATTERN_OBJECT_PATH_IDENTIFIER = /[_$A-Za-z][_$A-Za-z0-9]*/;
     const PATTERN_OBJECT_PATH_INDEX = /\d+/;
     const PATTERN_OBJECT_LITERAL = /^["'`]/;
     const PATTERN_OBJECT_INDEX_ZEROS = /^0+(?=\d)/;

@@ -190,14 +190,8 @@
 
                     let value;
 
-                    // During analysis, getters must be invoked via the proxy to
-                    // identify the final targets behind the getter.
-                    if (_selector) {
-                        const descriptor = Object.getOwnPropertyDescriptor(target, key);
-                        if (descriptor && typeof descriptor.get === "function")
-                            value = descriptor.get.call(proxy);
-                        else value = target[key];
-                    } else value = target[key];
+                    // Proxy receiver lets inherited getters track their reads
+                    value = _selector ? Reflect.get(target, key, proxy) : target[key];
 
                     // Proxies are only used for objects, other data types are
                     // returned directly.
@@ -206,6 +200,12 @@
                             || value instanceof Node
                             || value instanceof NodeList
                             || value instanceof HTMLCollection)
+                        return value;
+
+                    const descriptor = Object.getOwnPropertyDescriptor(target, key);
+                    if (descriptor
+                            && descriptor.configurable === false
+                            && descriptor.writable === false)
                         return value;
 
                     // Proxy remains proxy
@@ -302,7 +302,8 @@
                     // Unwanted recursions due to repeated value assignments:
                     // a = a / a = c = b = a must be avoided so that no infinite
                     // render cycle is initiated.
-                    if (this.cache.get(key) === value)
+                    if (this.cache.has(key)
+                            && this.cache.get(key) === value)
                         return true;
                     this.cache.set(key, value);
 

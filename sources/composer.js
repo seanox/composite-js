@@ -110,7 +110,7 @@
 
     /** Detects an exclusive declaration expression, including its delimiters. */
     const PATTERN_EXPRESSION_DECLARATION =
-        /^\s*\{\{\s*((?:_*[a-zA-Z]|_\w*)\w*):\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
+        /^\s*\{\{\s*([A-Za-z_$][A-Za-z0-9_$]*):\s*(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
 
     /**
      * Detects complete {{...}} markup, ending at the first closing }}.
@@ -121,7 +121,10 @@
 
     /** Detects an exclusive value expression, including its markup delimiters. */
     const PATTERN_EXPRESSION_VALUE =
-        /^\s*\{\{\s*(?!\s*(?:_*[a-zA-Z]|_\w*)\w*:)(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
+        /^\s*\{\{\s*(?!\s*[A-Za-z_$][A-Za-z0-9_$]*:)(([^}]|(}(?!})))*?)\s*\}\}\s*$/;
+
+    // Match the absolute end, including rejection of trailing line breaks.
+    const PATTERN_EXPRESSION_VARIABLE = /^[A-Za-z_$][A-Za-z0-9_$]*(?![\s\S])/;
 
     /** Pattern for all to ignore (script-)elements */
     const PATTERN_ELEMENT_IGNORE = /script|style/i;
@@ -633,8 +636,7 @@
                         if (object.attributes.hasOwnProperty(ATTRIBUTE_MESSAGE))
                             message = String(object.attributes[ATTRIBUTE_MESSAGE] || "");
                         if ((message || "").match(PATTERN_EXPRESSION_CONTAINS))
-                            message = String(_expression_eval(serial + ":" + ATTRIBUTE_MESSAGE,
-                                _execution_context(), message,
+                            message = String(_expression_eval(object.expressions[ATTRIBUTE_MESSAGE],
                                 EXPRESSION_TYPE_INTERPOLATION).result);
                     }
 
@@ -995,8 +997,7 @@
                                     ? object.attributes[ATTRIBUTE_RENDER] : "";
                             render = String(render || "");
                             if ((render || "").match(PATTERN_EXPRESSION_CONTAINS))
-                                render = _expression_eval(serial + ":" + ATTRIBUTE_RENDER,
-                                    _execution_context(), render,
+                                render = _expression_eval(object.expressions[ATTRIBUTE_RENDER],
                                     EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
                             Composer.render(render);
                         }
@@ -1270,8 +1271,7 @@
                 _view_scope_workspace.push(..._view_scope_stack);
                 let identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
                 if (identifier.match(PATTERN_EXPRESSION_CONTAINS)) {
-                    identifier = _expression_eval(selector.serial() + ":" + ATTRIBUTE_ID,
-                        _execution_context(), identifier,
+                    identifier = _expression_eval(_expression_parse(identifier),
                         EXPRESSION_TYPE_INTERPOLATION).result;
                     selector.setAttribute(ATTRIBUTE_ID, identifier);
                 }
@@ -1342,7 +1342,7 @@
                     }
                 }
 
-                if (_render_attribute_condition(selector, object, serial, lock))
+                if (_render_attribute_condition(selector, object, lock))
                     return;
 
                 if (selector.nodeType === Node.TEXT_NODE) {
@@ -1366,11 +1366,11 @@
                 // when an element is rendered. This effect can be used for CSS
                 // to display elements only in rendered state.
 
-                _render_attribute_import(selector, object, serial, lock);
-                _render_attribute_output(selector, object, serial);
-                _render_attribute_interval(selector, object, serial);
-                _render_attribute_iterate(selector, object, serial, lock);
-                _render_attributes_update(selector, object, serial);
+                _render_attribute_import(selector, object);
+                _render_attribute_output(selector, object);
+                _render_attribute_interval(selector, object);
+                _render_attribute_iterate(selector, object, lock);
+                _render_attributes_update(selector, object);
                 _render_element_script(selector);
                 _render_element_children(selector, object, lock);
 
@@ -1982,49 +1982,85 @@
     const EXPRESSION_TYPE_INTERPOLATION = "interpolation";
 
     /**
-     * Expression evaluation; includes the substitution of markup operators.
-     * Value expressions retain their result type when allowed; interpolation
-     * always produces text, including for a standalone expression.
-     * @param {string} identifier Identifier for the expression evaluation cache
-     * @param {object} context Execution scope
-     * @param {string} expression Expression value to interpret
-     * @param {...string} type Allowed expression types
-     * @returns {{type: (string|undefined), variable: (string|undefined), result: *}}
-     *     Object containing expression type, optional variable name, an result,
-     *     including errors as ordinary result values
+     * Prepares markup once without evaluating it. Interpolation retains its
+     * static text and individually prepared expressions in source order.
+     * @param {string} expression Markup to prepare
+     * @returns {object} Prepared value, declaration, or interpolation
      */
-    const _expression_eval = (identifier, context, expression, ...type) => {
-
-        const source = expression.trim().replace(PATTERN_EXPRESSION_INTERPOLATION, match => {
+    const _expression_parse = (expression) => {
+        const source = expression.trim();
+        const parse = (match) => {
             const script = match.substring(2, match.length -2)
                 .replace(PATTERN_MARKUP_EXPRESSION_OPERATOR, (match, space, operator) =>
-                    space + MARKUP_EXPRESSION_OPERATORS[operator]);
-            return "{{" + script + "}}";
+                    space + MARKUP_EXPRESSION_OPERATORS[operator]).trim();
+            const separator = script.indexOf(":");
+            if (separator > 0
+                    && PATTERN_EXPRESSION_VARIABLE.test(script.substring(0, separator))) {
+                return {
+                    type: EXPRESSION_TYPE_DECLARATION,
+                    variable: script.substring(0, separator),
+                    script: script.substring(separator +1).trim()
+                };
+            } else {
+                return {
+                    type: EXPRESSION_TYPE_VALUE,
+                    variable: undefined,
+                    script
+                };
+            }
+        };
+        if (source.startsWith("{{")
+                && source.endsWith("}}")
+                && source.indexOf("}}", 2) === source.length -2)
+            return parse(source);
+
+        const parts = [];
+        let offset = 0;
+        source.replace(PATTERN_EXPRESSION_INTERPOLATION, (match, script, index) => {
+            parts.push(source.substring(offset, index));
+            offset = index + match.length;
+            if (script.trim())
+                parts.push(parse(match));
+            return match;
         });
+        parts.push(source.substring(offset));
+        return {type: EXPRESSION_TYPE_INTERPOLATION, parts};
+    };
 
-        if (type.includes(EXPRESSION_TYPE_DECLARATION)
-                && source.match(PATTERN_EXPRESSION_DECLARATION))
-            return Object.assign({type: EXPRESSION_TYPE_DECLARATION},
-                Expression.eval(identifier, context, source));
-        if (type.includes(EXPRESSION_TYPE_VALUE)
-                && source.match(PATTERN_EXPRESSION_VALUE))
-            return Object.assign({type: EXPRESSION_TYPE_VALUE},
-                Expression.eval(identifier, context, source));
-        if (!type.includes(EXPRESSION_TYPE_INTERPOLATION)
-                || source.match(PATTERN_EXPRESSION_DECLARATION))
-            return {type: undefined, variable: undefined,
-                result: new Error("Unsupported expression type")};
+    /**
+     * Evaluates prepared markup using the current execution context.
+     * Creates one execution context per call, shared by interpolation parts.
+     * Value expressions retain their result type when allowed; interpolation
+     * always produces text, including for a standalone expression.
+     * @param {object} expression Prepared expression or interpolation
+     * @param {...string} type Allowed expression types
+     * @returns {{type: (string|undefined), variable: (string|undefined), result: *}}
+     *     Object containing expression type, optional variable name, and result,
+     *     including errors as ordinary result values
+     */
+    const _expression_eval = (expression, ...type) => {
 
-        let index = 0;
-        const interpolation = source.replace(
-            PATTERN_EXPRESSION_INTERPOLATION, (match, expression) => {
-                if (!expression.trim())
-                    return "";
-                const {result} = _expression_eval(
-                    identifier + ":" + index++, context, match, EXPRESSION_TYPE_VALUE);
-                return result;
-            });
-        return {type: EXPRESSION_TYPE_INTERPOLATION, variable: undefined, result: interpolation};
+        const context = _execution_context();
+        const evaluate = (expression, ...type) => {
+
+            if (expression.type !== EXPRESSION_TYPE_INTERPOLATION
+                    && type.includes(expression.type))
+                return Object.assign({type: expression.type},
+                    Expression.eval(context, expression.variable, expression.script));
+            if (!type.includes(EXPRESSION_TYPE_INTERPOLATION)
+                    || expression.type === EXPRESSION_TYPE_DECLARATION)
+                return {type: undefined, variable: undefined,
+                    result: new Error("Unsupported expression type")};
+
+            const parts = expression.type === EXPRESSION_TYPE_INTERPOLATION
+                    ? expression.parts : expression.script ? [expression] : [];
+            const interpolation = parts.map(part => typeof part === "string" ? part
+                    : ("").concat(evaluate(part, EXPRESSION_TYPE_VALUE).result)).join("");
+            return {type: EXPRESSION_TYPE_INTERPOLATION,
+                variable: undefined, result: interpolation};
+        };
+
+        return evaluate(expression, ...type);
     };
 
     /** Lock on rendering execution as a transaction */
@@ -2034,7 +2070,8 @@
     const _render_queue = [];
 
     /**
-     * Map of element-related metadata objects created during rendering:
+     * Map of node-related metadata objects created during rendering.
+     * Each expressions map retains prepared markup by attribute name.
      * (key:serial, value:meta)
      */
     const _render_meta = new Map();
@@ -2093,7 +2130,7 @@
     const _render_meta_initialize = (selector, serial) => {
         _interceptors.forEach((interceptor) =>
             interceptor.call(null, selector));
-        const object = {serial, element:selector, attributes:{},
+        const object = {serial, element:selector, attributes:{}, expressions:{},
             context:[..._view_scope_workspace]};
         _render_meta.set(serial, object);
         return object;
@@ -2122,6 +2159,7 @@
                     selector.removeAttribute(attribute.name);
 
                 object.attributes[attribute.name] = attribute.value;
+                object.expressions[attribute.name] = _expression_parse(attribute.value);
 
                 // Special case: ATTRIBUTE_ID, ATTRIBUTE_EVENTS and the static
                 // attributes. The first two are used initially for the object
@@ -2134,8 +2172,7 @@
                                 || attribute.name === ATTRIBUTE_ID
                                 || attribute.name === ATTRIBUTE_EVENTS
                                 || _statics.has(attribute.name)))
-                    attribute.value = _expression_eval(selector.serial() + ":" + attribute.name,
-                        _execution_context(), attribute.value,
+                    attribute.value = _expression_eval(object.expressions[attribute.name],
                         EXPRESSION_TYPE_INTERPOLATION).result;
 
                 // The resolved value is written back to the metadata object, so
@@ -2184,7 +2221,7 @@
             return false;
 
         const expression = (object.attributes[ATTRIBUTE_CONDITION] || "").trim();
-        if (!expression.match(PATTERN_EXPRESSION_VALUE))
+        if (object.expressions[ATTRIBUTE_CONDITION].type !== EXPRESSION_TYPE_VALUE)
             throw new Error(`Invalid condition${expression ? ": " + expression : ""}`);
 
         // The marker and its metadata object are created. This prevents the
@@ -2193,9 +2230,10 @@
         const marker = document.createTextNode("");
         const template = selector.cloneNode(true);
         const attributes = object.attributes;
-        object = {serial:marker.serial(), element:marker, attributes,
+        const expressions = object.expressions;
+        object = {serial:marker.serial(), element:marker, attributes, expressions,
             context:[..._view_scope_workspace],
-            condition:{expression, template, marker, element:null, attributes, complete:false, share:null}};
+            condition:{expression, template, marker, element:null, attributes, expressions, complete:false, share:null}};
         _render_meta.set(object.serial, object);
 
         // The metadata object for the HTML element is removed, because only
@@ -2218,11 +2256,10 @@
      * In both cases, we decide here what to do and what happens.
      * @param {Node} selector Node to be rendered
      * @param {object} object Metadata object of the node
-     * @param {number} serial Serial of the node
      * @param {object} lock Lock of the render cycle
      * @returns {boolean} true if the rendering has to be terminated
      */
-    const _render_attribute_condition = (selector, object, serial, lock) => {
+    const _render_attribute_condition = (selector, object, lock) => {
 
         if (!object.hasOwnProperty("condition"))
             return false;
@@ -2246,8 +2283,8 @@
             // The condition must be explicitly true, otherwise the output is
             // removed from the DOM and the rendering ends. The cleanup will be
             // done by the MutationObserver.
-            const {result: expression} = _expression_eval(serial + ":" + ATTRIBUTE_CONDITION,
-                _execution_context(), condition.expression, EXPRESSION_TYPE_VALUE);
+            const {result: expression} = _expression_eval(
+                object.expressions[ATTRIBUTE_CONDITION], EXPRESSION_TYPE_VALUE);
             selector.nodeValue = expression instanceof Error ? expression : "";
             if (expression !== true) {
                 // Because a condition can consist of two elements (marker and
@@ -2277,6 +2314,7 @@
             const attributes = Object.assign({}, condition.attributes);
             _render_meta.set(element.serial(), {
                 serial:element.serial(), element, attributes, condition,
+                expressions:Object.assign({}, condition.expressions),
                 context:[..._view_scope_workspace]});
 
             // Load the composite module resources.
@@ -2316,10 +2354,10 @@
      * rendering methods but use the additional attributes:
      *     Composer.ATTRIBUTE_TEXT and Composer.ATTRIBUTE_VALUE
      * Only static content uses Composer.ATTRIBUTE_TEXT, dynamic content and
-     * parameters use Composer.ATTRIBUTE_VALUE. Expression identifies variable
-     * declarations during evaluation. Dynamic content has its own rendering
-     * method for generating output. Static content is ignored later during
-     * rendering because it is unchangeable.
+     * parameters use Composer.ATTRIBUTE_VALUE. Composer identifies variable
+     * declarations while preparing expressions. Dynamic content has its own
+     * rendering method for generating output. Static content is ignored later
+     * during rendering because it is unchangeable.
      * @param {Node} selector Text node to be rendered
      * @param {object} object Metadata object of the text node
      */
@@ -2362,8 +2400,8 @@
             // render method for updating the text content of the text node.
 
             // Step 3:
-            // Keep complete matches for later evaluation by Expression, which
-            // returns {variable, result} and identifies declarations itself.
+            // Prepare each complete match for later evaluation by Expression,
+            // which returns {variable, result}.
             // Composer binds named results to the view scope without output;
             // unnamed results are rendered by the expression's text node.
 
@@ -2372,12 +2410,11 @@
                     return "";
                 const node = document.createTextNode("");
                 const serial = node.serial();
-                const object = {serial, element:node, attributes:{}, value:null,
+                const object = {serial, element:node, attributes:{},
+                    expressions:{[ATTRIBUTE_VALUE]:_expression_parse(match)}, value:null,
                     context:[..._view_scope_workspace],
                     render() {
-                        const {type, variable, result} = _expression_eval(
-                            this.serial + ":" + ATTRIBUTE_VALUE,
-                            _execution_context(), this.attributes[ATTRIBUTE_VALUE],
+                        const {type, variable, result} = _expression_eval(this.expressions[ATTRIBUTE_VALUE],
                             EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_DECLARATION);
                         const word = type === EXPRESSION_TYPE_DECLARATION ? "" : result;
                         if (type === EXPRESSION_TYPE_DECLARATION)
@@ -2408,7 +2445,7 @@
                     } else {
                         const node = document.createTextNode(word);
                         const serial = node.serial();
-                        const object = {serial, element:node, attributes:{},
+                        const object = {serial, element:node, attributes:{}, expressions:{},
                             context:[..._view_scope_workspace]};
                         Composer.fire(EVENT_RENDER_NEXT, object.element);
                         object.element.textContent = word;
@@ -2521,15 +2558,14 @@
             selector.appendChild(node));
     };
 
-    const _render_append_locator_content = (selector, object, serial, attribute) => {
+    const _render_append_locator_content = (selector, object, attribute) => {
 
         if (!object.attributes.hasOwnProperty(attribute))
             return;
 
         let value = object.attributes[attribute];
         if ((value || "").match(PATTERN_EXPRESSION_CONTAINS))
-            value = _expression_eval(serial + ":" + attribute,
-                _execution_context(), String(value),
+            value = _expression_eval(object.expressions[attribute],
                 EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
 
         if (value instanceof Document
@@ -2568,12 +2604,11 @@
      * rendering is not repeated.
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
-     * @param {number} serial Serial of the element
      */
-    const _render_attribute_import = (selector, object, serial) => {
+    const _render_attribute_import = (selector, object) => {
         if (!object.attributes.hasOwnProperty(ATTRIBUTE_IMPORT))
             return;
-        _render_append_locator_content(selector, object, serial, ATTRIBUTE_IMPORT);
+        _render_append_locator_content(selector, object, ATTRIBUTE_IMPORT);
         delete object.attributes[ATTRIBUTE_IMPORT];
     };
 
@@ -2588,12 +2623,11 @@
      * repeated on every render because ATTRIBUTE_OUTPUT remains present.
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
-     * @param {number} serial Serial of the element
      */
-    const _render_attribute_output = (selector, object, serial) => {
+    const _render_attribute_output = (selector, object) => {
         if (!object.attributes.hasOwnProperty(ATTRIBUTE_OUTPUT))
             return;
-        _render_append_locator_content(selector, object, serial, ATTRIBUTE_OUTPUT);
+        _render_append_locator_content(selector, object, ATTRIBUTE_OUTPUT);
     };
 
     /**
@@ -2604,15 +2638,13 @@
      * the DOM as is the case when combined with CONDITION.
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
-     * @param {number} serial Serial of the element
      * @throws {Error} In case of an invalid interval
      */
-    const _render_attribute_interval = (selector, object, serial) => {
+    const _render_attribute_interval = (selector, object) => {
         let interval = String(object.attributes[ATTRIBUTE_INTERVAL] || "").trim();
         if (!interval || object.interval)
             return;
-        const identifier = serial + ":" + ATTRIBUTE_INTERVAL;
-        interval = String(_expression_eval(identifier, _execution_context(), interval,
+        interval = String(_expression_eval(object.expressions[ATTRIBUTE_INTERVAL],
             EXPRESSION_TYPE_INTERPOLATION).result);
         if (!interval.match(/^\d*$/))
             throw new Error("Invalid interval: " + interval);
@@ -2647,23 +2679,21 @@
      *            -> tempA = {item, index, data}
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
-     * @param {number} serial Serial of the element
      * @param {object} lock Lock of the render cycle
      * @throws {Error} In case of an invalid iterate
      */
-    const _render_attribute_iterate = (selector, object, serial, lock) => {
+    const _render_attribute_iterate = (selector, object, lock) => {
 
         if (!object.attributes.hasOwnProperty(ATTRIBUTE_ITERATE))
             return;
 
         const expression = object.iterate ? object.iterate.expression
                 : String(object.attributes[ATTRIBUTE_ITERATE] || "").trim();
-        if (!object.iterate && !expression.match(PATTERN_EXPRESSION_DECLARATION))
+        if (!object.iterate && object.expressions[ATTRIBUTE_ITERATE].type !== EXPRESSION_TYPE_DECLARATION)
             throw new Error(`Invalid iterate${expression ? ": " + expression : ""}`);
 
-        const identifier = serial + ":" + ATTRIBUTE_ITERATE;
-        let {variable: name, result: iterate} = _expression_eval(
-            identifier, _execution_context(), expression, EXPRESSION_TYPE_DECLARATION);
+        let {variable: name, result: iterate} = _expression_eval(object.expressions[ATTRIBUTE_ITERATE],
+            EXPRESSION_TYPE_DECLARATION);
         if (!object.iterate) {
             if (name === undefined)
                 throw new Error(`Invalid iterate: ${expression}`);
@@ -2739,9 +2769,8 @@
      * script + style are ignored.
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
-     * @param {number} serial Serial of the element
      */
-    const _render_attributes_update = (selector, object, serial) => {
+    const _render_attributes_update = (selector, object) => {
 
         if (selector.nodeName.match(PATTERN_ELEMENT_IGNORE))
             return;
@@ -2762,8 +2791,7 @@
             let value = String(object.attributes[attribute] || "");
             if (!value.match(PATTERN_EXPRESSION_CONTAINS))
                 return;
-            const identifier = serial + ":" + attribute;
-            value = _expression_eval(identifier, _execution_context(), value,
+            value = _expression_eval(object.expressions[attribute],
                 EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
             // If the type value is undefined, the attribute is removed. Since
             // the attribute contains an expression, the removal is only
@@ -3196,14 +3224,8 @@
             // not affected, because they were not removed from the DOM.
             removed.forEach(_cleanup);
 
-            // Indirectly reclaim cached expression names and scripts.
-            // Expression identifiers use serials only as prefixes; tracking all
-            // keys per removed node would require extra bookkeeping. Retained
-            // render metadata provides an approximate LRU budget, not an exact
-            // count of live cache entries. Apply the same budget to execution
-            // wrappers, whose cache keys describe execution scopes rather than
-            // DOM serials.
-            Expression.prune(_render_meta.size);
+            // Retained metadata provides an approximate budget for execution
+            // wrappers, whose cache keys describe scopes rather than DOM nodes.
             Scripting.prune(_render_meta.size);
 
             // The events about the changes at the DOM are fired batched with

@@ -23,9 +23,6 @@
  * targeting application-provided data that is accessed primarily through
  * queries and transformations.
  *
- * Because DataSource is based on static data, the implementation uses a cache
- * to minimize network access.
- *
  * see also: https://seanox.github.io/composite-js/manuals/datasource.html
  */
 (() => {
@@ -47,9 +44,100 @@
     /** Shadow constant for locator schemas */
     const LOCATOR_SCHEMA_XML = Locator.SCHEMA_XML;
     const LOCATOR_SCHEMA_XSLT = Locator.SCHEMA_XSLT;
-    const LOCATOR_SCHEMA_RAW = Locator.SCHEMA_RAW;
 
     let _locales_selection = null;
+
+    const _fetch = (locator, cache) => {
+
+        if (typeof locator !== "string")
+            throw new Error("Invalid locator: " + String(locator));
+        const source = locator;
+        locator = Locator.parse(locator);
+        if (![LOCATOR_SCHEMA_XML, LOCATOR_SCHEMA_XSLT].includes(locator.schema))
+            throw new Error("Unsupported schema: " + source);
+        if (locator.schema === LOCATOR_SCHEMA_XSLT
+                && locator.query !== undefined)
+            throw new Error("Invalid xslt locator: " + source);
+
+        const explicit = /\.[^/]+$/.test(locator.path);
+        const path = locator.uri.substring(locator.schema.length + 1).split("?")[0];
+        const location = explicit
+            ? `${window.location.contextPath}${path}`
+            : `${DATA}/${DataSource.locale}${path}.${locator.schema}`;
+        const application = new URL(window.location.href);
+        const context = new URL(
+            `${window.location.contextPath.replace(/\/+$/, "")}/`,
+            application).pathname.replace(/\/+$/, "") || "/";
+        const address = new URL(location, application);
+        if (address.origin !== application.origin
+                || (context !== "/"
+                        && address.pathname !== context
+                        && !address.pathname.startsWith(`${context}/`)))
+            throw new Error(`Invalid locator outside application context: ${source}`);
+
+        const data = ((resource) => {
+            if (cache && cache.has(resource))
+                return cache.get(resource).clone();
+            const request = new XMLHttpRequest();
+            request.overrideMimeType("application/xslt+xml");
+            request.open("GET", resource, false);
+            request.send();
+            if (request.status !== 200)
+                throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
+            const response = request.responseXML;
+            if (!response || !response.documentElement)
+                throw new Error(`Invalid XML for ${resource}`);
+            if (cache)
+                cache.set(resource, response);
+            return response.clone();
+        })(address.href);
+
+        if (locator.query === undefined
+                || locator.query === "")
+            return data;
+
+        const result = data.evaluate(locator.query, data, null, XPathResult.ANY_TYPE, null);
+        switch (result.resultType) {
+            case XPathResult.BOOLEAN_TYPE:
+                return result.booleanValue;
+            case XPathResult.NUMBER_TYPE:
+                return result.numberValue;
+            case XPathResult.STRING_TYPE:
+                return result.stringValue;
+        }
+
+        const xml = window.document.implementation.createDocument(null, "collection", null);
+
+        let nodes = [];
+        if (result.resultType !== XPathResult.FIRST_ORDERED_NODE_TYPE
+                && result.resultType !== XPathResult.ANY_UNORDERED_NODE_TYPE)
+            for (let node; node = result.iterateNext();)
+                nodes.push(node);
+        else nodes.push(result.singleNodeValue);
+        nodes = nodes.map(node => {
+            switch (node.nodeType) {
+                case Node.DOCUMENT_NODE:
+                    return node.documentElement.cloneNode(true);
+                case Node.ATTRIBUTE_NODE:
+                    const attribute = xml.createElement("attribute");
+                    attribute.setAttributeNode(node.cloneNode(true));
+                    return attribute;
+                case Node.TEXT_NODE:
+                    const text = xml.createElement("text");
+                    text.textContent = node.textContent;
+                    return text;
+                default:
+                    return node;
+            }
+        });
+
+        if (nodes.length <= 0)
+            return null;
+
+        nodes.forEach(node =>
+            xml.documentElement.appendChild(node));
+        return xml.documentElement.childNodes;
+    };
 
     compliant("DataSource");
     compliant(null, window.DataSource = {
@@ -222,6 +310,7 @@
          * attribute are represented in the node as attributes name and value.
          * Text nodes are also returned as nodes with the name text.
          * The current implementation creates an empty text wrapper node.
+         * Document nodes are returned as deep clones of their document element.
          *
          * @param {string} locator Locator to fetch data for as XMLDocument.
          *     Optionally, an XPath query is also supported. The XPath is
@@ -230,94 +319,11 @@
          * @returns {XMLDocument|string|boolean|number|NodeList|null}
          *     The fetched data as an XMLDocument. When using XPath, it can be
          *     boolean, number, string, NodeList or null.
-         * @throws {Error} In case of invalid arguments
+         * @throws {Error} In case of invalid arguments, resource URL or
+         *     response data
          */
         fetch(locator) {
-
-            if (typeof locator !== "string")
-                throw new Error("Invalid locator: " + String(locator));
-            const source = locator;
-            locator = Locator.parse(locator);
-            if (locator.schema === LOCATOR_SCHEMA_RAW)
-                throw new Error("Invalid locator: " + source);
-            if (locator.schema === LOCATOR_SCHEMA_XSLT
-                    && locator.query !== undefined)
-                throw new Error("Invalid xslt locator: " + source);
-
-            const explicit = /\.[^/]+$/.test(locator.path);
-            const path = locator.uri.substring(locator.schema.length + 1).split("?")[0];
-            const location = explicit
-                ? `${window.location.contextPath}${path}`
-                : `${DATA}/${DataSource.locale}${path}.${locator.schema}`;
-            const application = new URL(window.location.href);
-            const context = new URL(
-                `${window.location.contextPath.replace(/\/+$/, "")}/`,
-                application).pathname.replace(/\/+$/, "") || "/";
-            const address = new URL(location, application);
-            if (address.origin !== application.origin
-                    || (context !== "/"
-                            && address.pathname !== context
-                            && !address.pathname.startsWith(`${context}/`)))
-                throw new Error(`Invalid locator outside application context: ${source}`);
-
-            const data = ((locator) => {
-                const hash = locator.hashCode();
-                if (_cache.hasOwnProperty(hash))
-                    return _cache[hash].clone();;
-                const request = new XMLHttpRequest();
-                request.overrideMimeType("application/xslt+xml");
-                request.open("GET", address.href, false);
-                request.send();
-                if (request.status !== 200)
-                    throw new Error(`HTTP status ${request.status} for ${request.responseURL}`);
-                const data = request.responseXML;
-                _cache[hash] = data;
-                return data.clone();
-            })(address.href);
-
-            if (locator.query === undefined
-                    || locator.query === "")
-                return data;
-
-            const result = data.evaluate(locator.query, data, null, XPathResult.ANY_TYPE, null);
-            switch (result.resultType) {
-                case XPathResult.BOOLEAN_TYPE:
-                    return result.booleanValue;
-                case XPathResult.NUMBER_TYPE:
-                    return result.numberValue;
-                case XPathResult.STRING_TYPE:
-                    return result.stringValue;
-            }
-
-            const xml = window.document.implementation.createDocument(null, "collection", null);
-
-            let nodes = [];
-            if (result.resultType !== XPathResult.FIRST_ORDERED_NODE_TYPE
-                    && result.resultType !== XPathResult.ANY_UNORDERED_NODE_TYPE)
-                for (let node; node = result.iterateNext();)
-                    nodes.push(node);
-            else nodes.push(result.singleNodeValue);
-            nodes = nodes.map(node => {
-                switch (node.nodeType) {
-                    case Node.ATTRIBUTE_NODE:
-                        const attribute = xml.createElement("attribute");
-                        attribute.setAttributeNode(node.cloneNode(true));
-                        return attribute;
-                    case Node.TEXT_NODE:
-                        const text = xml.createElement("text");
-                        text.textContent = node.textContent;
-                        return text;
-                    default:
-                        return node;
-                }
-            });
-
-            if (nodes.length <= 0)
-                return null;
-
-            nodes.forEach(node =>
-                xml.documentElement.appendChild(node));
-            return xml.documentElement.childNodes;
+            return _fetch(locator);
         },
         
         /**
@@ -348,21 +354,16 @@
                     && typeof variants[0] === "string"
                     && variants[0].match(PATTERN_WORD)
                 ? [variants[0], variants.slice(1)] : ["collection", variants];
-            locators.forEach(entry => {
+            locators = locators.map(entry => {
                 if (typeof entry !== "string")
                     throw new TypeError(`Invalid xml locator: ${typeof entry}`);
-                Locator.parse(LOCATOR_SCHEMA_XML, entry);
+                return Locator.parse(LOCATOR_SCHEMA_XML, entry).uri;
             });
 
-            let hash = collector.hashCode() + ":" + locators.join().hashCode();
-            locators.forEach(entry =>
-                hash += ":" + String(entry).hashCode());
-            if (_cache.hasOwnProperty(hash))
-                return _cache[hash].clone();
-
+            const cache = new Map();
             const data = window.document.implementation.createDocument(null, collector, null);
             locators.forEach(entry => {
-                const result = DataSource.fetch(entry);
+                const result = _fetch(entry, cache);
                 if (result instanceof XMLDocument) {
                     data.documentElement.appendChild(result.documentElement.cloneNode(true));
                 } else if (result instanceof NodeList) {
@@ -375,8 +376,7 @@
                 }
             });
 
-            _cache[hash] = data;
-            return data.clone();
+            return data;
         }
     });
 
@@ -392,10 +392,6 @@
         return clone; 
     });
 
-    // XML/XSLT data cache
-    const _cache = {};
-
-    // DataSource.locales
     // List of available locales (as standard marked are at the beginning)
     Object.defineProperty(DataSource, "locales", {
         value: [], enumerable: true
@@ -418,8 +414,7 @@
     request.open("GET", DATA + "/locales.xml", false);
     request.send();
     
-    // DataSource.data
-    // Cache of locales.xml, can also be used by other components
+    // Locale configuration from locales.xml, also available to other components
     Object.defineProperty(DataSource, "data", {
         value: request.status === 200 ? new DOMParser().parseFromString(request.responseText,"text/xml") : null
     });

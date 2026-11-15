@@ -54,11 +54,19 @@ environment of the entire application.
 ### View
 A view is a representation of composites or content that may also contain other
 views and subviews. Views can be static and therefore always shown, or
-path-controlled with the attribute `route`. Paths address the complete chain of
-nested views and show the parent views in addition to the target view.
+path-controlled with the attributes `composite` and `route`. Paths address the
+complete chain of nested routed views and show the parent views in addition to
+the target view. Only composites with `route` contribute path components;
+namespace suffixes such as `@application` in composite IDs are not part of the
+path.
 
 __This behavior requires routing to be enabled by adding the `route` attribute
 to the &lt;body&gt; element.__
+
+Activation is determined during initial rendering and cannot be changed
+afterward. The presence of `route` enables routing; non-empty attribute values
+are ignored with a console warning. If the URL has no hash, routing navigates to
+`#`. An existing hash is processed initially, including registered interceptors.
 
 ```html
 <body route>
@@ -83,13 +91,17 @@ to the &lt;body&gt; element.__
 
 ```
 
+For a routed composite with an additional `condition`, both routing approval and
+the condition must be explicitly `true`. If routing denies approval, the
+condition expression is not evaluated.
+
 ### View Flow
 View flow describes the access control and the sequence of views. The routing
 provides interfaces, events, permission concepts and interceptors with which the
 view flow can be controlled and influenced.
 
 ## Navigation
-Navigation is based on paths that use the URL hash. It is triggered by changing
+Navigation uses paths written in URL-hash notation. It is triggered by changing
 the URL hash in the browser, by using hash links and in JavaScript with
 `window.location.hash`, `window.location.href`, `Routing.route(path)` and
 `Routing.forward(path)`.
@@ -114,45 +126,66 @@ Routing.forward("##");
 Routing.forward("##x");
 ```
 
-Unlike the route method, forwarding is executed directly and does not trigger
-asynchronous forwarding by changing the location hash.
+`Routing.route(path)` changes the URL hash asynchronously. In contrast,
+`Routing.forward(path)` processes navigation to the requested target
+synchronously without changing the browser URL. The target becomes the effective
+routing path used by `Routing.location`, path coverage, view approval,
+`Routing.locate()` and the internal routing history. Relative navigation uses
+this effective path as its base. Rendering follows the composer's normal
+scheduling.
 
-__Routing accepts all paths (routes) and covers the destinations from the root.
-Subsequent path components are treated as path parameters and can be used in the
-business logic of the views.__
+> [!NOTE]
+> Known implementation issue: `Routing.forward()` does not yet apply this
+> contract consistently. View approval and the internal routing history still
+> use the browser URL instead of the forwarded target.
+
+__Routing accepts paths without a matching view and covers the destinations from
+the root. Subsequent path components are treated as path parameters and can be
+used in the business logic of the views.__
+
+With routing active, `Routing.locate(true)` returns an object with the resolved
+view path in `locate` and the remaining path components as strings in `data`.
 
 ## Permission Concept
 The permission concept is based on `permit` methods in the application modules.
-The composer calls the permit method during each (re-)rendering if the
-application module implements it. These return values are possible:
+For routed composites, routing calls `permit()` without arguments when rendering
+evaluates their routing condition, even if the current path does not cover the
+view. The application module must be published under the name and namespace of
+the composite. These return values are evaluated synchronously:
 
 ### undefined / no return value
-The view is shown if the current path covers the path of the view.
+The view is shown if the current path covers the path of the view. This also
+applies if the application module does not implement `permit()`.
 
 ### true
-The view is shown if any parent views are also shown.
+The view is shown independently of path coverage, provided that its parent views
+are shown and any additional `condition` is explicitly `true`.
 
 ### false
 The view and possible sub-views are not shown.
 
 ### string
-The return value is a path. The view and possible sub-views are not shown and
-the page/navigation is redirected to the returned path.
+The return value is a path. The view and possible sub-views are not shown, and
+navigation is redirected to the returned path. The target follows the same path
+rules as other navigation; relative targets use the effective routing path as
+their base. Redirect handling must prevent endless self-redirects and redirect
+cycles.
 
 ```javascript
 const example = {
+    condition: 1,
     permit() {
-        if (condition === 1)
+        if (this.condition === 1)
             return;        
-        if (condition === 2)
+        if (this.condition === 2)
             return true;
-        if (condition === 3)
+        if (this.condition === 3)
             return "#redirect";
         return false;
     }    
 };
 
-#export example;
+expose(example, "example");
 ```
 
 ## Interceptors
@@ -163,10 +196,11 @@ or custom navigation handling and can influence whether the navigation
 continues.
 
 An interceptor is registered with `Routing.customize(path, actor)`. The `path`
-can be either an exact route string or a regular expression. The `actor` is a
+can be either a route string or a regular expression. The `actor` is a
 function that is executed when the specified path matches the requested
 navigation target. The actor is a callback that receives the previous hash and
-the new hash as parameters.
+the new hash as parameters. The previous hash is `null` during initial
+processing.
 
 ```javascript
 Routing.customize("#a#b#c", (previousHash, newHash) => {
@@ -178,11 +212,14 @@ Routing.customize("#a#b#c", (previousHash, newHash) => {
 Interceptors are executed in the order in which they were registered.
 
 All registered interceptors are checked. If an interceptor matches the requested
-path, its actor function is executed. Following interceptors receive the
-potentially modified navigation target.
+path, its actor function is executed. Matching and callback arguments use the
+effective navigation target. If an interceptor redirects navigation, following
+interceptors match against and receive the updated target within the same
+navigation processing.
 
 An interceptor can stop further processing of the current navigation by
-returning `false` explicitly.
+returning `false` explicitly. This skips the remaining interceptors, routing
+history update and view rendering for that event; it does not undo a URL change.
 
 ```javascript
 Routing.customize("#a#b", (oldHash, newHash) => {
@@ -195,6 +232,9 @@ Any other return value does not affect routing.
 
 ### Path matching
 A string interceptor matches the specified path and all nested paths below it.
+String patterns must start with `#` and use the supported ASCII range; invalid
+string patterns are ignored. Matching uses the effective navigation target,
+including redirects by preceding interceptors.
 
 ```javascript
 Routing.customize("#a", actor);
@@ -215,6 +255,9 @@ but not:
 #c#b#a
 ```
 
+A string ending in `#`, such as `#a#`, matches paths with that prefix but not
+`#a` itself. The root pattern `#` matches all target hashes.
+
 Regular expressions can be used for pattern-based matching:
 
 ```javascript
@@ -222,8 +265,8 @@ Routing.customize(/^#a#\d+$/, actor);
 ```
 
 ### Navigation changes
-Interceptors do not create entries in the routing history. They are executed
-within the current navigation event.
+Interceptors are executed within the current navigation event, before the
+routing history is updated. Their invocation does not create a separate entry.
 
 An interceptor can modify the target navigation if required. For example,
 `window.location.replace()` can be used to replace the current URL without
@@ -235,8 +278,9 @@ Routing.customize("#old-path", (oldHash, newHash) => {
 });
 ```
 
-__Changes made by interceptors directly affect the following path resolution and
-view rendering.__
+__The changed target is used by subsequent interceptors, path resolution, view
+approval and the internal routing history. Changes to the URL can also trigger
+another `hashchange` event.__
 
 ## Paths
 Paths are used for navigation, routing and view flow control. The target can be
@@ -249,16 +293,17 @@ https://example.local/example/#path
 
 Similar to a file system, absolute and relative paths are supported. Paths
 consist of case-sensitive words that only use 7-bit ASCII characters above the
-space character. Characters outside this range are URL encoded. The words are
-separated by the separator character (`#`). 
+space character. Characters outside this range must be URL encoded before
+passing a path to the routing methods; unsupported characters cause an error.
+The words are separated by the separator character (`#`).
 
 ```
 #a#b#c#d
 ```
 
 Repeated use of the separator (`#`) allows jumps back in the path to be mapped.
-The number of repetitions indicates the number of returns in the direction of
-the root.
+Each separator after the first removes one path component in the direction of
+the root. Returns beyond the root remain at the root.
 
 ```
 #a#b#c#d##x   -> #a#b#c#x
@@ -272,7 +317,8 @@ The navigation with these paths is described in chapter
 The following path types are supported.
 
 ### Root Path
-These paths are empty or contain only one separator character.
+The root path consists of one separator character (`#`). An empty string passed
+to `Routing.route(path)` or `Routing.forward(path)` retains the current path.
 
 ```html
 <a href="#">Back to the root</a>

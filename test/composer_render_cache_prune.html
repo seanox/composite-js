@@ -8,21 +8,17 @@
 
         Test.activate();
 
-        const pruneLimits = {expression:[], scripting:[]};
-        const expressionPrune = Expression.prune;
+        const pruneLimits = [];
         const scriptingPrune = Scripting.prune;
-        Expression.prune = function(size) {
-            pruneLimits.expression.push(size);
-            return expressionPrune.call(this, size);
-        };
         Scripting.prune = function(size) {
-            pruneLimits.scripting.push(size);
+            pruneLimits.push(size);
             return scriptingPrune.call(this, size);
         };
 
         const delay = () => new Promise(resolve => window.setTimeout(resolve, 0));
 
         Test.create({timeout:10000, async test() {
+            Assert.assertUndefined(Expression.prune);
             const fixture = document.createElement("div");
             document.body.appendChild(fixture);
             let stableLimit;
@@ -34,22 +30,16 @@
                     fixture.appendChild(element);
                     await delay();
 
-                    const expressionCount = pruneLimits.expression.length;
-                    const scriptingCount = pruneLimits.scripting.length;
+                    const count = pruneLimits.length;
                     fixture.removeChild(element);
                     await delay();
 
-                    Assert.assertTrue(pruneLimits.expression.length > expressionCount);
-                    Assert.assertTrue(pruneLimits.scripting.length > scriptingCount);
+                    Assert.assertTrue(pruneLimits.length > count);
 
-                    const expressionLimit = pruneLimits.expression[
-                        pruneLimits.expression.length -1];
-                    const scriptingLimit = pruneLimits.scripting[
-                        pruneLimits.scripting.length -1];
-                    Assert.assertEquals(expressionLimit, scriptingLimit);
+                    const limit = pruneLimits[pruneLimits.length -1];
                     if (stableLimit === undefined)
-                        stableLimit = expressionLimit;
-                    Assert.assertEquals(stableLimit, expressionLimit);
+                        stableLimit = limit;
+                    Assert.assertEquals(stableLimit, limit);
                 }
             } finally {
                 if (fixture.parentNode)

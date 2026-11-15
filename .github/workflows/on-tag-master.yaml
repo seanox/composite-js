@@ -1,0 +1,110 @@
+name: "🟦 Tag: Release"
+
+on:
+  push:
+    tags:
+      - "**"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate tag
+    runs-on: ubuntu-latest
+    outputs:
+      WORKFLOW_STATE: ${{ steps.tag.outputs.WORKFLOW_STATE }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - name: Validate tag format
+        id: tag
+        shell: bash
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$TAG_NAME" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "WORKFLOW_STATE=RELEASE_CANDIDATE" >> "$GITHUB_OUTPUT"
+            echo "version=$TAG_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "WORKFLOW_STATE=NONE" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping tag '$TAG_NAME'; expected digits separated by dots."
+          fi
+
+  compose:
+    name: Compose application
+    needs: validate
+    if: needs.validate.outputs.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current source
+        uses: actions/checkout@v7
+      - name: Compose application
+        uses: ./.github/actions/compose
+      - name: Upload application artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: application-artifacts
+          path: release/*.js
+          if-no-files-found: error
+          retention-days: 1
+
+  playwright:
+    name: Playwright tests
+    needs: [validate, compose]
+    if: needs.validate.outputs.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+    uses: ./.github/workflows/playwright.yaml
+    with:
+      artifacts: application-artifacts
+
+  release:
+    name: Create release artifacts
+    needs: [validate, playwright]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set workflow state
+        env:
+          TAG_STATE: ${{ needs.validate.outputs.WORKFLOW_STATE }}
+          PLAYWRIGHT_RESULT: ${{ needs.playwright.result }}
+        shell: bash
+        run: |
+          if [[ "$TAG_STATE" == "RELEASE_CANDIDATE" && "$PLAYWRIGHT_RESULT" == "success" ]]; then
+            echo "WORKFLOW_STATE=RELEASE_CANDIDATE" >> "$GITHUB_ENV"
+          else
+            echo "WORKFLOW_STATE=NONE" >> "$GITHUB_ENV"
+          fi
+      - name: Checkout current source
+        if: env.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+        uses: actions/checkout@v7
+      - name: Setup Java
+        if: env.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "11"
+      - name: Setup Node.js
+        if: env.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24"
+      - name: Setup Ant
+        if: env.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ant
+      - name: Create release artifacts
+        if: env.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.validate.outputs.version }}
+        run: ant -f development/build.xml -Drelease.version="$RELEASE_VERSION" release
+      - name: Upload release artifacts
+        if: env.WORKFLOW_STATE == 'RELEASE_CANDIDATE'
+        uses: actions/upload-artifact@v7
+        with:
+          name: composite-js-release-${{ needs.validate.outputs.version }}
+          path: |
+            release/composite-js-${{ needs.validate.outputs.version }}.zip
+            release/composite-js-tutorials-${{ needs.validate.outputs.version }}.zip
+          if-no-files-found: error

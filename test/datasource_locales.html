@@ -14,36 +14,35 @@
 
         Test.activate();
 
-        Test.create({test() {
+        Test.create({name:"DataSource selects the default from its available locales", test() {
             Assert.assertEquals("xx", DataSource.locale);
+            Assert.assertEquals("xx", DataSource.locales[0]);
+            ["xx", "xde", "xen"].forEach(locale =>
+                Assert.assertTrue(DataSource.locales.includes(locale)));
         }});
 
-        Test.create({test() {
-            DataSource.localize("xx");
-            Assert.assertEquals("xx", DataSource.locale);
-            DataSource.localize("xde");
-            Assert.assertEquals("xde", DataSource.locale);
-            DataSource.localize("xen");
-            Assert.assertEquals("xen", DataSource.locale);
-            DataSource.localize("xx");
-            Assert.assertEquals("xx", DataSource.locale);
+        Test.create({name:"localize selects available locales and normalizes case and whitespace", test() {
+            const locale = DataSource.locale;
+            try {
+                [["xde", "xde"], [" XEN ", "xen"], ["xx", "xx"]].forEach(([input, expected]) => {
+                    DataSource.localize(input);
+                    Assert.assertEquals(expected, DataSource.locale);
+                });
+            } finally {
+                DataSource.localize(locale);
+            }
         }});
         
-        Test.create({expected:/\bLocale not available/i, test() {
-            DataSource.localize("xxx");
-        }});
-        Test.create({expected:/\bLocale not available/i, test() {
-            DataSource.localize("");
-        }});         
-        Test.create({expected:/\bLocale not available/i, test() {
-            DataSource.localize(" ");
-        }});         
-        Test.create({expected:/\bInvalid locale: undefined/i, test() {
-            DataSource.localize();
-        }});         
-        Test.create({expected:/\bInvalid locale: object/i, test() {
-            DataSource.localize(null);
-        }});         
+        [
+            ["xxx", /\bLocale not available/i],
+            ["", /\bLocale not available/i],
+            [" ", /\bLocale not available/i],
+            [undefined, /\bInvalid locale: undefined/i],
+            [null, /\bInvalid locale: object/i]
+        ].forEach(([locale, expected]) =>
+            Test.create({name:"localize rejects " + JSON.stringify(locale), expected, test() {
+                DataSource.localize(locale);
+            }}));
         
         Test.start({auto:true});
     </script>

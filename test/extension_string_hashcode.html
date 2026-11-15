@@ -15,20 +15,28 @@
         Test.activate();
       
         Test.create({test() {
-            Assert.assertEquals("2U90", (" a").hashCode());
-            Assert.assertEquals("32CF0", ("a ").hashCode());
-            Assert.assertEquals("3Q2N0", (" a ").hashCode());
-            Assert.assertEquals("22P0", ("a").hashCode());
+            Assert.assertEquals("2U9", (" a").hashCode());
+            Assert.assertEquals("32CF", ("a ").hashCode());
+            Assert.assertEquals("3Q2N", (" a ").hashCode());
+            Assert.assertEquals("22P", ("a").hashCode());
         }});
-        
+
         Test.create({test() {
-            Assert.assertEquals("B1VXT0PNSYNNG5", ("Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.").hashCode());
-        }});      
-  
+            Assert.assertEquals("10", ("").hashCode());
+            Assert.assertEquals("10", ("\u0000").hashCode());
+        }});
+
         Test.create({test() {
-            Assert.assertEquals("B1VXT0PNSYMRG5", ("Lorem ipsum dolor sit amet, consetetur sadipscing Elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.").hashCode());
-        }});      
-  
+            Assert.assertEquals("6TO5X38", ("hello world").hashCode());
+            Assert.assertEquals("7144YKU8", (("A").repeat(32)).hashCode());
+            Assert.assertEquals("31MO", ("Aa").hashCode());
+            Assert.assertEquals("31MO", ("BB").hashCode());
+            Assert.assertEquals("71F1YWIC", ("Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.").hashCode());
+            Assert.assertEquals("6MWK6IC", ("Lorem ipsum dolor sit amet, consetetur sadipscing Elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.").hashCode());
+            Assert.assertEquals("511ZZ7", ("\uD83D\uDE00").hashCode());
+            Assert.assertEquals("416O0", ("\uD800").hashCode());
+        }});
+
         Test.start({auto:true});
     </script>
   </head>

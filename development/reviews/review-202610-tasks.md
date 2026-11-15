@@ -8,7 +8,7 @@ Entwickler und Coding-Agenten. Es ergaenzt den strukturierten Plan
 [review-202610-tasks.yaml](review-202610-tasks.yaml). Die IDs `R01` bis `R52`
 entsprechen unveraendert den Befundnummern 1 bis 52 des Reviews.
 
-**Dokumentierter Status:** R01, R02, R11 und R38-R41 sind als erledigt
+**Dokumentierter Status:** R01, R02, R11 und R36-R41 sind als erledigt
 gekennzeichnet. Die uebrigen Aufgaben sind offen. Dieser Status wird durch die
 Ergaenzung der Loesungsansaetze nicht erneut als Laufzeitergebnis bestaetigt.
 Dieses Dokument beschreibt die Arbeitsauftraege und ihren Bearbeitungsstand. Die
@@ -1927,9 +1927,9 @@ gemaess `manuals\routing.md` erhalten.
 
 **DataSource-Caches mit vollstaendigen Ressourcenidentitaeten adressieren**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R32](#r32), [R34](#r34), [R35](#r35), [R43](#r43)
-**Fundstellen:** `sources\datasource.js:250-263, 344-348`
+**Fundstellen:** `sources\datasource.js:263-277, 349-378, 394-398`
 
 **Konkreter Loesungsansatz**
 
@@ -1940,15 +1940,17 @@ unterschiedliche XPath-Abfragen dasselbe Quelldokument verwenden koennen.
 Cache-Treffer lauten `documents.has(url)`/`documents.get(url).clone()`;
 erst nach erfolgreichem Laden und Validieren gemaess R43 `set(url, data)`.
 
-Der Collection-Key kann per
-`JSON.stringify([collector, entries])` entstehen, wobei `entries` eine
-geordnete Folge aus Ressourcenadresse und XPath je Eingabe ist.
+Der Collection-Key ist `JSON.stringify([collector, locators])`, wobei
+`locators` die geordneten, normalisierten Locator-URIs einschliesslich
+XPath enthaelt. Dies verwendet denselben Map-/Signatur-Ansatz wie
+`sources\scripting.js`.
 Strukturierte String-Serialisierung verhindert Mehrdeutigkeiten durch
 Kommas oder andere Trennzeichen im Locator. Ein direkt als Map-Key
 verwendetes neu erzeugtes Array waere falsch: Arrays werden nach Identitaet
 verglichen und ergaben bei jedem Aufruf einen Cache-Miss.
-R32 liefert die sprachabhaengig aufgeloesten Adressen. Eine `WeakMap`
-ist fuer diese String-Identitaeten ungeeignet.
+R32 erweitert die Identitaet um die sprachabhaengig aufgeloesten Adressen
+und bleibt separat offen. Eine `WeakMap` ist fuer diese String-Identitaeten
+ungeeignet.
 
 **Problem und Ziel:** `hashCode()` ist keine eindeutige Ressourcenidentitaet.
 Beispielsweise koennen `Aa.xml` und `BB.xml` denselben Schluessel erzeugen.
@@ -1966,13 +1968,20 @@ Ein Cache-Treffer darf nie das Dokument einer anderen Ressource liefern.
 
 **Regression und Abnahme**
 
-- [ ] Lade `Aa.xml` und `BB.xml` mit verschiedenen Inhalten und kollidierenden Hashes; beide werden angefordert und korrekt geliefert.
-- [ ] Collections mit kollidierenden Einzelhashes, unterschiedlicher Reihenfolge oder anderem Collector bleiben unterscheidbar.
-- [ ] Ein wiederholter identischer Abruf nutzt den Cache, liefert aber einen unabhaengigen Klon.
+- [x] Lade `Aa.xml` und `BB.xml` mit verschiedenen Inhalten und kollidierenden Hashes; beide werden angefordert und korrekt geliefert.
+- [x] Collections mit kollidierenden Einzelhashes, unterschiedlicher Reihenfolge oder anderem Collector bleiben unterscheidbar.
+- [x] Ein wiederholter identischer Abruf nutzt den Cache, liefert aber einen unabhaengigen Klon.
 
 **Testansatz:** `test\datasource_locator.html`, `test\datasource_collect.html`.
 **Erledigt, wenn:** Verschiedene normalisierte Ressourcen- oder
 Collection-Identitaeten keinen falschen Cache-Treffer erzeugen.
+
+**Abnahme 2026-11-13:** Die Regressionen reproduzierten die Cache-Kollisionen
+vor der Korrektur. Mit den getrennten Maps bestehen sieben betroffene
+Testseiten in Blink, Gecko und WebKit mit jeweils 70 Aufgaben ohne Fehler.
+Die Tests belegen beide HTTP-Abrufe, Wiederverwendung normalisierter
+Identitaeten, XPath-Trennung, Reihenfolge und unabhaengige Klone. Build
+und ES2015-Bundle-Lint sind erfolgreich.
 
 ### R32
 
@@ -2203,11 +2212,13 @@ Locator kann dadurch mit `URIError` scheitern.
 **Erledigt, wenn:** Gueltige Prozentliterale erhalten bleiben, ohne die
 Kontextpfad-Normalisierung zu schwaechen.
 
-### R36
+### ~~R36~~
+<details>
+  <summary>Details</summary>
 
-**Doppelte Message-Keys im flachen Speicher erkennen**
+**~~Doppelte Message-Keys im flachen Speicher erkennen~~**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R50](#r50)
 **Fundstellen:** `sources\messages.js:65-68`
 
@@ -2238,20 +2249,36 @@ Ein Duplikat fuehrt deshalb zu `Cannot redefine property` und stoppt weitere Lab
 
 **Regression und Abnahme**
 
-- [ ] Ein globales und ein spaeteres Modul-Label `shared.title` behalten den ersten Wert ohne redefine-TypeError.
-- [ ] Ein neues Label hinter diesem Duplikat wird geladen.
-- [ ] Einfache/gepunktete Duplikate sowie Sprach- und Modulladevorgaenge halten dieselbe Regel ein.
+- [x] Ein globales und ein spaeteres Modul-Label `shared.title` behalten den ersten Wert ohne redefine-TypeError.
+- [x] Ein neues Label hinter diesem Duplikat wird geladen.
+- [x] Einfache/gepunktete Duplikate sowie Sprach- und Modulladevorgaenge halten dieselbe Regel ein.
 
 **Testansatz:** `test\messages_locales.html`,
 `test\messages_locales_module.html`.
 **Erledigt, wenn:** Der Vertrag erstes Vorkommen gewinnt eingehalten wird,
 ohne den verbleibenden Ladevorgang abzubrechen.
 
-### R37
+> Erledigt durch Commit `9e1e028` vom 2026-11-06:
+> `sources\messages.js:65` verwendet
+> `Object.prototype.hasOwnProperty.call(Messages, key)` statt
+> `Namespace.exists("Messages", key)`. Bestehende flache Properties werden
+> nicht erneut definiert; der erste Wert bleibt erhalten und weitere
+> Modul-Labels werden geladen.
+> Die Abnahmekriterien wurden am 2026-11-12 mit den aktuellen Quellen in
+> Chromium gezielt bestaetigt, einschliesslich beider Darstellungen
+> (`Messages` und `messages`) nach Sprachwechseln.
+> Ein gezielter, dauerhaft hinterlegter Regressionstest fehlt weiterhin;
+> die Key-/Reserviert-Pruefung aus R50 bleibt separat offen.
 
-**Message-Platzhalter einmalig mit literalen Daten ersetzen**
+</details>
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+### ~~R37~~
+<details>
+  <summary>Details</summary>
+
+**~~Message-Platzhalter einmalig mit literalen Daten ersetzen~~**
+
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches`
 **Fundstellen:** `sources\messages.js:82-85`
 
@@ -2291,13 +2318,31 @@ und Bereinigung veraendert. Werte muessen Daten bleiben, keine zweite Vorlage.
 
 **Regression und Abnahme**
 
-- [ ] `Hello {0}!` mit `"$&"` ergibt exakt `Hello $&!`.
-- [ ] `Hello {0} {1}!` mit `"{1}"` und `"WORLD"` ergibt exakt `Hello {1} WORLD!`.
-- [ ] Wiederholte/fehlende Platzhalter, mehrstellige Indizes, leere Werte und weitere Dollar-Sequenzen funktionieren.
+- [x] `Hello {0}!` mit `"$&"` ergibt exakt `Hello $&!`.
+- [x] `Hello {0} {1}!` mit `"{1}"` und `"WORLD"` ergibt exakt `Hello {1} WORLD!`.
+- [x] Wiederholte/fehlende Platzhalter, mehrstellige Indizes, leere Werte und weitere Dollar-Sequenzen funktionieren.
 
 **Testansatz:** `test\messages_locales.html`.
 **Erledigt, wenn:** Keine eingesetzten Daten als Replacement-Syntax oder neue
 Message-Vorlage interpretiert werden.
+
+> Erledigt am 2026-11-12: `sources\messages.js` verwendet einen einzigen
+> `replace`-Aufruf mit Replacement-Funktion auf der Originalvorlage.
+> Eingesetzte Dollar-Sequenzen und Platzhaltertexte bleiben literal;
+> fehlende Argumente werden entfernt. Kanonische Indizes, wiederholte
+> Platzhalter und die Unterscheidung zwischen fehlenden Argumenten und
+> explizitem `undefined` bleiben erhalten.
+> Sieben Regressionstests in `test\messages_locales.html` reproduzieren den
+> Fehler vor der Korrektur und bestehen danach. Zusaetzliche Kontrollen
+> decken mehrstellige Indizes, fuehrende Nullen, leere Werte, `null`,
+> `undefined`, Booleans, Zahlen, ungenutzte Werte und fehlende Labels ab.
+> Fixtures: `test\data\locales.xml`; CHANGES ist ergaenzt.
+> Validierung mit frisch isoliert gebauten Bundles: je zwei Testseiten und
+> 18 Tasks ohne Fehler in Blink, Gecko und WebKit. Build und ES2015-Pruefung
+> sind erfolgreich; Goanna wurde nicht ausgefuehrt.
+> Vorhandene lokale generierte Bundles wurden nicht ueberschrieben.
+
+</details>
 
 ### R38
 
@@ -2608,7 +2653,7 @@ bestehenden Verbraucher erreichen, ohne Invarianten oder Batching zu brechen.
 
 **XML-Parsergebnis vor dem Cache-Eintrag validieren**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `aufloesung_caches` | **Abstimmung:** [R31](#r31)
 **Fundstellen:** `sources\datasource.js:250-262`
 
@@ -2616,19 +2661,21 @@ bestehenden Verbraucher erreichen, ohne Invarianten oder Batching zu brechen.
 
 Setze die Validierung unmittelbar nach der HTTP-Statuspruefung und
 vor jedem `_cache`-/Map-Schreibzugriff. Verlange ein vorhandenes
-XML-Dokument mit `documentElement`. Pruefe erkannte browserseitige
-Parserfehler anhand ihrer charakteristischen Dokumentwurzel und
-gegebenenfalls Parserfehler-Namespace, nicht mit einer pauschalen
-Suche nach irgendeinem Nutzdatenelement namens `parsererror`.
+XML-Dokument mit `documentElement`. `XMLHttpRequest` parst die Antwort bereits
+und liefert bei XML-Parsefehlern `responseXML=null`. Pruefe deshalb nur dieses
+Parsergebnis und die Dokumentwurzel; erneutes Parsen und eine Erkennung
+browserinterner Parserfehler-Strukturen oder Namespaces sind nicht noetig.
+Elemente namens `parsererror` bleiben regulaere Nutzdaten.
 
 Bei Fehler einen `Error` mit angeforderter Ressourcenadresse und
 Parsefehlerdiagnose werfen; kein `null` und kein Fehlerobjekt als
 positiven Cache-Wert speichern. Erst danach `documents.set(url, data)`
 aus R31 und `data.clone()` ausfuehren. Ein erneuter Abruf derselben
 URL trifft somit keinen vergifteten Eintrag. Fuer den Regressionstest
-die erste und zweite Antwort derselben lokalen URL kontrollieren
-und die Request-Anzahl mitpruefen; ein Test nur mit einer neuen URL
-wuerde den Cachefehler nicht nachweisen.
+dieselbe fehlerhafte lokale Datei zweimal laden und beide XML-Ladefehler
+pruefen. Ueber `Composer.EVENT_HTTP_LOAD` fuer genau diese URL zwei
+abgeschlossene XHR-Ladevorgaenge mit Status 200 nachweisen; ein Test nur
+mit einer neuen URL wuerde den Cachefehler nicht nachweisen.
 
 **Problem und Ziel:** HTTP 200 wird ungeprueft als erfolgreich geparstes XML
 behandelt. `responseXML=null` wird gecacht und verursacht danach bei jedem
@@ -2638,17 +2685,17 @@ Abruf einen `clone`-TypeError, selbst wenn die Ressource inzwischen repariert is
 
 1. Validiere `responseXML` vor Cache-Schreibzugriff und Klonen als verwendbares
    XML-Dokument.
-2. Erkenne browsertypische Parserfehler-Dokumente gezielt. Lehne nicht
-   pauschal beliebige Nutzdatenelemente mit einem aehnlichen Namen ab.
+2. Nutze das native XHR-Parsergebnis, ohne XML-Nutzdaten anhand von
+   Elementnamen, Namespaces oder Strukturen als Parserfehler abzulehnen.
 3. Melde einen Parsefehler mit Ressourcenbezug und hinterlasse keinen
    positiven Cache-Eintrag.
 4. Erlaube einen erneuten Request auf dieselbe inzwischen korrigierte Ressource.
 
 **Regression und Abnahme**
 
-- [ ] HTTP 200 mit `<root>` erzeugt eine ausdrueckliche XML-Ladediagnose statt eines `null.clone`-TypeError.
-- [ ] Liefert dieselbe URL danach gueltiges XML, erfolgt ein zweiter Request und der Abruf gelingt.
-- [ ] Leere Antworten, Parserfehlerdarstellungen der Browser und regulaeres XML werden passend behandelt.
+- [x] HTTP 200 mit `<root>` erzeugt eine ausdrueckliche XML-Ladediagnose statt eines `null.clone`-TypeError.
+- [x] Zwei Abrufe derselben fehlerhaften URL melden jeweils den XML-Ladefehler.
+- [x] Zwei `Composer.EVENT_HTTP_LOAD`-Ereignisse mit Status 200 belegen beide HTTP-Ladevorgaenge ohne Request-Mocks.
 
 **Testansatz:** `test\datasource_locator.html`,
 `test\composer_render_import_datasource.html`.

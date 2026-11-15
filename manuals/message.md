@@ -40,38 +40,59 @@ separately below.
 </locales>
 ```
 
-The language is selected automatically from the browser language setting. If
-that language is not supported, the language declared as `default` is used.
-JavaScript can change the language and locale at runtime with
-`DataSource.localize()` -- see [Locales](datasource.md#locales).
+Label values are taken from the non-empty `value` attribute, otherwise from the
+element's text content. Surrounding whitespace is removed and JavaScript-style
+escape sequences such as `\n` are decoded. Keys are case-sensitive; use
+dot-separated identifiers containing ASCII letters, digits and underscores, each
+starting with a letter or underscore.
 
-If a key occurs more than once within the locales, the first occurrence is used.
-Therefore, messages cannot be overwritten.
+The language is selected automatically from the browser's preferred languages,
+also considering the base language of regional settings. If no supported
+language matches, the language declared as `default` is used, or the first
+locale if no default is declared. JavaScript can change the language and locale
+at runtime with `DataSource.localize("de")` -- see [Locales](
+    datasource.md#locales). Only locales declared in `data/locales.xml` are
+accepted; an unavailable locale causes an error.
 
-Modules can also provide locales/messages in their module directory. These are
-loaded in addition to the locales/messages from the data directory, including at
-runtime.
+If a key occurs more than once within the selected locale, the first occurrence
+is used. Therefore, loaded messages cannot be overwritten. Only labels of the
+selected locale are loaded; missing labels do not fall back to another locale.
 
-After loading the application, Messages are available as an associative array.
-They can be used directly in JavaScript and in markup expressions.
+Modules can also provide locales/messages as XML resources alongside their other
+resources, for example `modules/contact.xml` for the composite `contact`. These
+files use the same `<locales>` structure and are loaded when the module's
+resources are first included, including at runtime. Messages from the data
+directory take precedence, followed by those from previously loaded modules.
+
+After loading the application, labels are available through the global objects
+`Messages` and `messages`. `Messages` provides string values by key; `messages`
+provides an object tree whose levels correspond to dots in the keys. Its label
+objects convert to the message text when used as strings. Both can be used
+directly in JavaScript and in markup expressions.
 
 ```javascript
 const title = Messages["contact.title"];
 ```
 ```javascript
-const title = messages.contact.title;
+const title = String(messages.contact.title);
 ```
 ```html
-<h1 output="{{Messages['contact.title']}}"/>
+<h1 output="{{Messages['contact.title']}}"></h1>
 ```
 ```html
-<h1 output="{{messages.contact.title}}"/>
+<h1 output="{{messages.contact.title}}"></h1>
 ```
 
+`DataSource.localize(...)` rebuilds both objects for the selected locale,
+including messages from already loaded modules. Previously stored references
+still refer to the old objects or texts.
+
 Messages can contain placeholders that are populated at runtime with
-`Messages.populate(label, ...values)`. The label is used as a template with
-placeholders. Values are passed as a list with spread notation. Each placeholder
-is a number that refers to a position in the value list.
+`Messages.populate(label, ...values)`. The `label` argument is the message key;
+its text is used as a template and the method returns the populated string.
+Values are passed as individual arguments. Each placeholder is a number in
+braces that refers to a zero-based position in the value list: `{0}` refers to
+the first value.
 
 
 ```xml
@@ -85,14 +106,16 @@ is a number that refers to a position in the value list.
 </locales>
 ```
 ```html
-<h1 output="{{Messages.populate('welcome', 'Mr.', 'Doe', 'with extended user rights')}}"/>
+<h1 output="{{Messages.populate('welcome', 'Mr.', 'Doe', 'with extended user rights')}}"></h1>
 ```
 ```javascript
 const welcome = Messages.populate("welcome", "Mr.", "Doe", "with extended user rights");
 ```
 
-Placeholders can be used multiple times. Excess placeholders or placeholders for
-which no value has been specified are removed from the generated message.
+Placeholders can be used multiple times. Placeholders for which no value has
+been specified are removed from the generated message; unused values are
+ignored. A missing key returns `undefined` from `Messages[key]`;
+`Messages.populate(...)` returns an empty string for a missing label.
 
 
 

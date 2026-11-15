@@ -15,8 +15,7 @@
         Test.activate();
 
         Test.create({test() {
-            const pattern = document.querySelector("script[type='text/test']").innerText.replace(/\s+/g, " ").trim();
-            Assert.assertEquals(pattern, document.body.innerText.replace(/\s+/g, " ").trim());
+            Assert.assertSameTo("script[type='text/test']", document.body.textContent);
         }});
 
         Test.start({auto:true});

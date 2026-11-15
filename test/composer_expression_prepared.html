@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-debug-testing.js"></script>
+    <script>
+      Test.activate();
+
+      const preparedModel = {value: 7, visible: true, items: [1, 2]};
+      const delay = () => new Promise(resolve => window.setTimeout(resolve, 0));
+      const metadata = node => window.___render_meta.get(node.serial());
+
+      for (const name of ["name", "$", "$amount", "item$2", "__"])
+          Test.create({name: "Composer parses declarations without evaluating them", test() {
+              const parsed = window.___expression_parse(" \n{{" + name
+                  + ": preparedModel.value :and missingValue}}\t");
+              Assert.assertEquals("declaration", parsed.type);
+              Assert.assertEquals(name, parsed.variable);
+              Assert.assertEquals("preparedModel.value && missingValue", parsed.script);
+          }});
+
+      for (const whitespace of [" ", "\t", "\n", "\r", "\r\n", "\u2028", "\u2029"])
+          Test.create({name: "Whitespace before a colon remains JavaScript", test() {
+              const script = "name" + whitespace + ": preparedModel.value";
+              const parsed = window.___expression_parse("{{" + script + "}}");
+              Assert.assertEquals("value", parsed.type);
+              Assert.assertUndefined(parsed.variable);
+              Assert.assertEquals(script, parsed.script);
+          }});
+
+      Test.create({name: "Markup parsing stops at the first closing delimiter", test() {
+          for (const source of ["{{1}}{{2}}", "{{1}} after }}",
+              "{{'a }} b'}}", "{{name: 'a }} b'}}"])
+              Assert.assertEquals("interpolation",
+                  window.___expression_parse(source).type);
+          const escaped = window.___expression_parse(String.raw`{{name: 'a \}\} b'}}`);
+          Assert.assertEquals("declaration", escaped.type);
+          Assert.assertEquals("name", escaped.variable);
+      }});
+
+      Test.create({name: "Long and multiline declarations preserve their prepared scripts", test() {
+          const script = "const text = '" + "a: b; ".repeat(1000)
+              + "'; // Current value\ntext.length + preparedModel.value";
+          const parsed = window.___expression_parse("{{$answer: " + script + "}}");
+          Assert.assertEquals("$answer", parsed.variable);
+          Assert.assertEquals(script, parsed.script);
+          Assert.assertEquals(6007,
+              Expression.eval({preparedModel}, parsed.variable, parsed.script).result);
+          const comment = "name/* comment */: preparedModel.value";
+          const value = window.___expression_parse("{{" + comment + "}}");
+          Assert.assertEquals("value", value.type);
+          Assert.assertUndefined(value.variable);
+          Assert.assertEquals(comment, value.script);
+      }});
+
+      Test.create({name: "Node metadata reuses prepared structures through rendering and moves", async test() {
+          const fixture = document.createElement("div");
+          const source = "before {{preparedModel.value}} after";
+          const replace = String.prototype.replace;
+          let parses = 0;
+          String.prototype.replace = function(...variants) {
+              if (String(this) === source
+                      && variants[0] === Composer.PATTERN_EXPRESSION_INTERPOLATION)
+                  parses++;
+              return replace.apply(this, variants);
+          };
+          fixture.innerHTML = '<div class="left"><span title="before {{preparedModel.value}} after"'
+              + ' data-other="{{preparedModel.value + 1}}">{{preparedModel.value}}</span></div>'
+              + '<div class="right"></div>';
+          document.body.appendChild(fixture);
+          try {
+              await delay();
+              const node = fixture.querySelector("span");
+              const object = metadata(node);
+              const text = node.firstChild;
+              const textObject = metadata(text);
+              Assert.assertTrue(Boolean(object.expressions));
+              Assert.assertTrue(Boolean(textObject.expressions));
+              const title = object.expressions.title;
+              const other = object.expressions["data-other"];
+              const value = textObject.expressions.value;
+              Assert.assertEquals(1, parses);
+              Assert.assertNotSame(title, other);
+              Assert.assertEquals("before 7 after", node.title);
+              preparedModel.value = 8;
+              Composer.render(fixture);
+              await delay();
+              Assert.assertEquals("before 8 after", node.title);
+              Assert.assertEquals("9", node.getAttribute("data-other"));
+              Assert.assertEquals("8", node.textContent);
+              Assert.assertSame(title, object.expressions.title);
+              Assert.assertSame(other, object.expressions["data-other"]);
+              Assert.assertSame(value, textObject.expressions.value);
+              Assert.assertEquals(1, parses);
+              fixture.querySelector(".right").appendChild(node);
+              await delay();
+              Assert.assertSame(object, metadata(node));
+              Assert.assertSame(title, metadata(node).expressions.title);
+              node.remove();
+              await delay();
+              Assert.assertFalse(window.___render_meta.has(node.serial()));
+              Assert.assertFalse(window.___render_meta.has(text.serial()));
+              const replacement = document.createElement("span");
+              replacement.setAttribute("title", "{{preparedModel.value + 2}}");
+              fixture.appendChild(replacement);
+              await delay();
+              Assert.assertEquals("10", replacement.title);
+              Assert.assertNotSame(other, metadata(replacement).expressions.title);
+          } finally {
+              String.prototype.replace = replace;
+              preparedModel.value = 7;
+              fixture.remove();
+              await delay();
+          }
+      }});
+
+      Test.create({name: "Conditions retain prepared attributes while outputs are recreated", async test() {
+          const fixture = document.createElement("div");
+          fixture.innerHTML = '<span condition="{{preparedModel.visible}}"'
+              + ' title="{{preparedModel.value}}">visible</span>';
+          document.body.appendChild(fixture);
+          try {
+              await delay();
+              const marker = Array.from(fixture.childNodes)
+                  .find(node => metadata(node) && metadata(node).condition
+                      && metadata(node).condition.marker === node);
+              const object = metadata(marker);
+              const condition = object.expressions.condition;
+              const title = object.expressions.title;
+              Assert.assertEquals("7", fixture.querySelector("span").title);
+              preparedModel.visible = false;
+              Composer.render(fixture);
+              await delay();
+              Assert.assertNull(fixture.querySelector("span"));
+              Assert.assertSame(condition, metadata(marker).expressions.condition);
+              preparedModel.value = 9;
+              preparedModel.visible = true;
+              Composer.render(fixture);
+              await delay();
+              const node = fixture.querySelector("span");
+              Assert.assertEquals("9", node.title);
+              Assert.assertSame(condition, metadata(node).expressions.condition);
+              Assert.assertSame(title, metadata(node).expressions.title);
+          } finally {
+              preparedModel.value = 7;
+              preparedModel.visible = true;
+              fixture.remove();
+              await delay();
+          }
+      }});
+
+      Test.create({name: "Prepared iterations use each current temporary context", async test() {
+          const fixture = document.createElement("div");
+          fixture.setAttribute("iterate", "{{entry: preparedModel.items}}");
+          fixture.innerHTML = '<span title="{{entry.index}}">{{entry.item}}</span>';
+          document.body.appendChild(fixture);
+          try {
+              await delay();
+              const parsed = metadata(fixture).expressions.iterate;
+              Assert.assertEquals("12", fixture.textContent);
+              preparedModel.items = [3, 4, 5];
+              Composer.render(fixture);
+              await delay();
+              Assert.assertSame(parsed, metadata(fixture).expressions.iterate);
+              Assert.assertEquals("345", fixture.textContent);
+              Assert.assertEquals("0,1,2", Array.from(fixture.children)
+                  .map(node => node.title).join(","));
+          } finally {
+              preparedModel.items = [1, 2];
+              fixture.remove();
+              await delay();
+          }
+      }});
+
+      Test.start({auto: true});
+    </script>
+  </head>
+  <body></body>
+</html>

@@ -3,5 +3,15 @@
   <xx default="true">
     <label key="xx" value="xxX3_nsA_a_ns3"/>
     <label key="nsA.a.ns3.oo" value="oo_nsA_a_ns3"/>
+    <label key="overwrite.title" value="module"/>
+    <label key="overwrite.blocked.child" value="blocked"/>
+    <label key="overwrite.frozen" value="blocked"/>
+    <label key="overwrite.toString" value="blocked"/>
+    <label key="$label" value="dollar"/>
+    <label key="overwrite.$title" value="nested dollar"/>
+    <label key="foo-bar" value="invalid"/>
+    <label key="1name" value="invalid"/>
+    <label key="overwrite..title" value="invalid"/>
+    <label key="" value="invalid"/>
   </xx>
 </locales>

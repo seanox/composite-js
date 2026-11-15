@@ -28,6 +28,17 @@
         }
 
         const model = new Model().reactive();
+        const setterFailure = new Error("Setter rejected value");
+        const setterModel = {
+            _value: "A",
+            get value() {
+                return this._value;
+            },
+            set value(value) {
+                this._value = value;
+                throw setterFailure;
+            }
+        }.reactive();
         const result = {
             replacement: {},
             release: {}
@@ -65,6 +76,19 @@
             const array = Reactive(Object.freeze([nested]));
             Assert.assertTrue(object.nested === nested);
             Assert.assertTrue(array[0] === nested);
+        }});
+
+        Test.create({name: "Reactive setter exceptions propagate and refresh consumers", async test() {
+            const output = document.getElementById("setterValue");
+            Assert.assertEquals("A", output.textContent);
+            let actual;
+            try {setterModel.value = "B";
+            } catch (error) {
+                actual = error;
+            }
+            Assert.assertSame(setterFailure, actual);
+            await asynchronous();
+            Assert.assertEquals("B", output.textContent);
         }});
 
         const asynchronous = () => new Promise((resolve) =>
@@ -155,5 +179,6 @@
   </head>
   <body>
     <span id="doubled">{{model.doubled}}</span>
+    <span id="setterValue">{{setterModel.value}}</span>
   </body>
 </html>

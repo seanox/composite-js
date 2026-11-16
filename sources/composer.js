@@ -2793,6 +2793,12 @@
                 return;
             value = _expression_eval(object.expressions[attribute],
                 EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
+            // @-ATTRIBUTE: Consume the template independently of its result.
+            // Its expression remains in the metadata for later render cycles.
+            const target = attribute.startsWith("@")
+                ? attribute.replace(/^@+/, "") : attribute;
+            if (target !== attribute)
+                selector.removeAttribute(attribute);
             // If the type value is undefined, the attribute is removed. Since
             // the attribute contains an expression, the removal is only
             // temporary and is checked again at the next render cycle and
@@ -2806,29 +2812,23 @@
                 if (attribute.toLowerCase() === ATTRIBUTE_VALUE
                         && ATTRIBUTE_VALUE in selector)
                     selector.value = value;
-                // @-ATTRIBUTE: These are attribute templates for the renderer,
-                // which inserts attributes of the same name to them without @.
-                // This feature can be applied to all non-composite relevant
-                // attributes and avoids that attributes are misinterpreted by
-                // the browser before rendering, e.g. if the value uses the
-                // expression language. Attributes created from templates behave
-                // like other attributes, which includes updating by the
-                // renderer.
-                if (attribute.startsWith("@")) {
-                    selector.removeAttribute(attribute);
-                    attribute = attribute.replace(/^@+/, "");
-                }
-                selector.setAttribute(attribute, value);
-            } else selector.removeAttribute(attribute);
+                selector.setAttribute(target, value);
+            }
 
             // DOM attributes and properties are distinct and are not generally
             // synchronized by the browser. The renderer explicitly synchronizes
             // the corresponding property with the evaluated attribute value. If
             // the expression evaluates to undefined, the attribute is removed
-            // and the corresponding property is assigned undefined. No browser
-            // default value is restored. The developer is responsible for the
-            // values used and their assignment to the attributes.
-            selector[attribute] = value;
+            // and the corresponding property is assigned undefined. Native
+            // setters determine value conversion; removing a reflected attribute
+            // can reset its property to the browser default.
+            try {selector[target] = value;
+            } finally {
+                // Setters can recreate attributes or throw; cleanup must still
+                // run without suppressing the setter error.
+                if (value === undefined)
+                    selector.removeAttribute(target);
+            }
         });
     };
 

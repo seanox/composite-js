@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const modelInitialValues = {
+            zero: 0,
+            off: false,
+            empty: ""
+        };
+
+        let timeout = null;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (timeout)
+                window.clearTimeout(timeout);
+            timeout = window.setTimeout(() => Test.start(), 250);
+        });
+
+        Test.create({name:"initial value accepts zero", test() {
+            Assert.assertEquals("0", document.getElementById("zero").value);
+        }});
+        Test.create({name:"initial value accepts false", test() {
+            Assert.assertFalse(document.getElementById("off").checked);
+        }});
+        Test.create({name:"initial value accepts empty string", test() {
+            Assert.assertEquals("", document.getElementById("empty").value);
+        }});
+    </script>
+  </head>
+  <body>
+    <section id="modelInitialValues" composite>
+      <input type="text" id="zero" value="99">
+      <input type="checkbox" id="off" checked>
+      <input type="text" id="empty" value="fallback">
+    </section>
+  </body>
+</html>

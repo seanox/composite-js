@@ -1019,7 +1019,7 @@
                 // This is only useful for elements with an ID. Because mounting
                 // is performed recursively on the child nodes, it should be
                 // prevented that child nodes are assigned.
-                if (meta && meta.target && identifier) {
+                if (meta && meta.target !== undefined && identifier) {
                     let value = meta.target;
                     if (meta.target instanceof Object)
                         value = ATTRIBUTE_VALUE in meta.target ? meta.target.value : undefined;

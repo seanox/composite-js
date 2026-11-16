@@ -157,7 +157,7 @@
     const PATTERN_ELEMENT_ID = /^([_a-z]\w*)(?::(\w+(?::\w+)*))?(?:#(\w+))?(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;
 
     /** Pattern for a scope (custom tag, based on a word) */
-    const PATTERN_CUSTOMIZE_SCOPE = /[_a-z]([\w-]*\w)?$/i;
+    const PATTERN_CUSTOMIZE_SCOPE = /^[a-z]([\w-]*\w)?$/i;
 
     /** Constants of events for changes at the DOM */
     const EVENT_DOM_ADDED = "composerDomAdded";

@@ -16,8 +16,20 @@
 
         Object.use(window, "probeCondition", true);
         let probeSelectorCount = 0;
+        let classSelectorCount = 0;
+        let idSelectorCount = 0;
+        let compoundSelectorCount = 0;
         Composer.customize("[data-probe]", () => {
             probeSelectorCount++;
+        });
+        Composer.customize(".foo", () => {
+            classSelectorCount++;
+        });
+        Composer.customize("#foo", () => {
+            idSelectorCount++;
+        });
+        Composer.customize("a.foo", () => {
+            compoundSelectorCount++;
         });
 
         const insertTestValue = (element, value) => {
@@ -52,6 +64,9 @@
             Assert.assertEquals("2", window["probeText"].textContent);
             Assert.assertEquals("4", window["probeTextHit"].textContent);
             Assert.assertTrue(probeSelectorCount > 0);
+            Assert.assertTrue(classSelectorCount > 0);
+            Assert.assertTrue(idSelectorCount > 0);
+            Assert.assertTrue(compoundSelectorCount > 0);
             Assert.assertFalse(String(console.output.error)
                 .includes("selector.matches is not a function"));
         }});
@@ -98,5 +113,7 @@
     <span id="probeTextHit" data-probe>{{2 + 2}}</span>
     <span id="probeCondition" condition="{{probeCondition}}">probe</span>
     <span data-probe></span>
+    <a class="foo"></a>
+    <p id="foo"></p>
   </body>
 </html>

@@ -20,7 +20,8 @@
         const TestModel = {
             listA: ["a", "b", "c"],
             listB: ["d", "e", "f"],
-            listC: ["-", "A", "B", "C", "D", "E", "F"]
+            listC: ["-", "A", "B", "C", "D", "E", "F"],
+            count: 2
         };
 
         const testS = (text) => {
@@ -90,7 +91,7 @@
         }});
         Test.create({test() {
             const content = document.querySelector("table").outerHTML;
-            Assert.assertEquals("AGMDDDJMS4P20E", content.hashCode());
+            Assert.assertEquals("71XWHE7D", content.hashCode());
         }});
         Test.create({test() {
             Assert.assertEquals("161616", OutputS1.textContent);
@@ -128,9 +129,13 @@
         }});
 
         const capture = new Capture();
-        Composer.listen(Composer.EVENT_RENDER_END, () => {
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            if (selector !== document.body)
+                return;
             capture.snap();
             const count = capture.snapshots().length;
+            if (count === 1)
+                TestModel.count = 0;
             if (count <= 5)
                 window.setTimeout(() => {
                     Composer.render(document.body);
@@ -151,6 +156,21 @@
                 console.log(snapshot);
                 throw error;
             }
+        }});
+
+        Test.create({name: "Numeric iterations generate signed items and clear output at zero", test() {
+            const snapshots = capture.snapshots();
+            const output = snapshot => {
+                const start = snapshot.indexOf("J:A");
+                const end = snapshot.indexOf("J:C");
+                Assert.assertTrue(start >= 0 && end > start);
+                return snapshot.slice(start, end +3).replace(/\s/g, "");
+            };
+            Assert.assertTrue(snapshots.length > 1);
+            Assert.assertEquals("J:A01J:B-10J:C", output(snapshots[0]));
+            for (let index = 1; index < snapshots.length; index++)
+                Assert.assertEquals(`Snapshot #${index +1}: expected {1} but was {2}`,
+                    "J:AJ:BJ:C", output(snapshots[index]));
         }});
     </script>
     <script type="text/test">
@@ -240,10 +260,14 @@
       I:c Error: Invalid iterate: -5
       I:d
       I:e 0:0 1:1 2:2 3:3 4:4
-      I:f 0:4 1:3 2:2 3:1 4:0
+      I:f 0:-4 1:-3 2:-2 3:-1 4:0
       I:g
       I:h 0:0 1:1 2:2 3:3 4:4
-      I:i 0:4 1:3 2:2 3:1 4:0
+      I:i 0:-4 1:-3 2:-2 3:-1 4:0
+      I:j 0:0
+      J:A
+      J:B
+      J:C
     </script>
     <script type="text/test-webkit">
       undefined
@@ -332,10 +356,14 @@
       I:c Error: Invalid iterate: -5
       I:d
       I:e 0:0 1:1 2:2 3:3 4:4
-      I:f 0:4 1:3 2:2 3:1 4:0
+      I:f 0:-4 1:-3 2:-2 3:-1 4:0
       I:g
       I:h 0:0 1:1 2:2 3:3 4:4
-      I:i 0:4 1:3 2:2 3:1 4:0
+      I:i 0:-4 1:-3 2:-2 3:-1 4:0
+      I:j 0:0
+      J:A
+      J:B
+      J:C
     </script>
   </head>
   <body>
@@ -429,5 +457,16 @@
     I:g <div iterate="{{x:objectX.array0.length}}">{{x.index}}:{{x.item}} </div>
     I:h <div iterate="{{x:objectX.array5.length}}">{{x.index}}:{{x.item}} </div>
     I:i <div iterate="{{x:-objectX.array5.length}}">{{x.index}}:{{x.item}} </div>
+    I:j <div iterate="{{x:-1}}">{{x.index}}:{{x.item}} </div>
+
+    J:A
+    <ul iterate="{{row:TestModel.count}}">
+      <li>{{row.item}}</li>
+    </ul>
+    J:B
+    <ul iterate="{{row:-TestModel.count}}">
+      <li>{{row.item}}</li>
+    </ul>
+    J:C
   </body>
 </html>

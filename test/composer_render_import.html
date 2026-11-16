@@ -44,6 +44,9 @@
                 form.appendChild(submit);
                 return form;
             },
+            publishEmptyFragment() {
+                return document.createDocumentFragment();
+            },
             publishImg() {
                 const img = document.createElement("img");
                 img.src = "https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/smile.png";
@@ -91,6 +94,9 @@
         }});
         Test.create({test() {
             Assert.assertNotNull(document.querySelector("form input[type='submit']"));
+        }});
+        Test.create({test() {
+            Assert.assertEquals("", document.getElementById("emptyFragmentImport").textContent);
         }});
         
         Test.create({test() {
@@ -213,6 +219,9 @@
     </article>
     <article import="{{aModel.publishForm()}}">
       loading form...  
+    </article>
+    <article id="emptyFragmentImport" import="{{aModel.publishEmptyFragment()}}">
+      old
     </article>
     <article import="{{'https://raw.githubusercontent.com/seanox/composite-js/master/CHANGES'}}">
       loading resource...  

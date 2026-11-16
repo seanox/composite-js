@@ -302,36 +302,36 @@
                     // Unwanted recursions due to repeated value assignments:
                     // a = a / a = c = b = a must be avoided so that no infinite
                     // render cycle is initiated.
-                    if (this.cache.has(key)
-                            && this.cache.get(key) === value)
-                        return true;
-                    this.cache.set(key, value);
+                    if (!(this.cache.has(key)
+                            && this.cache.get(key) === value)) {
+                        this.cache.set(key, value);
 
-                    // The registration is delayed so that the setting of values
-                    // does not block unnecessarily.
-                    Composer.asynchronous((selector, target, key, notifications) => {
+                        // The registration is delayed so that the setting of
+                        // values does not block unnecessarily.
+                        Composer.asynchronous((selector, target, key, notifications) => {
 
-                        // Update only if the key exists in the object.
-                        // Recursions during rendering are prevented via the
-                        // queue and the lock in during rendering.
-                        if (!target.hasOwnProperty(key))
-                            return;
+                            // Update only if the key exists in the object.
+                            // Recursions during rendering are prevented via
+                            // the queue and the lock in during rendering.
+                            if (!target.hasOwnProperty(key))
+                                return;
 
-                        const recipients = this.notifications.get(key) || new Map();
-                        for (const recipient of recipients.values()) {
-                            // Fallback for receivers removed from the DOM
-                            // without being detected by EVENT_DOM_REMOVED. The
-                            // shadow map removes all subscriptions associated
-                            // with this key.
-                            if (!document.body.contains(recipient))
-                                _shadow_release(recipient.serial());
-                            else Composer.render(recipient);
-                        }
+                            const recipients = this.notifications.get(key) || new Map();
+                            for (const recipient of recipients.values()) {
+                                // Fallback for receivers removed from the DOM
+                                // without being detected by EVENT_DOM_REMOVED.
+                                // The shadow map removes all subscriptions
+                                // associated with this key.
+                                if (!document.body.contains(recipient))
+                                    _shadow_release(recipient.serial());
+                                else Composer.render(recipient);
+                            }
 
-                    }, _selector, target, key, this.notifications);
-
-                    return true;
+                        }, _selector, target, key, this.notifications);
+                    }
                 }
+
+                return true;
             }
         });
 

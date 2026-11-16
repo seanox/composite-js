@@ -157,7 +157,7 @@
     const PATTERN_ELEMENT_ID = /^([_a-z]\w*)(?::(\w+(?::\w+)*))?(?:#(\w+))?(?:@([_a-z]\w*(?::[_a-z]\w*)*))?$/i;
 
     /** Pattern for a scope (custom tag, based on a word) */
-    const PATTERN_CUSTOMIZE_SCOPE = /[_a-z]([\w-]*\w)?$/i;
+    const PATTERN_CUSTOMIZE_SCOPE = /^[a-z]([\w-]*\w)?$/i;
 
     /** Constants of events for changes at the DOM */
     const EVENT_DOM_ADDED = "composerDomAdded";
@@ -1019,7 +1019,7 @@
                 // This is only useful for elements with an ID. Because mounting
                 // is performed recursively on the child nodes, it should be
                 // prevented that child nodes are assigned.
-                if (meta && meta.target && identifier) {
+                if (meta && meta.target !== undefined && identifier) {
                     let value = meta.target;
                     if (meta.target instanceof Object)
                         value = ATTRIBUTE_VALUE in meta.target ? meta.target.value : undefined;
@@ -2541,9 +2541,9 @@
         if (value instanceof Document
                 || value instanceof DocumentFragment
                 || value instanceof NodeList)
-            Array.from(value.childNodes || value).forEach((node, index) =>
-                _render_append_nodes(selector, node.cloneNode(true),
-                    exclusive && index === 0));
+            _render_append_nodes(selector,
+                Array.from(value.childNodes || value)
+                    .map(node => node.cloneNode(true)), exclusive);
         else if (value instanceof Node)
             _render_append_nodes(selector, value.cloneNode(true), exclusive);
         else throw new TypeError("Invalid render value");
@@ -2712,8 +2712,8 @@
                 iterate = meta.array;
             } else if (typeof iterate === "number"
                     && iterate < 0) {
-                iterate = [Math.abs(iterate)];
-                for (let index = iterate[0] -1; index >= 0; index--)
+                iterate = [iterate];
+                for (let index = iterate[0] +1; index <= 0; index++)
                     iterate.push(index);
                 iterate.shift();
             } else if (typeof iterate === "number"
@@ -2754,7 +2754,7 @@
                 // execution scope.
                 _view_scope_stack.pop();
             });
-        }
+        } else selector.innerHTML = "";
 
         // The content is finally rendered, the enclosing container element
         // itself, or more precisely the attributes, still needs to be updated.

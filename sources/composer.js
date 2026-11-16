@@ -2541,9 +2541,9 @@
         if (value instanceof Document
                 || value instanceof DocumentFragment
                 || value instanceof NodeList)
-            Array.from(value.childNodes || value).forEach((node, index) =>
-                _render_append_nodes(selector, node.cloneNode(true),
-                    exclusive && index === 0));
+            _render_append_nodes(selector,
+                Array.from(value.childNodes || value)
+                    .map(node => node.cloneNode(true)), exclusive);
         else if (value instanceof Node)
             _render_append_nodes(selector, value.cloneNode(true), exclusive);
         else throw new TypeError("Invalid render value");

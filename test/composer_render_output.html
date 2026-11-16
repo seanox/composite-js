@@ -14,6 +14,7 @@
     
         Test.activate();
     
+        let outputDCount = 0;
         const TestModel = {
             isVisibleA: true,
             outputA() {
@@ -29,6 +30,12 @@
             },
             isVisibleC: false,
             outputC() {
+            },
+            outputD() {
+                const fragment = document.createDocumentFragment();
+                if (outputDCount++ === 0)
+                    fragment.appendChild(document.createTextNode("old"));
+                return fragment;
             }
         };
 
@@ -71,25 +78,30 @@
     A:A1A2A3
     B:
     C:
+    D:old
   </script>
   <script type="text/test">
     A:A1A2A3
     B:
     C:
+    D:
   </script>
   <script type="text/test">
     A:A1A2A3
     B:B1B2 B3:false
     C:
+    D:
   </script>
   <script type="text/test">
     A:A1A2A3
     B:B1B2 B3:trueB3
     C:
+    D:
   </script>
   <body>
     A:<span id="A0" output="{{TestModel.outputA()}}" condition="{{TestModel.isVisibleA}}"></span>
     B:<span id="B0" output="{{TestModel.outputB()}}" condition="{{TestModel.isVisibleB}}"></span>
     C:<span id="C0" output="{{TestModel.outputC()}}" condition="{{TestModel.isVisibleC}}"></span>
+    D:<span id="D0" output="{{TestModel.outputD()}}">placeholder</span>
   </body>
 </html>

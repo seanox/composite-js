@@ -2712,8 +2712,8 @@
                 iterate = meta.array;
             } else if (typeof iterate === "number"
                     && iterate < 0) {
-                iterate = [Math.abs(iterate)];
-                for (let index = iterate[0] -1; index >= 0; index--)
+                iterate = [iterate];
+                for (let index = iterate[0] +1; index <= 0; index++)
                     iterate.push(index);
                 iterate.shift();
             } else if (typeof iterate === "number"
@@ -2754,7 +2754,7 @@
                 // execution scope.
                 _view_scope_stack.pop();
             });
-        }
+        } else selector.innerHTML = "";
 
         // The content is finally rendered, the enclosing container element
         // itself, or more precisely the attributes, still needs to be updated.

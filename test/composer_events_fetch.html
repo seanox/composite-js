@@ -3,14 +3,20 @@
   <head>
     <meta charset="UTF-8">
     <title>Seanox composite-js Test Environment</title>
+    <script>
+        const nativeFetch = window.fetch;
+        let fetchHandler = null;
+        window.fetch = function(...variants) {
+            return (fetchHandler || nativeFetch).apply(this, variants);
+        };
+    </script>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
 
         Test.activate();
 
-        const collector = [];
-
-        [
+        let observation = null;
+        const events = [
             Composer.EVENT_HTTP_START,
             Composer.EVENT_HTTP_PROGRESS,
             Composer.EVENT_HTTP_RECEIVE,
@@ -19,38 +25,184 @@
             Composer.EVENT_HTTP_TIMEOUT,
             Composer.EVENT_HTTP_ERROR,
             Composer.EVENT_HTTP_END
-        ].forEach(name => {
-            Composer.listen(name, (event, meta) => {
-                if (meta.type === "fetch")
-                    collector.push("composer " + event + " " + meta.resource.replace(/\?.*$/, ""));
-            });
-            window.addEventListener(name, (event) => {
-                const type = event.type;
-                if (!type || !type.match(/^composer[A-Z]\w+$/i))
-                    return;
-                const meta = event[type];
-                if (!meta.type || meta.type !== "fetch")
-                    return;
-                collector.push("window " + type + " " + meta.resource.replace(/\?.*$/, ""));
+        ];
+        events.forEach(name => {
+            Composer.listen(name, (event, ...variants) => {
+                if (observation)
+                    observation.push([event, ...variants]);
             });
         });
 
-        window.fetch("/resources/smile.png?timing=" + Date.now());
+        const observe = async action => {
+            const trace = [];
+            observation = trace;
+            try {await action(trace);
+            } finally {
+                observation = null;
+                fetchHandler = null;
+            }
+        };
 
-        Test.create({test() {
-            console.debug(collector.join("\n"));
-            Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
+        const assertLifecycle = (trace, resource, options, result, failed = false) => {
+            const names = [
+                Composer.EVENT_HTTP_START,
+                failed ? Composer.EVENT_HTTP_ERROR : Composer.EVENT_HTTP_RECEIVE,
+                Composer.EVENT_HTTP_END
+            ];
+            Assert.assertEquals(3, trace.length);
+            names.forEach((name, index) => {
+                const callback = trace[index];
+                Assert.assertEquals(name, callback[0]);
+                if (index === 0) {
+                    Assert.assertEquals(3, callback.length);
+                    Assert.assertTrue(callback[1] === resource);
+                    Assert.assertTrue(callback[2] === options);
+                } else {
+                    Assert.assertEquals(2, callback.length);
+                    Assert.assertTrue(callback[1] === result);
+                }
+            });
+        };
+
+        Test.create({name:"Fetch preserves arguments, responses and window payloads",
+            timeout:10000, async test() {
+                await observe(async trace => {
+                    const resource = new Request(location.origin
+                        + "/resources/smile.png?native=" + Date.now());
+                    const options = {cache:"no-store"};
+                    const forwarded = [];
+                    const names = [Composer.EVENT_HTTP_START,
+                        Composer.EVENT_HTTP_RECEIVE, Composer.EVENT_HTTP_END];
+                    const listener = event => forwarded.push([event.type, event[event.type]]);
+                    names.forEach(name => window.addEventListener(name, listener));
+                    try {
+                        const response = await window.fetch(resource, options);
+                        Assert.assertEquals(200, response.status);
+                        Assert.assertFalse(response.bodyUsed);
+                        assertLifecycle(trace, resource, options, response);
+                        Assert.assertEquals(names.join(), forwarded.map(entry => entry[0]).join());
+                        Assert.assertTrue(Array.isArray(forwarded[0][1]));
+                        Assert.assertTrue(forwarded[0][1][0] === resource);
+                        Assert.assertTrue(forwarded[0][1][1] === options);
+                        Assert.assertTrue(forwarded[1][1] === response);
+                        Assert.assertTrue(forwarded[2][1] === response);
+                        Assert.assertTrue((await response.arrayBuffer()).byteLength > 0);
+                    } finally {
+                        names.forEach(name => window.removeEventListener(name, listener));
+                    }
+                });
+            }
+        });
+
+        Test.create({name:"HTTP error statuses remain fulfilled fetch responses",
+            timeout:10000, async test() {
+                await observe(async trace => {
+                    const resource = "/resources/missing-fetch-" + Date.now() + ".txt";
+                    const response = await window.fetch(resource);
+                    Assert.assertEquals(404, response.status);
+                    Assert.assertFalse(response.bodyUsed);
+                    assertLifecycle(trace, resource, undefined, response);
+                    await response.text();
+                });
+            }
+        });
+
+        Test.create({name:"Fetch forwards native rejection values",
+            timeout:10000, async test() {
+                await observe(async trace => {
+                    const resource = "http://[";
+                    let failure;
+                    try {await window.fetch(resource);
+                    } catch (error) {
+                        failure = error;
+                    }
+                    Assert.assertTrue(failure instanceof TypeError);
+                    assertLifecycle(trace, resource, undefined, failure, true);
+                });
+            }
+        });
+
+        Test.create({name:"Aborted fetches emit error and end without synthetic abort events",
+            ignore:typeof AbortController !== "function", timeout:10000, async test() {
+                await observe(async trace => {
+                    const controller = new AbortController();
+                    controller.abort();
+                    const resource = "/resources/smile.png";
+                    const options = {signal:controller.signal};
+                    let failure;
+                    try {await window.fetch(resource, options);
+                    } catch (error) {
+                        failure = error;
+                    }
+                    Assert.assertNotUndefined(failure);
+                    assertLifecycle(trace, resource, options, failure, true);
+                });
+            }
+        });
+
+        Test.create({name:"Fetch preserves arbitrary rejection values", async test() {
+            for (const failure of [new Error("failure"), false, undefined])
+                await observe(async trace => {
+                    const resource = "/fetch-rejection";
+                    const options = {};
+                    fetchHandler = function(actualResource, actualOptions) {
+                        Assert.assertTrue(this === window);
+                        Assert.assertTrue(actualResource === resource);
+                        Assert.assertTrue(actualOptions === options);
+                        return Promise.reject(failure);
+                    };
+                    let rejected = false;
+                    try {await window.fetch(resource, options);
+                    } catch (error) {
+                        rejected = true;
+                        Assert.assertTrue(error === failure);
+                    }
+                    Assert.assertTrue(rejected);
+                    assertLifecycle(trace, resource, options, failure, true);
+                });
         }});
 
-        Test.start({auto: true});
-    </script>
-    <script type="text/test">
-      window composerHttpStart /resources/smile.png
-      composer composerHttpStart /resources/smile.png
-      window composerHttpReceive /resources/smile.png
-      composer composerHttpReceive /resources/smile.png
-      window composerHttpEnd /resources/smile.png
-      composer composerHttpEnd /resources/smile.png
+        Test.create({name:"Fetch preserves synchronous throws and queues lifecycle events",
+            async test() {
+                for (const failure of [new Error("failure"), undefined])
+                    await observe(async trace => {
+                        const resource = "/fetch-throw";
+                        fetchHandler = () => {throw failure;};
+                        let thrown = false;
+                        try {window.fetch(resource);
+                        } catch (error) {
+                            thrown = true;
+                            Assert.assertTrue(error === failure);
+                        }
+                        Assert.assertTrue(thrown);
+                        Assert.assertEquals(1, trace.length);
+                        await Promise.resolve();
+                        assertLifecycle(trace, resource, undefined, failure, true);
+                    });
+            }
+        });
+
+        Test.create({name:"Fetch queues lifecycle events without queueMicrotask",
+            async test() {
+                const queueMicrotask = window.queueMicrotask;
+                try {
+                    window.queueMicrotask = undefined;
+                    await observe(async trace => {
+                        const resource = "/fetch-microtask-fallback";
+                        const response = new Response("body");
+                        fetchHandler = () => Promise.resolve(response);
+                        const request = window.fetch(resource);
+                        Assert.assertEquals(1, trace.length);
+                        Assert.assertTrue(await request === response);
+                        assertLifecycle(trace, resource, undefined, response);
+                    });
+                } finally {
+                    window.queueMicrotask = queueMicrotask;
+                }
+            }
+        });
+
+        Test.start({auto:true});
     </script>
   </head>
   <body>

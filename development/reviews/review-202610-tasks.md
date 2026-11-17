@@ -2804,7 +2804,7 @@ Root-Objekt sollen aber die Wurzel liefern beziehungsweise deren Existenz bestae
 
 **Gemeinsamen Pfad in Path.matches symmetrisch begrenzen**
 
-**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** erledigt
 **Paket:** `sprache_api`
 **Fundstellen:** `sources\routing.js:527-534`
 
@@ -2834,13 +2834,17 @@ dadurch von der Reihenfolge der Argumente ab.
 
 **Regression und Abnahme**
 
-- [ ] `Path.matches("#a#b","#a")` und `Path.matches("#a","#a#b")` ergeben beide `"#a"`.
-- [ ] Identische Pfade, Root und Abweichungen im ersten oder spaeteren Segment sind abgedeckt.
-- [ ] `#a` und `#ab` gelten nicht allein wegen ihres Zeichenpraefixes als gleiches Segment.
+- [x] `Path.matches("#a#b","#a")` und `Path.matches("#a","#a#b")` ergeben beide `"#a"`.
+- [x] Identische Pfade, Root und Abweichungen im ersten oder spaeteren Segment sind abgedeckt.
+- [x] `#a` und `#ab` gelten nicht allein wegen ihres Zeichenpraefixes als gleiches Segment.
 
 **Testansatz:** `test\routing_path_normalize.html`.
 **Erledigt, wenn:** Das Ergebnis symmetrisch und nie laenger als die wirklich
 gemeinsame Segmentfolge ist.
+
+> Erledigt: `Path.matches` begrenzt das Ergebnis auf die gemeinsame
+> Segmentlaenge (`sources\routing.js:533`). Alle genannten Faelle sind in
+> `test\routing_path_normalize.html` abgedeckt.
 
 ### R47
 

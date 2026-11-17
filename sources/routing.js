@@ -521,6 +521,7 @@
                     || compare == null
                     || compare.length <= 0)
                 return;
+
             path = path.split(/(?=#)/);
             compare = compare.split(/(?=#)/);
             const length = Math.min(path.length, compare.length);
@@ -530,7 +531,8 @@
                     break;
                 }
             }
-            return path.join("") || null;
+
+            return path.slice(0, length).join("") || null;
         },
 
         /**

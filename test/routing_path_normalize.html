@@ -112,6 +112,17 @@
             Assert.assertEquals("#a#x", Path.normalize("#a#b#c#d####x"));
         }});
 
+        Test.create({test() {
+            Assert.assertEquals("#a", Path.matches("#a#b", "#a"));
+            Assert.assertEquals("#a", Path.matches("#a", "#a#b"));
+            Assert.assertEquals("#a#b", Path.matches("#a#b", "#a#b"));
+            Assert.assertEquals("#", Path.matches("#", "#"));
+            Assert.assertNull(Path.matches("#", "#a"));
+            Assert.assertNull(Path.matches("#a", "#b"));
+            Assert.assertEquals("#a", Path.matches("#a#b", "#a#c"));
+            Assert.assertNull(Path.matches("#a", "#ab"));
+        }});
+
         Test.start({auto:true});
     </script>
   </head>

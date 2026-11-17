@@ -14,18 +14,22 @@
     
         Test.activate();
 
+        const requestCollectors = [];
+        Composer.listen(Composer.EVENT_HTTP_LOAD, (event, requestEvent) => {
+            if (!requestEvent
+                    || requestEvent.type !== "load"
+                    || !(requestEvent.target instanceof XMLHttpRequest))
+                return;
+            requestCollectors.forEach(requests =>
+                requests.push(requestEvent.target.responseURL));
+        });
+
         const trackRequests = test => {
             const requests = [];
-            const listener = event => {
-                const meta = event[Composer.EVENT_HTTP_LOAD];
-                if (meta.type === "XMLHttpRequest")
-                    requests.push(meta.url);
-            };
-            window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
-            try {
-                test(requests);
+            requestCollectors.push(requests);
+            try {test(requests);
             } finally {
-                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
+                requestCollectors.pop();
             }
         };
 
@@ -185,8 +189,7 @@
                     const address = new URL(window.location.contextPath
                         + "/data/xx/datasource_collect_a.xml", window.location.href).href;
                     let error;
-                    try {
-                        DataSource.collect(locator, invalid);
+                    try {DataSource.collect(locator, invalid);
                     } catch (exception) {
                         error = exception;
                     }
@@ -214,8 +217,7 @@
                             nested = true;
                             if (fail) {
                                 let error;
-                                try {
-                                    DataSource.collect(locator, locator + "?[");
+                                try {DataSource.collect(locator, locator + "?[");
                                 } catch (exception) {
                                     error = exception;
                                 }

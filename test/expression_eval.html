@@ -300,6 +300,96 @@
           );
       }});
 
+      Test.create({name: "Reusing prepared expression data does not retain context or results", test() {
+          const expression = Object.freeze({variable: "$answer", script: "value"});
+          const value = {answer: 7};
+          const first = Expression.eval({value}, expression.variable, expression.script);
+          first.variable = "changed";
+          first.result = null;
+          const second = Expression.eval({value}, expression.variable, expression.script);
+          Assert.assertNotSame(first, second);
+          Assert.assertEquals("$answer", second.variable);
+          Assert.assertSame(value, second.result);
+          Assert.assertEquals(9,
+              Expression.eval({value: 8}, "other", "value + 1").result);
+          Assert.assertEquals(8,
+              Expression.eval({value: 8}, expression.variable, expression.script).result);
+      }});
+
+      Test.create({name: "Both signatures return variable and result, including for empty scripts", test() {
+          const value = {answer: 7};
+          const errors = [];
+          const original = console.error;
+          console.error = error => errors.push(error);
+          try {
+              for (const [variants, variable, expected] of [
+                  [[{value}, "value"], undefined, value],
+                  [[{value}, undefined, "value"], undefined, value],
+                  [[{value}, "$answer", "value"], "$answer", value],
+                  [[{}, ""], undefined, undefined],
+                  [[{}, undefined, ""], undefined, undefined],
+                  [[{}, "answer", ""], "answer", undefined],
+                  [[{value}, "throw value"], undefined, value],
+                  [[{value}, "$answer", "throw value"], "$answer", value]
+              ]) {
+                  const keys = Object.keys(variants[0]).sort().join(",");
+                  const result = Expression.eval(...variants);
+                  Assert.assertEquals("result,variable", Object.keys(result).sort().join(","));
+                  Assert.assertEquals(variable, result.variable);
+                  Assert.assertSame(expected, result.result);
+                  Assert.assertEquals(keys, Object.keys(variants[0]).sort().join(","));
+              }
+              Assert.assertEquals(2, errors.length);
+          } finally {
+              console.error = original;
+          }
+      }});
+
+      Test.create({name: "Prepared scripts are executed without markup interpretation", test() {
+          Assert.assertEquals("a }} b",
+              Expression.eval({}, "'a }} b'").result);
+          Assert.assertEquals("a :and b",
+              Expression.eval({}, "'a :and b'").result);
+          Assert.assertEquals(7,
+              Expression.eval({value: 7}, "label: value").result);
+          const label = Expression.eval({value: 7}, "{{label: value}}");
+          Assert.assertUndefined(label.variable);
+          Assert.assertEquals(7, label.result);
+      }});
+
+      for (const script of [undefined, null, 7, [], {}, {script: "1"}, new String("1")])
+          for (const prefix of [[], ["answer"]])
+              Test.create({name: "Invalid scripts are rejected in both signatures", expected: TypeError, test() {
+                  Expression.eval({}, ...prefix, script);
+              }});
+
+      for (const variable of [null, 7, [], {}, () => 1])
+          Test.create({name: "Invalid variable types are rejected", expected: TypeError, test() {
+              Expression.eval({}, variable, "1");
+          }});
+
+      for (const variants of [[], [{}]])
+          Test.create({name: "Missing required arguments are rejected", expected: TypeError, test() {
+              Expression.eval(...variants);
+          }});
+
+      Test.create({name: "Arguments after the third are ignored", test() {
+          const result = Expression.eval({value: 7}, "answer", "value", true, "ignored");
+          Assert.assertEquals("answer", result.variable);
+          Assert.assertEquals(7, result.result);
+      }});
+
+      for (const context of [undefined, null, "", 7, () => 1])
+          Test.create({name: "Invalid contexts are rejected", expected: TypeError, test() {
+              Expression.eval(context, "1");
+          }});
+
+      Test.create({name: "The identifier signature and global expression cache are removed", expected: TypeError, test() {
+          Assert.assertUndefined(Expression.prune);
+          Assert.assertUndefined(Expression.parse);
+          Expression.eval("old-identifier", {}, "1");
+      }});
+
       Test.start({auto:true});
     </script>
   </head>

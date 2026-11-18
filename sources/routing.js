@@ -172,7 +172,10 @@
          * true and false decide directly. If permit() is missing or returns
          * undefined, routing falls back to checking Path.covers(path). Covered
          * means that the specified path must be contained from the root of the
-         * current working path.
+         * current working path. Otherwise only explicit true approves; all
+         * other return values deny permission.
+         *
+         * The check can run repeatedly during rendering and must not navigate.
          *
          * @param {string} path path of the composite
          * @param {string} composite composite ID of the element in the markup

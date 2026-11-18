@@ -37,7 +37,7 @@ hinausgehender Funktionsausbau ist separat abzustimmen und nachzuschaetzen.
 | 2 | `fehlererkennung`: Fehlerweitergabe und Teststeuerung absichern | [R15](#r15), [R20](#r20), [R38](#r38), [R39](#r39), [R40](#r40), [R41](#r41), [R48](#r48), [R49](#r49) |
 | 3 | `navigation`: Routing-Ziel und Ereignisablauf vereinheitlichen | [R23](#r23), [R24](#r24), [R25](#r25), [R26](#r26), [R27](#r27), [R28](#r28), [R29](#r29), [R30](#r30) |
 | 4 | `aufloesung_caches`: Namensaufloesung, Ressourcen und Messages korrigieren | [R11](#r11), [R21](#r21), [R22](#r22), [R31](#r31), [R32](#r32), [R33](#r33), [R34](#r34), [R35](#r35), [R36](#r36), [R37](#r37), [R43](#r43), [R45](#r45), [R50](#r50) |
-| 5 | `sprache_api`: Sprachverarbeitung und verbleibende API-Faelle absichern | [R16](#r16), [R17](#r17), [R18](#r18), [R19](#r19), [R44](#r44), [R46](#r46), [R47](#r47), [R51](#r51), [R52](#r52) |
+| 5 | `sprache_api`: Sprachverarbeitung und verbleibende API-Faelle absichern | [R16](#r16), [R17](#r17), [R18](#r18), [R19](#r19), ~~[R44](#r44)~~, [R46](#r46), [R47](#r47), [R51](#r51), [R52](#r52) |
 
 Beginne mit R01 und R02. Die Paketfolge ist eine Priorisierung und keine starre
 Sperre: R15 muss beispielsweise vor R42 fertiggestellt oder gemeinsam mit R42
@@ -1198,7 +1198,7 @@ Scripting.eval({}, "const x = `a ${`use('missing')`} z`; x");
 - [ ] Echte Makros nach Literalen werden weiterhin erkannt; Makrotext innerhalb von Literalen bleibt unveraendert.
 - [ ] Bestehende Alias-/Makro-Beispiele sowie ungueltige und unvollstaendige Literale behalten eine nachvollziehbare Diagnose.
 
-**Testansatz:** `test\expression_syntax.html`, `test\expression_parse.html`,
+**Testansatz:** `test\expression_syntax.html`,
 `test\scripting_syntax.html`, `test\scripting_eval.html`.
 **Dokumentation:** `manuals\expression.md`, `manuals\scripting.md`.
 **Erledigt, wenn:** Umschreibungen nur echte, erlaubte Codebereiche treffen und
@@ -1348,7 +1348,7 @@ zusammensetzen; eine einzelne reine Expression muss ihren Originaltyp behalten.
 - [ ] Ein einzelnes `{{1 + 2}}` bleibt die Zahl `3`, ein einzelnes `{{false}}` bleibt boolean `false`.
 - [ ] Leere Strings, `undefined` sowie Text vor und nach Expressions sind konsistent behandelt.
 
-**Testansatz:** `test\expression_eval.html`, `test\expression_parse.html`,
+**Testansatz:** `test\expression_eval.html`, `test\expression_syntax.html`,
 `test\composer_render_attributes.html`.
 **Erledigt, wenn:** Gemischte Textausdruecke konkatenieren, ohne die
 Typsemantik einzelner Expressions zu veraendern.
@@ -2702,62 +2702,45 @@ Abruf einen `clone`-TypeError, selbst wenn die Ressource inzwischen repariert is
 **Erledigt, wenn:** Nur gueltige Dokumente positiv gecacht werden und ein
 Parsefehler spaetere Abrufe nicht dauerhaft beschaedigt.
 
-### R44
+### ~~R44~~
+<details>
+  <summary>Details</summary>
 
-**XHR-Listener mit aktuellen Request-Metadaten versorgen**
+**~~XHR-Lebenszyklus ohne synthetische Request-Metadaten melden~~**
 
-**Prioritaet:** niedrig | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 2 SP | **Status:** erledigt
 **Paket:** `sprache_api`
 **Fundstellen:** `sources\composer.js:2745-2769, 2781-2788`
 
 **Konkreter Loesungsansatz**
 
-Hier ist eine `WeakMap<XMLHttpRequest, RequestState>` sinnvoll:
-Die XHR-Instanz ist bereits ein Objekt-Key, es wird weder Enumeration
-noch `size` benoetigt und die Zuordnung soll die Instanz nicht
-kuenstlich am Leben halten. Die bisherige `_request_monitoring`
-ist dagegen nur eine `WeakSet` zur einmaligen Listenerregistrierung.
-Sie kann getrennt bleiben oder in denselben RequestState integriert
-werden.
+Die freigegebene API-Entscheidung vom 2026-11-17 ersetzt die urspruenglich
+vorgeschlagene Zuordnung ueber eine WeakMap: HTTP-Events dienen nur der
+Beobachtung des API-spezifischen Lebenszyklus. Die Runtime baut weder fuer
+XHR noch fuer Fetch Request-Metadaten auf.
 
-Die Listener lesen beim Ereigniseintritt `state.current` und halten
-diesen Wert fuer genau dieses Ereignis fest, statt das erste `meta`
-in ihrer Closure zu verwenden. Ein neuer `open` erzeugt eine neue
-Metadateninstanz, veraendert aber keine bereits versendeten Metadaten.
-Da natives `open` synchron `readystatechange` ausloesen kann, reicht
-ein Setzen der Map erst nach `_request_open.call(...)` nicht.
-
-Verwalte den Uebergang bei Bedarf als `{current, pending}`: Der
-erfolgreiche OPENED-Uebergang uebernimmt die neuen Metadaten; bis
-dahin auftretende Abschluesse des alten Requests behalten dessen
-Metadaten. Nach erfolgreichem nativen `open` die noch eigene pending
-Instanz abschliessen; bei einer Exception nur den eigenen Versuch
-zuruecknehmen und die Exception weitergeben. Identitaetspruefungen
-verhindern, dass ein reentrant aus einem Listener gestartetes `open`
-dabei ueberschrieben wird. Die bewusst abweichende Position von
-`EVENT_HTTP_START` gemaess vorhandenem Runtime-Vertrag beibehalten.
-
-**Problem und Ziel:** Einmalig registrierte Listener schliessen die
-Metadaten des ersten `open()` ein. Bei Wiederverwendung derselben XHR-Instanz
-melden spaetere Abschlussereignisse daher noch die erste URL.
-
-**Umsetzung**
-
-1. Pflege aktuelle Request-Metadaten pro XHR-Instanz in der vorhandenen
-   Zuordnung.
-2. Lasse die einmal registrierten Listener beim Ereignis die passende
-   aktuelle Zuordnung lesen statt die erste Closure-Version.
-3. Pruefe die Reihenfolge von `open`, implizitem Abort und Metadatenwechsel.
-   Ein Abschluss des alten Requests darf nicht irrtuemlich die neuen Daten erhalten.
+XHR-START reicht die Instanz vor `open()` weiter; Folge-Events reichen das
+native Event unveraendert weiter. `_request_monitoring` bleibt eine WeakSet
+zur einmaligen Listenerregistrierung. Fetch-START reicht `resource` und
+`options` weiter; RECEIVE, ERROR und END reichen die urspruengliche Response
+beziehungsweise den urspruenglichen Fehlerwert weiter. Request-Zuordnung
+und weitergehende Auswertung liegen bei der Anwendung.
 
 **Regression und Abnahme**
 
-- [ ] Eine XHR-Instanz fordert nacheinander `/first.txt` und `/second.txt` an; START und LOAD tragen jeweils die richtige URL.
-- [ ] Fehler-, Abort- und Loadend-Pfade bei Wiederverwendung sind korrekt zugeordnet.
-- [ ] Mehrfaches `open` registriert keine doppelten Listener; verschiedene Instanzen bleiben getrennt.
+- [x] Zwei aufeinanderfolgende Requests derselben XHR-Instanz melden die Instanz beim Start und native Folge-Events.
+- [x] Alle XHR-Folge-Events behalten ihre Identitaet und ihre nativen Eigenschaften.
+- [x] Mehrfaches `open` registriert keine doppelten Listener; verschiedene Instanzen bleiben getrennt.
+- [x] Fetch meldet originale Argumente, Responses und Fehlerwerte ohne Metadatenhuellen.
+- [x] Die Test-API spiegelt einzelne Payloads unveraendert und mehrere Argumente als Array.
 
-**Testansatz:** `test\composer_events_xmlhttprequest.html`.
-**Erledigt, wenn:** Jedes XHR-Ereignis die Metadaten seines Requests meldet.
+**Testansatz:** `test\composer_events_xmlhttprequest.html`,
+`test\composer_events_fetch.html`, `test\test_events.html`.
+
+> Erledigt am 2026-11-17: Synthetische HTTP-Request-Metadaten entfernt,
+> API-spezifische Lebenszyklus-Events und native Payloads beibehalten.
+
+</details>
 
 ### ~~R45~~
 <details>
@@ -2821,7 +2804,7 @@ Root-Objekt sollen aber die Wurzel liefern beziehungsweise deren Existenz bestae
 
 **Gemeinsamen Pfad in Path.matches symmetrisch begrenzen**
 
-**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** offen
+**Prioritaet:** niedrig | **Aufwand:** 1 SP | **Status:** erledigt
 **Paket:** `sprache_api`
 **Fundstellen:** `sources\routing.js:527-534`
 
@@ -2851,13 +2834,17 @@ dadurch von der Reihenfolge der Argumente ab.
 
 **Regression und Abnahme**
 
-- [ ] `Path.matches("#a#b","#a")` und `Path.matches("#a","#a#b")` ergeben beide `"#a"`.
-- [ ] Identische Pfade, Root und Abweichungen im ersten oder spaeteren Segment sind abgedeckt.
-- [ ] `#a` und `#ab` gelten nicht allein wegen ihres Zeichenpraefixes als gleiches Segment.
+- [x] `Path.matches("#a#b","#a")` und `Path.matches("#a","#a#b")` ergeben beide `"#a"`.
+- [x] Identische Pfade, Root und Abweichungen im ersten oder spaeteren Segment sind abgedeckt.
+- [x] `#a` und `#ab` gelten nicht allein wegen ihres Zeichenpraefixes als gleiches Segment.
 
 **Testansatz:** `test\routing_path_normalize.html`.
 **Erledigt, wenn:** Das Ergebnis symmetrisch und nie laenger als die wirklich
 gemeinsame Segmentfolge ist.
+
+> Erledigt: `Path.matches` begrenzt das Ergebnis auf die gemeinsame
+> Segmentlaenge (`sources\routing.js:533`). Alle genannten Faelle sind in
+> `test\routing_path_normalize.html` abgedeckt.
 
 ### R47
 

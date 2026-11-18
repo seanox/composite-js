@@ -14,6 +14,26 @@
 
       Test.activate();
 
+      const TestModel_1 = {
+          field_1: "f1",
+          field_2: "f2",
+          method_1() {
+              return "m1";
+          },
+          method_2(value_1) {
+              return "m2" + value_1;
+          },
+          get field_3() {
+              return "f3";
+          },
+          get field_11() {
+              return [{x:{y:"f11[0]->x->y"}}];
+          },
+          get field_12() {
+              return [{x:[{y:"f12[0]->x->y"}]}];
+          }
+      };
+
       const syntaxValue = "a :and b";
       const errors = [];
       const original = console.error;
@@ -23,9 +43,9 @@
           const content = document.body.textContent;
           const messages = Array.from(document.body.childNodes)
               .filter(node => node.nodeType === Node.TEXT_NODE
-                  && node.textContent.startsWith("SyntaxError:"))
+                  && /^(?:Syntax|Reference|Type)Error:/.test(node.textContent))
               .map(node => node.textContent);
-          Assert.assertEquals(18, errors.length);
+          Assert.assertEquals(29, errors.length);
           Assert.assertEquals(errors.join("\n"), messages.join("\n"));
           const pattern = Test.read("expression_syntax_" + navigator.engine + ".txt");
           try {Assert.assertSameText(pattern, content);
@@ -44,6 +64,9 @@
     </script>
   </head>
   <body>
+    {{navigator.engine}}
+    ----
+
     <input type="hidden" id="HiddenField" value="Test-HF">
 
     {{and: 1}}{{not: 2}}{{empty: 3}}
@@ -128,5 +151,64 @@
     Hidden field identity: {{document.getElementById('HiddenField') === document.querySelector('#HiddenField')}}
     Hidden field value: {{document.getElementById('HiddenField').value}}
     Missing field: {{document.getElementById('Nothing') === null}}
+
+    Literal 01: {{'Literal 01'}}
+    Literal 02: {{"Literal 02"}}
+    Literal 03: {{'Literal 01' + "Literal 02"}}
+
+    Logic 01: {{1 +2}}
+
+    Method EL 01: {{TestModel_1.method_1()}}
+    Method EL 02: {{TestModel_1.method_1(1)}}
+    Method EL 03: {{TestModel_1.method_2()}}
+    Method EL 04: {{TestModel_1.method_2(2)}}
+    Method EL 05: {{TestModel_1.method_2(2, 3)}}
+
+    Method EL Error 01: {{xxx.yyy.zzz()}}
+
+    Value EL 00: {{TestModel_1}}
+    Value EL 01: {{TestModel_1.field_1}}
+    Value EL 02: {{TestModel_1.field_2}}
+    Value EL 03: {{TestModel_1.field_3}}
+    Value EL 04: {{TestModel_1.method_1}}
+
+    Value EL 11_1: {{TestModel_1.field_11}}
+    Value EL 11_2: {{TestModel_1.field_11[0]}}
+    Value EL 11_3: {{TestModel_1.field_11[1]}}
+    Value EL 11_4: {{TestModel_1.field_11[0].x}}
+    Value EL 11_5: {{TestModel_1.field_11[1].x}}
+    Value EL 11_6: {{TestModel_1.field_11[0].x.y}}
+    Value EL 11_7: {{TestModel_1.field_11[1].x.y}}
+
+    Value EL 12_1: {{TestModel_1.field_12}}
+    Value EL 12_2: {{TestModel_1.field_12[0]}}
+    Value EL 12_3: {{TestModel_1.field_12[1]}}
+    Value EL 12_4: {{TestModel_1.field_12[0].x}}
+    Value EL 12_5: {{TestModel_1.field_12[1].x}}
+    Value EL 12_6: {{TestModel_1.field_12[0].x.y}}
+    Value EL 12_7: {{TestModel_1.field_12[1].x.y}}
+    Value EL 12_8: {{TestModel_1.field_12[0].x[0].y}}
+    Value EL 12_9: {{TestModel_1.field_12[1].x[0].y}}
+    Value EL 12_A: {{TestModel_1.field_12[0].x[1].y}}
+    Value EL 12_B: {{TestModel_1.field_12[1].x[1].y}}
+
+    Value EL Error 01: {{xxx.yyy.zzz}}
+
+    Mix 01: {{'Literal 01' + TestModel_1.method_1()}}
+
+    Condition 01: {{1 :gt 2}}
+    Condition 02: {{:not (1 :gt 2)}}
+    Condition 03: {{1 :not :gt 2}}
+    Condition 04: {{typeof 2}}
+
+    {{}}
+    {{ }}
+    {{ - }}
+
+    {{
+        1
+       +2
+       +3
+    }}
   </body>
 </html>

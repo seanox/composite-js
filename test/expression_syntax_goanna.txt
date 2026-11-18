@@ -1,3 +1,6 @@
+    goanna
+    ----
+
     Syntax 01: false
     Syntax 02: true
     Syntax 03: true
@@ -77,3 +80,60 @@
     Hidden field identity: true
     Hidden field value: Test-HF
     Missing field: true
+
+    Literal 01: Literal 01
+    Literal 02: Literal 02
+    Literal 03: Literal 01Literal 02
+
+    Logic 01: 3
+
+    Method EL 01: m1
+    Method EL 02: m1
+    Method EL 03: m2undefined
+    Method EL 04: m22
+    Method EL 05: m22
+
+    Method EL Error 01: ReferenceError: xxx is not defined
+
+    Value EL 00: [object Object]
+    Value EL 01: f1
+    Value EL 02: f2
+    Value EL 03: f3
+    Value EL 04: method_1() {
+              return "m1";
+          }
+
+    Value EL 11_1: [object Object]
+    Value EL 11_2: [object Object]
+    Value EL 11_3:
+    Value EL 11_4: [object Object]
+    Value EL 11_5: TypeError: TestModel_1.field_11[1] is undefined
+    Value EL 11_6: f11[0]->x->y
+    Value EL 11_7: TypeError: TestModel_1.field_11[1] is undefined
+
+    Value EL 12_1: [object Object]
+    Value EL 12_2: [object Object]
+    Value EL 12_3:
+    Value EL 12_4: [object Object]
+    Value EL 12_5: TypeError: TestModel_1.field_12[1] is undefined
+    Value EL 12_6:
+    Value EL 12_7: TypeError: TestModel_1.field_12[1] is undefined
+    Value EL 12_8: f12[0]->x->y
+    Value EL 12_9: TypeError: TestModel_1.field_12[1] is undefined
+    Value EL 12_A: TypeError: TestModel_1.field_12[0].x[1] is undefined
+    Value EL 12_B: TypeError: TestModel_1.field_12[1] is undefined
+
+    Value EL Error 01: ReferenceError: xxx is not defined
+
+    Mix 01: Literal 01m1
+
+    Condition 01: false
+    Condition 02: true
+    Condition 03: SyntaxError: missing ; before statement
+    Condition 04: number
+
+
+
+    SyntaxError: expected expression, got end of script
+
+    6

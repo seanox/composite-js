@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        let _staleMatch = false;
+        let _staleArgument = false;
+        let _updatedTarget = null;
+        Routing.customize("#old", () => {
+            window.location.replace("#new");
+        });
+        Routing.customize("#old", () => {
+            if (window.location.hash === "#new")
+                _staleMatch = true;
+        });
+        Routing.customize(/.*/, (oldHash, newHash) => {
+            if (newHash === "#old"
+                    && window.location.hash === "#new")
+                _staleArgument = true;
+        });
+        Routing.customize("#new", (oldHash, newHash) => {
+            _updatedTarget = newHash;
+        });
+
+        const _redirected = new Promise(resolve => {
+            const onHashChange = event => {
+                const hash = event.newURL.match(/#[^#]*$/);
+                if (!hash || hash[0] !== "#old")
+                    return;
+                window.removeEventListener("hashchange", onHashChange);
+                resolve(_updatedTarget);
+            };
+            window.addEventListener("hashchange", onHashChange);
+        });
+
+        Test.create({name:"Interceptor matching uses redirected target", timeout:3000, test() {
+            Routing.route("#old");
+            return _redirected.then(target => {
+                Assert.assertFalse(_staleMatch);
+                Assert.assertEquals("#new", target);
+            });
+        }});
+        Test.create({name:"Interceptor callback uses redirected target", timeout:3000, test() {
+            return _redirected.then(() => Assert.assertFalse(_staleArgument));
+        }});
+
+        document.addEventListener("DOMContentLoaded", () => {
+            window.setTimeout(() => Test.start(), 100);
+        });
+    </script>
+  </head>
+  <body route>
+  </body>
+</html>

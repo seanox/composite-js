@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <style>
+      body {
+        font-family: monospace;
+        white-space: pre;
+      }
+    </style>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        let label = "first";
+        let initialLabel;
+        let size = 10;
+        let started = false;
+        const errors = [];
+
+        Composer.listen(Composer.EVENT_ERROR, (event, error) =>
+            errors.push(error));
+
+        const render = element => new Promise(resolve => {
+            Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+                if (selector === element)
+                    resolve();
+            });
+            Composer.render(element);
+        });
+
+        Test.create({name:"Defined templates synchronize attributes and properties", test() {
+            const element = document.querySelector("#template");
+            Assert.assertEquals("first", element.getAttribute("title"));
+            Assert.assertEquals("first", element.title);
+            Assert.assertEquals("first", element.getAttribute("data-label"));
+            Assert.assertEquals("first", element["data-label"]);
+            Assert.assertFalse(element.hasAttribute("@title"));
+            Assert.assertFalse(element.hasAttribute("@data-label"));
+            Assert.assertEquals(0, errors.length);
+        }});
+
+        Test.create({name:"Initially undefined templates are removed", test() {
+            const element = document.querySelector("#initial");
+            Assert.assertFalse(element.hasAttribute("@title"));
+            Assert.assertFalse(element.hasAttribute("@data-label"));
+            Assert.assertNull(element.getAttribute("title"));
+            Assert.assertNull(element.getAttribute("data-label"));
+            Assert.assertEquals("", element.title);
+            Assert.assertUndefined(element["data-label"]);
+        }});
+
+        Test.create({name:"Initially undefined templates can acquire a value", timeout:3000, test() {
+            const element = document.querySelector("#initial");
+            initialLabel = "initial";
+            return render(element).then(() => {
+                Assert.assertEquals("initial", element.getAttribute("title"));
+                Assert.assertEquals("initial", element.title);
+                Assert.assertEquals("initial", element.getAttribute("data-label"));
+                Assert.assertEquals("initial", element["data-label"]);
+                Assert.assertFalse(element.hasAttribute("@title"));
+                Assert.assertFalse(element.hasAttribute("@data-label"));
+            });
+        }});
+
+        Test.create({name:"Undefined removes targets and synchronizes their properties", timeout:3000, test() {
+            const element = document.querySelector("#template");
+            label = undefined;
+            return render(element).then(() => {
+                Assert.assertNull(element.getAttribute("title"));
+                Assert.assertEquals("", element.title);
+                Assert.assertNull(element.getAttribute("data-label"));
+                Assert.assertUndefined(element["data-label"]);
+                Assert.assertFalse(element.hasOwnProperty("@title"));
+                Assert.assertFalse(element.hasOwnProperty("@data-label"));
+            });
+        }});
+
+        Test.create({name:"Removed targets are restored on a later render", timeout:3000, test() {
+            const element = document.querySelector("#template");
+            label = "second";
+            return render(element).then(() => {
+                Assert.assertEquals("second", element.getAttribute("title"));
+                Assert.assertEquals("second", element.title);
+                Assert.assertEquals("second", element.getAttribute("data-label"));
+                Assert.assertEquals("second", element["data-label"]);
+                Assert.assertFalse(element.hasAttribute("@title"));
+                Assert.assertFalse(element.hasAttribute("@data-label"));
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        ["sizeOrdinary", "sizeTemplate"].forEach((id, index) => {
+            Test.create({name:"Undefined removes " + id + " despite a throwing setter", timeout:3000, test() {
+                const element = document.getElementById(id);
+                Assert.assertEquals("10", element.getAttribute("size"));
+                Assert.assertEquals(10, element.size);
+                Assert.assertEquals(index, errors.length);
+                size = undefined;
+                return render(element).then(() => {
+                    Assert.assertEquals(index + 1, errors.length);
+                    Assert.assertTrue(errors[index] instanceof DOMException);
+                    Assert.assertEquals("IndexSizeError", errors[index].name);
+                    Assert.assertNull(element.getAttribute("size"));
+                    Assert.assertEquals(20, element.size);
+                    Assert.assertFalse(element.hasAttribute("@size"));
+                });
+            }});
+        });
+
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            if (started || selector !== document.body)
+                return;
+            started = true;
+            Test.start();
+        });
+    </script>
+  </head>
+  <body>
+    <span id="template" @title="{{label}}" @data-label="{{label}}"></span>
+    <span id="initial" @title="{{initialLabel}}" @data-label="{{initialLabel}}"></span>
+    <input id="sizeOrdinary" size="{{size}}">
+    <input id="sizeTemplate" @size="{{size}}">
+  </body>
+</html>

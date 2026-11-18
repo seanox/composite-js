@@ -14,6 +14,12 @@
 
         Test.activate();
 
+        let requestObserver = null;
+        Composer.listen(Composer.EVENT_HTTP_LOAD, (event, requestEvent) => {
+            if (requestObserver && requestEvent.type === "load")
+                requestObserver(requestEvent.target);
+        });
+
         Test.create({expected:/\bUnsupported schema: raw:\/item/i, test() {
             DataSource.fetch("raw:/item");
         }});
@@ -103,12 +109,10 @@
             const address = new URL(window.location.contextPath
                 + "/data/xx/datasource_collect_a.xml", window.location.href).href;
             let calls = 0;
-            const listener = event => {
-                const meta = event[Composer.EVENT_HTTP_LOAD];
-                if (meta.type === "XMLHttpRequest" && meta.url === address)
+            requestObserver = request => {
+                if (request instanceof XMLHttpRequest && request.responseURL === address)
                     calls++;
             };
-            window.addEventListener(Composer.EVENT_HTTP_LOAD, listener);
             try {
                 const first = DataSource.fetch(locator);
                 first.documentElement.setAttribute("id", "changed");
@@ -117,7 +121,7 @@
                 Assert.assertEquals("collect_a", repeated.documentElement.getAttribute("id"));
                 Assert.assertEquals(2, calls);
             } finally {
-                window.removeEventListener(Composer.EVENT_HTTP_LOAD, listener);
+                requestObserver = null;
             }
         }});
 

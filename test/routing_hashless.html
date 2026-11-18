@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        let _initialLocate;
+        let _initialLocateError;
+        let _initialRenderObserved = false;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (_initialRenderObserved)
+                return;
+            _initialRenderObserved = true;
+            try {
+                Assert.assertNull(Routing.location);
+                _initialLocate = Routing.locate(true);
+            } catch (error) {
+                _initialLocateError = error;
+            }
+        });
+
+        Test.create({name:"Initial locate without a hash uses the root", test() {
+            Assert.assertTrue(_initialRenderObserved);
+            Assert.assertUndefined(_initialLocateError);
+            Assert.assertTrue(_initialLocate != null);
+            Assert.assertEquals("#", _initialLocate.locate);
+        }});
+
+        Test.create({name:"Back navigation without a hash uses the root", timeout:5000, test() {
+            let interceptedHash;
+            Routing.customize("#", (oldHash, newHash) => {
+                if (oldHash === "#target")
+                    interceptedHash = newHash;
+            });
+            return new Promise(resolve => {
+                const onHashChange = event => {
+                    const hash = new URL(event.newURL).hash;
+                    if (hash === "#target") {
+                        window.history.back();
+                        return;
+                    }
+                    if (hash !== "")
+                        return;
+                    window.removeEventListener("hashchange", onHashChange);
+                    resolve();
+                };
+                window.addEventListener("hashchange", onHashChange);
+                window.history.pushState(null, "",
+                    window.location.pathname + window.location.search);
+                Routing.route("#target");
+            }).then(() => {
+                // Root normalization can enqueue another native hashchange.
+                return new Promise(resolve => window.setTimeout(resolve, 100));
+            }).then(() => {
+                Assert.assertEquals("#", interceptedHash);
+                Assert.assertEquals("#", Routing.location);
+            });
+        }});
+
+        Test.create({name:"Routing to the root without a hash is dispatched once", timeout:3000, test() {
+            let count = 0;
+            Routing.customize("#", (oldHash, newHash) => {
+                if (newHash === "#")
+                    count++;
+            });
+            window.history.pushState(null, "",
+                window.location.pathname + window.location.search);
+            Routing.route("#");
+            return new Promise(resolve =>
+                window.setTimeout(resolve, 100)).then(() => {
+                    Assert.assertEquals(1, count);
+                    Assert.assertEquals("#", Routing.location);
+                });
+        }});
+
+        document.addEventListener("DOMContentLoaded", () => {
+            window.setTimeout(() => Test.start(), 100);
+        });
+    </script>
+  </head>
+  <body route>
+  </body>
+</html>

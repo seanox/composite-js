@@ -2793,6 +2793,12 @@
                 return;
             value = _expression_eval(object.expressions[attribute],
                 EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
+            // @-ATTRIBUTE: Consume the template independently of its result.
+            // Its expression remains in the metadata for later render cycles.
+            const target = attribute.startsWith("@")
+                ? attribute.replace(/^@+/, "") : attribute;
+            if (target !== attribute)
+                selector.removeAttribute(attribute);
             // If the type value is undefined, the attribute is removed. Since
             // the attribute contains an expression, the removal is only
             // temporary and is checked again at the next render cycle and
@@ -2806,29 +2812,23 @@
                 if (attribute.toLowerCase() === ATTRIBUTE_VALUE
                         && ATTRIBUTE_VALUE in selector)
                     selector.value = value;
-                // @-ATTRIBUTE: These are attribute templates for the renderer,
-                // which inserts attributes of the same name to them without @.
-                // This feature can be applied to all non-composite relevant
-                // attributes and avoids that attributes are misinterpreted by
-                // the browser before rendering, e.g. if the value uses the
-                // expression language. Attributes created from templates behave
-                // like other attributes, which includes updating by the
-                // renderer.
-                if (attribute.startsWith("@")) {
-                    selector.removeAttribute(attribute);
-                    attribute = attribute.replace(/^@+/, "");
-                }
-                selector.setAttribute(attribute, value);
-            } else selector.removeAttribute(attribute);
+                selector.setAttribute(target, value);
+            }
 
             // DOM attributes and properties are distinct and are not generally
             // synchronized by the browser. The renderer explicitly synchronizes
             // the corresponding property with the evaluated attribute value. If
             // the expression evaluates to undefined, the attribute is removed
-            // and the corresponding property is assigned undefined. No browser
-            // default value is restored. The developer is responsible for the
-            // values used and their assignment to the attributes.
-            selector[attribute] = value;
+            // and the corresponding property is assigned undefined. Native
+            // setters determine value conversion; removing a reflected attribute
+            // can reset its property to the browser default.
+            try {selector[target] = value;
+            } finally {
+                // Setters can recreate attributes or throw; cleanup must still
+                // run without suppressing the setter error.
+                if (value === undefined)
+                    selector.removeAttribute(target);
+            }
         });
     };
 
@@ -2895,18 +2895,7 @@
     const _request_open = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function(...variants) {
 
-        const [method, url, async, username, password] = variants;
-        const meta =  {type: "XMLHttpRequest", method, url, async, username, password, request: this};
-
-        // loadstart is deliberately not used as the HTTP start signal here, as
-        // it is tied to the native XMLHttpRequest lifecycle. Instead, the HTTP
-        // event chain follows the lifecycle of the composite-js runtime and
-        // therefore differs from the native XMLHttpRequest lifecycle. The
-        // events are consequently intercepted centrally and forwarded via
-        // Composer.fire() to integrate them into the runtime lifecycle, rather
-        // than handling them directly through XMLHttpRequest.addEventListener().
-
-        Composer.fire(EVENT_HTTP_START, meta);
+        Composer.fire(EVENT_HTTP_START, this);
 
         if (!_request_monitoring.has(this)) {
 
@@ -2915,20 +2904,22 @@
             const callback = (event = null) => {
                 if (!event)
                     return;
+                if (event.type === "loadstart")
+                    Composer.fire(EVENT_HTTP_PROGRESS, event);
                 else if (event.type === "progress")
-                    Composer.fire(EVENT_HTTP_PROGRESS, meta);
+                    Composer.fire(EVENT_HTTP_PROGRESS, event);
                 else if (event.type === "readystatechange")
-                    Composer.fire(EVENT_HTTP_RECEIVE, meta);
+                    Composer.fire(EVENT_HTTP_RECEIVE, event);
                 else if (event.type === "load")
-                    Composer.fire(EVENT_HTTP_LOAD, meta);
+                    Composer.fire(EVENT_HTTP_LOAD, event);
                 else if (event.type === "abort")
-                    Composer.fire(EVENT_HTTP_ABORT, meta);
+                    Composer.fire(EVENT_HTTP_ABORT, event);
                 else if (event.type === "error")
-                    Composer.fire(EVENT_HTTP_ERROR, meta);
+                    Composer.fire(EVENT_HTTP_ERROR, event);
                 else if (event.type === "timeout")
-                    Composer.fire(EVENT_HTTP_TIMEOUT, meta);
+                    Composer.fire(EVENT_HTTP_TIMEOUT, event);
                 else if (event.type === "loadend")
-                    Composer.fire(EVENT_HTTP_END, meta);
+                    Composer.fire(EVENT_HTTP_END, event);
             };
 
             this.addEventListener("loadstart", callback);
@@ -2958,27 +2949,23 @@
      */
     const _request_fetch = window.fetch;
     window.fetch = function(resource, options) {
-        const meta = {type: "fetch", resource, options};
-        Composer.fire(EVENT_HTTP_START, meta);
+        Composer.fire(EVENT_HTTP_START, resource, options);
         let request;
         try {request = _request_fetch.call(this, resource, options);
         } catch (error) {
-            const errorMeta = Object.assign({}, meta, {error});
-            _request_fetch_event(EVENT_HTTP_ERROR, errorMeta);
-            _request_fetch_event(EVENT_HTTP_END, errorMeta);
+            _request_fetch_event(EVENT_HTTP_ERROR, error);
+            _request_fetch_event(EVENT_HTTP_END, error);
             throw error;
         }
         return request.then(
             response => {
-                const responseMeta = Object.assign({}, meta, {response});
-                _request_fetch_event(EVENT_HTTP_RECEIVE, responseMeta);
-                _request_fetch_event(EVENT_HTTP_END, responseMeta);
+                _request_fetch_event(EVENT_HTTP_RECEIVE, response);
+                _request_fetch_event(EVENT_HTTP_END, response);
                 return response;
             },
             error => {
-                const errorMeta = Object.assign({}, meta, {error});
-                _request_fetch_event(EVENT_HTTP_ERROR, errorMeta);
-                _request_fetch_event(EVENT_HTTP_END, errorMeta);
+                _request_fetch_event(EVENT_HTTP_ERROR, error);
+                _request_fetch_event(EVENT_HTTP_END, error);
                 throw error;
             }
         );

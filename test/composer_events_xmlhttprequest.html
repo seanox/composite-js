@@ -10,65 +10,66 @@
 
         const resource = "/resources/smile.png";
         const collector = [];
+        const nativeEvents = [
+            ["loadstart", Composer.EVENT_HTTP_PROGRESS],
+            ["progress", Composer.EVENT_HTTP_PROGRESS],
+            ["readystatechange", Composer.EVENT_HTTP_RECEIVE],
+            ["load", Composer.EVENT_HTTP_LOAD],
+            ["abort", Composer.EVENT_HTTP_ABORT],
+            ["timeout", Composer.EVENT_HTTP_TIMEOUT],
+            ["error", Composer.EVENT_HTTP_ERROR],
+            ["loadend", Composer.EVENT_HTTP_END]
+        ];
+        const events = new Set(nativeEvents.map(entry => entry[1]));
+        events.add(Composer.EVENT_HTTP_START);
+        events.forEach(name => Composer.listen(name, (event, payload) => {
+            collector.push([event, payload]);
+        }));
 
-        [
-            Composer.EVENT_HTTP_START,
-            Composer.EVENT_HTTP_PROGRESS,
-            Composer.EVENT_HTTP_RECEIVE,
-            Composer.EVENT_HTTP_LOAD,
-            Composer.EVENT_HTTP_ABORT,
-            Composer.EVENT_HTTP_TIMEOUT,
-            Composer.EVENT_HTTP_ERROR,
-            Composer.EVENT_HTTP_END
-        ].forEach(name => {
-            Composer.listen(name, (event, meta) => {
-                if (meta.type !== "XMLHttpRequest"
-                        || !meta.url.startsWith(resource))
-                    return;
-                if ((event === "composerHttpProgress" || event === "composerHttpReceive")
-                        && collector.join(" ").includes("composer " + event))
-                    return;
-                collector.push("composer " + event + " " + meta.url.replace(/\?.*$/, ""));
-            });
-            window.addEventListener(name, (event) => {
-                const type = event.type;
-                if (!type || !type.match(/^composer[A-Z]\w+$/i))
-                    return;
-                console.debug(event);
-                const meta = event[type];
-                if (!meta.type
-                        || meta.type !== "XMLHttpRequest"
-                        || !meta.url.startsWith(resource))
-                    return;
-                if ((type === "composerHttpProgress" || type === "composerHttpReceive")
-                        && collector.join(" ").includes("window " + type))
-                    return;
-                collector.push("window " + type + " " + meta.url.replace(/\?.*$/, ""));
-            });
+        Test.create({
+            name: "Reused XMLHttpRequests forward each native event exactly once",
+            timeout: 10000,
+            async test() {
+                const request = new XMLHttpRequest();
+                const expected = [];
+                nativeEvents.forEach(([type, name]) =>
+                    request.addEventListener(type, payload => expected.push([name, payload])));
+
+                for (const suffix of ["first", "second"]) {
+                    const url = resource + "?reuse=" + suffix + "-" + Date.now();
+                    collector.length = expected.length = 0;
+                    expected.push([Composer.EVENT_HTTP_START, request]);
+                    await new Promise(resolve => {
+                        request.open("GET", url);
+                        request.addEventListener("loadend", resolve, {once:true});
+                        request.send();
+                    });
+                    Assert.assertEquals(200, request.status);
+                    Assert.assertTrue(request.responseURL.endsWith(url));
+                    Assert.assertEquals(expected.length, collector.length);
+                    expected.forEach((entry, index) => {
+                        Assert.assertEquals(entry[0], collector[index][0]);
+                        Assert.assertTrue(entry[1] === collector[index][1]);
+                    });
+                }
+            }
         });
 
-        const request = new XMLHttpRequest();
-        request.open("GET", resource + "?timing=" + Date.now());
-        request.send();
-
-        Test.create({test() {
-            console.debug(collector.join("\n"));
-            Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
+        Test.create({name:"XHR maps every native event without duplicate listeners", test() {
+            const probe = new XMLHttpRequest();
+            probe.open("GET", resource);
+            probe.open("GET", resource);
+            nativeEvents.forEach(([type, name]) => {
+                collector.length = 0;
+                const payload = new Event(type);
+                probe.dispatchEvent(payload);
+                Assert.assertEquals(1, collector.length);
+                Assert.assertEquals(name, collector[0][0]);
+                Assert.assertTrue(collector[0][1] === payload);
+            });
         }});
 
         Test.start({auto: true});
-    </script>
-    <script type="text/test">
-      window composerHttpStart /resources/smile.png
-      composer composerHttpStart /resources/smile.png
-      window composerHttpReceive /resources/smile.png
-      composer composerHttpReceive /resources/smile.png
-      window composerHttpProgress /resources/smile.png
-      composer composerHttpProgress /resources/smile.png
-      window composerHttpLoad /resources/smile.png
-      composer composerHttpLoad /resources/smile.png
-      window composerHttpEnd /resources/smile.png
-      composer composerHttpEnd /resources/smile.png
     </script>
   </head>
   <body>

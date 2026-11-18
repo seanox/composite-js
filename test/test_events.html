@@ -76,6 +76,51 @@
             Assert.assertEquals(expected, collector.join("\n"));
         }});
 
+        Test.create({name:"Composer window events preserve native payloads", test() {
+            const name = "composerTestNativePayload";
+            let forwarded;
+            let forwardedTarget;
+            const listener = event => {
+                forwarded = event[name];
+                forwardedTarget = forwarded.target;
+            };
+            window.addEventListener(name, listener);
+            try {
+                const target = document.createElement("div");
+                const payload = new ProgressEvent("progress");
+                target.addEventListener(payload.type, event => Composer.fire(name, event));
+                target.dispatchEvent(payload);
+                Assert.assertTrue(forwarded === payload);
+                Assert.assertTrue(forwardedTarget === target);
+            } finally {
+                window.removeEventListener(name, listener);
+            }
+        }});
+
+        Test.create({name:"Composer window events preserve positional payloads", test() {
+            const name = "composerTestPositionalPayload";
+            let forwarded;
+            const listener = event => forwarded = event[name];
+            window.addEventListener(name, listener);
+            try {
+                Composer.fire(name);
+                Assert.assertUndefined(forwarded);
+                const first = {first:1};
+                [first, ["first", "second"], "failure", 0, false, null, undefined].forEach(payload => {
+                    Composer.fire(name, payload);
+                    Assert.assertTrue(forwarded === payload);
+                });
+                const second = {second:2};
+                Composer.fire(name, first, second);
+                Assert.assertTrue(Array.isArray(forwarded));
+                Assert.assertEquals(2, forwarded.length);
+                Assert.assertTrue(forwarded[0] === first);
+                Assert.assertTrue(forwarded[1] === second);
+            } finally {
+                window.removeEventListener(name, listener);
+            }
+        }});
+
         Test.start({auto:true});
     </script>
     <script type="text/test">

@@ -63,7 +63,7 @@
             const type = (event || "").trim();
             if (type) {
                 const customEvent = new CustomEvent(type);
-                customEvent[type] = Object.assign({}, ...variants);
+                customEvent[type] = variants.length > 1 ? variants : variants[0];
                 window.dispatchEvent(customEvent);
             }
             return _composer_fire.call(this, event, ...variants);

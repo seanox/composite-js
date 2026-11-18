@@ -334,26 +334,26 @@
         // - following interceptors use the possibly changed hash/path
         // - on the first explicit false, terminates the logic in hashchange
         const oldHash = _locate(event.oldURL);
-        const newHash = _locate(event.newURL);
+        let newHash = _locate(event.newURL);
         for (const interceptor of _interceptors) {
-            if (typeof interceptor.path === "string") {
-                if (!Path.PATTERN_PATH.test(interceptor.path))
+            const path = interceptor.path;
+            if (typeof path === "string") {
+                if (!Path.PATTERN_PATH.test(path))
                     continue;
-                if (interceptor.path.endsWith("#")) {
-                    if (!newHash.startsWith(interceptor.path))
-                        continue;
-                } else {
-                    if (newHash !== interceptor.path
-                            && !newHash.startsWith(interceptor.path + "#"))
-                        continue;
-                }
-            } else if (interceptor.path instanceof RegExp) {
-                if (!interceptor.path.test(newHash))
+                const prefix = path.endsWith("#") ? path : path + "#";
+                if (newHash !== path
+                        && !newHash.startsWith(prefix))
                     continue;
-            } else continue;
+            } else if (!(path instanceof RegExp)
+                    || !path.test(newHash))
+                continue;
+            const previousHash = Browser.location;
             if (typeof interceptor.actor === "function"
                     && interceptor.actor(oldHash, newHash) === false)
                 return;
+            const currentHash = Browser.location;
+            if (previousHash !== currentHash)
+                newHash = currentHash || "#";
         }
 
         const location = Routing.location || "#";

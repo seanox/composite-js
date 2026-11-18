@@ -344,9 +344,14 @@
                 if (newHash !== path
                         && !newHash.startsWith(prefix))
                     continue;
-            } else if (!(path instanceof RegExp)
-                    || !path.test(newHash))
-                continue;
+            } else {
+                if (!(path instanceof RegExp))
+                    continue;
+                if (path.global || path.sticky)
+                    path.lastIndex = 0;
+                if (!path.test(newHash))
+                    continue;
+            }
             const previousHash = Browser.location;
             if (typeof interceptor.actor === "function"
                     && interceptor.actor(oldHash, newHash) === false)

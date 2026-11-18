@@ -282,9 +282,9 @@
 
         const marker = `[${Composer.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}]`;
         const path = lookup.split("#").slice(1).map(entry =>
-            `[id="${entry}"]${marker},[id^="${entry}@"]${marker}`);
+            `[id="${entry}"]${marker}`);
         while (path.length > 0) {
-            const element = document.querySelector(path.join(">"));
+            const element = document.querySelector(path.join(" "));
             if (element instanceof Element)
                 return element;
             path.pop();

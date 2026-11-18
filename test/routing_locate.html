@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        window.history.replaceState(null, "", "#a#b");
+
+        Test.create({name:"Routing locates nested routed composites through markup", test() {
+            const location = Routing.locate(true);
+            Assert.assertEquals("#a#b", location.locate);
+            Assert.assertEquals("", location.data.join("#"));
+        }});
+
+        window.addEventListener("load", () => Test.start());
+    </script>
+  </head>
+  <body route>
+    <div id="a" composite route>
+      <div>
+        <div id="b" composite route></div>
+      </div>
+    </div>
+  </body>
+</html>

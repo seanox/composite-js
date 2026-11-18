@@ -48,6 +48,10 @@
             Assert.assertEquals("#initial", Routing.location);
         }});
 
+        Test.create({name:"Routing exposes URL-based navigation only", test() {
+            Assert.assertUndefined(Routing.forward);
+        }});
+
         Test.create({name:"Route changes the URL in a microtask and preserves native events", test() {
             _reset("#start");
             const oldURL = window.location.href;
@@ -145,23 +149,6 @@
             });
         }});
 
-        Test.create({name:"Forward remains synchronous without changing the browser URL", test() {
-            _reset("#start");
-            const oldURL = window.location.href;
-            const length = window.history.length;
-            Routing.forward("#forwarded");
-            Assert.assertEquals(1, _events.length);
-            Assert.assertEquals(1, _navigations.length);
-            Assert.assertEquals("#start", _navigations[0].oldHash);
-            Assert.assertEquals("#forwarded", _navigations[0].newHash);
-            Assert.assertEquals(oldURL, window.location.href);
-            Assert.assertEquals(length, window.history.length);
-            return _settle().then(() => {
-                Assert.assertEquals(1, _events.length);
-                Assert.assertFalse(_events[0].isTrusted);
-            });
-        }});
-
         Test.create({name:"Interceptors can schedule another route", test() {
             _reset("#start");
             Routing.route("#schedule");
@@ -225,18 +212,6 @@
                 Assert.assertEquals("#", Routing.location);
                 Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#").length);
                 Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#unrelated").length);
-            });
-        }});
-
-        Test.create({name:"Forwarding does not consume a pending root fallback", test() {
-            _reset("");
-            Routing.route("#");
-            return Promise.resolve().then(() => {
-                Routing.forward("#forwarded-root");
-            }).then(_settle).then(() => {
-                Assert.assertEquals("#", Routing.location);
-                Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#").length);
-                Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#forwarded-root").length);
             });
         }});
 

@@ -9,6 +9,16 @@
         Test.activate();
 
         const _matches = [];
+        const _navigate = path => new Promise(resolve => {
+            const listener = event => {
+                if (new URL(event.newURL, window.location.href).hash !== path)
+                    return;
+                window.removeEventListener("hashchange", listener);
+                resolve();
+            };
+            window.addEventListener("hashchange", listener);
+            Routing.route(path);
+        });
         Routing.customize(/^#a/g, (oldHash, newHash) => {
             _matches.push("g" + newHash);
         });
@@ -19,10 +29,9 @@
         Routing.customize("#a", () => false);
 
         Test.create({name:"Global RegExp interceptors match each navigation", test() {
-            Routing.forward("#a#1");
-            Routing.forward("#a#2");
-            Routing.forward("#a#3");
-            Assert.assertSameTo("script[type='text/test']", _matches.join("\r\n"));
+            return _navigate("#a#1").then(() => _navigate("#a#2"))
+                .then(() => _navigate("#a#3")).then(() =>
+                    Assert.assertSameTo("script[type='text/test']", _matches.join("\r\n")));
         }});
 
         Test.create({name:"Frozen non-global RegExp interceptors remain usable", test() {
@@ -31,8 +40,7 @@
                 matched = true;
                 return false;
             });
-            Routing.forward("#frozen");
-            Assert.assertTrue(matched);
+            return _navigate("#frozen").then(() => Assert.assertTrue(matched));
         }});
 
         document.addEventListener("DOMContentLoaded", () => {

@@ -142,27 +142,6 @@
                 }, 0);
             }, path);
         },
-        
-        /**
-         * Forwards to the given path. In difference to the route method, the
-         * forwarding is triggered directly as an event, whereas the route
-         * method an asynchronous forwarding by changing the location hash.
-         * @param {string} path
-         */
-        forward(path) {
-            if (path === undefined
-                    || (typeof path !== "string"
-                            && path !== null))
-                throw new TypeError("Invalid data type");
-            path = Path.normalize(path);
-            if (path === null
-                    || path === Browser.location)
-                return;
-            const event = new Event("hashchange",{bubbles:false, cancelable:true});
-            event.oldURL = Browser.location;
-            event.newURL = path;
-            window.dispatchEvent(event);
-        },
            
         /**
          * Checks whether routing keeps or removes the composite in the DOM.

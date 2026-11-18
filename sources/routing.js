@@ -245,7 +245,7 @@
         locate(meta = false) {
             if (!_routing_active)
                 return undefined;
-            const location = Routing.location;
+            const location = Routing.location || "#";
             const locate = _lookup(_lookup(location));
             if ((meta == null || typeof meta !== "object")
                     && meta !== true)
@@ -334,7 +334,7 @@
         // - following interceptors use the possibly changed hash/path
         // - on the first explicit false, terminates the logic in hashchange
         const oldHash = _locate(event.oldURL);
-        let newHash = _locate(event.newURL);
+        let newHash = _locate(event.newURL) || "#";
         for (const interceptor of _interceptors) {
             const path = interceptor.path;
             if (typeof path === "string") {

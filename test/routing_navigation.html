@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        window.history.replaceState(null, "", "#initial");
+
+        const _events = [];
+        const _popstates = [];
+        const _navigations = [];
+        const _settle = () => new Promise(resolve =>
+            window.setTimeout(resolve, 100));
+        const _reset = path => {
+            window.history.replaceState(null, "",
+                window.location.href.replace(/#.*$/, "") + path);
+            _events.length = 0;
+            _popstates.length = 0;
+            _navigations.length = 0;
+        };
+        const _change = (path, action) => new Promise(resolve => {
+            const listener = event => {
+                if (new URL(event.newURL, window.location.href).hash !== path)
+                    return;
+                window.removeEventListener("hashchange", listener);
+                resolve(event);
+            };
+            window.addEventListener("hashchange", listener);
+            action();
+        });
+
+        Routing.customize(/.*/, (oldHash, newHash) => {
+            _navigations.push({oldHash, newHash, location:Routing.location});
+        });
+        Routing.customize("#blocked", () => false);
+        Routing.customize("#schedule", () => Routing.route("#scheduled"));
+        window.addEventListener("hashchange", event => _events.push(event));
+        window.addEventListener("popstate", event => _popstates.push(event));
+
+        Test.create({name:"Initial hash uses the common routing entry", test() {
+            Assert.assertEquals(1, _navigations.length);
+            Assert.assertNull(_navigations[0].oldHash);
+            Assert.assertEquals("#initial", _navigations[0].newHash);
+            Assert.assertEquals("#initial", Routing.location);
+        }});
+
+        Test.create({name:"Route changes the URL in a microtask and preserves native events", test() {
+            _reset("#start");
+            const oldURL = window.location.href;
+            const length = window.history.length;
+            Routing.route("#owned");
+            Assert.assertEquals(oldURL, window.location.href);
+            Assert.assertEquals(0, _events.length);
+            let observed;
+            let location;
+            return Promise.resolve().then(() => {
+                observed = _events.slice();
+                location = Routing.location;
+            }).then(_settle).then(() => {
+                Assert.assertEquals(0, observed.length);
+                Assert.assertEquals("#owned", location);
+                Assert.assertEquals(1, _events.length);
+                Assert.assertTrue(_events[0].isTrusted);
+                Assert.assertTrue(_events[0] instanceof HashChangeEvent);
+                Assert.assertEquals(oldURL, _events[0].oldURL);
+                Assert.assertEquals(window.location.href, _events[0].newURL);
+                Assert.assertEquals(1, _popstates.length);
+                Assert.assertTrue(_popstates[0].isTrusted);
+                Assert.assertEquals("#owned", Routing.location);
+                Assert.assertEquals(length + 1, window.history.length);
+                Assert.assertEquals(1, _events.length);
+                Assert.assertEquals(1, _navigations.length);
+                Assert.assertEquals("#owned", Routing.history[Routing.history.length - 1]);
+            });
+        }});
+
+        Test.create({name:"Rapid routes report native transitions once and in order", test() {
+            _reset("#start");
+            Routing.route("#first");
+            Routing.route("#second");
+            return _settle().then(() => {
+                Assert.assertEquals(2, _navigations.length);
+                Assert.assertEquals("#start", _navigations[0].oldHash);
+                Assert.assertEquals("#first", _navigations[0].newHash);
+                Assert.assertEquals("#first", _navigations[1].oldHash);
+                Assert.assertEquals("#second", _navigations[1].newHash);
+                Assert.assertEquals("#second", _navigations[1].location);
+                Assert.assertEquals("#second", Routing.history[Routing.history.length - 1]);
+                Assert.assertEquals(2, _events.length);
+                Assert.assertTrue(_events[0].isTrusted);
+                Assert.assertTrue(_events[1].isTrusted);
+            });
+        }});
+
+        Test.create({name:"Repeated queued destinations do not add events or history entries", test() {
+            _reset("#start");
+            const length = window.history.length;
+            Routing.route("#repeated");
+            Routing.route("#repeated");
+            return _settle().then(() => {
+                Assert.assertEquals(1, _events.length);
+                Assert.assertEquals(1, _navigations.length);
+                Assert.assertEquals(length + 1, window.history.length);
+            });
+        }});
+
+        Test.create({name:"Queued relative paths keep their call-time base", test() {
+            _reset("#parent");
+            Routing.route("#other");
+            Routing.route("child");
+            return _settle().then(() => {
+                Assert.assertEquals(2, _navigations.length);
+                Assert.assertEquals("#other", _navigations[0].newHash);
+                Assert.assertEquals("#parent#child", _navigations[1].newHash);
+                Assert.assertEquals("#parent#child", Routing.location);
+            });
+        }});
+
+        Test.create({name:"Current and empty destinations remain no-ops", test() {
+            _reset("#unchanged");
+            const length = window.history.length;
+            Routing.route("#unchanged");
+            Routing.route("");
+            Routing.route(null);
+            return _settle().then(() => {
+                Assert.assertEquals(0, _events.length);
+                Assert.assertEquals(0, _navigations.length);
+                Assert.assertEquals(length, window.history.length);
+            });
+        }});
+
+        Test.create({name:"An interceptor can stop routing without undoing the URL", test() {
+            _reset("#start");
+            const history = Routing.history.join(",");
+            Routing.route("#blocked");
+            return _settle().then(() => {
+                Assert.assertEquals("#blocked", Routing.location);
+                Assert.assertEquals(history, Routing.history.join(","));
+                Assert.assertEquals(1, _events.length);
+                Assert.assertEquals(1, _navigations.length);
+            });
+        }});
+
+        Test.create({name:"Forward remains synchronous without changing the browser URL", test() {
+            _reset("#start");
+            const oldURL = window.location.href;
+            const length = window.history.length;
+            Routing.forward("#forwarded");
+            Assert.assertEquals(1, _events.length);
+            Assert.assertEquals(1, _navigations.length);
+            Assert.assertEquals("#start", _navigations[0].oldHash);
+            Assert.assertEquals("#forwarded", _navigations[0].newHash);
+            Assert.assertEquals(oldURL, window.location.href);
+            Assert.assertEquals(length, window.history.length);
+            return _settle().then(() => {
+                Assert.assertEquals(1, _events.length);
+                Assert.assertFalse(_events[0].isTrusted);
+            });
+        }});
+
+        Test.create({name:"Interceptors can schedule another route", test() {
+            _reset("#start");
+            Routing.route("#schedule");
+            return _settle().then(() => {
+                Assert.assertEquals(2, _events.length);
+                Assert.assertEquals(2, _navigations.length);
+                Assert.assertEquals("#schedule", _navigations[0].newHash);
+                Assert.assertEquals("#schedule", _navigations[1].oldHash);
+                Assert.assertEquals("#scheduled", _navigations[1].newHash);
+                Assert.assertEquals("#scheduled", Routing.location);
+            });
+        }});
+
+        Test.create({name:"Hashless root navigation is processed once after the microtask", test() {
+            _reset("");
+            let observed;
+            Routing.route("#");
+            return Promise.resolve().then(() => {
+                observed = _events.slice();
+            }).then(_settle).then(() => {
+                Assert.assertEquals(0, observed.length);
+                Assert.assertEquals("#", Routing.location);
+                Assert.assertTrue(window.location.href.endsWith("#"));
+                Assert.assertEquals(1, _events.length);
+                Assert.assertEquals(1, _navigations.length);
+                Assert.assertNull(_navigations[0].oldHash);
+                Assert.assertEquals("#", _navigations[0].newHash);
+            });
+        }});
+
+        Test.create({name:"Repeated hashless root requests are processed once", test() {
+            _reset("");
+            Routing.route("#");
+            Routing.route("#");
+            return _settle().then(() => {
+                Assert.assertEquals("#", Routing.location);
+                Assert.assertEquals(1, _events.length);
+                Assert.assertEquals(1, _navigations.length);
+            });
+        }});
+
+        Test.create({name:"Leaving the root cancels its pending fallback", test() {
+            _reset("");
+            Routing.route("#");
+            Routing.route("#after-root");
+            return _settle().then(() => {
+                Assert.assertEquals("#after-root", Routing.location);
+                Assert.assertTrue(_events.length > 0);
+                Assert.assertTrue(_events.every(event => event.isTrusted));
+                Assert.assertEquals("#after-root", _navigations[_navigations.length - 1].newHash);
+            });
+        }});
+
+        Test.create({name:"An unrelated pending hashchange does not cancel the root fallback", test() {
+            _reset("#before-root");
+            window.location.hash = "unrelated";
+            window.history.replaceState(null, "",
+                window.location.pathname + window.location.search);
+            Routing.route("#");
+            return _settle().then(() => {
+                Assert.assertEquals("#", Routing.location);
+                Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#").length);
+                Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#unrelated").length);
+            });
+        }});
+
+        Test.create({name:"Forwarding does not consume a pending root fallback", test() {
+            _reset("");
+            Routing.route("#");
+            return Promise.resolve().then(() => {
+                Routing.forward("#forwarded-root");
+            }).then(_settle).then(() => {
+                Assert.assertEquals("#", Routing.location);
+                Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#").length);
+                Assert.assertEquals(1, _navigations.filter(entry => entry.newHash === "#forwarded-root").length);
+            });
+        }});
+
+        Test.create({name:"Route preserves the browser CSS target", test() {
+            _reset("#start");
+            return _change("#first", () => {
+                window.location.hash = "first";
+            }).then(_settle).then(() => {
+                Assert.assertEquals("first", document.querySelector(":target").id);
+                return _change("#second", () => Routing.route("#second"));
+            }).then(_settle).then(() => {
+                Assert.assertEquals("#second", Routing.location);
+                Assert.assertEquals("second", document.querySelector(":target").id);
+            });
+        }});
+
+        Test.create({name:"Native hash changes still enter routing once", test() {
+            _reset("#start");
+            return _change("#manual", () => {
+                window.location.hash = "manual";
+            }).then(_settle).then(() => {
+                Assert.assertEquals(1, _events.length);
+                Assert.assertTrue(_events[0].isTrusted);
+                Assert.assertEquals(1, _navigations.length);
+                Assert.assertEquals("#start", _navigations[0].oldHash);
+                Assert.assertEquals("#manual", _navigations[0].newHash);
+                Assert.assertEquals("#manual", Routing.history[Routing.history.length - 1]);
+            });
+        }});
+
+        Test.create({name:"Ordinary hash links still use native navigation", test() {
+            _reset("#start");
+            return _change("#linked", () => {
+                document.getElementById("link").click();
+            }).then(_settle).then(() => {
+                Assert.assertEquals(1, _events.length);
+                Assert.assertTrue(_events[0].isTrusted);
+                Assert.assertEquals(1, _navigations.length);
+                Assert.assertEquals("#linked", Routing.location);
+            });
+        }});
+
+        Test.create({name:"Browser back and forward traverse routes and preserve entry state", timeout:5000, test() {
+            _reset("#origin");
+            window.history.replaceState({marker:"origin"}, "", window.location.href);
+            return _change("#history", () => {
+                Routing.route("#history");
+            }).then(() => {
+                Assert.assertNull(window.history.state);
+                return _change("#origin", () => window.history.back());
+            }).then(event => {
+                Assert.assertTrue(event.isTrusted);
+                Assert.assertEquals("origin", window.history.state.marker);
+                return _change("#history", () => window.history.forward());
+            }).then(_settle).then(() => {
+                Assert.assertEquals(3, _events.length);
+                Assert.assertTrue(_events[0].isTrusted);
+                Assert.assertTrue(_events[1].isTrusted);
+                Assert.assertTrue(_events[2].isTrusted);
+                Assert.assertEquals(3, _navigations.length);
+                Assert.assertEquals("#history", Routing.location);
+                Assert.assertNull(window.history.state);
+            });
+        }});
+
+        Test.create({name:"Mixed native and programmatic navigation preserves transition order", test() {
+            _reset("#origin");
+            window.location.hash = "external";
+            Routing.route("#internal");
+            return _settle().then(() => {
+                Assert.assertEquals(2, _events.length);
+                Assert.assertTrue(_events[0].isTrusted);
+                Assert.assertTrue(_events[1].isTrusted);
+                Assert.assertEquals(2, _navigations.length);
+                Assert.assertEquals("#origin", _navigations[0].oldHash);
+                Assert.assertEquals("#external", _navigations[0].newHash);
+                Assert.assertEquals("#external", _navigations[1].oldHash);
+                Assert.assertEquals("#internal", _navigations[1].newHash);
+                Assert.assertEquals("#internal", Routing.location);
+            });
+        }});
+
+        Test.create({name:"Route ignores document base URLs and reports serialized hashes", test() {
+            _reset("#start");
+            const base = document.createElement("base");
+            base.href = "resources/";
+            document.head.appendChild(base);
+            const address = window.location.href.replace(/#.*$/, "");
+            Routing.route("#quoted\"value");
+            Routing.route("#quoted\"value");
+            return _settle().then(() => {
+                Assert.assertEquals(address, window.location.href.replace(/#.*$/, ""));
+                Assert.assertEquals("#quoted%22value", Routing.location);
+                Assert.assertEquals(1, _events.length);
+                Assert.assertEquals(window.location.href, _events[0].newURL);
+                Assert.assertEquals("#quoted%22value", _navigations[0].newHash);
+            }).then(() => base.remove(), error => {
+                base.remove();
+                throw error;
+            });
+        }});
+
+        Test.create({name:"Root navigation adds the fragment to the current document despite a base URL", test() {
+            _reset("");
+            const base = document.createElement("base");
+            base.href = "resources/";
+            document.head.appendChild(base);
+            const address = window.location.href;
+            Routing.route("#");
+            return _settle().then(() => {
+                Assert.assertEquals(address + "#", window.location.href);
+                Assert.assertEquals(1, _events.length);
+                Assert.assertEquals(1, _navigations.length);
+            }).then(() => base.remove(), error => {
+                base.remove();
+                throw error;
+            });
+        }});
+
+        document.addEventListener("DOMContentLoaded", () => {
+            window.setTimeout(() => Test.start(), 100);
+        });
+    </script>
+  </head>
+  <body route>
+    <a id="link" href="#linked">Linked route</a>
+    <div id="first">First target</div>
+    <div id="second">Second target</div>
+  </body>
+</html>

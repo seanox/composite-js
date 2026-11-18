@@ -53,9 +53,28 @@
                     window.location.pathname + window.location.search);
                 Routing.route("#target");
             }).then(() => {
+                // Root normalization can enqueue another native hashchange.
+                return new Promise(resolve => window.setTimeout(resolve, 100));
+            }).then(() => {
                 Assert.assertEquals("#", interceptedHash);
                 Assert.assertEquals("#", Routing.location);
             });
+        }});
+
+        Test.create({name:"Routing to the root without a hash is dispatched once", timeout:3000, test() {
+            let count = 0;
+            Routing.customize("#", (oldHash, newHash) => {
+                if (newHash === "#")
+                    count++;
+            });
+            window.history.pushState(null, "",
+                window.location.pathname + window.location.search);
+            Routing.route("#");
+            return new Promise(resolve =>
+                window.setTimeout(resolve, 100)).then(() => {
+                    Assert.assertEquals(1, count);
+                    Assert.assertEquals("#", Routing.location);
+                });
         }});
 
         document.addEventListener("DOMContentLoaded", () => {

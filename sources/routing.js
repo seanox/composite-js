@@ -40,11 +40,8 @@
     // initially when the page is loaded.
     let _routing_active;
 
-    // Task that triggers the hashchange event via a timer if the hashchange
-    // event from the browser does not occur. If the browser event occurs as
-    // planned, the interrupt is discarded. It concerns Mozilla/Gecko, where the
-    // change from / to /# does not trigger a hashchange event.
-    let _routing_interrupt;
+    // Fallback for browsers that omit hashchange when adding an empty fragment.
+    let _routing_interrupt = null;
 
     // Array with all supported interceptors
     const _interceptors = [];
@@ -123,16 +120,26 @@
                     || path === Browser.location)
                 return;
             Composer.asynchronous(path => {
-                const event = new Event("hashchange",{bubbles:false, cancelable:true});
-                event.oldURL = Browser.location;
-                event.newURL = path;
-                if (path.startsWith("#"))
-                    window.location.hash = path.substring(1);
-                else window.location.href = path;
-                _routing_interrupt = Composer.asynchronous(event => {
-                    if (event.newURL !== Browser.location)
-                        window.dispatchEvent(event);
-                }, event);
+                const previous = Browser.location;
+                if (path === previous)
+                    return;
+                window.clearTimeout(_routing_interrupt);
+                _routing_interrupt = null;
+                const oldURL = window.location.href;
+                window.location.href = oldURL.replace(/#.*$/, "") + path;
+                if (previous !== null
+                        || path !== "#")
+                    return;
+                const newURL = oldURL + "#";
+                _routing_interrupt = window.setTimeout(() => {
+                    _routing_interrupt = null;
+                    if (window.location.href !== newURL)
+                        return;
+                    const event = new Event("hashchange",{bubbles:false, cancelable:true});
+                    event.oldURL = oldURL;
+                    event.newURL = newURL;
+                    window.dispatchEvent(event);
+                }, 0);
             }, path);
         },
         
@@ -320,8 +327,14 @@
      */
     window.addEventListener("hashchange", (event) => {
 
-        if (_routing_interrupt)
-            _routing_interrupt.cancel();
+        if (_routing_interrupt !== null
+                && event.isTrusted
+                && (Browser.location !== "#"
+                    || (_locate(event.oldURL) === null
+                        && _locate(event.newURL) === "#"))) {
+            window.clearTimeout(_routing_interrupt);
+            _routing_interrupt = null;
+        }
 
         if (!_routing_active)
             return;

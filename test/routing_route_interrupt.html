@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        window.history.replaceState(null, "", "#a");
+
+        const _navigations = [];
+        Routing.customize(/.*/, (oldHash, newHash) => {
+            if (newHash === "#b"
+                    || newHash === "#c") {
+                _navigations.push(oldHash + " -> " + newHash);
+                return false;
+            }
+        });
+
+        Test.create({name:"Rapid route calls dispatch each navigation once", test() {
+            Assert.assertSameTo("script[type='text/test']", _navigations.join("\r\n"));
+        }});
+
+        window.addEventListener("load", () => {
+            window.setTimeout(() => {
+                Routing.route("#b");
+                Routing.route("#c");
+                window.setTimeout(() => Test.start(), 100);
+            }, 100);
+        });
+    </script>
+    <script type="text/test">
+      #a -> #b
+      #b -> #c
+    </script>
+  </head>
+  <body route>
+  </body>
+</html>

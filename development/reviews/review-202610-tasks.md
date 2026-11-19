@@ -504,6 +504,12 @@ Beachte unterschiedliche Property-Namen wie `readonly -> readOnly` und
 `autofocus -> autofocus`. Ergaenze `checked`/`selected` und die weiteren
 unterstuetzten booleschen HTML-Attribute konsistent.
 
+Bei `raw === undefined` das dynamische Zielattribut entfernen, ohne den Wert
+als String auszugeben. Das gilt auch fuer den Zielnamen eines `@`-Attributs.
+Diese Attributregel legt nicht fest, welcher Wert einer zugehoerigen
+DOM-Property zugewiesen wird; diese Property-Semantik separat und typgerecht
+behandeln.
+
 Bei einem booleschen `raw === false` das Attribut entfernen und die
 zugehoerige Property auf `false` setzen; bei `true` das Praesenzattribut
 setzen und die Property auf `true`. Der aktuelle Observer-Vertrag fuer die
@@ -522,8 +528,9 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 
 1. Bewahre den Rohwert der Expression bis zur Property-Zuweisung auf. Erzeuge
    einen String nur fuer diejenigen Attributpfade, die Text benoetigen.
-2. Setze boolesche Properties typgerecht und halte die zugehoerige
-   Attributpraesenz entsprechend dem bestehenden Composer-Vertrag konsistent.
+2. Entferne bei `raw === undefined` das dynamische Zielattribut. Setze
+   boolesche Properties typgerecht und halte die zugehoerige Attributpraesenz
+   entsprechend dem bestehenden Composer-Vertrag konsistent.
 3. Stimme direkten Renderpfad und MutationObserver ab. Verhindere, dass die
    Property-Reflexion die beabsichtigte Normalisierung vorzeitig unkenntlich macht.
 4. Behalte die Textsemantik normaler Attribute sowie von `aria-*` und `data-*`
@@ -533,6 +540,7 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 
 - [ ] `disabled="{{false}}"` und `checked="{{false}}"` ergeben false-Properties und keine aktivierenden Attribute.
 - [ ] Der Wechsel `false -> true -> false` funktioniert auch nach Observer-Verarbeitung.
+- [ ] `undefined` entfernt das dynamische Zielattribut, erzeugt keinen Stringwert und ein spaeterer definierter Wert wird wieder gesetzt.
 - [ ] Ein normales `title` mit dem Wert `false` sowie `aria-*`-/`data-*`-Werte behalten ihre vorgesehene Textdarstellung; es entstehen keine Observer-Schleifen.
 
 **Testansatz:** `test\composer_render_attributes.html`,

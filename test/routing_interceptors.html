@@ -11,7 +11,7 @@
     </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
-    
+
         Test.activate();
 
         let _actors = "!";
@@ -19,7 +19,22 @@
             get actors() {
                 return _actors;
             }
-        }
+        };
+        const _snapshots = [];
+        const _matches = [];
+        const _settle = () => new Promise(resolve =>
+            window.setTimeout(resolve, 100));
+        const _navigate = path => new Promise(resolve => {
+            const listener = event => {
+                if (new URL(event.newURL, window.location.href).hash !== path)
+                    return;
+                window.removeEventListener("hashchange", listener);
+                resolve();
+            };
+            window.addEventListener("hashchange", listener);
+            Routing.route(path);
+        }).then(_settle);
+
         Routing.customize(/\bc\b/, () => {
             _actors += "1";
             return false;
@@ -36,28 +51,87 @@
             return false;
         });
 
-        let _sequence = ["#a", "#b#c", "#a#b#c", "#c#d", "#b#x", "#a#b#c", "#a", "#c#d", "#a#b#c", "#b#x"];
-        const _snapshots = [];
-        const runSequence = () => {
-            window.setTimeout(() => {
-                _snapshots.push(document.body.innerText.replace(/\s+/g, ""));
-                if (_sequence.length <= 0) {
-                    document.body.innerText = _snapshots.join("\r\n");
-                    Test.start();
+        let _staleMatch = false;
+        let _staleArgument = false;
+        let _updatedTarget = null;
+        Routing.customize("#redirect#old", () => {
+            window.location.replace("#redirect#new");
+        });
+        Routing.customize("#redirect#old", () => {
+            if (window.location.hash === "#redirect#new")
+                _staleMatch = true;
+        });
+        Routing.customize(/.*/, (oldHash, newHash) => {
+            if (newHash === "#redirect#old"
+                    && window.location.hash === "#redirect#new")
+                _staleArgument = true;
+        });
+        Routing.customize("#redirect#new", (oldHash, newHash) => {
+            _updatedTarget = newHash;
+        });
+        const _redirected = new Promise(resolve => {
+            const listener = event => {
+                if (new URL(event.newURL, window.location.href).hash !== "#redirect#old")
                     return;
-                }
-                Routing.route(_sequence.shift());
-                runSequence();
-            }, 250);
-        };
-        runSequence();
+                window.removeEventListener("hashchange", listener);
+                resolve(_updatedTarget);
+            };
+            window.addEventListener("hashchange", listener);
+        });
 
-        Test.create({test() {
-            const content = _snapshots.join("\r\n");
-            Assert.assertSameTo("script[type='text/test']", content);
+        Routing.customize(/^#regexp#a/g, (oldHash, newHash) => {
+            _matches.push("g" + newHash);
+        });
+        Routing.customize(/^#regexp#a/y, (oldHash, newHash) => {
+            _matches.push("y" + newHash);
+            return false;
+        });
+        Routing.customize("#regexp#a", () => false);
+
+        Test.create({name:"Interceptors run in order and stop after explicit false",
+            timeout:5000, async test() {
+                const sequence = ["#a", "#b#c", "#a#b#c", "#c#d", "#b#x",
+                    "#a#b#c", "#a", "#c#d", "#a#b#c", "#b#x"];
+                for (const path of sequence) {
+                    _snapshots.push(document.body.innerText.replace(/\s+/g, ""));
+                    await _navigate(path);
+                }
+                _snapshots.push(document.body.innerText.replace(/\s+/g, ""));
+                Assert.assertSameTo("#expectedBasic", _snapshots.join("\r\n"));
+            }});
+
+        Test.create({name:"Interceptor matching uses redirected target", timeout:3000, test() {
+            Routing.route("#redirect#old");
+            return _redirected.then(target => {
+                Assert.assertFalse(_staleMatch);
+                Assert.assertEquals("#redirect#new", target);
+            }).then(_settle);
         }});
+
+        Test.create({name:"Interceptor callback uses redirected target", timeout:3000, test() {
+            return _redirected.then(() => Assert.assertFalse(_staleArgument));
+        }});
+
+        Test.create({name:"Global RegExp interceptors match each navigation", test() {
+            return _navigate("#regexp#a#1").then(() => _navigate("#regexp#a#2"))
+                .then(() => _navigate("#regexp#a#3")).then(() =>
+                    Assert.assertSameTo("#expectedRegExp", _matches.join("\r\n")));
+        }});
+
+        Test.create({name:"Frozen non-global RegExp interceptors remain usable", test() {
+            let matched = false;
+            Routing.customize(Object.freeze(/^#regexp#frozen$/), () => {
+                matched = true;
+                return false;
+            });
+            return _navigate("#regexp#frozen").then(() => Assert.assertTrue(matched));
+        }});
+
+        document.addEventListener("DOMContentLoaded", () => {
+            window.setTimeout(() => Test.start(), 100);
+        });
     </script>
-    <script type="text/test">
+    <script id="expectedBasic" type="text/test">
       0!
       1!2
       1!2
@@ -69,6 +143,14 @@
       7!2111312
       7!2111312
       10!2111312113
+    </script>
+    <script id="expectedRegExp" type="text/test">
+      g#regexp#a#1
+      y#regexp#a#1
+      g#regexp#a#2
+      y#regexp#a#2
+      g#regexp#a#3
+      y#regexp#a#3
     </script>
   </head>
   <body route>

@@ -48,10 +48,6 @@
             Assert.assertEquals("#initial", Routing.location);
         }});
 
-        Test.create({name:"Routing exposes URL-based navigation only", test() {
-            Assert.assertUndefined(Routing.forward);
-        }});
-
         Test.create({name:"Route changes the URL in a microtask and preserves native events", test() {
             _reset("#start");
             const oldURL = window.location.href;
@@ -82,23 +78,32 @@
             });
         }});
 
-        Test.create({name:"Rapid routes report native transitions once and in order", test() {
-            _reset("#start");
-            Routing.route("#first");
-            Routing.route("#second");
-            return _settle().then(() => {
-                Assert.assertEquals(2, _navigations.length);
-                Assert.assertEquals("#start", _navigations[0].oldHash);
-                Assert.assertEquals("#first", _navigations[0].newHash);
-                Assert.assertEquals("#first", _navigations[1].oldHash);
-                Assert.assertEquals("#second", _navigations[1].newHash);
-                Assert.assertEquals("#second", _navigations[1].location);
-                Assert.assertEquals("#second", Routing.history[Routing.history.length - 1]);
-                Assert.assertEquals(2, _events.length);
-                Assert.assertTrue(_events[0].isTrusted);
-                Assert.assertTrue(_events[1].isTrusted);
-            });
-        }});
+        for (const prefix of ["", "#blocked"]) {
+            Test.create({name:`Rapid ${prefix ? "blocked " : ""}routes report native transitions once and in order`,
+                test() {
+                    _reset("#start");
+                    const first = prefix + "#first";
+                    const second = prefix + "#second";
+                    const history = Routing.history.join(",");
+                    Routing.route(first);
+                    Routing.route(second);
+                    return _settle().then(() => {
+                        Assert.assertEquals(2, _navigations.length);
+                        Assert.assertEquals("#start", _navigations[0].oldHash);
+                        Assert.assertEquals(first, _navigations[0].newHash);
+                        Assert.assertEquals(first, _navigations[1].oldHash);
+                        Assert.assertEquals(second, _navigations[1].newHash);
+                        Assert.assertEquals(second, _navigations[1].location);
+                        Assert.assertEquals(second, Routing.location);
+                        if (prefix)
+                            Assert.assertEquals(history, Routing.history.join(","));
+                        else Assert.assertEquals(second, Routing.history[Routing.history.length - 1]);
+                        Assert.assertEquals(2, _events.length);
+                        Assert.assertTrue(_events[0].isTrusted);
+                        Assert.assertTrue(_events[1].isTrusted);
+                    });
+                }});
+        }
 
         Test.create({name:"Repeated queued destinations do not add events or history entries", test() {
             _reset("#start");

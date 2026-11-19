@@ -29,6 +29,22 @@
         window.routingPermitLogin = {};
         window.routingPermitDefault = {};
 
+        window.routingCondition = {
+            permission:true,
+            visible:true,
+            evaluations:0,
+            permit() {
+                return this.permission;
+            },
+            condition() {
+                this.evaluations++;
+                return this.visible;
+            }
+        };
+        window.routingAlways = routingCondition;
+        window.routingNever = routingCondition;
+        window.routingDefault = routingCondition;
+
         Routing.customize("#routingPermit", () => {
             if (!_authenticated) {
                 window.location.replace("#routingPermitLogin");
@@ -39,8 +55,15 @@
         Routing.customize(/.*/, (previous, next) => _navigations.push(next));
         window.addEventListener("hashchange", event => _events.push(event));
         Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
-            if (selector === document.body && _finishRender)
-                _finishRender();
+            if (selector === document.body && _finishRender) {
+                const finish = _finishRender;
+                _finishRender = null;
+                finish();
+            }
+        });
+        const _render = () => new Promise(resolve => {
+            _finishRender = resolve;
+            Composer.render(document.body);
         });
 
         Test.create({name:"Missing permit uses path coverage", test() {
@@ -146,10 +169,7 @@
                     .concat(_denials.map(entry => entry.value), [undefined]);
                 for (const approval of approvals) {
                     routingPermit.approval = approval;
-                    const rendered = new Promise(resolve => _finishRender = resolve);
-                    Composer.render(document.body);
-                    await rendered;
-                    _finishRender = null;
+                    await _render();
                     Assert.assertEquals(approval === undefined || approval === true,
                         document.getElementById("routingPermit") !== null);
                     Assert.assertNull(document.getElementById("routingPermitLogin"));
@@ -157,6 +177,50 @@
                     Assert.assertEquals(history, Routing.history.join(","));
                 }
             }});
+
+        Test.create({name:"Routing approval combined with own conditions", timeout:5000, async test() {
+            const hash = window.location.hash;
+            let previousElement = null;
+            const states = [
+                {permission:true, visible:true},
+                {permission:true, visible:false},
+                {permission:true, visible:true},
+                {permission:false, visible:true},
+                {permission:false, visible:false},
+                {permission:true, visible:false},
+                {permission:true, visible:true}
+            ];
+            for (const state of states) {
+                routingCondition.permission = state.permission;
+                routingCondition.visible = state.visible;
+                const evaluations = routingCondition.evaluations;
+                await _render();
+
+                const label = `permission=${state.permission}, condition=${state.visible}`;
+                const element = document.getElementById("routingCondition");
+                Assert.assertEquals(`${label}: variable condition`,
+                    state.permission && state.visible, element !== null);
+                Assert.assertEquals(`${label}: literal true condition`,
+                    state.permission, document.getElementById("routingAlways") !== null);
+                Assert.assertEquals(`${label}: literal false condition`,
+                    null, document.getElementById("routingNever"));
+                Assert.assertEquals(`${label}: no own condition`,
+                    state.permission, document.getElementById("routingDefault") !== null);
+                Assert.assertEquals(`${label}: short-circuit evaluation`,
+                    evaluations + (state.permission ? 1 : 0), routingCondition.evaluations);
+                Assert.assertEquals(`${label}: no navigation`, hash, window.location.hash);
+
+                if (element) {
+                    Assert.assertEquals("variable", element.textContent);
+                    if (previousElement)
+                        Assert.assertTrue("Reinsertion must create a new element",
+                            element !== previousElement);
+                    previousElement = element;
+                } else if (previousElement)
+                    Assert.assertFalse("The previous element must be disconnected",
+                        previousElement.isConnected);
+            }
+        }});
 
         Test.create({name:"An interceptor redirects denied navigation to the login view",
             timeout:5000, async test() {
@@ -168,7 +232,6 @@
                 const rendered = new Promise(resolve => _finishRender = resolve);
                 Routing.route("#routingPermit#settings");
                 await rendered;
-                _finishRender = null;
                 Assert.assertEquals("#routingPermitLogin", Routing.location);
                 Assert.assertEquals("#routingPermitLogin", window.location.hash);
                 Assert.assertEquals("#routingPermitLogin", _navigations.slice(navigations).join(","));
@@ -186,5 +249,9 @@
   <body route>
     <span id="routingPermit" composite route>protected</span>
     <span id="routingPermitLogin" composite route>login</span>
+    <span id="routingCondition" composite route condition="{{routingCondition.condition()}}">variable</span>
+    <span id="routingAlways" composite route condition="{{true}}">always</span>
+    <span id="routingNever" composite route condition="{{false}}">never</span>
+    <span id="routingDefault" composite route>default</span>
   </body>
 </html>

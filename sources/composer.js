@@ -1331,7 +1331,7 @@
                     if ((selector instanceof Element)
                             && selector.attributes) {
 
-                        _render_attributes_initialize(selector, object);
+                        _render_attribute_initialize(selector, object);
 
                         if (_render_attribute_condition_initialize(selector, object, serial, lock))
                             return;
@@ -1370,7 +1370,7 @@
                 _render_attribute_output(selector, object);
                 _render_attribute_interval(selector, object);
                 _render_attribute_iterate(selector, object, lock);
-                _render_attributes_update(selector, object);
+                _render_attribute_value(selector, object);
                 _render_element_script(selector);
                 _render_element_children(selector, object, lock);
 
@@ -2143,7 +2143,7 @@
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
      */
-    const _render_attributes_initialize = (selector, object) => {
+    const _render_attribute_initialize = (selector, object) => {
         Array.from(selector.attributes).forEach((attribute) => {
             attribute = {name:attribute.name.toLowerCase(), value:(attribute.value || "").trim()};
             if (attribute.value.match(PATTERN_EXPRESSION_CONTAINS)
@@ -2770,7 +2770,7 @@
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
      */
-    const _render_attributes_update = (selector, object) => {
+    const _render_attribute_value = (selector, object) => {
 
         if (selector.nodeName.match(PATTERN_ELEMENT_IGNORE))
             return;

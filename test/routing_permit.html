@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        window.history.replaceState(null, "", "#routingPermit");
+
+        let _authenticated = true;
+        let _finishRender = null;
+        let _followingCalls = 0;
+        const _navigations = [];
+        const _events = [];
+
+        window.routingPermit = {
+            approval: undefined,
+            calls: 0,
+            arguments: null,
+            permit() {
+                this.calls++;
+                this.arguments = arguments.length;
+                return this.approval;
+            }
+        };
+        window.routingPermitLogin = {};
+        window.routingPermitDefault = {};
+
+        Routing.customize("#routingPermit", () => {
+            if (!_authenticated) {
+                window.location.replace("#routingPermitLogin");
+                return false;
+            }
+        });
+        Routing.customize("#routingPermit", () => _followingCalls++);
+        Routing.customize(/.*/, (previous, next) => _navigations.push(next));
+        window.addEventListener("hashchange", event => _events.push(event));
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            if (selector === document.body && _finishRender)
+                _finishRender();
+        });
+
+        Test.create({name:"Missing permit uses path coverage", test() {
+            Assert.assertTrue(Routing.approve("#routingPermit", "routingPermitDefault"));
+            Assert.assertFalse(Routing.approve("#other", "routingPermitDefault"));
+        }});
+
+        Test.create({name:"Undefined permit result uses path coverage", test() {
+            const calls = routingPermit.calls;
+            Assert.assertTrue(Routing.approve("#routingPermit", "routingPermit"));
+            Assert.assertFalse(Routing.approve("#other", "routingPermit"));
+            Assert.assertEquals(calls + 2, routingPermit.calls);
+            Assert.assertEquals(0, routingPermit.arguments);
+        }});
+
+        Test.create({name:"True approves independently of path coverage", test() {
+            routingPermit.approval = true;
+            try {
+                Assert.assertTrue(Routing.approve("#routingPermit", "routingPermit"));
+                Assert.assertTrue(Routing.approve("#other", "routingPermit"));
+            } finally {
+                routingPermit.approval = undefined;
+            }
+        }});
+
+        Test.create({name:"False denies independently of path coverage", test() {
+            routingPermit.approval = false;
+            try {
+                Assert.assertFalse(Routing.approve("#routingPermit", "routingPermit"));
+                Assert.assertFalse(Routing.approve("#other", "routingPermit"));
+            } finally {
+                routingPermit.approval = undefined;
+            }
+        }});
+
+        const _denials = [
+            {name:"absolute redirect", value:"#routingPermitLogin"},
+            {name:"self redirect", value:"#routingPermit"},
+            {name:"relative redirect", value:"##routingPermitLogin"},
+            {name:"empty string", value:""},
+            {name:"boolean string", value:"true"},
+            {name:"null", value:null},
+            {name:"zero", value:0},
+            {name:"one", value:1},
+            {name:"NaN", value:NaN},
+            {name:"object", value:{}},
+            {name:"array", value:[]},
+            {name:"boxed boolean", value:new Boolean(false)},
+            {name:"boxed true", value:new Boolean(true)},
+            {name:"function", value:() => true},
+            {name:"symbol", value:Symbol("permit")},
+            {name:"promise", value:Promise.resolve(true)},
+            {name:"thenable", value:{then() {}}}
+        ];
+        for (const entry of _denials) {
+            Test.create({name:`Non-true permit result denies permission: ${entry.name}`,
+                test() {
+                    routingPermit.approval = entry.value;
+                    try {
+                        Assert.assertFalse(Routing.approve("#routingPermit", "routingPermit"));
+                        Assert.assertFalse(Routing.approve("#other", "routingPermit"));
+                    } finally {
+                        routingPermit.approval = undefined;
+                    }
+                }});
+        }
+
+        Test.create({name:"Permit errors propagate unchanged", test() {
+            const failure = new Error("Permit failure");
+            const permit = routingPermit.permit;
+            let caught;
+            routingPermit.permit = () => {throw failure;};
+            try {Routing.approve("#routingPermit", "routingPermit");
+            } catch (error) {
+                caught = error;
+            } finally {
+                routingPermit.permit = permit;
+            }
+            Assert.assertTrue(caught === failure);
+        }});
+
+        Test.create({name:"Repeated approval checks do not navigate", async test() {
+            const location = window.location.href;
+            const history = Routing.history.join(",");
+            const length = window.history.length;
+            const events = _events.length;
+            for (let index = 0; index < 3; index++)
+                Assert.assertTrue(Routing.approve("#routingPermit", "routingPermit"));
+            await new Promise(resolve => window.setTimeout(resolve, 100));
+            Assert.assertEquals(location, window.location.href);
+            Assert.assertEquals(history, Routing.history.join(","));
+            Assert.assertEquals(length, window.history.length);
+            Assert.assertEquals(events, _events.length);
+            Assert.assertEquals("#routingPermit", Routing.location);
+            Assert.assertEquals(1, _navigations.length);
+        }});
+
+        Test.create({name:"Rendering applies permission changes without navigation",
+            timeout:5000, async test() {
+                const location = window.location.href;
+                const history = Routing.history.join(",");
+                const approvals = [undefined, false, true]
+                    .concat(_denials.map(entry => entry.value), [undefined]);
+                for (const approval of approvals) {
+                    routingPermit.approval = approval;
+                    const rendered = new Promise(resolve => _finishRender = resolve);
+                    Composer.render(document.body);
+                    await rendered;
+                    _finishRender = null;
+                    Assert.assertEquals(approval === undefined || approval === true,
+                        document.getElementById("routingPermit") !== null);
+                    Assert.assertNull(document.getElementById("routingPermitLogin"));
+                    Assert.assertEquals(location, window.location.href);
+                    Assert.assertEquals(history, Routing.history.join(","));
+                }
+            }});
+
+        Test.create({name:"An interceptor redirects denied navigation to the login view",
+            timeout:5000, async test() {
+                const followingCalls = _followingCalls;
+                const navigations = _navigations.length;
+                const length = window.history.length;
+                _authenticated = false;
+                routingPermit.approval = false;
+                const rendered = new Promise(resolve => _finishRender = resolve);
+                Routing.route("#routingPermit#settings");
+                await rendered;
+                _finishRender = null;
+                Assert.assertEquals("#routingPermitLogin", Routing.location);
+                Assert.assertEquals("#routingPermitLogin", window.location.hash);
+                Assert.assertEquals("#routingPermitLogin", _navigations.slice(navigations).join(","));
+                Assert.assertEquals(followingCalls, _followingCalls);
+                Assert.assertEquals(-1, Routing.history.indexOf("#routingPermit#settings"));
+                Assert.assertEquals("#routingPermitLogin", Routing.history[Routing.history.length - 1]);
+                Assert.assertEquals(length + 1, window.history.length);
+                Assert.assertNull(document.getElementById("routingPermit"));
+                Assert.assertNotNull(document.getElementById("routingPermitLogin"));
+            }});
+
+        window.addEventListener("load", () => Test.start());
+    </script>
+  </head>
+  <body route>
+    <span id="routingPermit" composite route>protected</span>
+    <span id="routingPermitLogin" composite route>login</span>
+  </body>
+</html>

@@ -504,6 +504,12 @@ Beachte unterschiedliche Property-Namen wie `readonly -> readOnly` und
 `autofocus -> autofocus`. Ergaenze `checked`/`selected` und die weiteren
 unterstuetzten booleschen HTML-Attribute konsistent.
 
+Bei `raw === undefined` das dynamische Zielattribut entfernen, ohne den Wert
+als String auszugeben. Das gilt auch fuer den Zielnamen eines `@`-Attributs.
+Diese Attributregel legt nicht fest, welcher Wert einer zugehoerigen
+DOM-Property zugewiesen wird; diese Property-Semantik separat und typgerecht
+behandeln.
+
 Bei einem booleschen `raw === false` das Attribut entfernen und die
 zugehoerige Property auf `false` setzen; bei `true` das Praesenzattribut
 setzen und die Property auf `true`. Der aktuelle Observer-Vertrag fuer die
@@ -522,8 +528,9 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 
 1. Bewahre den Rohwert der Expression bis zur Property-Zuweisung auf. Erzeuge
    einen String nur fuer diejenigen Attributpfade, die Text benoetigen.
-2. Setze boolesche Properties typgerecht und halte die zugehoerige
-   Attributpraesenz entsprechend dem bestehenden Composer-Vertrag konsistent.
+2. Entferne bei `raw === undefined` das dynamische Zielattribut. Setze
+   boolesche Properties typgerecht und halte die zugehoerige Attributpraesenz
+   entsprechend dem bestehenden Composer-Vertrag konsistent.
 3. Stimme direkten Renderpfad und MutationObserver ab. Verhindere, dass die
    Property-Reflexion die beabsichtigte Normalisierung vorzeitig unkenntlich macht.
 4. Behalte die Textsemantik normaler Attribute sowie von `aria-*` und `data-*`
@@ -533,6 +540,7 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 
 - [ ] `disabled="{{false}}"` und `checked="{{false}}"` ergeben false-Properties und keine aktivierenden Attribute.
 - [ ] Der Wechsel `false -> true -> false` funktioniert auch nach Observer-Verarbeitung.
+- [ ] `undefined` entfernt das dynamische Zielattribut, erzeugt keinen Stringwert und ein spaeterer definierter Wert wird wieder gesetzt.
 - [ ] Ein normales `title` mit dem Wert `false` sowie `aria-*`-/`data-*`-Werte behalten ihre vorgesehene Textdarstellung; es entstehen keine Observer-Schleifen.
 
 **Testansatz:** `test\composer_render_attributes.html`,
@@ -1581,65 +1589,22 @@ zufaellig passenden Selektoralternativen folgt.
 
 ### R24
 
-**Synchrones Routing.forward auf ein gemeinsames effektives Ziel ausrichten**
+**Routing.forward wegen fehlenden Anwendungsfalls entfernen**
 
-**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** erledigt
 **Paket:** `navigation` | **Abstimmung:** [R25](#r25), [R27](#r27), [R28](#r28), [R30](#r30)
-**Fundstellen:** `sources\routing.js:154-157, 359-370`
+**Fundstellen:** ehemalige Implementierung in `sources\routing.js` (entfernt)
 
-**Konkreter Loesungsansatz**
+**Urspruenglicher Befund:** Das kuenstliche Ereignis enthielt das Forward-Ziel,
+waehrend Freigabe und weitere Verarbeitung noch die Browseradresse auswerteten.
+Dadurch blieb die alte Ansicht aktiv.
 
-Extrahiere den Inhalt des Hashchange-Listeners in einen internen
-Navigationsablauf mit explizitem Datensatz, beispielsweise
-`{previous, target, kind}`. Ein natives Ereignis liefert seine
-`oldURL`/`newURL`-Snapshots; `forward` liefert das normalisierte Ziel direkt
-und ruft denselben Ablauf synchron auf. Verwende darin durchgehend den
-Datensatz, nicht nachtraeglich `Browser.location` als Ersatz fuer `target`.
-
-Halte den akzeptierten effektiven Routing-Pfad separat von der rohen
-Browseradresse. `Routing.location`, `Path.covers`, History-Pflege,
-`approve` und die Render-Entscheidung lesen diesen Pfad beziehungsweise
-das Ziel des aktiven Durchgangs. Der akzeptierte Pfad muss bis zum
-naechsten Wechsel erhalten bleiben, weil der Composer Renderauftraege
-einreihen und spaeter ausfuehren kann; ein nur kurz gesetzter Stackwert
-waere dann bereits wieder verschwunden.
-
-Der heutige Block `if (location !== Browser.location) location.replace(...)`
-darf einen reinen Forward nicht wieder in hashgetriebene Navigation
-zurueckverwandeln. Browser-URL-Normalisierung nur fuer den passenden
-Navigationsmodus ausfuehren. Die relative Pfadaufloesung muss denselben
-effektiven Ausgangspfad erhalten; die derzeit in `Path.normalize`
-implizit gelesene `Browser.location` ist dabei mit einzubeziehen.
-R30 aktualisiert den Datensatz bei Redirects, R27 ordnet native
-Folgeereignisse zu. Keine zweite unabhaengige Forward-History anlegen.
-
-**Problem und Ziel:** Das kuenstliche Ereignis enthaelt das Forward-Ziel,
-waehrend Freigabe und weitere Verarbeitung noch die Browseradresse auswerten.
-Dadurch bleibt die alte Ansicht aktiv. Alle Teilnehmer muessen waehrend einer
-Navigation denselben effektiven Pfad verwenden.
-
-**Umsetzung**
-
-1. Fuehre einen normalisierten effektiven Zielpfad fuer die laufende
-   Navigation und stelle ihn den betroffenen Routing-Pfaden bereit.
-2. Richte Forward-Ereignis, interne History, Routing-Location, `approve`,
-   `permit` und Rendering auf dieses Ziel aus.
-3. Erhalte die dokumentierte synchrone Ausfuehrung von `forward`. Ersetze sie
-   nicht durch einen blossen Hash-Write mit spaeterem nativen Ereignis.
-4. Gleiche relative Ziele, Root und spaetere native Navigationen mit diesem
-   Zustand ab. Verwechsle interne Routing-History nicht ungeprueft mit der
-   Browser-History.
-
-**Regression und Abnahme**
-
-- [ ] Von `#a#b` aus macht `Routing.forward("#c")` C bereits im synchronen Ablauf zum effektiven Ziel.
-- [ ] Routing-Location, interne History, Freigabe und sichtbare Ansicht stimmen anschliessend ueberein.
-- [ ] `route` bleibt hashgetrieben; relative Forwards und anschliessendes Zurueck/Vorwaerts verlieren keinen Zustand.
-
-**Testansatz:** `test\routing_route.html`, `test\routing_approve.html`.
-**Dokumentation:** `manuals\routing.md`.
-**Erledigt, wenn:** Forward sein Ziel synchron erreicht und kein beteiligter
-Routing-Pfad weiterhin mit dem alten Ziel arbeitet.
+**Entscheidung statt Umsetzung:** Die Analyse ergab keinen ausreichenden
+Anwendungsfall fuer URL-unabhaengige Navigation im Routing. `Routing.forward()`
+und die dafuer benoetigten Sonderzustaende wurden entfernt. URL-basierte
+Navigation verwendet `Routing.route(path)`; temporaere Darstellung wird ueber
+Model-State und `condition` gesteuert. Die API-Entfernung ist eine bewusste
+Breaking Change und ist in `CHANGES` dokumentiert.
 
 ### R25
 

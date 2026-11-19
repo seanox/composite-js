@@ -142,27 +142,6 @@
                 }, 0);
             }, path);
         },
-        
-        /**
-         * Forwards to the given path. In difference to the route method, the
-         * forwarding is triggered directly as an event, whereas the route
-         * method an asynchronous forwarding by changing the location hash.
-         * @param {string} path
-         */
-        forward(path) {
-            if (path === undefined
-                    || (typeof path !== "string"
-                            && path !== null))
-                throw new TypeError("Invalid data type");
-            path = Path.normalize(path);
-            if (path === null
-                    || path === Browser.location)
-                return;
-            const event = new Event("hashchange",{bubbles:false, cancelable:true});
-            event.oldURL = Browser.location;
-            event.newURL = path;
-            window.dispatchEvent(event);
-        },
            
         /**
          * Checks whether routing keeps or removes the composite in the DOM.
@@ -172,7 +151,10 @@
          * true and false decide directly. If permit() is missing or returns
          * undefined, routing falls back to checking Path.covers(path). Covered
          * means that the specified path must be contained from the root of the
-         * current working path.
+         * current working path. Otherwise only explicit true approves; all
+         * other return values deny permission.
+         *
+         * The check can run repeatedly during rendering and must not navigate.
          *
          * @param {string} path path of the composite
          * @param {string} composite composite ID of the element in the markup
@@ -300,9 +282,9 @@
 
         const marker = `[${Composer.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}]`;
         const path = lookup.split("#").slice(1).map(entry =>
-            `[id="${entry}"]${marker},[id^="${entry}@"]${marker}`);
+            `[id="${entry}"]${marker}`);
         while (path.length > 0) {
-            const element = document.querySelector(path.join(">"));
+            const element = document.querySelector(path.join(" "));
             if (element instanceof Element)
                 return element;
             path.pop();

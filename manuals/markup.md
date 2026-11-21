@@ -650,9 +650,11 @@ element. After that, they behave like all other attributes, including being
 updated by the composer during rendering if the attributes contain expressions.
 The template attribute itself is removed even if its first result is
 `undefined`; its expression remains available for later rendering. `undefined`
-removes the target attribute and assigns the property default of a detached,
-unconfigured element with the same tag and namespace. The target attribute stays
-removed even if its setter recreates it or throws.
+resets the same-named property before removing an existing target attribute, but
+only if the property is writable and differs from the default of a detached,
+unconfigured element with the same tag and namespace. Absent targets do not
+trigger a property reset. Reset errors are logged and reported through
+`Composer.EVENT_ERROR`; they abort the subsequent target attribute removal.
 
 ```html
 <img @src="{{...}}"/>
@@ -668,12 +670,16 @@ especially HTML code, is not possible and is only supported with the attributes
 
 For general dynamic attributes, standalone expression results retain their
 JavaScript type until the browser writes them. Only `undefined` is special: it
-removes the attribute and resets its property using a new, detached element with
-the same tag and namespace. No target attributes or children are copied, and the
-target attribute remains removed after the reset. composite-js does not interpret
-Boolean-looking strings; DOM conversions and reflection belong to the browser.
-Write and default-reference errors are logged and reported through
-`Composer.EVENT_ERROR`. Runtime instructions and metadata retain their own rules.
+removes the attribute, first resetting its same-named property if the attribute
+exists, the nearest property descriptor is writable or has a setter, and the
+value differs from the default according to `Object.is`. Missing or read-only
+properties are skipped. Defaults come from a new, detached element with the same
+tag and namespace; no target attributes or children are copied. composite-js does
+not interpret Boolean-looking strings; DOM conversions and reflection belong to
+the browser. Write and default-reference errors are logged and reported through
+`Composer.EVENT_ERROR`. A reset error aborts the subsequent attribute removal;
+changes already made are not rolled back. Runtime instructions and metadata
+retain their own rules.
 
 ```html
 <article title="{{example.title}}">

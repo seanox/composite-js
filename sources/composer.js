@@ -2824,15 +2824,22 @@
             if (target !== attribute)
                 selector.removeAttribute(attribute);
             if (value === undefined) {
-                selector.removeAttribute(target);
-                try {
-                    const element = selector.ownerDocument.createElementNS(
-                        selector.namespaceURI, selector.localName);
-                    selector[target] = element[target];
-                } finally {
-                    // A property setter can recreate the attribute or throw.
-                    selector.removeAttribute(target);
+                if (selector.hasAttribute(target)) {
+                    let descriptor;
+                    for (let prototype = selector; prototype; prototype = Object.getPrototypeOf(prototype)) {
+                        descriptor = Object.getOwnPropertyDescriptor(prototype, target);
+                        if (descriptor)
+                            break;
+                    }
+                    if (descriptor && (descriptor.writable === true
+                            || typeof descriptor.set === "function")) {
+                        value = selector.ownerDocument.createElementNS(
+                            selector.namespaceURI, selector.localName)[target];
+                        if (!Object.is(selector[target], value))
+                            selector[target] = value;
+                    }
                 }
+                selector.removeAttribute(target);
                 return;
             }
             // Preserve the result type; DOM APIs perform their own conversions.

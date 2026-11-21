@@ -405,12 +405,15 @@ markup-friendly spellings. They are translated before evaluation; normal
 JavaScript operators remain supported.
 
 General dynamic attributes forward standalone expression values to the DOM
-without changing their JavaScript type. `undefined` removes the target attribute
-and assigns the same-named property default from a detached, unconfigured
-element with the same tag and namespace. No target attributes or children are
-copied, and the target attribute remains removed even if a setter recreates it or
-throws. Conversions and reflection are browser behavior. Write and reference
-errors are logged and reported through `Composer.EVENT_ERROR`. Runtime
+without changing their JavaScript type. `undefined` removes the target attribute,
+first resetting its same-named property only if the attribute exists and the
+nearest property descriptor is writable or has a setter. Missing and read-only
+properties are skipped. The default comes from a detached, unconfigured element
+with the same tag and namespace; no target attributes or children are copied.
+A value already equal to this default according to `Object.is` is not assigned.
+Conversions and reflection are browser behavior. Write and reference errors are
+logged and reported through `Composer.EVENT_ERROR`; a reset error aborts the
+subsequent attribute removal without rolling back earlier changes. Runtime
 instructions such as `condition` and `interval` retain their own rules; see
 [Expression results](expression.md#expressions).
 

@@ -59,19 +59,27 @@ composite-js does not convert the result to a string or interpret `"true"` and
 own conversions. If text is required explicitly, use an expression such as
 `{{String(example.value)}}`. Mixed interpolation remains text.
 
-`undefined` is the only special case: composite-js removes the target attribute
-and restores the browser default of its property. For each reset, it creates a
-temporary element in the same document, with the same tag and namespace, outside
-the DOM. No attributes or children are copied from the target: an input reference
-does not inherit `type`, `min` or `max`. The value of the reference's property
-under the target attribute name is assigned unchanged to the target property.
-The target attribute remains removed even if its setter recreates it or throws.
-The expression remains available for later render cycles.
+`undefined` is the only special case: composite-js removes the target attribute,
+first resetting its same-named property if the target attribute exists and the
+property is writable. The nearest descriptor on the element or its prototype
+chain must describe a writable data property or an accessor with a setter.
+Missing and read-only properties are not assigned, and absent target attributes
+do not trigger a reset.
+
+For an eligible property, composite-js creates a temporary element in the same
+document, with the same tag and namespace, outside the DOM. No attributes or
+children are copied from the target: an input reference does not inherit `type`,
+`min` or `max`. The value of the reference's property under the target attribute
+name is assigned unchanged only if `Object.is` reports a different current value.
+An unchanged value does not invoke the setter. The target attribute is removed
+afterwards, including when the setter successfully recreates it. A reset error
+aborts this removal. The expression remains available for later render cycles.
 
 This is the default of a fresh, unconfigured element, not a saved initial value
 or an application-specific default. Native setter conversions and attribute
-reflection still apply. For example, a user-edited text input is reset to `""`,
-and a manually changed checkbox's `checked` property is reset to `false`.
+reflection still apply. For example, with the corresponding target attribute
+present, a user-edited text input is reset to `""`, and a manually changed
+checkbox's `checked` property is reset to `false`.
 
 HTML attributes and DOM properties are distinct. Their names are not
 automatically translated: `readonly` is an attribute name, while `readOnly` is
@@ -85,8 +93,9 @@ current property `true`.
 Errors from attribute conversion, property assignment or obtaining the reference
 default are logged and reported through `Composer.EVENT_ERROR` by the renderer.
 Writes are not transactional: changes already made by the browser or a setter
-are not rolled back, except that the target attribute remains removed on an
-`undefined` reset.
+are not rolled back. A failing reset does not proceed to target attribute
+removal, so the attribute can retain its old value or a value written by the
+setter. Writable setters can still throw; their errors are not suppressed.
 
 This general contract does not replace the rules of runtime instructions such as
 `condition`, `interval`, `validate`, `output` or `import`, nor the initial

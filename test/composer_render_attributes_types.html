@@ -46,6 +46,7 @@
                 });
             } else if (element.id === "setter") {
                 Object.defineProperty(element, "data-probe", {
+                    get() {return element.getAttribute("data-probe");},
                     set(value) {
                         if (attributeModel.setterError !== undefined) {
                             if (value === undefined)
@@ -98,7 +99,7 @@
             }});
         });
 
-        Test.create({name: "Undefined removes targets and assigns fresh element defaults", timeout: 3000, test() {
+        Test.create({name: "Undefined resets changed properties of existing targets", timeout: 3000, test() {
             attributeModel.value = undefined;
             assignments.length = 0;
             unsetAssignments.length = 0;
@@ -111,9 +112,190 @@
                     Assert.assertUndefined(element["data-probe"]);
                     Assert.assertFalse(element.hasAttribute("@data-probe"));
                 });
-                Assert.assertEquals(1, unsetAssignments.length);
-                Assert.assertUndefined(unsetAssignments[0]);
+                Assert.assertEquals(0, unsetAssignments.length);
                 Assert.assertNull(document.getElementById("unset").getAttribute("data-probe"));
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name: "Properties already at their defaults do not invoke setters", timeout: 3000, test() {
+            ["ordinary", "template"].forEach(id => {
+                const element = document.getElementById(id);
+                element["data-probe"] = undefined;
+                element.setAttribute("data-probe", "present");
+            });
+            const unset = document.getElementById("unset");
+            unset.setAttribute("data-probe", "present");
+            assignments.length = 0;
+            unsetAssignments.length = 0;
+            return render("#ordinary, #template, #unset").then(() => {
+                Assert.assertEquals(0, assignments.length);
+                Assert.assertEquals(0, unsetAssignments.length);
+                ["ordinary", "template", "unset"].forEach(id =>
+                    Assert.assertNull(document.getElementById(id).getAttribute("data-probe")));
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name: "Null differs from the undefined property default", timeout: 3000, test() {
+            ["ordinary", "template"].forEach(id => {
+                const element = document.getElementById(id);
+                element["data-probe"] = null;
+                element.setAttribute("data-probe", "null");
+            });
+            assignments.length = 0;
+            return render("#ordinary, #template").then(() => {
+                Assert.assertEquals(2, assignments.length);
+                assignments.forEach(assignment => Assert.assertUndefined(assignment.value));
+                ["ordinary", "template"].forEach(id => {
+                    const element = document.getElementById(id);
+                    Assert.assertUndefined(element["data-probe"]);
+                    Assert.assertNull(element.getAttribute("data-probe"));
+                });
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name: "Default comparisons use Object.is without coercion", timeout: 3000, test() {
+            const element = document.getElementById("identityProbe");
+            let stored;
+            let writes = 0;
+            Object.defineProperty(element, "data-probe", {
+                get() {return stored;},
+                set(value) {writes++; stored = value;}
+            });
+            return [
+                [NaN, NaN, 0], [0, -0, 1], [0, "", 1]
+            ].reduce((pending, [current, value, expectedWrites]) => pending.then(() => {
+                stored = current;
+                writes = 0;
+                element.setAttribute("data-probe", "present");
+                const createElementNS = document.createElementNS;
+                document.createElementNS = function(namespace, name) {
+                    const reference = createElementNS.call(this, namespace, name);
+                    Object.defineProperty(reference, "data-probe", {value});
+                    return reference;
+                };
+                return render(element).then(() => {
+                    document.createElementNS = createElementNS;
+                    Assert.assertEquals(expectedWrites, writes);
+                    Assert.assertTrue(Object.is(value, stored));
+                    Assert.assertNull(element.getAttribute("data-probe"));
+                    Assert.assertEquals(0, errors.length);
+                }, error => {
+                    document.createElementNS = createElementNS;
+                    throw error;
+                });
+            }), Promise.resolve());
+        }});
+
+        Test.create({name: "Successful default setters cannot retain a recreated target", timeout: 3000, test() {
+            const element = document.getElementById("recreatingSetter");
+            let stored = "changed";
+            let writes = 0;
+            Object.defineProperty(element, "data-probe", {
+                get() {return stored;},
+                set(value) {
+                    writes++;
+                    stored = value;
+                    element.setAttribute("data-probe", "recreated");
+                }
+            });
+            element.setAttribute("data-probe", "present");
+            return render(element).then(() => {
+                Assert.assertEquals(1, writes);
+                Assert.assertUndefined(stored);
+                Assert.assertNull(element.getAttribute("data-probe"));
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name: "Absent targets preserve edited properties without creating references", timeout: 3000, test() {
+            ["ordinary", "template"].forEach(id =>
+                document.getElementById(id)["data-probe"] = "edited");
+            assignments.length = 0;
+            const createElementNS = document.createElementNS;
+            document.createElementNS = () => {throw new Error("Unexpected default reference");};
+            return render("#ordinary, #template, #unset").then(() => {
+                document.createElementNS = createElementNS;
+                Assert.assertEquals(0, assignments.length);
+                ["ordinary", "template"].forEach(id => {
+                    const element = document.getElementById(id);
+                    Assert.assertEquals("edited", element["data-probe"]);
+                    Assert.assertNull(element.getAttribute("data-probe"));
+                });
+                Assert.assertEquals(0, errors.length);
+            }, error => {
+                document.createElementNS = createElementNS;
+                throw error;
+            });
+        }});
+
+        Test.create({name: "Read-only and missing properties do not prevent attribute removal", timeout: 3000, test() {
+            const data = document.getElementById("readonlyData");
+            const getter = document.getElementById("readonlyGetter");
+            const missing = document.getElementById("missingProperty");
+            Object.defineProperty(data, "data-probe", {value: "retained", writable: false});
+            let reads = 0;
+            Object.defineProperty(getter, "data-probe", {
+                get() {
+                    reads++;
+                    throw new Error("Read-only getter must not be evaluated");
+                }
+            });
+            [data, getter, missing].forEach(element =>
+                element.setAttribute("data-probe", "present"));
+            const form = document.getElementById("formInput");
+            const list = document.getElementById("listInput");
+            form.setAttribute("form", "formOwner");
+            list.setAttribute("list", "listOwner");
+            Assert.assertEquals(document.getElementById("formOwner"), form.form);
+            Assert.assertEquals(document.getElementById("listOwner"), list.list);
+            return render("#readonlyData, #readonlyGetter, #missingProperty, #formInput, #listInput").then(() => {
+                [data, getter, missing].forEach(element =>
+                    Assert.assertNull(element.getAttribute("data-probe")));
+                Assert.assertEquals("retained", data["data-probe"]);
+                Assert.assertEquals(0, reads);
+                Assert.assertFalse("data-probe" in missing);
+                Assert.assertNull(form.getAttribute("form"));
+                Assert.assertNull(form.form);
+                Assert.assertNull(list.getAttribute("list"));
+                Assert.assertNull(list.list);
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name: "The nearest prototype descriptor determines property writability", timeout: 3000, test() {
+            const ids = ["inheritedData", "inheritedSetter", "inheritedReadonly", "inheritedGetter", "shadowedSetter"];
+            let stored = "changed";
+            let writes = 0;
+            let reads = 0;
+            const descriptors = [
+                {value: "changed", writable: true},
+                {get() {return stored;}, set(value) {writes++; stored = value;}},
+                {value: "retained", writable: false},
+                {get() {reads++; throw new Error("Inherited read-only getter must not be evaluated");}},
+                {set() {throw new Error("Shadowed setter must not be invoked");}}
+            ];
+            ids.forEach((id, index) => {
+                const element = document.getElementById(id);
+                const prototype = Object.create(Object.getPrototypeOf(element));
+                Object.defineProperty(prototype, "data-probe", descriptors[index]);
+                Object.setPrototypeOf(element, prototype);
+                element.setAttribute("data-probe", "present");
+            });
+            Object.defineProperty(document.getElementById("shadowedSetter"), "data-probe", {
+                value: "retained", writable: false
+            });
+            return render(ids.map(id => "#" + id).join(", ")).then(() => {
+                ids.forEach(id =>
+                    Assert.assertNull(document.getElementById(id).getAttribute("data-probe")));
+                Assert.assertUndefined(document.getElementById("inheritedData")["data-probe"]);
+                Assert.assertUndefined(stored);
+                Assert.assertEquals(1, writes);
+                Assert.assertEquals(0, reads);
+                Assert.assertEquals("retained", document.getElementById("inheritedReadonly")["data-probe"]);
+                Assert.assertEquals("retained", document.getElementById("shadowedSetter")["data-probe"]);
                 Assert.assertEquals(0, errors.length);
             });
         }});
@@ -315,7 +497,7 @@
             });
         }});
 
-        Test.create({name: "Throwing default setters remain visible and cannot recreate the removed attribute", timeout: 3000, test() {
+        Test.create({name: "Throwing default setters remain visible and abort attribute removal", timeout: 3000, test() {
             const count = errors.length;
             const error = new Error("Default setter failure");
             const element = document.getElementById("setter");
@@ -325,14 +507,33 @@
                 Assert.assertEquals(count + 1, errors.length);
                 Assert.assertEquals(error, errors[count]);
                 Assert.assertTrue(errorLog.some(values => values[0] === error));
-                Assert.assertNull(element.getAttribute("data-probe"));
+                Assert.assertEquals("recreated", element.getAttribute("data-probe"));
             });
         }});
 
-        Test.create({name: "Reference creation errors are logged and leave the target attribute removed", timeout: 3000, test() {
+        Test.create({name: "Default getter errors remain visible and abort attribute removal", timeout: 3000, test() {
+            const count = errors.length;
+            const error = new Error("Default getter failure");
+            const element = document.getElementById("getterFailure");
+            Object.defineProperty(element, "data-probe", {
+                get() {throw error;},
+                set() {throw new Error("Setter must not be reached");}
+            });
+            element.setAttribute("data-probe", "retained");
+            return render(element).then(() => {
+                Assert.assertEquals(count + 1, errors.length);
+                Assert.assertEquals(error, errors[count]);
+                Assert.assertTrue(errorLog.some(values => values[0] === error));
+                Assert.assertEquals("retained", element.getAttribute("data-probe"));
+            });
+        }});
+
+        Test.create({name: "Reference creation errors are logged and abort attribute removal", timeout: 3000, test() {
             const count = errors.length;
             const error = new Error("Default reference failure");
             const element = document.getElementById("ordinary");
+            const previous = element.getAttribute("data-probe");
+            Assert.assertNotNull(previous);
             const createElementNS = document.createElementNS;
             attributeModel.value = undefined;
             document.createElementNS = () => {throw error;};
@@ -341,7 +542,7 @@
                 Assert.assertEquals(count + 1, errors.length);
                 Assert.assertEquals(error, errors[count]);
                 Assert.assertTrue(errorLog.some(values => values[0] === error));
-                Assert.assertNull(element.getAttribute("data-probe"));
+                Assert.assertEquals(previous, element.getAttribute("data-probe"));
             }, failure => {
                 document.createElementNS = createElementNS;
                 throw failure;
@@ -360,6 +561,21 @@
     <span id="ordinary" data-probe="{{attributeModel.value}}"></span>
     <span id="template" @data-probe="{{attributeModel.value}}"></span>
     <span id="unset" @data-probe="{{attributeModel.unset}}"></span>
+    <span id="readonlyData" data-probe="{{attributeModel.unset}}"></span>
+    <span id="readonlyGetter" data-probe="{{attributeModel.unset}}"></span>
+    <span id="missingProperty" data-probe="{{attributeModel.unset}}"></span>
+    <span id="inheritedData" data-probe="{{attributeModel.unset}}"></span>
+    <span id="inheritedSetter" data-probe="{{attributeModel.unset}}"></span>
+    <span id="inheritedReadonly" data-probe="{{attributeModel.unset}}"></span>
+    <span id="inheritedGetter" data-probe="{{attributeModel.unset}}"></span>
+    <span id="shadowedSetter" data-probe="{{attributeModel.unset}}"></span>
+    <span id="getterFailure" data-probe="{{attributeModel.unset}}"></span>
+    <span id="identityProbe" data-probe="{{attributeModel.unset}}"></span>
+    <span id="recreatingSetter" data-probe="{{attributeModel.unset}}"></span>
+    <form id="formOwner"></form>
+    <datalist id="listOwner"></datalist>
+    <input id="formInput" form="{{attributeModel.unset}}">
+    <input id="listInput" list="{{attributeModel.unset}}">
     <input id="ordinaryInput" value="{{attributeModel.input}}">
     <input id="templateInput" @value="{{attributeModel.input}}">
     <input id="checked" type="checkbox" checked="{{attributeModel.value}}">

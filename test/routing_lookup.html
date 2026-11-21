@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-debug-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        window.history.replaceState(null, "", "#a#b");
+
+        const _approved = {permit() {return true;}};
+        window.a = Object.assign({c:_approved}, _approved);
+        window.b = _approved;
+
+        Test.create({name:"Lookup fixtures contain nested routed composites", test() {
+            for (const id of ["a", "b", "c@a"])
+                Assert.assertNotNull(id, document.getElementById(id));
+        }});
+
+        const _locations = [
+            {path:"#", id:null, locate:"#", data:[""]},
+            {path:"#a", id:"a", locate:"#a", data:[""]},
+            {path:"#a#b", id:"b", locate:"#a#b", data:[""]},
+            {path:"#a#b#c", id:"c@a", locate:"#a#b#c", data:[""]},
+            {path:"#a#missing#\\#b", id:"a", locate:"#a", data:["missing", "\\", "b"]},
+            {path:"#a#\\#b", id:"a", locate:"#a", data:["\\", "b"]},
+            {path:"#a#b#123#c", id:"b", locate:"#a#b", data:["123", "c"]},
+            {path:"#unknown#b", id:null, locate:"#", data:["unknown", "b"]},
+            {path:"#a#c", id:"a", locate:"#a", data:["c"]},
+            {path:"#b", id:null, locate:"#", data:["b"]},
+            {path:"#\\#a#b", id:null, locate:"#", data:["\\", "a", "b"]},
+            {path:"#a#b#c#\\", id:"c@a", locate:"#a#b#c", data:["\\"]}
+        ];
+        for (const entry of _locations) {
+            Test.create({name:`Lookup returns complete resolution metadata: ${entry.path}`, test() {
+                const result = window.___lookup(entry.path);
+                const element = entry.id ? document.getElementById(entry.id) : document.body;
+                Assert.assertTrue(result.element === element);
+                Assert.assertEquals("data,element,locate", Object.keys(result).sort().join(","));
+                Assert.assertEquals(entry.locate, result.locate);
+                Assert.assertEquals(JSON.stringify(entry.data), JSON.stringify(result.data));
+                Assert.assertEquals(entry.locate, window.___lookup_path(result.element));
+            }});
+        }
+
+        Test.create({name:"Lookup metadata and parameter arrays are independent", test() {
+            const first = window.___lookup("#a#b#123");
+            const second = window.___lookup("#a#b#123");
+            Assert.assertFalse(first === second);
+            Assert.assertTrue(first.element === second.element);
+            Assert.assertFalse(first.data === second.data);
+            first.data[0] = "changed";
+            Assert.assertEquals("123", second.data[0]);
+        }});
+
+        window.addEventListener("load", () => {
+            window.setTimeout(() => Test.start(), 100);
+        });
+    </script>
+  </head>
+  <body route>
+    <div id="a" composite route>
+      <section>
+        <div id="b" composite route>
+          <article>
+            <div id="c@a" composite route>nested routed composite</div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

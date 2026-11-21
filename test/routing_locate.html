@@ -10,20 +10,151 @@
 
         window.history.replaceState(null, "", "#a#b");
 
-        Test.create({name:"Routing locates nested routed composites through markup", test() {
+        const _approved = {permit() {return true;}};
+        window.a = Object.assign({c:_approved, d:_approved}, _approved);
+        window.b = _approved;
+        window.bb = _approved;
+        window._branch1 = _approved;
+        window.wrapper = {};
+        window.other = Object.assign({b:_approved}, _approved);
+        window.flow = {leaf:{}};
+
+        const _assertLocation = (locate, data) => {
+            Assert.assertEquals(locate, Routing.locate());
+            const meta = {preserved:true, element:"preserved"};
+            Assert.assertTrue(Routing.locate(meta) === meta);
+            Assert.assertTrue(meta.preserved);
+            Assert.assertEquals("preserved", meta.element);
+            Assert.assertEquals(locate, meta.locate);
+            Assert.assertEquals(JSON.stringify(data), JSON.stringify(meta.data));
             const location = Routing.locate(true);
-            Assert.assertEquals("#a#b", location.locate);
-            Assert.assertEquals("", location.data.join("#"));
+            Assert.assertEquals("data,locate", Object.keys(location).sort().join(","));
+            Assert.assertEquals(locate, location.locate);
+            Assert.assertEquals(JSON.stringify(data), JSON.stringify(location.data));
+        };
+
+        Test.create({name:"Locate fixtures contain all approved composite branches", test() {
+            for (const id of ["a", "b", "c@a", "d@a", "bb", "_branch1", "b@other"])
+                Assert.assertNotNull(id, document.getElementById(id));
         }});
 
-        window.addEventListener("load", () => Test.start());
+        const _locations = [
+            {path:"#", locate:"#", data:[""]},
+            {path:"#a", locate:"#a", data:[""]},
+            {path:"#a#b", locate:"#a#b", data:[""]},
+            {path:"#a#b#c", locate:"#a#b#c", data:[""]},
+            {path:"#a#d", locate:"#a#d", data:[""]},
+            {path:"#a#_branch1", locate:"#a#_branch1", data:[""]},
+            {path:"#a#_branch1#123#b", locate:"#a#_branch1", data:["123", "b"]},
+            {path:"#a#b#123#paramX", locate:"#a#b", data:["123", "paramX"]},
+            {path:"#a#123#b", locate:"#a", data:["123", "b"]},
+            {path:"#a#1b#b", locate:"#a", data:["1b", "b"]},
+            {path:"#a#b-c#b", locate:"#a", data:["b-c", "b"]},
+            {path:"#a#b.c#b", locate:"#a", data:["b.c", "b"]},
+            {path:"#a#b@other#b", locate:"#a", data:["b@other", "b"]},
+            {path:"#a#$parameter#b", locate:"#a", data:["$parameter", "b"]},
+            {path:"#a#_parameter#b", locate:"#a", data:["_parameter", "b"]},
+            {path:"#a#parameter$#b", locate:"#a", data:["parameter$", "b"]},
+            {path:"#a#parameter1#b", locate:"#a", data:["parameter1", "b"]},
+            {path:"#a#missing#b", locate:"#a", data:["missing", "b"]},
+            {path:"#a#b#123#c", locate:"#a#b", data:["123", "c"]},
+            {path:"#a#bbb", locate:"#a", data:["bbb"]},
+            {path:"#a#c", locate:"#a", data:["c"]},
+            {path:"#b", locate:"#", data:["b"]},
+            {path:"#other#b", locate:"#other#b", data:[""]},
+            {path:"#unknown#b", locate:"#", data:["unknown", "b"]},
+            {path:"#123#a#b", locate:"#", data:["123", "a", "b"]},
+            {path:"#\\#a#b", locate:"#", data:["\\", "a", "b"]},
+            {path:"#a#\\", locate:"#a", data:["\\"]},
+            {path:"#a#\\#b", locate:"#a", data:["\\", "b"]},
+            {path:"#a#b#\\#c", locate:"#a#b", data:["\\", "c"]},
+            {path:"#a#b#c#\\", locate:"#a#b#c", data:["\\"]},
+            {path:"#other#b#\\", locate:"#other#b", data:["\\"]},
+            {path:"#a#[#b", locate:"#a", data:["[", "b"]},
+            {path:"#a#]#b", locate:"#a", data:["]", "b"]}
+        ];
+        for (const entry of _locations) {
+            Test.create({name:`Locate separates composite paths and parameters: ${entry.path}`, test() {
+                const url = window.location.href;
+                try {
+                    window.history.replaceState(null, "", entry.path);
+                    Assert.assertEquals(entry.path, Routing.location);
+                    _assertLocation(entry.locate, entry.data);
+                } finally {
+                    window.history.replaceState(null, "", url);
+                }
+            }});
+        }
+
+        let _finishRender;
+        Composer.listen(Composer.EVENT_RENDER_END, () => {
+            if (_finishRender) {
+                const finish = _finishRender;
+                _finishRender = null;
+                finish();
+            }
+        });
+        const _navigate = path => new Promise(resolve => {
+            _finishRender = resolve;
+            Routing.route(path);
+        });
+
+        Test.create({name:"Navigation resolves views after insertion and removal", timeout:5000, test() {
+            let leaf;
+            return _navigate("#flow").then(() => {
+                Assert.assertNotNull(document.getElementById("flow"));
+                Assert.assertNull(document.getElementById("leaf@flow"));
+                _assertLocation("#flow", [""]);
+                return _navigate("#flow#leaf");
+            }).then(() => {
+                leaf = document.getElementById("leaf@flow");
+                Assert.assertNotNull(leaf);
+                _assertLocation("#flow#leaf", [""]);
+                return _navigate("#flow#leaf#\\");
+            }).then(() => {
+                _assertLocation("#flow#leaf", ["\\"]);
+                return _navigate("#flow");
+            }).then(() => {
+                Assert.assertNull(document.getElementById("leaf@flow"));
+                Assert.assertFalse(leaf.isConnected);
+                _assertLocation("#flow", [""]);
+                return _navigate("#flow#leaf");
+            }).then(() => {
+                Assert.assertNotNull(document.getElementById("leaf@flow"));
+                Assert.assertTrue(document.getElementById("leaf@flow") !== leaf);
+                _assertLocation("#flow#leaf", [""]);
+            });
+        }});
+
+        window.addEventListener("load", () => {
+            window.setTimeout(() => Test.start(), 100);
+        });
     </script>
   </head>
   <body route>
+    <div id="other" composite route>
+      <div id="b@other" composite route>other branch</div>
+    </div>
     <div id="a" composite route>
-      <div>
-        <div id="b" composite route></div>
+      <div id="b" composite route>
+        <section>
+          <div id="c@a" composite route>nested through markup</div>
+        </section>
       </div>
+      <article>
+        <div id="wrapper" composite>
+          <section>
+            <div id="d@a" composite route>nested through an unrouted composite</div>
+          </section>
+        </div>
+      </article>
+      <div id="bb" composite route>name prefix</div>
+      <div id="_branch1" composite route>identifier with underscore and digit</div>
+    </div>
+    <div id="flow" composite route>
+      <section>
+        <div id="leaf@flow" composite route>view lifecycle</div>
+      </section>
     </div>
   </body>
 </html>

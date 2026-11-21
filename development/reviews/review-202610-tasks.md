@@ -1540,7 +1540,7 @@ nicht nochmals durch eine globale Suche ersetzt wird.
 
 **Verschachtelte Routing-Views entlang ihrer Composite-Hierarchie lokalisieren**
 
-**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** erledigt am 2026-11-19
 **Paket:** `navigation` | **Abstimmung:** [R26](#r26), [R28](#r28)
 **Fundstellen:** `sources\routing.js:294-300`
 
@@ -1549,8 +1549,8 @@ nicht nochmals durch eine globale Suche ersetzt wird.
 Bevorzuge fuer `_lookup(string)` einen Vergleich bereits vorhandener
 Composite-Pfade statt einen immer komplexeren dynamischen CSS-Selektor:
 Ermittle Kandidaten mit dem konstanten Selektor
-`[composite][route][id]` und berechne ihren Pfad ueber den vorhandenen
-`_lookup(Element)`-Zweig. Dieser laeuft bereits die Elternkette entlang
+`[composite][route][id]` und berechne ihren Pfad ueber die gemeinsame
+Hilfsfunktion `_lookup_path(Element)`. Diese laeuft die Elternkette entlang
 und ignoriert gewoehnliche Markup-Wrapper.
 
 Ein Kandidatenpfad passt, wenn er gleich dem gesuchten Pfad ist oder
@@ -1558,7 +1558,7 @@ dieser mit `candidatePath + "#"` beginnt. Waehle den Kandidaten mit
 den meisten passenden Segmenten; bei gleicher Tiefe die bisherige
 DOM-Reihenfolge beibehalten. Ohne Treffer bleibt `document.body` der
 Fallback. Das vermeidet Fremdzweig-Treffer und loest zugleich den
-Selektor-Escaping-Teil aus R26. Die Rueckrichtung `_lookup(Element)`
+Selektor-Escaping-Teil aus R26. Die Hilfsfunktion `_lookup_path(Element)`
 bleibt die gemeinsame Definition der Routing-Hierarchie; keine zweite,
 abweichende Hierarchieinterpretation einfuehren.
 
@@ -1578,14 +1578,20 @@ Composite erkennen und nur den Rest als Datenparameter liefern.
 
 **Regression und Abnahme**
 
-- [ ] Bei aktiven verschachtelten Composites A/B und Route `#a#b` ist `locate` gleich `#a#b`; `b` wird nicht als Datenparameter geliefert.
-- [ ] Dasselbe gilt mit `div`-Wrappern sowie gleichnamigen Composites in anderen Zweigen.
-- [ ] `#a#b#parameter` lokalisiert den vorhandenen View und liefert nur `parameter` als Daten.
+- [x] Bei aktiven verschachtelten Composites A/B und Route `#a#b` ist `locate` gleich `#a#b`; `b` wird nicht als Datenparameter geliefert.
+- [x] Dasselbe gilt mit Markup-Wrappern sowie gleichnamigen Composites in anderen Zweigen.
+- [x] `#a#b#parameter` lokalisiert den vorhandenen View und liefert nur `parameter` als Daten.
 
-**Testansatz:** `test\routing_route.html`, `test\routing_active_on.html`,
-`test\reactive_routing.html`.
+**Testansatz:** `test\routing_locate.html`, `test\routing_lookup.html`, `test\routing_route.html`,
+`test\routing_active_on.html`, `test\reactive_routing.html`.
 **Erledigt, wenn:** Die Lokalisierung der realen Composite-Hierarchie statt
 zufaellig passenden Selektoralternativen folgt.
+
+**Abschluss:** Kandidaten-/Pfadvergleich ohne dynamische CSS-Werte umgesetzt.
+Die Seite reproduzierte vorab neun Fehler in 23 Aufgaben. Danach bestehen
+die auf 35 Aufgaben erweiterte Seite, die interne Lookup-Seite mit 14 Aufgaben
+und alle zwoelf Routing-/Reactive-Routing-Seiten mit je 122 Aufgaben in Blink, Gecko
+und WebKit; isolierter Compose-Build einschliesslich ES2015-Lint erfolgreich.
 
 ### R24
 
@@ -1658,20 +1664,18 @@ Weiterleitung umgesetzt ist.
 
 **Gueltige Routing-Segmente CSS-sicher verarbeiten**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt am 2026-11-19
 **Paket:** `navigation` | **Abstimmung:** [R23](#r23)
 **Fundstellen:** `sources\routing.js:294-298`
 
 **Konkreter Loesungsansatz**
 
-Nutze vorzugsweise den Kandidaten-/Pfadvergleich aus R23. Dann gelangen
-Pfadsegmente ueberhaupt nicht mehr in CSS-Quelltext: `#`, Backslash,
-Anfuehrungszeichen oder Klammern sind nur Daten des Pfadvergleichs.
+Pruefe normalisierte Segmente von links gegen `^[_A-Za-z$][\w$]*$`.
+Nur das zusammenhaengende gueltige Praefix darf an der View-Suche teilnehmen;
+ab dem ersten ungueltigen Segment bleibt der gesamte Rest Parameter.
+Nutze innerhalb dieser Grenze den Kandidaten-/Pfadvergleich aus R23.
+Dann gelangen Pfadsegmente ueberhaupt nicht mehr in CSS-Quelltext.
 Der konstante Kandidatenselektor braucht kein dynamisches Escaping.
-Falls der bestehende Selektoransatz bewusst beibehalten wird, muessen
-alle eingesetzten Werte fuer **CSS-Attributstrings** escaped werden;
-`encodeURIComponent` oder HTML-Escaping sind dafuer nicht geeignet.
-Zusaetzlich bleibt die Gruppierungs-/Hierarchiefrage aus R23 zu loesen.
 
 **Problem und Ziel:** Gueltige Pfadsegmente werden unveraendert in dynamische
 Attributselektoren eingebaut. Ein erlaubter Backslash kann dadurch einen
@@ -1687,13 +1691,27 @@ Attributselektoren eingebaut. Ein erlaubter Backslash kann dadurch einen
 
 **Regression und Abnahme**
 
-- [ ] `Routing.route("#a#\\")` verarbeitet den Backslash als Parameter ohne CSS-Syntaxfehler.
-- [ ] Weitere nach der tatsaechlichen Path-Grammatik erlaubte CSS-Sonderzeichen sind abgedeckt.
-- [ ] Normale View-Namen und Datenparameter behalten ihre exakte Identitaet.
+- [x] `Routing.route("#a#\\")` verarbeitet den Backslash als Parameter ohne CSS-Syntaxfehler.
+- [x] Bei `#a#\#b` bleiben Backslash und `b` Parameter, ohne CSS-Syntaxfehler.
+- [x] Die Segmentpruefung mit `^[_A-Za-z$][\w$]*$` endet am ersten ungueltigen Segment; auch bei ungueltigen Zeichen innerhalb eines Segments wird kein Teilname als View gesucht.
+- [x] Weitere nach der tatsaechlichen Path-Grammatik erlaubte CSS-Sonderzeichen sind abgedeckt.
+- [x] Normale View-Namen und Datenparameter behalten ihre exakte Identitaet.
 
-**Testansatz:** `test\routing_route.html`, `test\routing_path_normalize.html`.
+**Testansatz:** `test\routing_locate.html`, `test\routing_route.html`,
+`test\routing_path_normalize.html`.
 **Erledigt, wenn:** Kein gueltiger Routing-Pfad einen ungueltigen dynamischen
 CSS-Selektor erzeugt.
+
+**Abschluss:** Gemeinsam mit R23 durch den konstanten Kandidatenselektor und
+vollstaendige Pfadvergleiche behoben. Eine vorgeschaltete Segmentpruefung setzt
+die syntaktische Praefixgrenze ausdruecklich durch. Die Tests sichern ab, dass
+nach ungueltigen oder fehlenden View-Segmenten die Suche nicht bei spaeteren
+Bezeichnern fortgesetzt wird. Die Path-Grammatik fuer den gesamten Hash und die
+Composite-ID-Regel bleiben unveraendert. `_lookup` liefert
+`{element, locate, data}`; Parameter werden nach der endgueltigen View-Auswahl
+einmalig bestimmt. Der neue interne Vertrag reproduzierte vor dem Umbau
+13 Fehler in 14 Aufgaben auf `test\routing_lookup.html`.
+Browserabdeckung und Build siehe R23.
 
 ### R27
 

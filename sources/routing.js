@@ -35,6 +35,8 @@
 
     "use strict";
 
+    const PATTERN_ROUTE_IDENTIFIER = /^[_A-Za-z$][\w$]*$/;
+
     // Status of the activation of routing
     // The status cannot be changed again after (de)activation and is only set
     // initially when the page is loaded.
@@ -234,62 +236,73 @@
         locate(meta = false) {
             if (!_routing_active)
                 return undefined;
-            const location = Routing.location || "#";
-            const locate = _lookup(_lookup(location));
+            const location = _lookup(Routing.location || "#");
             if ((meta == null || typeof meta !== "object")
                     && meta !== true)
-                return locate;
+                return location.locate;
             if (typeof meta !== "object")
                 meta = {};
-            meta.locate = locate;
-            meta.data = location.substring(locate.length)
-                .replace(/^#+/, "")
-                .split(/#+/);
+            meta.locate = location.locate;
+            meta.data = location.data;
             return meta;
         }
     });
 
     /**
-     * The method accepts a path as a string and determines the corresponding
-     * element that is best covered by this path (Path-to-Element). The path can
-     * be longer than the actual target, similar to the concepts PATH_TRANSLATED
-     * and PATH_INFO in CGI.
-     *
-     * Alternatively, the method can accept a specific element and determine the
-     * corresponding path in the markup (Element-to-Path).
-     *
-     * @param {string|Element} lookup
-     * @returns {string|Element} For Element input: the path as string.
-     *     For path input: the matching element or document.body.
+     * Determines the routing path of an element through its composite hierarchy.
+     * @param {Element} element
+     * @returns {string} the routing path, or "#" without routed composites
      */
-     const _lookup = (lookup) => {
-
-        if (lookup instanceof Element) {
-            let path = "";
-            for (let element = lookup; element; element = element.parentElement) {
-                if (!element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
-                        || !element.hasAttribute(Composer.ATTRIBUTE_ID)
-                        || !element.hasAttribute(Routing.ATTRIBUTE_ROUTE))
-                    continue;
+    const _lookup_path = (element) => {
+        let path = "";
+        while (element) {
+            if (element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
+                    && element.hasAttribute(Composer.ATTRIBUTE_ID)
+                    && element.hasAttribute(Routing.ATTRIBUTE_ROUTE)) {
                 const composite = element.getAttribute(Composer.ATTRIBUTE_ID);
                 const match = composite.match(Composer.PATTERN_COMPOSITE_ID);
                 if (!match)
                     throw new Error(`Invalid composite id${composite ? ": " + composite : ""}`);
                 path = "#" + match[1] + path;
             }
-            return path || "#";
+            element = element.parentElement;
+        }
+        return path || "#";
+    };
+
+    /**
+     * The method accepts a path as a string and determines the corresponding
+     * element that is best covered by this path (Path-to-Element). The path can
+     * be longer than the actual target, similar to the concepts PATH_TRANSLATED
+     * and PATH_INFO in CGI.
+     * @param {string} location the complete normalized routing location
+     * @returns {{element: Element, locate: string, data: string[]}} the matching
+     *     element or document.body, its path and the remaining parameters
+     */
+    const _lookup = (location) => {
+
+        const segments = [];
+        for (const segment of location.split("#").slice(1)) {
+            if (!PATTERN_ROUTE_IDENTIFIER.test(segment))
+                break;
+            segments.push(segment);
         }
 
-        const marker = `[${Composer.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}]`;
-        const path = lookup.split("#").slice(1).map(entry =>
-            `[id="${entry}"]${marker}`);
-        while (path.length > 0) {
-            const element = document.querySelector(path.join(" "));
-            if (element instanceof Element)
-                return element;
-            path.pop();
+        const lookup = "#" + segments.join("#");
+        const marker = `[${Composer.ATTRIBUTE_COMPOSITE}][${Routing.ATTRIBUTE_ROUTE}][${Composer.ATTRIBUTE_ID}]`;
+        let target = document.body;
+        let path = "#";
+        for (const element of Array.from(document.querySelectorAll(marker))) {
+            const candidate = _lookup_path(element);
+            if (candidate.length <= path.length
+                    || (lookup !== candidate
+                        && !lookup.startsWith(candidate + "#")))
+                continue;
+            target = element;
+            path = candidate;
         }
-        return document.body;
+        const data = location.substring(path.length).replace(/^#+/, "").split(/#+/);
+        return {element: target, locate: path, data: data};
     };
 
     const _render = (element, focus = false) => {
@@ -389,8 +402,8 @@
             _render(document.body, true);
             return;
         }
-        const locationOldElement = _lookup(locationOld);
-        const locationNewElement = _lookup(locationNew);
+        const locationOldElement = _lookup(locationOld).element;
+        const locationNewElement = _lookup(locationNew).element;
         if (locationOldElement === locationNewElement) {
             _render(locationNewElement, true);
             return;
@@ -467,7 +480,7 @@
             return;
 
         const composite = (element.getAttribute(Composer.ATTRIBUTE_ID) || '').trim();
-        const path = _lookup(element);
+        const path = _lookup_path(element);
 
         let script = null;
         if (element.hasAttribute(Composer.ATTRIBUTE_CONDITION)) {

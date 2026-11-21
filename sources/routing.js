@@ -254,7 +254,8 @@
      * @returns {string} the routing path, or "#" without routed composites
      */
     const _lookup_path = (element) => {
-        for (let path = ""; element; element = element.parentElement) {
+        let path = "";
+        while (element) {
             if (element.hasAttribute(Composer.ATTRIBUTE_COMPOSITE)
                     && element.hasAttribute(Composer.ATTRIBUTE_ID)
                     && element.hasAttribute(Routing.ATTRIBUTE_ROUTE)) {
@@ -264,6 +265,7 @@
                     throw new Error(`Invalid composite id${composite ? ": " + composite : ""}`);
                 path = "#" + match[1] + path;
             }
+            element = element.parentElement;
         }
         return path || "#";
     };

@@ -356,6 +356,17 @@ Compose einschliesslich ES2015-Lint lief mit
 erfolgreich, ohne vorhandene lokale Release-Aenderungen zu ueberschreiben.
 Der Scope-Vertrag ist in `manuals\markup.md` beim Attribut `iterate` dokumentiert.
 
+**Ergaenzender Testnachweis 2026-11-21:** Die sechs Tasks in
+`test\composer_render_iterate_context.html` verwenden statisches Markup und
+Expressions. Containerattribute pruefen die Wiederherstellung des Elternkontexts
+und das Entfernen innerer Variablen auch nach Callback-Abbruch und Kindfehler.
+Der Queue-Test prueft sowohl Namenskollisionen als auch das Eindringen einer
+nur beim Auftraggeber vorhandenen Variable. Alle sechs Tasks bestehen in Blink,
+Gecko und WebKit. Sieben gezielte Quellmutationen ausschliesslich im
+Arbeitsspeicher eines Blink-Laufs erzeugen die jeweils erwarteten Testfehler;
+damit sind auch die beiden beim Testreview festgestellten Nachweisluecken
+geschlossen. Die Runtime-Quellen wurden hierfuer nicht geaendert.
+
 ### R03
 
 **Tag-Makros eindeutig von CSS-Selektoren unterscheiden**

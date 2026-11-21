@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+
+        Test.activate();
+
+        const pending = new Map();
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            const resolve = pending.get(selector);
+            if (!resolve)
+                return;
+            pending.delete(selector);
+            resolve();
+        });
+
+        const delay = () => new Promise(resolve =>
+            window.setTimeout(resolve, 0));
+        const waitForRender = selector => new Promise((resolve, reject) => {
+            const timer = window.setTimeout(() => {
+                pending.delete(selector);
+                reject(new Error("Timed out waiting for render"));
+            }, 5000);
+            pending.set(selector, () => {
+                window.clearTimeout(timer);
+                resolve();
+            });
+        });
+        const render = async selector => {
+            const complete = waitForRender(selector);
+            Composer.render(selector);
+            await complete;
+            await delay();
+        };
+        const values = (root, selector) =>
+            Array.from(root.querySelectorAll(selector),
+                element => element.textContent.trim()).join(",");
+
+        let abortCount = 0;
+        Composer.customize("[data-context-abort]", () => {
+            abortCount++;
+            return false;
+        });
+
+        const childErrors = [];
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => {
+            if (String(error) === "Error: Expected context child failure")
+                childErrors.push(error);
+        });
+        Composer.customize("[data-context-throw]", () => {
+            throw new Error("Expected context child failure");
+        });
+
+        let queueEnabled = false;
+        let queuedTarget;
+        let queuedRequests = 0;
+        Composer.customize("[data-context-queue]", () => {
+            if (!queueEnabled
+                    || !queuedTarget
+                    || queuedRequests)
+                return;
+            queuedRequests++;
+            Composer.render(queuedTarget);
+        });
+
+        Test.create({name: "Initial and repeated partial rendering preserve outer attributes and dynamic IDs", async test() {
+            const fixture = document.querySelector("#initialFixture");
+            const inner = fixture.querySelector(".inner");
+            const assertValues = () => {
+                Assert.assertEquals("A/undefined", inner.getAttribute("title"));
+                Assert.assertEquals("A:1,A:2", values(inner, ".value"));
+                Assert.assertEquals("outer0inner0,outer0inner1",
+                    Array.from(inner.querySelectorAll(".value"),
+                        element => element.id).join(","));
+            };
+            assertValues();
+            await render(inner);
+            assertValues();
+            await render(inner);
+            assertValues();
+        }});
+
+        Test.create({name: "Three nested levels keep outer values across siblings", async test() {
+            const fixture = document.querySelector("#levelsFixture");
+            Assert.assertEquals("A/x/1,A/y/1,B/x/1,B/y/1",
+                values(fixture, ".path"));
+            Assert.assertEquals("A,B", values(fixture, ".before"));
+            Assert.assertEquals("A,B", values(fixture, ".after"));
+        }});
+
+        Test.create({name: "Inner iteration names shadow only within their own content", async test() {
+            const fixture = document.querySelector("#shadowFixture");
+            Assert.assertEquals("outer", values(fixture, ".before"));
+            Assert.assertEquals("inner", values(fixture, ".shadow"));
+            Assert.assertEquals("outer", values(fixture, ".after"));
+        }});
+
+        Test.create({name: "Callback-aborted children do not leak their iteration context", async test() {
+            const fixture = document.querySelector("#abortFixture");
+            Assert.assertTrue(abortCount >= 2);
+            Assert.assertEquals("{{outer.item}},{{outer.item}}",
+                values(fixture, ".blocked"));
+            Assert.assertEquals("A/undefined,B/undefined",
+                Array.from(fixture.querySelectorAll(".inner"),
+                    element => element.getAttribute("title")).join(","));
+            Assert.assertEquals("A,B", values(fixture, ".after"));
+        }});
+
+        Test.create({name: "A child error restores the context for later siblings", async test() {
+            const fixture = document.querySelector("#errorFixture");
+            Assert.assertTrue(childErrors.length >= 2);
+            Assert.assertEquals(
+                "Error: Expected context child failure,Error: Expected context child failure",
+                values(fixture, ".broken"));
+            Assert.assertEquals("A/undefined,B/undefined",
+                Array.from(fixture.querySelectorAll(".inner"),
+                    element => element.getAttribute("title")).join(","));
+            Assert.assertEquals("A,B", values(fixture, ".after"));
+        }});
+
+        Test.create({name: "Queued rendering uses the target's saved outer context", async test() {
+            const targetFixture = document.querySelector("#queuedFixture");
+            const requester = document.querySelector("#queueRequester");
+            queuedTarget = targetFixture.querySelector(".queued-target");
+            try {
+                Assert.assertEquals("stored/1/undefined", values(queuedTarget, ".queued-value"));
+
+                const queuedRender = waitForRender(queuedTarget);
+                queueEnabled = true;
+                await render(requester);
+                await queuedRender;
+                await delay();
+
+                Assert.assertEquals(1, queuedRequests);
+                Assert.assertEquals("stored/1/undefined", values(queuedTarget, ".queued-value"));
+            } finally {
+                queueEnabled = false;
+                queuedTarget = undefined;
+            }
+        }});
+
+        let started = false;
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            if (selector !== document.body
+                    || started)
+                return;
+            started = true;
+            Test.start();
+        });
+    </script>
+  </head>
+  <body>
+    <div id="initialFixture">
+      <section iterate="{{outer:['A']}}">
+        <div class="inner" iterate="{{inner:[1,2]}}"
+            title="{{outer.item}}/{{typeof inner}}">
+          <span class="value" id="outer{{outer.index}}inner{{inner.index}}">
+            {{outer.item}}:{{inner.item}}
+          </span>
+        </div>
+      </section>
+    </div>
+    <div id="levelsFixture">
+      <section iterate="{{outer:['A','B']}}">
+        <span class="before">{{outer.item}}</span>
+        <div iterate="{{middle:['x','y']}}">
+          <article iterate="{{inner:[1]}}">
+            <span class="path">{{outer.item}}/{{middle.item}}/{{inner.item}}</span>
+          </article>
+        </div>
+        <span class="after">{{outer.item}}</span>
+      </section>
+    </div>
+    <div id="shadowFixture">
+      <section iterate="{{entry:['outer']}}">
+        <span class="before">{{entry.item}}</span>
+        <div iterate="{{entry:['inner']}}">
+          <span class="shadow">{{entry.item}}</span>
+        </div>
+        <span class="after">{{entry.item}}</span>
+      </section>
+    </div>
+    <div id="abortFixture">
+      <section iterate="{{outer:['A','B']}}">
+        <div class="inner" iterate="{{inner:[1]}}"
+            title="{{outer.item}}/{{typeof inner}}">
+          <span class="blocked" data-context-abort>{{outer.item}}</span>
+        </div>
+        <span class="after">{{outer.item}}</span>
+      </section>
+    </div>
+    <div id="errorFixture">
+      <section iterate="{{outer:['A','B']}}">
+        <div class="inner" iterate="{{inner:[1]}}"
+            title="{{outer.item}}/{{typeof inner}}">
+          <span class="broken" data-context-throw></span>
+        </div>
+        <span class="after">{{outer.item}}</span>
+      </section>
+    </div>
+    <div id="queuedFixture">
+      <section iterate="{{saved:['stored']}}">
+        <div class="queued-target" iterate="{{inner:[1]}}">
+          <span class="queued-value">{{saved.item}}/{{inner.item}}/{{typeof requester}}</span>
+        </div>
+      </section>
+    </div>
+    <div id="queueRequester">
+      <section iterate="{{saved:['caller']}}">
+        <div iterate="{{requester:['caller-only']}}">
+          <span data-context-queue></span>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

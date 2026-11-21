@@ -192,7 +192,7 @@
     - [undefined / no return value](routing.md#undefined--no-return-value)
     - [true](routing.md#true)
     - [false](routing.md#false)
-    - [string](routing.md#string)
+    - [Other values](routing.md#other-values)
   - [Interceptors](routing.md#interceptors)
     - [Execution order](routing.md#execution-order)
     - [Path matching](routing.md#path-matching)

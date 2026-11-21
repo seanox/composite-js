@@ -1616,49 +1616,19 @@ Breaking Change und ist in `CHANGES` dokumentiert.
 
 **String-Rueckgaben von permit als Weiterleitung ausfuehren**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** abgelehnt am 2026-11-21
 **Paket:** `navigation` | **Voraussetzung:** [R24](#r24)
-**Fundstellen:** `sources\routing.js:206-210`
+**Entscheidung statt Umsetzung:** Die String-Weiterleitung war nur dokumentiert,
+aber nie Teil des implementierten Permission-Vertrags. `Routing.approve()`
+verwendet bei `undefined` den Pfad-Fallback, erlaubt ausschliesslich das
+primitive `true` und verweigert alle anderen Werte. `test\routing_permit.html`
+prueft explizit, dass String-Rueckgaben keine Freigabe und keine Navigation
+ausloesen. `permit()` bleibt eine wiederholbare Freigabepruefung; Redirects
+werden ueber Interceptors oder Anwendungslogik behandelt.
 
-**Konkreter Loesungsansatz**
-
-Ergaenze in `Routing.approve` nach dem `undefined`-Fall einen eigenen
-`typeof approval === "string"`-Zweig. Normalisiere den String relativ
-zum effektiven Navigationspfad aus R24, fuehre die Weiterleitung ueber
-denselben internen Navigationsablauf aus und liefere fuer den aktuell
-pruefenden View `false`. Das verhindert, dass der bisherige View aufgrund
-des nichtleeren Strings als freigegeben gilt.
-
-Ein pro Redirect-Kette gefuehrtes `Set` normalisierter Zielpfade erkennt
-Selbstweiterleitung und Zyklen. Einen Zyklus mit klarem Routingfehler
-abbrechen, nicht als erfolgreiche Freigabe behandeln. Das Set gehoert
-zur aktuellen Kette, nicht dauerhaft zur Route; spaetere regulaere
-Navigationen auf dasselbe Ziel bleiben erlaubt. Pruefe auch einen
-Permit-Redirect waehrend bereits laufendem Render-Lock, damit der
-eingereihte Ziel-Render den beibehaltenen effektiven Pfad sieht.
-
-**Problem und Ziel:** Die Implementierung akzeptiert nur `approval === true`,
-obwohl ein String laut Vertrag ein Weiterleitungsziel ist. Ein String darf
-nicht nur den bisherigen View ausblenden und die Navigation stehen lassen.
-
-**Umsetzung**
-
-1. Unterscheide `undefined`, `true`, `false` und String gemaess dem
-   dokumentierten Permission-Vertrag.
-2. Normalisiere String-Ziele ueber die vorhandenen Path-Regeln und fuehre die
-   Weiterleitung ueber den in R24 konsolidierten Navigationspfad aus.
-3. Erkenne normalisierte Selbstweiterleitungen. Verhindere auch unendliche
-   Kaskaden durch wiederkehrende Redirect-Zyklen.
-
-**Regression und Abnahme**
-
-- [ ] Bei `a.permit(){return "#c";}` wird A nicht angezeigt, C aktiviert und der Navigationszustand auf C ausgerichtet.
-- [ ] Relative Ziele und normalisierte Selbstweiterleitung funktionieren ohne Endlosschleife.
-- [ ] `undefined`, `true`, `false` und die Freigaben uebergeordneter Views behalten ihr dokumentiertes Verhalten.
-
-**Testansatz:** `test\routing_approve.html`, `test\routing_route.html`.
-**Erledigt, wenn:** Der String-Vertrag aus `manuals\routing.md` als echte
-Weiterleitung umgesetzt ist.
+Die irrefuehrende Dokumentation und das Beispiel wurden am 2026-11-21
+korrigiert. Eine Redirect-Implementierung fuer String-Rueckgaben ist nicht
+vorgesehen.
 
 ### R26
 

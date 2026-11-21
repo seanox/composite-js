@@ -35,7 +35,7 @@ and remove views depending on the situation.
   - [undefined / no return value](#undefined--no-return-value)
   - [true](#true)
   - [false](#false)
-  - [string](#string)
+  - [Other values](#other-values)
 - [Interceptors](#interceptors)
   - [Execution order](#execution-order)
   - [Path matching](#path-matching)
@@ -164,12 +164,14 @@ are shown and any additional `condition` is explicitly `true`.
 ### false
 The view and possible sub-views are not shown.
 
-### string
-The return value is a path. The view and possible sub-views are not shown, and
-navigation is redirected to the returned path. The target follows the same path
-rules as other navigation; relative targets use the effective routing path as
-their base. Redirect handling must prevent endless self-redirects and redirect
-cycles.
+### Other values
+Only the primitive Boolean value `true` grants permission. `false` and any other
+non-`undefined` value deny it, including strings and promises. Return values are
+neither converted nor awaited, and a string does not trigger navigation.
+
+Routing may call `permit()` repeatedly while rendering, so use it only to decide
+whether a view is shown. Handle redirects through an interceptor such as
+`Routing.customize()` or through application logic for state changes.
 
 ```javascript
 const example = {
@@ -179,8 +181,6 @@ const example = {
             return;        
         if (this.condition === 2)
             return true;
-        if (this.condition === 3)
-            return "#redirect";
         return false;
     }    
 };

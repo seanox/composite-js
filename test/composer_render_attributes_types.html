@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const attributeModel = {value: false, input: "initial"};
+        const assignments = [];
+        const errors = [];
+        const errorLog = [];
+        const consoleError = console.error;
+        let started = false;
+
+        console.error = (...values) => {
+            errorLog.push(values);
+            consoleError.apply(console, values);
+        };
+        Test.listen(Test.EVENT_FINISH, () => {
+            console.error = consoleError;
+        });
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => errors.push(error));
+
+        Composer.customize(element => {
+            if (!(element instanceof Element))
+                return;
+            if (element.id === "ordinary" || element.id === "template") {
+                let stored;
+                Object.defineProperty(element, "data-probe", {
+                    get() {return stored;},
+                    set(value) {
+                        assignments.push({element, value});
+                        stored = value;
+                    }
+                });
+            } else if (element.id === "unset") {
+                Object.defineProperty(element, "data-probe", {
+                    set() {
+                        throw new Error("Undefined must not invoke a property setter");
+                    }
+                });
+            } else if (element.id === "setter") {
+                Object.defineProperty(element, "data-probe", {
+                    set() {throw attributeModel.setterError;}
+                });
+            }
+        });
+
+        const render = selector => new Promise(resolve => {
+            Composer.listen(Composer.EVENT_RENDER_END, (event, target) => {
+                if (target === selector)
+                    window.setTimeout(resolve, 0);
+            });
+            Composer.render(selector);
+        });
+
+        Test.create({name: "Initial false remains Boolean in ordinary and template properties", test() {
+            Assert.assertEquals(2, assignments.length);
+            ["ordinary", "template"].forEach(id => {
+                const element = document.getElementById(id);
+                Assert.assertEquals(false, element["data-probe"]);
+                Assert.assertEquals("false", element.getAttribute("data-probe"));
+                Assert.assertFalse(element.hasAttribute("@data-probe"));
+            });
+            Assert.assertEquals(0, errors.length);
+        }});
+
+        [
+            ["true", true], ["false", false], ["zero", 0], ["one", 1],
+            ["number", 12.5], ["false string", "false"], ["true string", "true"],
+            ["empty string", ""], ["null", null],
+            ["object", {toString() {return "object";}}], ["array", [1, 2]]
+        ].forEach(([name, value]) => {
+            Test.create({name: "Properties receive the original " + name, timeout: 3000, test() {
+                attributeModel.value = value;
+                assignments.length = 0;
+                return render("#ordinary, #template").then(() => {
+                    Assert.assertEquals(2, assignments.length);
+                    assignments.forEach(assignment => Assert.assertEquals(value, assignment.value));
+                    ["ordinary", "template"].forEach(id => {
+                        const element = document.getElementById(id);
+                        Assert.assertEquals(value, element["data-probe"]);
+                        Assert.assertEquals(String(value), element.getAttribute("data-probe"));
+                    });
+                    Assert.assertEquals(0, errors.length);
+                });
+            }});
+        });
+
+        Test.create({name: "Undefined removes targets without assigning properties", timeout: 3000, test() {
+            const previous = attributeModel.value;
+            attributeModel.value = undefined;
+            assignments.length = 0;
+            return render("#ordinary, #template, #unset").then(() => {
+                Assert.assertEquals(0, assignments.length);
+                ["ordinary", "template"].forEach(id => {
+                    const element = document.getElementById(id);
+                    Assert.assertNull(element.getAttribute("data-probe"));
+                    Assert.assertEquals(previous, element["data-probe"]);
+                    Assert.assertFalse(element.hasAttribute("@data-probe"));
+                });
+                Assert.assertNull(document.getElementById("unset").getAttribute("data-probe"));
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name: "Removed attributes can receive another typed value", timeout: 3000, test() {
+            attributeModel.value = 42;
+            assignments.length = 0;
+            return render("#ordinary, #template").then(() => {
+                Assert.assertEquals(2, assignments.length);
+                assignments.forEach(assignment => Assert.assertEquals(42, assignment.value));
+                ["ordinary", "template"].forEach(id =>
+                    Assert.assertEquals("42", document.getElementById(id).getAttribute("data-probe")));
+            });
+        }});
+
+        Test.create({name: "Undefined does not replace a user-edited input value", timeout: 3000, test() {
+            ["ordinaryInput", "templateInput"].forEach(id => {
+                document.getElementById(id).value = "edited";
+            });
+            attributeModel.input = undefined;
+            return render("#ordinaryInput, #templateInput").then(() => {
+                ["ordinaryInput", "templateInput"].forEach(id => {
+                    const element = document.getElementById(id);
+                    Assert.assertNull(element.getAttribute("value"));
+                    Assert.assertEquals("edited", element.value);
+                    Assert.assertFalse(element.hasAttribute("@value"));
+                });
+            });
+        }});
+
+        Test.create({name: "Boolean properties follow false true false after manual changes", timeout: 3000, test() {
+            const selector = "#checked, #templateChecked, #disabled, #templateDisabled";
+            const check = value => {
+                attributeModel.value = value;
+                return render(selector).then(() => {
+                    ["checked", "templateChecked"].forEach(id => {
+                        const element = document.getElementById(id);
+                        Assert.assertEquals(value, element.checked);
+                        Assert.assertEquals(String(value), element.getAttribute("checked"));
+                    });
+                    ["disabled", "templateDisabled"].forEach(id => {
+                        const element = document.getElementById(id);
+                        Assert.assertEquals(value, element.disabled);
+                        Assert.assertEquals(value, element.hasAttribute("disabled"));
+                    });
+                });
+            };
+            ["checked", "templateChecked"].forEach(id => {
+                document.getElementById(id).checked = true;
+            });
+            return check(false).then(() => check(true)).then(() => check(false));
+        }});
+
+        Test.create({name: "Strings and textual attributes are not interpreted as Booleans", timeout: 3000, test() {
+            attributeModel.value = "false";
+            return render("#checked, #templateChecked, #disabled, #templateDisabled, #text")
+                .then(() => {
+                    ["checked", "templateChecked"].forEach(id =>
+                        Assert.assertTrue(document.getElementById(id).checked));
+                    ["disabled", "templateDisabled"].forEach(id =>
+                        Assert.assertTrue(document.getElementById(id).disabled));
+                    const element = document.getElementById("text");
+                    Assert.assertEquals("false", element.title);
+                    Assert.assertEquals("false", element.getAttribute("aria-hidden"));
+                    Assert.assertEquals("false", element.getAttribute("data-flag"));
+                    attributeModel.value = false;
+                    return render(element);
+                }).then(() => {
+                    const element = document.getElementById("text");
+                    Assert.assertEquals("false", element.title);
+                    Assert.assertEquals("false", element.getAttribute("aria-hidden"));
+                    Assert.assertEquals("false", element.getAttribute("data-flag"));
+                    Assert.assertEquals(false, element["data-flag"]);
+                });
+        }});
+
+        Test.create({name: "The observer does not normalize Boolean-looking attribute text", timeout: 3000, test() {
+            const element = document.getElementById("observer");
+            element.setAttribute("readonly", "false");
+            element.setAttribute("required", "true");
+            return new Promise(resolve => window.setTimeout(resolve, 0)).then(() => {
+                Assert.assertEquals("false", element.getAttribute("readonly"));
+                Assert.assertTrue(element.readOnly);
+                Assert.assertEquals("true", element.getAttribute("required"));
+                Assert.assertTrue(element.required);
+            });
+        }});
+
+        Test.create({name: "Throwing property setters are logged and reported unchanged", timeout: 3000, test() {
+            Assert.assertEquals(0, errors.length);
+            const error = new Error("Attribute setter failure");
+            attributeModel.setterError = error;
+            attributeModel.setterValue = 1;
+            return render(document.getElementById("setter")).then(() => {
+                Assert.assertEquals(1, errors.length);
+                Assert.assertEquals(error, errors[0]);
+                Assert.assertTrue(errorLog.some(values => values[0] === error));
+            });
+        }});
+
+        Test.create({name: "Browser attribute conversion errors are logged and reported", timeout: 3000, test() {
+            const error = new Error("Attribute conversion failure");
+            attributeModel.conversion = {toString() {throw error;}};
+            return render(document.getElementById("conversion")).then(() => {
+                Assert.assertEquals(2, errors.length);
+                Assert.assertEquals(error, errors[1]);
+                Assert.assertTrue(errorLog.some(values => values[0] === error));
+                Assert.assertFalse(document.getElementById("conversion").hasOwnProperty("data-probe"));
+            });
+        }});
+
+        Test.create({name: "Native property setter errors remain visible", timeout: 3000, test() {
+            attributeModel.size = 0;
+            return render(document.getElementById("size")).then(() => {
+                Assert.assertEquals(3, errors.length);
+                Assert.assertTrue(errors[2] instanceof DOMException);
+                Assert.assertEquals("IndexSizeError", errors[2].name);
+                Assert.assertTrue(errorLog.some(values => values[0] === errors[2]));
+            });
+        }});
+
+        Test.create({name: "Symbols reach native attribute conversion without String preprocessing", timeout: 3000, test() {
+            const count = errors.length;
+            attributeModel.symbol = Symbol("attribute");
+            const element = document.getElementById("symbol");
+            return render(element).then(() => {
+                Assert.assertEquals(count + 1, errors.length);
+                Assert.assertTrue(errors[count] instanceof TypeError);
+                Assert.assertTrue(errorLog.some(values => values[0] === errors[count]));
+                Assert.assertNull(element.getAttribute("data-probe"));
+                Assert.assertFalse(element.hasOwnProperty("data-probe"));
+            });
+        }});
+
+        Test.create({name: "Explicit String expressions supply attribute text", timeout: 3000, test() {
+            const count = errors.length;
+            const element = document.getElementById("symbolText");
+            return render(element).then(() => {
+                Assert.assertEquals(count, errors.length);
+                Assert.assertEquals("Symbol(attribute)", element.getAttribute("data-probe"));
+                Assert.assertEquals("Symbol(attribute)", element["data-probe"]);
+            });
+        }});
+
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+            if (started || selector !== document.body)
+                return;
+            started = true;
+            window.setTimeout(() => Test.start(), 0);
+        });
+    </script>
+  </head>
+  <body>
+    <span id="ordinary" data-probe="{{attributeModel.value}}"></span>
+    <span id="template" @data-probe="{{attributeModel.value}}"></span>
+    <span id="unset" @data-probe="{{attributeModel.unset}}"></span>
+    <input id="ordinaryInput" value="{{attributeModel.input}}">
+    <input id="templateInput" @value="{{attributeModel.input}}">
+    <input id="checked" type="checkbox" checked="{{attributeModel.value}}">
+    <input id="templateChecked" type="checkbox" @checked="{{attributeModel.value}}">
+    <input id="disabled" disabled="{{attributeModel.value}}">
+    <input id="templateDisabled" @disabled="{{attributeModel.value}}">
+    <span id="text" title="{{attributeModel.value}}" aria-hidden="{{attributeModel.value}}" data-flag="{{attributeModel.value}}"></span>
+    <input id="observer">
+    <span id="setter" data-probe="{{attributeModel.setterValue}}"></span>
+    <span id="conversion" data-probe="{{attributeModel.conversion}}"></span>
+    <input id="size" size="{{attributeModel.size}}">
+    <span id="symbol" data-probe="{{attributeModel.symbol}}"></span>
+    <span id="symbolText" data-probe="{{String(attributeModel.symbol)}}"></span>
+  </body>
+</html>

@@ -648,6 +648,9 @@ HTML elements whose attributes the browser already interprets before rendering
 will resolve their value and then add the attributes of the same name to the
 element. After that, they behave like all other attributes, including being
 updated by the composer during rendering if the attributes contain expressions.
+The template attribute itself is removed even if its first result is
+`undefined`; its expression remains available for later rendering. `undefined`
+removes the target attribute without assigning the target property.
 
 ```html
 <img @src="{{...}}"/>
@@ -660,6 +663,14 @@ excluded. The expression language is not supported here. When used as free text,
 pure text (plain text) is always generated as output. The addition of markup,
 especially HTML code, is not possible and is only supported with the attributes
 `output` and `import`.
+
+For general dynamic attributes, standalone expression results retain their
+JavaScript type until the browser writes them. Only `undefined` is special: it
+removes the attribute without assigning the property. composite-js neither
+interprets Boolean-looking strings nor resets properties to assumed defaults;
+DOM conversions and attribute reflection belong to the browser. Write errors are
+logged and reported through `Composer.EVENT_ERROR`. Runtime instructions and
+metadata retain their own rules.
 
 ```html
 <article title="{{example.title}}">

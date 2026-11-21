@@ -404,6 +404,13 @@ operator aliases such as `:and` (`&&`), `:or` (`||`) and `:not` (`!`) as
 markup-friendly spellings. They are translated before evaluation; normal
 JavaScript operators remain supported.
 
+General dynamic attributes forward standalone expression values to the DOM
+without changing their JavaScript type. `undefined` removes the target attribute
+without assigning the property; conversions and reflection are browser behavior.
+Attribute/property write errors are logged and reported through
+`Composer.EVENT_ERROR`. Runtime instructions such as `condition` and `interval`
+retain their own rules; see [Expression results](expression.md#expressions).
+
 Expression execution failures are logged and returned unchanged as ordinary
 result values, which may appear in rendered output. Direct `Scripting.eval()`
 and `Scripting.run()` calls instead propagate execution failures to their

@@ -88,7 +88,7 @@
       true
       <input type="text" disabled="">
       false
-      <input type="text" disabled="">
+      <input type="text">
       undefined
       <span></span>
 
@@ -124,7 +124,7 @@
       true
       <input type="text" disabled="">
       false
-      <input type="text" disabled="">
+      <input type="text">
       undefined
       <span></span>
 
@@ -160,7 +160,7 @@
       true
       <input type="text" disabled="">
       false
-      <input type="text" disabled="">
+      <input type="text">
       undefined
       <span></span>
     </script>
@@ -209,7 +209,7 @@
       true
       <input disabled="" type="text">
       false
-      <input disabled="" type="text">
+      <input type="text">
       undefined
       <span></span>
 
@@ -245,7 +245,7 @@
       true
       <input disabled="" type="text">
       false
-      <input disabled="" type="text">
+      <input type="text">
       undefined
       <span></span>
 
@@ -281,7 +281,7 @@
       true
       <input disabled="" type="text">
       false
-      <input disabled="" type="text">
+      <input type="text">
       undefined
       <span></span>
     </script>
@@ -291,8 +291,8 @@
       The attributes use expressions whose return value can be undefined.
       In these cases, the attribute must be temporarily removed and restored at
       the next render cycle if the return value is not undefined.
-      The value false should not play a role!
-      But there are exceptions, such as: goanna.
+      Defined results retain their type until the browser writes them.
+      Undefined removes the attribute without assigning the property.
     -->
     {{snapshots.length}}
     {{snapshots.length % 2 === 0 ? true : 'undefined'}}

@@ -51,6 +51,38 @@ standalone empty value expression evaluates to `undefined`.
 Errors thrown during expression evaluation are logged with the expression
 context and used as expression results.
 
+For ordinary dynamic attributes, including [@-attribute templates](
+    markup.md#-attributes), a standalone expression's result is passed unchanged
+to `setAttribute()` and the property assignment under the target attribute name.
+composite-js does not convert the result to a string or interpret `"true"` and
+`"false"` as Booleans. The browser's DOM APIs and property setters perform their
+own conversions. If text is required explicitly, use an expression such as
+`{{String(example.value)}}`. Mixed interpolation remains text.
+
+`undefined` is the only special case: composite-js removes the target attribute
+without assigning its property. The expression remains available for later
+render cycles. Attribute removal may affect a reflected property through native
+browser behavior, but composite-js does not reset properties or invent default
+values. For example, a user-edited input value can remain unchanged after its
+`value` attribute is removed.
+
+HTML attributes and DOM properties are distinct. Their names are not
+automatically translated: `readonly` is an attribute name, while `readOnly` is
+the native property name. Boolean HTML attributes act through presence, not
+their text. Use `readonly="{{example.locked ? '' : undefined}}"` to control that
+attribute's presence. `checked="{{false}}"` assigns Boolean `false` to the
+current `checked` property, but can retain `checked="false"` in the markup;
+`checked="{{'false'}}"` passes a nonempty string and the native setter makes the
+current property `true`.
+
+Errors from attribute conversion or property assignment are logged and reported
+through `Composer.EVENT_ERROR` by the renderer. Writes are not transactional:
+changes already made by the browser or a setter are not rolled back.
+
+This general contract does not replace the rules of runtime instructions such as
+`condition`, `interval`, `validate`, `output` or `import`, nor the initial
+processing of metadata such as `id`, `events` and static attributes.
+
 ### Values
 The examples assume that `Example` is available to the expression. Local
 composite-script bindings are not exposed automatically; see [expose](

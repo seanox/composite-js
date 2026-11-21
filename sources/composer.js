@@ -2824,36 +2824,17 @@
                 ? attribute.replace(/^@+/, "") : attribute;
             if (target !== attribute)
                 selector.removeAttribute(attribute);
-            // If the type value is undefined, the attribute is removed. Since
-            // the attribute contains an expression, the removal is only
-            // temporary and is checked again at the next render cycle and
-            // possibly inserted again if the expression returns a return value.
-            if (value !== undefined) {
-                value = String(value);
-                // Special case attribute value, here primarily the value of the
-                // property must be set, the value of the attribute is optional.
-                // Changing the value does not trigger an event, so no unwanted
-                // recursions occur.
-                if (attribute.toLowerCase() === ATTRIBUTE_VALUE
-                        && ATTRIBUTE_VALUE in selector)
-                    selector.value = value;
-                selector.setAttribute(target, value);
+            if (value === undefined) {
+                selector.removeAttribute(target);
+                return;
             }
-
-            // DOM attributes and properties are distinct and are not generally
-            // synchronized by the browser. The renderer explicitly synchronizes
-            // the corresponding property with the evaluated attribute value. If
-            // the expression evaluates to undefined, the attribute is removed
-            // and the corresponding property is assigned undefined. Native
-            // setters determine value conversion; removing a reflected attribute
-            // can reset its property to the browser default.
-            try {selector[target] = value;
-            } finally {
-                // Setters can recreate attributes or throw; cleanup must still
-                // run without suppressing the setter error.
-                if (value === undefined)
-                    selector.removeAttribute(target);
-            }
+            // Preserve the result type; DOM APIs perform their own conversions.
+            // Set value before its attribute to preserve input state handling.
+            if (attribute.toLowerCase() === ATTRIBUTE_VALUE
+                    && ATTRIBUTE_VALUE in selector)
+                selector.value = value;
+            selector.setAttribute(target, value);
+            selector[target] = value;
         });
     };
 
@@ -3096,25 +3077,6 @@
             const collection = {added: new Set(), removed: new Set()};
 
             records.forEach((record) => {
-
-                // HTML uses attributes whose pure presences have effects:
-                //     autofocus, disabled, hidden, multiple, readonly, required
-                // With the expression language the setting and removing of
-                // these attributes is not possible. This task is taken over by
-                // the MutationObserver. It reacts to the values true and false
-                // for the present attributes and removes the attribute from the
-                // HTML element in case of false.
-
-                if (record.type === "attributes") {
-                    const attribute = record.attributeName;
-                    if (attribute.match(/^(autofocus|disabled|hidden|multiple|readonly|required)$/i)) {
-                        const value = String(record.target.getAttribute(attribute));
-                        if (value === "false")
-                            record.target.removeAttribute(attribute)
-                        if (value === "true")
-                            record.target.setAttribute(attribute, attribute);
-                    }
-                }
 
                 // Without Meta-Store, the renderer hasn't run yet. The reaction
                 // by the MutationObserver only makes sense when the renderer

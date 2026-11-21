@@ -496,40 +496,25 @@ Container danach erneut verwendbar ist.
 
 ### R06
 
-**Boolesche DOM-Properties typgetreu aktualisieren**
+**Allgemeine Attributwerte typgetreu weitergeben**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt am 2026-11-21
 **Paket:** `rendering` | **Abstimmung:** [R07](#r07), [R08](#r08), [R09](#r09)
-**Fundstellen:** `sources\composer.js:2647-2678, 2942-2950`
+**Fundstellen:** `sources\composer.js:2818-2837`
 
 **Konkreter Loesungsansatz**
 
-Trenne in `_render_attributes_update` drei Werte: den gespeicherten
-Expression-Text, das rohe Ergebnis `raw` und den DOM-Zielnamen aus R08/R09.
-Ein kleiner gemeinsamer Schreibhelfer fuer Renderer und
-Boolean-Normalisierung des MutationObservers kann dann zuerst `undefined`
-behandeln, danach bekannte boolesche HTML-Attribute und zuletzt Textattribute.
-Erkenne boolesche Attribute ueber eine fachliche Attribut-/Property-Zuordnung,
-nicht ueber `typeof raw === "boolean"`: `aria-hidden="false"` ist Text.
-Beachte unterschiedliche Property-Namen wie `readonly -> readOnly` und
-`autofocus -> autofocus`. Ergaenze `checked`/`selected` und die weiteren
-unterstuetzten booleschen HTML-Attribute konsistent.
+`_render_attribute_value()` gibt definierte Expression-Ergebnisse unveraendert
+an `setAttribute(target, value)` und `selector[target] = value` weiter.
+Bei `undefined` wird nur das Zielattribut entfernt; kein Property-Setter wird
+aufgerufen. Der Zielname gilt auch fuer `@`-Attribute, deren Expressions im
+Metaobjekt fuer weitere Renderzyklen erhalten bleiben.
 
-Bei `raw === undefined` das dynamische Zielattribut entfernen, ohne den Wert
-als String auszugeben. Das gilt auch fuer den Zielnamen eines `@`-Attributs.
-Diese Attributregel legt nicht fest, welcher Wert einer zugehoerigen
-DOM-Property zugewiesen wird; diese Property-Semantik separat und typgerecht
-behandeln.
-
-Bei einem booleschen `raw === false` das Attribut entfernen und die
-zugehoerige Property auf `false` setzen; bei `true` das Praesenzattribut
-setzen und die Property auf `true`. Der aktuelle Observer-Vertrag fuer die
-Strings `"false"`/`"true"` muss in denselben Pfad einbezogen werden.
-Die abschliessende pauschale Zuweisung `selector[attribute] = value` darf den
-Wert danach nicht erneut als String schreiben. Fuer sonstige Properties
-den Rohwert und nur fuer `setAttribute` die Textdarstellung benutzen.
-Bei `checked` die aktuelle Property auch nach einem Dirty-Checkedness-Zustand
-explizit setzen; Attributreflexion allein genuegt nicht.
+Die Boolean-String-Normalisierung des MutationObservers ist entfernt.
+Attribut-/Property-Zuordnung, Boolean-Deutung und konstruierte Default-Resets
+sind nicht Teil dieses Vertrags. DOM-Konvertierungen und Reflexion bestimmt
+der Browser. Setzfehler laufen durch den bestehenden Renderer-Fehlerpfad mit
+`console.error()` und `Composer.EVENT_ERROR`.
 
 **Problem und Ziel:** Der Ausdruckswert `false` wird vor der Property-Zuweisung
 zum String `"false"`. Boolesche DOM-Setter interpretieren diesen nichtleeren
@@ -537,27 +522,23 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 
 **Umsetzung**
 
-1. Bewahre den Rohwert der Expression bis zur Property-Zuweisung auf. Erzeuge
-   einen String nur fuer diejenigen Attributpfade, die Text benoetigen.
-2. Entferne bei `raw === undefined` das dynamische Zielattribut. Setze
-   boolesche Properties typgerecht und halte die zugehoerige Attributpraesenz
-   entsprechend dem bestehenden Composer-Vertrag konsistent.
-3. Stimme direkten Renderpfad und MutationObserver ab. Verhindere, dass die
-   Property-Reflexion die beabsichtigte Normalisierung vorzeitig unkenntlich macht.
-4. Behalte die Textsemantik normaler Attribute sowie von `aria-*` und `data-*`
-   bei. Fuehre keine pauschale Truthiness-Konvertierung aller Werte ein.
+1. Definierte Ergebnisse ohne vorgelagerte String-Konvertierung weitergeben.
+2. Bei `undefined` das Zielattribut entfernen und keine Property zuweisen.
+3. Boolean-aehnliche Strings im MutationObserver nicht mehr normalisieren.
+4. Sonderattribute, Metadaten und Textinterpolation behalten ihre eigenen Regeln.
 
 **Regression und Abnahme**
 
-- [ ] `disabled="{{false}}"` und `checked="{{false}}"` ergeben false-Properties und keine aktivierenden Attribute.
-- [ ] Der Wechsel `false -> true -> false` funktioniert auch nach Observer-Verarbeitung.
-- [ ] `undefined` entfernt das dynamische Zielattribut, erzeugt keinen Stringwert und ein spaeterer definierter Wert wird wieder gesetzt.
-- [ ] Ein normales `title` mit dem Wert `false` sowie `aria-*`-/`data-*`-Werte behalten ihre vorgesehene Textdarstellung; es entstehen keine Observer-Schleifen.
+- [x] Primitive Ergebnisse und Objektidentitaet bleiben bis zur DOM-Grenze erhalten.
+- [x] Der Wechsel `false -> true -> false` funktioniert auch nach manuellen Checkbox-Aenderungen und Observer-Verarbeitung.
+- [x] `undefined` entfernt normale und `@`-Zielattribute ohne Property-Zuweisung; spaetere Werte werden wieder gesetzt.
+- [x] Textattribute und Boolean-aehnliche Strings folgen der Browsersemantik ohne Observer-Normalisierung.
+- [x] Property-Setter- und Attributkonvertierungsfehler werden unveraendert protokolliert und gemeldet.
 
-**Testansatz:** `test\composer_render_attributes.html`,
-`test\reactive_attributes.html`.
-**Erledigt, wenn:** Boolesche Property-Semantik nicht mehr von einer zuvor
-erzeugten Stringdarstellung abhaengt.
+**Testnachweis:** Die Regressionen in `test\composer_render_attributes_types.html`
+schlagen am bisherigen Verhalten in Blink fehl; alle 23 Tasks bestehen mit
+der Korrektur in Blink, Gecko und WebKit. Alle sechs fokussierten Attribut-/
+Reactive-Testseiten sowie der isolierte Compose-Build mit ES2015-Lint bestehen.
 
 ### R07
 
@@ -617,12 +598,11 @@ Behalte `attribute` als Schluessel von `object.attributes` und als Teil des
 Expression-Cache-Identifiers bei. Bestimme daneben vor der Auswertung
 `targetName = attribute.replace(/^@+/, "")`. Ein physisches Template-Attribut
 wird unter dem Deklarationsnamen entfernt; Setzen und Entfernen des
-Ergebnisattributs verwenden immer `targetName`. Auch die Property-Zuweisung
-verwendet dessen gegebenenfalls abweichenden Property-Namen aus R06.
+Ergebnisattributs verwenden immer `targetName`. Definierte Property-Werte
+werden unter demselben Zielnamen ohne automatische Namenszuordnung geschrieben.
 Mutierende Umbenennung von `attribute` nur im definierten Ergebniszweig
 entfaellt. Bei `undefined` bleibt die Expression im Metaobjekt erhalten,
-waehrend Zielattribut und Property gemaess dem dokumentierten Vertrag
-aktualisiert werden.
+waehrend nur das Zielattribut gemaess dem Vertrag aus R06 entfernt wird.
 
 **Problem und Ziel:** Bei `undefined` wird das `@`-Praefix nicht entfernt.
 Der Code entfernt beispielsweise `@title` statt des zuvor erzeugten `title`
@@ -633,8 +613,8 @@ und adressiert auch die falsche Property.
 1. Fuehre Deklarationsname und realen DOM-Zielnamen getrennt.
 2. Bestimme den Zielnamen vor allen Verzweigungen nach dem Expression-Ergebnis.
    Verwende ihn fuer Setzen, Entfernen und Property-Aktualisierung.
-3. Erhalte die Expression-Deklaration fuer spaetere Updates und fuehre den
-   vorgesehenen Property-Reset beim Entfernen aus.
+3. Erhalte die Expression-Deklaration fuer spaetere Updates. Bei `undefined`
+   nur das Zielattribut entfernen, ohne die Property zuzuweisen.
 
 **Regression und Abnahme**
 

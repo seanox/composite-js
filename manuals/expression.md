@@ -60,11 +60,18 @@ own conversions. If text is required explicitly, use an expression such as
 `{{String(example.value)}}`. Mixed interpolation remains text.
 
 `undefined` is the only special case: composite-js removes the target attribute
-without assigning its property. The expression remains available for later
-render cycles. Attribute removal may affect a reflected property through native
-browser behavior, but composite-js does not reset properties or invent default
-values. For example, a user-edited input value can remain unchanged after its
-`value` attribute is removed.
+and restores the browser default of its property. For each reset, it creates a
+temporary element in the same document, with the same tag and namespace, outside
+the DOM. No attributes or children are copied from the target: an input reference
+does not inherit `type`, `min` or `max`. The value of the reference's property
+under the target attribute name is assigned unchanged to the target property.
+The target attribute remains removed even if its setter recreates it or throws.
+The expression remains available for later render cycles.
+
+This is the default of a fresh, unconfigured element, not a saved initial value
+or an application-specific default. Native setter conversions and attribute
+reflection still apply. For example, a user-edited text input is reset to `""`,
+and a manually changed checkbox's `checked` property is reset to `false`.
 
 HTML attributes and DOM properties are distinct. Their names are not
 automatically translated: `readonly` is an attribute name, while `readOnly` is
@@ -75,9 +82,11 @@ current `checked` property, but can retain `checked="false"` in the markup;
 `checked="{{'false'}}"` passes a nonempty string and the native setter makes the
 current property `true`.
 
-Errors from attribute conversion or property assignment are logged and reported
-through `Composer.EVENT_ERROR` by the renderer. Writes are not transactional:
-changes already made by the browser or a setter are not rolled back.
+Errors from attribute conversion, property assignment or obtaining the reference
+default are logged and reported through `Composer.EVENT_ERROR` by the renderer.
+Writes are not transactional: changes already made by the browser or a setter
+are not rolled back, except that the target attribute remains removed on an
+`undefined` reset.
 
 This general contract does not replace the rules of runtime instructions such as
 `condition`, `interval`, `validate`, `output` or `import`, nor the initial

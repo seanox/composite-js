@@ -406,10 +406,13 @@ JavaScript operators remain supported.
 
 General dynamic attributes forward standalone expression values to the DOM
 without changing their JavaScript type. `undefined` removes the target attribute
-without assigning the property; conversions and reflection are browser behavior.
-Attribute/property write errors are logged and reported through
-`Composer.EVENT_ERROR`. Runtime instructions such as `condition` and `interval`
-retain their own rules; see [Expression results](expression.md#expressions).
+and assigns the same-named property default from a detached, unconfigured
+element with the same tag and namespace. No target attributes or children are
+copied, and the target attribute remains removed even if a setter recreates it or
+throws. Conversions and reflection are browser behavior. Write and reference
+errors are logged and reported through `Composer.EVENT_ERROR`. Runtime
+instructions such as `condition` and `interval` retain their own rules; see
+[Expression results](expression.md#expressions).
 
 Expression execution failures are logged and returned unchanged as ordinary
 result values, which may appear in rendered output. Direct `Scripting.eval()`

@@ -292,7 +292,7 @@
       In these cases, the attribute must be temporarily removed and restored at
       the next render cycle if the return value is not undefined.
       Defined results retain their type until the browser writes them.
-      Undefined removes the attribute without assigning the property.
+      Undefined removes the attribute and restores the fresh element default.
     -->
     {{snapshots.length}}
     {{snapshots.length % 2 === 0 ? true : 'undefined'}}

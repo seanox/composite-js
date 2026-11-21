@@ -1763,8 +1763,7 @@
                     this.ticks--;
                     if (this.ticks > 0)
                         return;
-                    try {
-                        callback(this);
+                    try {callback(this);
                     } finally {
                         if (context === Composer.render) {
                             if (_render_lock === this)
@@ -2826,6 +2825,14 @@
                 selector.removeAttribute(attribute);
             if (value === undefined) {
                 selector.removeAttribute(target);
+                try {
+                    const element = selector.ownerDocument.createElementNS(
+                        selector.namespaceURI, selector.localName);
+                    selector[target] = element[target];
+                } finally {
+                    // A property setter can recreate the attribute or throw.
+                    selector.removeAttribute(target);
+                }
                 return;
             }
             // Preserve the result type; DOM APIs perform their own conversions.

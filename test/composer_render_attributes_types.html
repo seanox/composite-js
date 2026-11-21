@@ -10,6 +10,7 @@
 
         const attributeModel = {value: false, input: "initial"};
         const assignments = [];
+        const unsetAssignments = [];
         const errors = [];
         const errorLog = [];
         const consoleError = console.error;
@@ -38,13 +39,20 @@
                 });
             } else if (element.id === "unset") {
                 Object.defineProperty(element, "data-probe", {
-                    set() {
-                        throw new Error("Undefined must not invoke a property setter");
+                    set(value) {
+                        unsetAssignments.push(value);
+                        element.setAttribute("data-probe", "recreated");
                     }
                 });
             } else if (element.id === "setter") {
                 Object.defineProperty(element, "data-probe", {
-                    set() {throw attributeModel.setterError;}
+                    set(value) {
+                        if (attributeModel.setterError !== undefined) {
+                            if (value === undefined)
+                                element.setAttribute("data-probe", "recreated");
+                            throw attributeModel.setterError;
+                        }
+                    }
                 });
             }
         });
@@ -90,18 +98,21 @@
             }});
         });
 
-        Test.create({name: "Undefined removes targets without assigning properties", timeout: 3000, test() {
-            const previous = attributeModel.value;
+        Test.create({name: "Undefined removes targets and assigns fresh element defaults", timeout: 3000, test() {
             attributeModel.value = undefined;
             assignments.length = 0;
+            unsetAssignments.length = 0;
             return render("#ordinary, #template, #unset").then(() => {
-                Assert.assertEquals(0, assignments.length);
+                Assert.assertEquals(2, assignments.length);
+                assignments.forEach(assignment => Assert.assertUndefined(assignment.value));
                 ["ordinary", "template"].forEach(id => {
                     const element = document.getElementById(id);
                     Assert.assertNull(element.getAttribute("data-probe"));
-                    Assert.assertEquals(previous, element["data-probe"]);
+                    Assert.assertUndefined(element["data-probe"]);
                     Assert.assertFalse(element.hasAttribute("@data-probe"));
                 });
+                Assert.assertEquals(1, unsetAssignments.length);
+                Assert.assertUndefined(unsetAssignments[0]);
                 Assert.assertNull(document.getElementById("unset").getAttribute("data-probe"));
                 Assert.assertEquals(0, errors.length);
             });
@@ -118,7 +129,7 @@
             });
         }});
 
-        Test.create({name: "Undefined does not replace a user-edited input value", timeout: 3000, test() {
+        Test.create({name: "Undefined resets user-edited inputs to the fresh input default", timeout: 3000, test() {
             ["ordinaryInput", "templateInput"].forEach(id => {
                 document.getElementById(id).value = "edited";
             });
@@ -127,8 +138,65 @@
                 ["ordinaryInput", "templateInput"].forEach(id => {
                     const element = document.getElementById(id);
                     Assert.assertNull(element.getAttribute("value"));
-                    Assert.assertEquals("edited", element.value);
+                    Assert.assertEquals("", element.value);
                     Assert.assertFalse(element.hasAttribute("@value"));
+                });
+            });
+        }});
+
+        Test.create({name: "Undefined resets dirty Boolean properties and removes their attributes", timeout: 3000, test() {
+            ["checked", "templateChecked"].forEach(id => {
+                document.getElementById(id).checked = true;
+            });
+            attributeModel.value = undefined;
+            return render("#checked, #templateChecked, #disabled, #templateDisabled").then(() => {
+                ["checked", "templateChecked"].forEach(id => {
+                    const element = document.getElementById(id);
+                    Assert.assertFalse(element.checked);
+                    Assert.assertNull(element.getAttribute("checked"));
+                });
+                ["disabled", "templateDisabled"].forEach(id => {
+                    const element = document.getElementById(id);
+                    Assert.assertFalse(element.disabled);
+                    Assert.assertNull(element.getAttribute("disabled"));
+                });
+            });
+        }});
+
+        Test.create({name: "Default references are detached, unconfigured and namespace-correct", timeout: 3000, test() {
+            attributeModel.width = 450;
+            attributeModel.namespace = "defined";
+            return render("#canvas, #namespace").then(() => {
+                const references = [];
+                const createElementNS = document.createElementNS;
+                attributeModel.width = undefined;
+                attributeModel.namespace = undefined;
+                document.createElementNS = function(namespace, name) {
+                    const element = createElementNS.call(this, namespace, name);
+                    references.push(element);
+                    return element;
+                };
+                return render("#canvas, #namespace").then(() => {
+                    document.createElementNS = createElementNS;
+                    Assert.assertEquals(2, references.length);
+                    ["canvas", "namespace"].forEach((id, index) => {
+                        const element = document.getElementById(id);
+                        const reference = references[index];
+                        Assert.assertEquals(element.localName, reference.localName);
+                        Assert.assertEquals(element.namespaceURI, reference.namespaceURI);
+                        Assert.assertEquals(element.ownerDocument, reference.ownerDocument);
+                        Assert.assertNull(reference.parentNode);
+                        Assert.assertEquals(0, reference.attributes.length);
+                    });
+                    Assert.assertEquals(300, document.getElementById("canvas").width);
+                    Assert.assertNull(document.getElementById("canvas").getAttribute("width"));
+                    Assert.assertEquals("90", document.getElementById("canvas").getAttribute("height"));
+                    Assert.assertNull(document.getElementById("namespace").getAttribute("data-probe"));
+                    Assert.assertUndefined(document.getElementById("namespace")["data-probe"]);
+                    Assert.assertEquals(0, errors.length);
+                }, error => {
+                    document.createElementNS = createElementNS;
+                    throw error;
                 });
             });
         }});
@@ -210,7 +278,7 @@
                 Assert.assertEquals(2, errors.length);
                 Assert.assertEquals(error, errors[1]);
                 Assert.assertTrue(errorLog.some(values => values[0] === error));
-                Assert.assertFalse(document.getElementById("conversion").hasOwnProperty("data-probe"));
+                Assert.assertUndefined(document.getElementById("conversion")["data-probe"]);
             });
         }});
 
@@ -233,7 +301,7 @@
                 Assert.assertTrue(errors[count] instanceof TypeError);
                 Assert.assertTrue(errorLog.some(values => values[0] === errors[count]));
                 Assert.assertNull(element.getAttribute("data-probe"));
-                Assert.assertFalse(element.hasOwnProperty("data-probe"));
+                Assert.assertUndefined(element["data-probe"]);
             });
         }});
 
@@ -244,6 +312,39 @@
                 Assert.assertEquals(count, errors.length);
                 Assert.assertEquals("Symbol(attribute)", element.getAttribute("data-probe"));
                 Assert.assertEquals("Symbol(attribute)", element["data-probe"]);
+            });
+        }});
+
+        Test.create({name: "Throwing default setters remain visible and cannot recreate the removed attribute", timeout: 3000, test() {
+            const count = errors.length;
+            const error = new Error("Default setter failure");
+            const element = document.getElementById("setter");
+            attributeModel.setterError = error;
+            attributeModel.setterValue = undefined;
+            return render(element).then(() => {
+                Assert.assertEquals(count + 1, errors.length);
+                Assert.assertEquals(error, errors[count]);
+                Assert.assertTrue(errorLog.some(values => values[0] === error));
+                Assert.assertNull(element.getAttribute("data-probe"));
+            });
+        }});
+
+        Test.create({name: "Reference creation errors are logged and leave the target attribute removed", timeout: 3000, test() {
+            const count = errors.length;
+            const error = new Error("Default reference failure");
+            const element = document.getElementById("ordinary");
+            const createElementNS = document.createElementNS;
+            attributeModel.value = undefined;
+            document.createElementNS = () => {throw error;};
+            return render(element).then(() => {
+                document.createElementNS = createElementNS;
+                Assert.assertEquals(count + 1, errors.length);
+                Assert.assertEquals(error, errors[count]);
+                Assert.assertTrue(errorLog.some(values => values[0] === error));
+                Assert.assertNull(element.getAttribute("data-probe"));
+            }, failure => {
+                document.createElementNS = createElementNS;
+                throw failure;
             });
         }});
 
@@ -272,5 +373,7 @@
     <input id="size" size="{{attributeModel.size}}">
     <span id="symbol" data-probe="{{attributeModel.symbol}}"></span>
     <span id="symbolText" data-probe="{{String(attributeModel.symbol)}}"></span>
+    <canvas id="canvas" width="{{attributeModel.width}}" height="90"></canvas>
+    <svg><rect id="namespace" width="10" data-probe="{{attributeModel.namespace}}"></rect></svg>
   </body>
 </html>

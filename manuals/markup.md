@@ -650,7 +650,9 @@ element. After that, they behave like all other attributes, including being
 updated by the composer during rendering if the attributes contain expressions.
 The template attribute itself is removed even if its first result is
 `undefined`; its expression remains available for later rendering. `undefined`
-removes the target attribute without assigning the target property.
+removes the target attribute and assigns the property default of a detached,
+unconfigured element with the same tag and namespace. The target attribute stays
+removed even if its setter recreates it or throws.
 
 ```html
 <img @src="{{...}}"/>
@@ -666,11 +668,12 @@ especially HTML code, is not possible and is only supported with the attributes
 
 For general dynamic attributes, standalone expression results retain their
 JavaScript type until the browser writes them. Only `undefined` is special: it
-removes the attribute without assigning the property. composite-js neither
-interprets Boolean-looking strings nor resets properties to assumed defaults;
-DOM conversions and attribute reflection belong to the browser. Write errors are
-logged and reported through `Composer.EVENT_ERROR`. Runtime instructions and
-metadata retain their own rules.
+removes the attribute and resets its property using a new, detached element with
+the same tag and namespace. No target attributes or children are copied, and the
+target attribute remains removed after the reset. composite-js does not interpret
+Boolean-looking strings; DOM conversions and reflection belong to the browser.
+Write and default-reference errors are logged and reported through
+`Composer.EVENT_ERROR`. Runtime instructions and metadata retain their own rules.
 
 ```html
 <article title="{{example.title}}">

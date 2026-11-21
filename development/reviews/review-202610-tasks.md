@@ -500,20 +500,25 @@ Container danach erneut verwendbar ist.
 
 **Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt am 2026-11-21
 **Paket:** `rendering` | **Abstimmung:** [R07](#r07), [R08](#r08), [R09](#r09)
-**Fundstellen:** `sources\composer.js:2818-2837`
+**Fundstellen:** `sources\composer.js:2818-2845`
 
 **Konkreter Loesungsansatz**
 
 `_render_attribute_value()` gibt definierte Expression-Ergebnisse unveraendert
 an `setAttribute(target, value)` und `selector[target] = value` weiter.
-Bei `undefined` wird nur das Zielattribut entfernt; kein Property-Setter wird
-aufgerufen. Der Zielname gilt auch fuer `@`-Attribute, deren Expressions im
+Bei `undefined` wird das Zielattribut entfernt und ein temporaeres Element
+mit gleichem Tag und Namespace im selben Dokument ausserhalb des DOMs erzeugt.
+Attribute und Kinder werden nicht kopiert. Dessen gleichnamige Property liefert
+den Browser-Default fuer die Property-Zuweisung am Ziel. Ein `finally` entfernt
+das Zielattribut auch dann, wenn der Setter es erneut erzeugt oder wirft.
+Der Zielname gilt auch fuer `@`-Attribute, deren Expressions im
 Metaobjekt fuer weitere Renderzyklen erhalten bleiben.
 
 Die Boolean-String-Normalisierung des MutationObservers ist entfernt.
-Attribut-/Property-Zuordnung, Boolean-Deutung und konstruierte Default-Resets
-sind nicht Teil dieses Vertrags. DOM-Konvertierungen und Reflexion bestimmt
-der Browser. Setzfehler laufen durch den bestehenden Renderer-Fehlerpfad mit
+Attribut-/Property-Zuordnung und Boolean-Deutung sind nicht Teil dieses
+Vertrags. Der Default wird aus dem unkonfigurierten Referenzelement gelesen.
+DOM-Konvertierungen und Reflexion bestimmt der Browser. Setzfehler laufen durch
+den bestehenden Renderer-Fehlerpfad mit
 `console.error()` und `Composer.EVENT_ERROR`.
 
 **Problem und Ziel:** Der Ausdruckswert `false` wird vor der Property-Zuweisung
@@ -523,7 +528,8 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 **Umsetzung**
 
 1. Definierte Ergebnisse ohne vorgelagerte String-Konvertierung weitergeben.
-2. Bei `undefined` das Zielattribut entfernen und keine Property zuweisen.
+2. Bei `undefined` das Zielattribut entfernen, den Property-Default eines neuen
+   unkonfigurierten Elements setzen und die Attributentfernung absichern.
 3. Boolean-aehnliche Strings im MutationObserver nicht mehr normalisieren.
 4. Sonderattribute, Metadaten und Textinterpolation behalten ihre eigenen Regeln.
 
@@ -531,12 +537,14 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 
 - [x] Primitive Ergebnisse und Objektidentitaet bleiben bis zur DOM-Grenze erhalten.
 - [x] Der Wechsel `false -> true -> false` funktioniert auch nach manuellen Checkbox-Aenderungen und Observer-Verarbeitung.
-- [x] `undefined` entfernt normale und `@`-Zielattribute ohne Property-Zuweisung; spaetere Werte werden wieder gesetzt.
+- [x] `undefined` entfernt normale und `@`-Zielattribute und setzt deren Property auf den frischen Referenzdefault zurueck; spaetere Werte werden wieder gesetzt.
+- [x] Referenzen haben gleichen Tag und Namespace, liegen ausserhalb des DOMs und uebernehmen keine Zielattribute oder Kinder.
+- [x] Reflektierende oder werfende Default-Setter koennen das Zielattribut nicht stehen lassen; Erzeugungs- und Setterfehler bleiben sichtbar.
 - [x] Textattribute und Boolean-aehnliche Strings folgen der Browsersemantik ohne Observer-Normalisierung.
 - [x] Property-Setter- und Attributkonvertierungsfehler werden unveraendert protokolliert und gemeldet.
 
 **Testnachweis:** Die Regressionen in `test\composer_render_attributes_types.html`
-schlagen am bisherigen Verhalten in Blink fehl; alle 23 Tasks bestehen mit
+schlagen am bisherigen Verhalten in Blink fehl; alle 27 Tasks bestehen mit
 der Korrektur in Blink, Gecko und WebKit. Alle sechs fokussierten Attribut-/
 Reactive-Testseiten sowie der isolierte Compose-Build mit ES2015-Lint bestehen.
 
@@ -602,7 +610,8 @@ Ergebnisattributs verwenden immer `targetName`. Definierte Property-Werte
 werden unter demselben Zielnamen ohne automatische Namenszuordnung geschrieben.
 Mutierende Umbenennung von `attribute` nur im definierten Ergebniszweig
 entfaellt. Bei `undefined` bleibt die Expression im Metaobjekt erhalten,
-waehrend nur das Zielattribut gemaess dem Vertrag aus R06 entfernt wird.
+waehrend das Zielattribut entfernt und die Property gemaess dem
+Referenzdefault-Vertrag aus R06 zurueckgesetzt wird.
 
 **Problem und Ziel:** Bei `undefined` wird das `@`-Praefix nicht entfernt.
 Der Code entfernt beispielsweise `@title` statt des zuvor erzeugten `title`
@@ -614,7 +623,7 @@ und adressiert auch die falsche Property.
 2. Bestimme den Zielnamen vor allen Verzweigungen nach dem Expression-Ergebnis.
    Verwende ihn fuer Setzen, Entfernen und Property-Aktualisierung.
 3. Erhalte die Expression-Deklaration fuer spaetere Updates. Bei `undefined`
-   nur das Zielattribut entfernen, ohne die Property zuzuweisen.
+   das Zielattribut entfernen und den Property-Default aus R06 setzen.
 
 **Regression und Abnahme**
 

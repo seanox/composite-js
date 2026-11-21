@@ -19,7 +19,7 @@
         // Attribute value is encoded using encodeHtml() + &quot; and set via
         // setAttribute/property -- neither of them decodes
         //     -> `title="{{'a<b'}}"` results in a literal `a&lt;b`.
-        // Undefined removes the attribute without assigning the input property.
+        // Undefined removes the attribute and restores the fresh input default.
 
         Test.create({test() {
             const element = document.querySelector("#encoded");

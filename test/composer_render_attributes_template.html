@@ -65,14 +65,14 @@
             });
         }});
 
-        Test.create({name:"Undefined removes targets without assigning their properties", timeout:3000, test() {
+        Test.create({name:"Undefined removes targets and restores fresh element property defaults", timeout:3000, test() {
             const element = document.querySelector("#template");
             label = undefined;
             return render(element).then(() => {
                 Assert.assertNull(element.getAttribute("title"));
                 Assert.assertEquals("", element.title);
                 Assert.assertNull(element.getAttribute("data-label"));
-                Assert.assertEquals("first", element["data-label"]);
+                Assert.assertUndefined(element["data-label"]);
                 Assert.assertFalse(element.hasOwnProperty("@title"));
                 Assert.assertFalse(element.hasOwnProperty("@data-label"));
             });
@@ -93,7 +93,7 @@
         }});
 
         ["sizeOrdinary", "sizeTemplate"].forEach(id => {
-            Test.create({name:"Undefined removes " + id + " without invoking its setter", timeout:3000, test() {
+            Test.create({name:"Undefined restores the browser default for " + id, timeout:3000, test() {
                 const element = document.getElementById(id);
                 Assert.assertEquals("10", element.getAttribute("size"));
                 Assert.assertEquals(10, element.size);

@@ -98,7 +98,7 @@
             Assert.assertTrue(error.includes("Invalid condition: {{null"));
             Assert.assertTrue(error.includes("Invalid condition: null}}"));
             Assert.assertTrue(error.includes("Invalid condition: {{null}}{{null}}"));
-            Assert.assertTrue(error.includes("Invalid condition: true"));
+            Assert.assertTrue(error.includes("Invalid condition: True"));
         }});
 
         Test.create({test() {
@@ -117,7 +117,7 @@
       F1Invalid expressionF
       F2Invalid expressionF
       F3Invalid expressionF
-      F4Error: Invalid condition: trueF
+      F4Error: Invalid condition: TrueF
       OnA: false
       A2AA
       B2B
@@ -154,7 +154,7 @@
       F1Invalid expressionF
       F2Invalid expressionF
       F3Invalid expressionF
-      F4Error: Invalid condition: trueF
+      F4Error: Invalid condition: TrueF
       OnA: false
       A2AA
       B2B
@@ -186,7 +186,7 @@
       F1Invalid expressionF
       F2Invalid expressionF
       F3Invalid expressionF
-      F4Error: Invalid condition: trueF
+      F4Error: Invalid condition: TrueF
       OnA: true
       A2A
       B2BB
@@ -224,7 +224,7 @@
       F1Invalid expressionF
       F2Invalid expressionF
       F3Invalid expressionF
-      F4Error: Invalid condition: trueF
+      F4Error: Invalid condition: TrueF
       OnA: true
       A2A
       B2BB
@@ -256,7 +256,7 @@
       F1Invalid expressionF
       F2Invalid expressionF
       F3Invalid expressionF
-      F4Error: Invalid condition: trueF
+      F4Error: Invalid condition: TrueF
       OnA: false
       A2AA
       B2B
@@ -295,7 +295,7 @@
     F1<span condition="{{null">X</span>F
     F2<span condition="null}}">X</span>F
     F3<span condition="{{null}}{{null}}">X</span>F
-    F4<span condition="true">X</span>F    
+    F4<span condition="True">X</span>F
 
     OnA: {{Model.onA}}
     A2<span condition="{{Model.toggleA()}}">A</span>A

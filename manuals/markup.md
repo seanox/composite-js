@@ -72,14 +72,32 @@ Details on the use of composites are described in the chapters
 
 ### condition
 As a condition, the attribute specifies whether an element remains contained in
-the DOM. The expression specified as the value must explicitly return `true` to
-retain the element. If the return value is different, the element is temporarily
-removed from the DOM and can be reinserted later by refreshing the __parent
-element__ if the expression returns `true`.
+the DOM. Like [interval](#interval), it accepts either an explicit static text
+value or one standalone expression, not a mixture of text and expressions.
+For condition, the only static values are the case-sensitive literals `true`
+and `false`. They always retain or exclude the element, respectively, and can
+be useful as temporary switches during development.
+
+A standalone expression must explicitly return Boolean `true` to retain the
+element; the string `"true"` and other truthy values do not satisfy a condition.
+If the return value is different, the element is temporarily removed from the
+DOM and can be reinserted later by refreshing the __parent element__ if the
+expression returns Boolean `true`.
+
+Outer whitespace is ignored: `condition="  true  "` and
+`condition="  {{true}}  "` are valid. Mixed values such as
+`condition="tr{{'ue'}}"`, multiple expressions and variable declarations are
+invalid. Unsupported static values such as `True` or `1` are also invalid.
+Invalid syntax is reported as `Invalid condition` through console output and
+`Composer.EVENT_ERROR`.
 
 ```html
 <article condition="{{example.visible}}">
   ...
+</article>
+
+<article condition="false">
+  Temporarily excluded during development.
 </article>
 ```
 
@@ -270,12 +288,25 @@ condition attribute.
 Activates an interval-controlled refresh of the HTML element without the need to
 actively trigger the refresh. The interval uses the inner HTML as a template
 from which updated content is generated and inserted with each interval cycle.
-The attribute expects milliseconds as value, which can also be formulated as
-expression, where invalid values cause console output. Processing is
-asynchronous but not parallel. Processing will start after the specified time
-when a previously started JavaScript procedure has finished. Therefore, the
-interval should be understood as timely but not exact. The interval starts
-refreshing automatically and ends when:
+Like [condition](#condition), the attribute accepts either an explicit static
+text value or one standalone expression, not a mixture of text and expressions.
+The value specifies milliseconds as a non-negative integer. Static values must
+contain only decimal digits. A standalone value expression is evaluated once
+when its timer starts; its result must contain one or more decimal digits when
+converted to text. Numeric results and digit-only strings are supported.
+
+Outer whitespace is ignored: `interval="  1300  "` and
+`interval="  {{1000 +300}}  "` are valid. Mixed values such as
+`interval="1{{300}}"`, multiple expressions and variable declarations are
+invalid. Negative or fractional values, units such as `1300ms`, and empty
+expression results are also invalid. Invalid values are reported as
+`Invalid interval` through console output and `Composer.EVENT_ERROR`, and no
+timer is started. An empty static value does not activate an interval.
+
+Processing is asynchronous but not parallel. Processing will start after the
+specified time when a previously started JavaScript procedure has finished.
+Therefore, the interval should be understood as timely but not exact. The
+interval starts refreshing automatically and ends when:
 - the element no longer exists in the DOM
 - the condition attribute is used that is not true
 
@@ -323,14 +354,31 @@ JavaScript as a composite script.
 ```
 
 ### iterate
-Iterative output is based on lists, enumerations and arrays. If an HTML element
-is declared as iterative, the inner HTML is used as a template from which
-updated content is generated and inserted as inner HTML with each render cycle.
+Iterative output accepts collections, numeric ranges and individual values.
+If an HTML element is declared as iterative, the inner HTML is used as a template
+from which updated content is generated and inserted as inner HTML with each
+render cycle.
 The attribute value expects a [variable expression](
     expression.md#variable-expression). It creates a meta-object that allows
 access to the iteration in the template. The variable expression
 `iterate="{{tempA:example.list}}"` creates the meta-object
 `tempA = {item, index, data}`.
+
+Arrays, other iterables (such as strings and Sets) and array-like values are
+converted using `Array.from`. Values exposing `Symbol.iterator` or a `length`
+property, including inherited properties, retain that conversion behavior.
+Empty collections produce no iterations. XPath node iterators are collected
+into an array of their nodes.
+
+Non-null values that are neither collections nor numbers are treated as an
+array containing exactly that value.
+For example, a single object produces one iteration over the object, not its
+properties. Both `true` and `false` produce one iteration. `null` and `undefined`
+produce no iterations and clear any previous output.
+
+For a single value, `item` retains the original value, `index` is `0`, and `data`
+is the generated one-element array. For collections and numeric ranges, `data`
+is the converted or generated array. The metadata properties are read-only.
 
 ```javascript
 const example = {
@@ -344,6 +392,15 @@ const example = {
     {{seasons.item}}
   </option>
 </select>
+```
+
+An individual object can use the same template without first wrapping it in an
+array:
+
+```html
+<p iterate="{{person:({name: 'Anna'})}}">
+  {{person.item.name}}
+</p>
 ```
 
 > [!NOTE]
@@ -368,8 +425,15 @@ const example = {
 ```
 
 If the value for an iterator is a positive number, a list of values from 0 to
-(number -1) is used. If the value is negative, a descending list of values is
-used from (number +1) to 0.
+(number -1) is used. If the value is negative, a list of values from (number +1)
+up to 0 is used. `0` and `NaN` produce no iterations.
+
+> [!NOTE]
+> Individual objects and Booleans that previously produced no iterations now
+> produce one. To explicitly suppress output, use `null`, `undefined` or an empty
+> array. Errors returned by the expression and errors during collection
+> conversion are still reported through the Composer error handling; they are
+> not converted to single items.
 
 ### message
 Message is an optional part of [Validation](#validate) and is used for text and

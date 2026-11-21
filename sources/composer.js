@@ -2245,6 +2245,8 @@
             return false;
 
         const expression = (object.attributes[ATTRIBUTE_CONDITION] || "").trim();
+        if (expression === "true" || expression === "false")
+            object.expressions[ATTRIBUTE_CONDITION] = _expression_parse("{{" + expression + "}}");
         if (object.expressions[ATTRIBUTE_CONDITION].type !== EXPRESSION_TYPE_VALUE)
             throw new Error(`Invalid condition${expression ? ": " + expression : ""}`);
 
@@ -2668,9 +2670,10 @@
         let interval = String(object.attributes[ATTRIBUTE_INTERVAL] || "").trim();
         if (!interval || object.interval)
             return;
-        interval = String(_expression_eval(object.expressions[ATTRIBUTE_INTERVAL],
-            EXPRESSION_TYPE_INTERPOLATION).result);
-        if (!interval.match(/^\d*$/))
+        if (object.expressions[ATTRIBUTE_INTERVAL].type === EXPRESSION_TYPE_VALUE)
+            interval = String(_expression_eval(object.expressions[ATTRIBUTE_INTERVAL],
+                EXPRESSION_TYPE_VALUE).result);
+        if (!interval.match(/^\d+$/))
             throw new Error("Invalid interval: " + interval);
         interval = Number.parseInt(interval);
         object.interval = window.setInterval(() => {
@@ -2728,7 +2731,7 @@
 
         if (iterate instanceof Error)
             throw iterate;
-        if (iterate) {
+        if (iterate !== undefined && iterate !== null) {
             if (iterate instanceof XPathResult) {
                 const meta = {entry: null, array: [], iterate};
                 while (meta.entry = meta.iterate.iterateNext())
@@ -2740,13 +2743,15 @@
                 for (let index = iterate[0] +1; index <= 0; index++)
                     iterate.push(index);
                 iterate.shift();
-            } else if (typeof iterate === "number"
-                    && iterate >= 0) {
+            } else if (typeof iterate === "number") {
                 iterate = [iterate];
                 for (let index = 0; index < iterate[0]; index++)
                     iterate.push(index);
                 iterate.shift();
-            } else iterate = Array.from(iterate);
+            } else if (Symbol.iterator in Object(iterate)
+                    || "length" in Object(iterate))
+                iterate = Array.from(iterate);
+            else iterate = [iterate];
 
             selector.innerHTML = "";
 

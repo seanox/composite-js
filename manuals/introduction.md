@@ -41,8 +41,8 @@ The framework treats an application as a composition of independently identified
 application units called composites. A composite combines a declarative view
 with optional application logic and associated resources. The runtime uses
 existing markup and application objects or loads separately stored resources
-within the application context as needed. It realizes the composite within a
-concrete DOM context in the browser.
+within the application context as needed. It realizes composites in the browser
+document's shared DOM, not in a separate DOM per composite.
 
 ## Composing Modules at Runtime
 The central idea of _composite-js_ is the composition of application units at
@@ -53,8 +53,8 @@ composite ID, declared in the markup and used by the runtime to resolve the
 corresponding application module and default resource paths.
 
 The runtime resolves and loads these application resources as needed and
-realizes each composite within a concrete DOM context, so composition is part of
-the running application rather than exclusively a build-time operation.
+realizes each composite within its declaring HTML element, so composition is
+part of the running application rather than exclusively a build-time operation.
 Accordingly, the DOM is not merely the output of the application but also part
 of its running state, interpreted and processed by the runtime.
 
@@ -129,7 +129,7 @@ runtime remain independent of such a process.
 Seanox composite-js is a browser application runtime for Single-Page
 Applications and micro-frontends. It structures applications as compositions of
 independently identified composites, each of which combines a declarative view
-with optional application logic and associated resources within a DOM context.
+with optional application logic and associated resources in the document's DOM.
 
 Applications are composed at runtime, use the native programming model of the
 browser, and do not require compilation. The framework provides these mechanisms

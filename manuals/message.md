@@ -42,9 +42,10 @@ separately below.
 
 Label values are taken from the non-empty `value` attribute, otherwise from the
 element's text content. Surrounding whitespace is removed and JavaScript-style
-escape sequences such as `\n` are decoded. Keys are case-sensitive; use
-dot-separated identifiers containing ASCII letters, digits and underscores, each
-starting with a letter or underscore.
+escape sequences such as `\n` are decoded. Keys are case-sensitive and consist
+of dot-separated ASCII identifier segments matching `[_A-Za-z$][_A-Za-z0-9$]*`.
+Keys that do not match this pattern or cannot be represented in the object tree
+are reported with `console.warn` and skipped while loading continues.
 
 The language is selected automatically from the browser's preferred languages,
 also considering the base language of regional settings. If no supported
@@ -54,15 +55,16 @@ at runtime with `DataSource.localize("de")` -- see [Locales](
     datasource.md#locales). Only locales declared in `data/locales.xml` are
 accepted; an unavailable locale causes an error.
 
-If a key occurs more than once within the selected locale, the first occurrence
-is used. Therefore, loaded messages cannot be overwritten. Only labels of the
-selected locale are loaded; missing labels do not fall back to another locale.
+If a key occurs more than once in a resource, the last occurrence in that
+resource is used. Labels from later-loaded module resources can also replace
+earlier values. Only labels of the selected locale are loaded; missing labels do
+not fall back to another locale.
 
 Modules can also provide locales/messages as XML resources alongside their other
 resources, for example `modules/contact.xml` for the composite `contact`. These
 files use the same `<locales>` structure and are loaded when the module's
-resources are first included, including at runtime. Messages from the data
-directory take precedence, followed by those from previously loaded modules.
+resources are first included, including at runtime. The data-directory messages
+are loaded first; later-loaded modules can replace values with the same key.
 
 After loading the application, labels are available through the global objects
 `Messages` and `messages`. `Messages` provides string values by key; `messages`
@@ -87,12 +89,18 @@ const title = String(messages.contact.title);
 including messages from already loaded modules. Previously stored references
 still refer to the old objects or texts.
 
+The identifier pattern does not make every key safe. Keys such as `populate`
+and `toString` can collide with methods used by the flat `Messages` API or the
+`messages` object tree. Avoid these names; collision handling remains a
+limitation.
+
 Messages can contain placeholders that are populated at runtime with
 `Messages.populate(label, ...values)`. The `label` argument is the message key;
 its text is used as a template and the method returns the populated string.
 Values are passed as individual arguments. Each placeholder is a number in
 braces that refers to a zero-based position in the value list: `{0}` refers to
-the first value.
+the first value. Indices use canonical decimal notation; for example, `{01}` is
+not replaced.
 
 
 ```xml
@@ -114,7 +122,8 @@ const welcome = Messages.populate("welcome", "Mr.", "Doe", "with extended user r
 
 Placeholders can be used multiple times. Placeholders for which no value has
 been specified are removed from the generated message; unused values are
-ignored. A missing key returns `undefined` from `Messages[key]`;
+ignored. Substituted values are treated as data and are not processed as
+placeholders again. A missing key returns `undefined` from `Messages[key]`;
 `Messages.populate(...)` returns an empty string for a missing label.
 
 

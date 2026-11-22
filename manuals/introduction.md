@@ -40,9 +40,9 @@ runtime.
 The framework treats an application as a composition of independently identified
 application units called composites. A composite combines a declarative view
 with optional application logic and associated resources. The runtime uses
-existing markup and application objects or loads separately stored resources
-within the application context as needed. It realizes composites in the browser
-document's shared DOM, not in a separate DOM per composite.
+existing markup and named application objects or loads separately stored
+resources within the application context as needed. It realizes composites in
+the browser document's shared DOM, not in a separate DOM per composite.
 
 ## Composing Modules at Runtime
 The central idea of _composite-js_ is the composition of application units at
@@ -66,10 +66,14 @@ The corresponding application logic is provided by an application module and
 made available to the view through expressions and composite binding.
 
 ## Composite Binding
-Composite binding connects the view with application objects published under
-the namespace resolved from the composite ID. It is established by the runtime
-while a composite is realized, so the view can access application logic without
-an additional wiring layer.
+Composite binding connects the view with a __named application object__
+addressed through the composite ID. A named application object is globally
+accessible by name and can provide application logic, shared services, or state.
+__Object publication__ makes an object available under such a name.
+
+The runtime establishes composite binding while a composite is realized. Object
+publication and composite binding are separate operations; see
+[Object Publication](architecture.md#object-publication).
 
 ## Rendering
 Rendering evaluates expressions and processes runtime instructions to realize

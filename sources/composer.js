@@ -788,7 +788,8 @@
                 // and script and style elements are not supported 
                 if (!(selector instanceof Element)
                         || _mount_queue.includes(selector)
-                        || selector.nodeName.match(PATTERN_ELEMENT_IGNORE))
+                        || selector.nodeName.match(PATTERN_ELEMENT_IGNORE)
+                        || _render_element_ignore(selector))
                     return;
 
                 // An element/selector should only be mounted once.
@@ -1260,22 +1261,29 @@
             if (!selector)
                 selector = _render_queue[0];
 
+            const workspace = [..._view_scope_workspace];
+
             // Even before rendering, possible expressions in the initial ID
             // should be resolved. As the expression can refer to temporary
             // variables, the context workspace must be set temporarily for
             // scripting. As the object does not yet exist, the context
             // corresponds to the current context stack. After resolving the
-            // expression, however, the context workspace must be reset.
+            // expression, however, the previous workspace must be restored.
             if (selector instanceof Element
+                    && !_render_element_ignore(selector)
                     && !_render_meta.has(selector.serial())) {
-                _view_scope_workspace.push(..._view_scope_stack);
-                let identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
-                if (identifier.match(PATTERN_EXPRESSION_CONTAINS)) {
-                    identifier = _expression_eval(_expression_parse(identifier),
-                        EXPRESSION_TYPE_INTERPOLATION).result;
-                    selector.setAttribute(ATTRIBUTE_ID, identifier);
+                try {
+                    _view_scope_workspace.splice(0, _view_scope_workspace.length,
+                        ..._view_scope_stack);
+                    let identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
+                    if (identifier.match(PATTERN_EXPRESSION_CONTAINS)) {
+                        identifier = _expression_eval(_expression_parse(identifier),
+                            EXPRESSION_TYPE_INTERPOLATION).result;
+                        selector.setAttribute(ATTRIBUTE_ID, identifier);
+                    }
+                } finally {
+                    _view_scope_workspace.splice(0, _view_scope_workspace.length, ...workspace);
                 }
-                _view_scope_workspace.length = 0;
             }
 
             lock = _lock(Composer.render, selector);
@@ -1294,7 +1302,8 @@
                     return;
                 }
 
-                if (!(selector instanceof Node))
+                if (!(selector instanceof Node)
+                        || _render_element_ignore(selector))
                     return;
 
                 let serial = selector.serial();
@@ -1321,22 +1330,40 @@
 
                 if (!object) {
 
-                    // Elements included in ignored elements of type: script +
-                    // style are ignored.
-                    if (_render_element_ignore(selector))
-                        return;
+                    // Interceptors are executed before the metadata object is
+                    // created, because an interceptor can modify the attributes
+                    // of an element
+                    _interceptors.forEach((interceptor) =>
+                        interceptor.call(null, selector));
 
-                    object = _render_meta_initialize(selector, serial);
+                    // If elements are marked with the composite attribute, they
+                    // must use a complete composite declaration. If the
+                    // declaration is incorrect, these elements are excluded
+                    // from rendering and displayed with an error message.
+                    if (selector instanceof Element
+                            && selector.hasAttribute(ATTRIBUTE_COMPOSITE)) {
+                        const identifier = selector.getAttribute(ATTRIBUTE_ID) || "";
+                        if (identifier.match(PATTERN_EXPRESSION_CONTAINS))
+                            selector.setAttribute(ATTRIBUTE_ID,
+                                _expression_eval(_expression_parse(identifier),
+                                    EXPRESSION_TYPE_INTERPOLATION).result);
+                        const composite = _composite_parse(selector);
+                        if (composite.error) {
+                            _render_meta.set(serial, null);
+                            throw composite.error;
+                        }
+                    }
+
+                    // Creates the metadata object for a composite element.
+                    object = {serial, element:selector, attributes:{}, expressions:{},
+                        context:[..._view_scope_workspace]};
+                    _render_meta.set(serial, object);
 
                     if ((selector instanceof Element)
                             && selector.attributes) {
-
                         _render_attribute_initialize(selector, object);
-
                         if (_render_attribute_condition_initialize(selector, object, serial, lock))
                             return;
-
-                        // Load the composite module resources.
                         if (object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
                             Composer.include(selector);
                     }
@@ -1389,9 +1416,8 @@
 
             } finally {
 
-                // At the end of the rendering of an element, the temporary
-                // context must be reset/cleaned.
-                _view_scope_workspace.length = 0;
+                // Recursive rendering must leave the caller's context intact.
+                _view_scope_workspace.splice(0, _view_scope_workspace.length, ...workspace);
 
                 // The queue is used to prevent elements from being registered
                 // for update multiple times during a render cycle when a lock
@@ -1562,9 +1588,8 @@
          *   exists
          *
          * @param {Element|string} composite DOM element or a string
-         * @throws {TypeError} In case of invalid composite
-         * @throws {Error} In case of unknown composites and a composites
-         *     without ID
+         * @throws {TypeError|Error} In case of invalid composite or invalid
+         *     composite declaration
          */
         include(...composite) {
 
@@ -1581,11 +1606,9 @@
 
             let object = null;
             if (composite instanceof Element) {
-                if (!composite.hasAttribute(ATTRIBUTE_ID))
-                    throw new Error("Unknown composite without id");
                 object = _render_meta.get(composite.uid);
-                if (!object)
-                    throw new Error("Unknown composite");
+                if (!composite.hasAttribute(ATTRIBUTE_ID) || !object)
+                    throw new Error("Requires a composite");
                 const meta = _mount_locate(composite);
                 if (!meta.scope)
                     meta.scope = [];
@@ -1740,8 +1763,7 @@
                     this.ticks--;
                     if (this.ticks > 0)
                         return;
-                    try {
-                        callback(this);
+                    try {callback(this);
                     } finally {
                         if (context === Composer.render) {
                             if (_render_lock === this)
@@ -1783,6 +1805,26 @@
                 throw new Error("Recursion detected for composite: " + id);
         }
     }
+
+    /**
+     * Parses a composite declaration without evaluating expressions or
+     * registering metadata. Details are described to Composer.parse(...).
+     * @param {Element} element Element declaring the composite
+     * @returns {{name: string, scope: string[], error: (Error|null)}}
+     */
+    const _composite_parse = (element) => {
+        if (!(element instanceof Element)
+                || !element.hasAttribute(ATTRIBUTE_COMPOSITE))
+            return {name:"", scope:[], error:new Error("Requires a composite")};
+        const identifier = (element.getAttribute(ATTRIBUTE_ID) || "").trim();
+        const composite = identifier.match(PATTERN_COMPOSITE_ID);
+        return {
+            name: composite ? composite[1] : identifier,
+            scope: composite && composite[2] ? composite[2].split(":") : [],
+            error: composite ? null
+                : new Error(`Invalid composite declaration${identifier ? " for element " + identifier : ""}`)
+        };
+    };
 
     /**
      * Determines the metadata for an element based on its position in the DOM
@@ -1832,16 +1874,16 @@
         // enclosing composites. An explicitly declared namespace supplies its
         // scope path.
 
-        const identifier = (element.getAttribute(ATTRIBUTE_ID) || "").trim();
         if (element.hasAttribute(ATTRIBUTE_COMPOSITE)) {
-            const composite = identifier.match(PATTERN_COMPOSITE_ID);
-            if (!composite)
-                throw new Error(`Invalid composite id${identifier ? ": " + identifier : ""}`);
-            if (!composite[2])
-                return {model:composite[1]};
-            return {scope:composite[2].split(/:+/), model:composite[1]};
+            const composite = _composite_parse(element);
+            if (composite.error)
+                throw composite.error;
+            if (composite.scope.length <= 0)
+                return {model:composite.name};
+            return {scope:composite.scope, model:composite.name};
         }
 
+        const identifier = (element.getAttribute(ATTRIBUTE_ID) || "").trim();
         const locate = _mount_locate(element.parentNode);
         if (!element.hasAttribute(ATTRIBUTE_ID))
             return locate;
@@ -2071,22 +2113,22 @@
 
     /**
      * Map of node-related metadata objects created during rendering.
+     * Rejected composites are marked with null until DOM cleanup.
      * Each expressions map retains prepared markup by attribute name.
      * (key:serial, value:meta)
      */
     const _render_meta = new Map();
 
     /**
-     * Checks whether a node is contained in an element to be ignored, e.g.
-     * script or style elements. The check is made recursively via the parent
-     * elements.
+     * Checks recursively whether a node or its parent element should be
+     * ignored, e.g., because they are script or style elements.
      * @param {Node} node Node to be checked
      * @returns {boolean} true if the node is contained in an ignored element
      */
     const _render_element_ignore = (node) =>
-        node && node.parentNode
-            ? PATTERN_ELEMENT_IGNORE.test(node.parentNode.nodeName)
-                    || _render_element_ignore(node.parentNode) : false;
+        Boolean(node && (_render_meta.get(node.uid) === null
+            || node.parentNode && (PATTERN_ELEMENT_IGNORE.test(node.parentNode.nodeName)
+                || _render_element_ignore(node.parentNode))));
 
     /**
      * Executes the custom tag (macro) for a node, if one exists.
@@ -2116,24 +2158,6 @@
                     && macro.callback(selector) === false)
                 return true;
         return false;
-    };
-
-    /**
-     * Creates the metadata object for a node. Before that, the interceptors are
-     * executed, which can manipulate the attributes and the markup of the
-     * element, but only when it is processed initially.
-     * Details are described to Composer.customize(...).
-     * @param {Node} selector Node to be rendered
-     * @param {number} serial Serial of the node
-     * @returns {object} The created metadata object
-     */
-    const _render_meta_initialize = (selector, serial) => {
-        _interceptors.forEach((interceptor) =>
-            interceptor.call(null, selector));
-        const object = {serial, element:selector, attributes:{}, expressions:{},
-            context:[..._view_scope_workspace]};
-        _render_meta.set(serial, object);
-        return object;
     };
 
     /**
@@ -2221,6 +2245,8 @@
             return false;
 
         const expression = (object.attributes[ATTRIBUTE_CONDITION] || "").trim();
+        if (expression === "true" || expression === "false")
+            object.expressions[ATTRIBUTE_CONDITION] = _expression_parse("{{" + expression + "}}");
         if (object.expressions[ATTRIBUTE_CONDITION].type !== EXPRESSION_TYPE_VALUE)
             throw new Error(`Invalid condition${expression ? ": " + expression : ""}`);
 
@@ -2644,9 +2670,10 @@
         let interval = String(object.attributes[ATTRIBUTE_INTERVAL] || "").trim();
         if (!interval || object.interval)
             return;
-        interval = String(_expression_eval(object.expressions[ATTRIBUTE_INTERVAL],
-            EXPRESSION_TYPE_INTERPOLATION).result);
-        if (!interval.match(/^\d*$/))
+        if (object.expressions[ATTRIBUTE_INTERVAL].type === EXPRESSION_TYPE_VALUE)
+            interval = String(_expression_eval(object.expressions[ATTRIBUTE_INTERVAL],
+                EXPRESSION_TYPE_VALUE).result);
+        if (!interval.match(/^\d+$/))
             throw new Error("Invalid interval: " + interval);
         interval = Number.parseInt(interval);
         object.interval = window.setInterval(() => {
@@ -2704,7 +2731,7 @@
 
         if (iterate instanceof Error)
             throw iterate;
-        if (iterate) {
+        if (iterate !== undefined && iterate !== null) {
             if (iterate instanceof XPathResult) {
                 const meta = {entry: null, array: [], iterate};
                 while (meta.entry = meta.iterate.iterateNext())
@@ -2716,13 +2743,15 @@
                 for (let index = iterate[0] +1; index <= 0; index++)
                     iterate.push(index);
                 iterate.shift();
-            } else if (typeof iterate === "number"
-                    && iterate >= 0) {
+            } else if (typeof iterate === "number") {
                 iterate = [iterate];
                 for (let index = 0; index < iterate[0]; index++)
                     iterate.push(index);
                 iterate.shift();
-            } else iterate = Array.from(iterate);
+            } else if (Symbol.iterator in Object(iterate)
+                    || "length" in Object(iterate))
+                iterate = Array.from(iterate);
+            else iterate = [iterate];
 
             selector.innerHTML = "";
 
@@ -2738,21 +2767,21 @@
                     enumerable:true, value:array
                 });
 
-                // Creation of the stack with the temporary variables for the
-                // execution scope.
-                _view_scope_stack.push({[object.iterate.name]:meta});
-
-                // For whatever reason, if forEach is used on the NodeList, each
-                // time it is appended to the DOM the elements are removed from
-                // the NodeList piece by piece.
-                Array.from(object.template.cloneNode(true).childNodes).forEach(node => {
-                    selector.appendChild(node);
-                    Composer.render(node, lock.share());
-                });
-
-                // Clean up of the stack with the temporary variables for the
-                // execution scope.
-                _view_scope_stack.pop();
+                // Partial rendering also needs the node's saved outer context.
+                const stack = [..._view_scope_stack];
+                _view_scope_stack.splice(0, _view_scope_stack.length,
+                    ..._view_scope_workspace, {[object.iterate.name]:meta});
+                try {
+                    // For whatever reason, if forEach is used on the NodeList,
+                    // each time it is appended to the DOM the elements are
+                    // removed from the NodeList piece by piece.
+                    Array.from(object.template.cloneNode(true).childNodes).forEach(node => {
+                        selector.appendChild(node);
+                        Composer.render(node, lock.share());
+                    });
+                } finally {
+                    _view_scope_stack.splice(0, _view_scope_stack.length, ...stack);
+                }
             });
         } else selector.innerHTML = "";
 
@@ -2799,36 +2828,32 @@
                 ? attribute.replace(/^@+/, "") : attribute;
             if (target !== attribute)
                 selector.removeAttribute(attribute);
-            // If the type value is undefined, the attribute is removed. Since
-            // the attribute contains an expression, the removal is only
-            // temporary and is checked again at the next render cycle and
-            // possibly inserted again if the expression returns a return value.
-            if (value !== undefined) {
-                value = String(value);
-                // Special case attribute value, here primarily the value of the
-                // property must be set, the value of the attribute is optional.
-                // Changing the value does not trigger an event, so no unwanted
-                // recursions occur.
-                if (attribute.toLowerCase() === ATTRIBUTE_VALUE
-                        && ATTRIBUTE_VALUE in selector)
-                    selector.value = value;
-                selector.setAttribute(target, value);
+            if (value === undefined) {
+                if (selector.hasAttribute(target)) {
+                    let descriptor;
+                    for (let prototype = selector; prototype; prototype = Object.getPrototypeOf(prototype)) {
+                        descriptor = Object.getOwnPropertyDescriptor(prototype, target);
+                        if (descriptor)
+                            break;
+                    }
+                    if (descriptor && (descriptor.writable === true
+                            || typeof descriptor.set === "function")) {
+                        value = selector.ownerDocument.createElementNS(
+                            selector.namespaceURI, selector.localName)[target];
+                        if (!Object.is(selector[target], value))
+                            selector[target] = value;
+                    }
+                }
+                selector.removeAttribute(target);
+                return;
             }
-
-            // DOM attributes and properties are distinct and are not generally
-            // synchronized by the browser. The renderer explicitly synchronizes
-            // the corresponding property with the evaluated attribute value. If
-            // the expression evaluates to undefined, the attribute is removed
-            // and the corresponding property is assigned undefined. Native
-            // setters determine value conversion; removing a reflected attribute
-            // can reset its property to the browser default.
-            try {selector[target] = value;
-            } finally {
-                // Setters can recreate attributes or throw; cleanup must still
-                // run without suppressing the setter error.
-                if (value === undefined)
-                    selector.removeAttribute(target);
-            }
+            // Preserve the result type; DOM APIs perform their own conversions.
+            // Set value before its attribute to preserve input state handling.
+            if (attribute.toLowerCase() === ATTRIBUTE_VALUE
+                    && ATTRIBUTE_VALUE in selector)
+                selector.value = value;
+            selector.setAttribute(target, value);
+            selector[target] = value;
         });
     };
 
@@ -3071,25 +3096,6 @@
             const collection = {added: new Set(), removed: new Set()};
 
             records.forEach((record) => {
-
-                // HTML uses attributes whose pure presences have effects:
-                //     autofocus, disabled, hidden, multiple, readonly, required
-                // With the expression language the setting and removing of
-                // these attributes is not possible. This task is taken over by
-                // the MutationObserver. It reacts to the values true and false
-                // for the present attributes and removes the attribute from the
-                // HTML element in case of false.
-
-                if (record.type === "attributes") {
-                    const attribute = record.attributeName;
-                    if (attribute.match(/^(autofocus|disabled|hidden|multiple|readonly|required)$/i)) {
-                        const value = String(record.target.getAttribute(attribute));
-                        if (value === "false")
-                            record.target.removeAttribute(attribute)
-                        if (value === "true")
-                            record.target.setAttribute(attribute, attribute);
-                    }
-                }
 
                 // Without Meta-Store, the renderer hasn't run yet. The reaction
                 // by the MutationObserver only makes sense when the renderer

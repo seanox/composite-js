@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+
+      Test.activate();
+
+      const controlModel = {visible: true, evaluations: 0};
+      const controlErrors = [];
+      Composer.listen(Composer.EVENT_ERROR, (event, error) => controlErrors.push(error));
+      const controlDelay = () => new Promise(resolve => window.setTimeout(resolve, 0));
+      const withControl = async (attribute, source, test, interval) => {
+          const fixture = document.createElement("div");
+          const element = document.createElement("span");
+          element.setAttribute(attribute, source);
+          if (interval !== undefined)
+              element.setAttribute("interval", interval);
+          element.textContent = "visible";
+          fixture.appendChild(element);
+          const timers = [];
+          const cleared = [];
+          const originalSetInterval = window.setInterval;
+          const originalClearInterval = window.clearInterval;
+          window.setInterval = function(callback, delay) {
+              const id = originalSetInterval.apply(this, arguments);
+              timers.push({id, callback, delay});
+              return id;
+          };
+          window.clearInterval = function(id) {
+              cleared.push(id);
+              return originalClearInterval.apply(this, arguments);
+          };
+          const errorStart = controlErrors.length;
+          controlModel.evaluations = 0;
+          document.body.appendChild(fixture);
+          try {
+              await controlDelay();
+              await test(fixture, element, timers, cleared,
+                  controlErrors.slice(errorStart));
+          } finally {
+              timers.forEach(timer => originalClearInterval.call(window, timer.id));
+              window.setInterval = originalSetInterval;
+              window.clearInterval = originalClearInterval;
+              fixture.remove();
+              await controlDelay();
+          }
+      };
+
+      for (const entry of [
+          {source: "true", visible: true},
+          {source: "false", visible: false},
+          {source: " \ttrue\n ", visible: true},
+          {source: " \tfalse\n ", visible: false},
+          {source: "{{true}}", visible: true},
+          {source: "  {{true}}  ", visible: true},
+          {source: "{{false}}", visible: false},
+          {source: "{{'true'}}", visible: false},
+          {source: "{{'false'}}", visible: false},
+          {source: "{{1}}", visible: false},
+          {source: "{{null}}", visible: false},
+          {source: "{{undefined}}", visible: false}
+      ])
+          Test.create({name: "Condition accepts Boolean literals and standalone value expressions", async test() {
+              await withControl("condition", entry.source, async (fixture, element, timers, cleared, errors) => {
+                  Assert.assertEquals(0, errors.length);
+                  Assert.assertEquals(entry.visible ? "visible" : "", fixture.textContent);
+                  const rendered = fixture.firstElementChild;
+                  Composer.render(fixture);
+                  await controlDelay();
+                  Assert.assertEquals(entry.visible ? "visible" : "", fixture.textContent);
+                  Assert.assertSame(rendered, fixture.firstElementChild);
+              });
+          }});
+
+      for (const source of ["", "True", "FALSE", "1", "'true'",
+          "tr{{'ue'}}", "{{true}}{{false}}", "{{controlFlag:true}}",
+          "{{true", "true}}", "tr{{controlModel.evaluations++; 'ue'}}"])
+          Test.create({name: "Condition rejects interpolation and unsupported literal or declaration syntax", async test() {
+              await withControl("condition", source, (fixture, element, timers, cleared, errors) => {
+                  const message = "Invalid condition" + (source.trim() ? ": " + source.trim() : "");
+                  Assert.assertTrue(errors.some(error => error instanceof Error && error.message === message));
+                  Assert.assertEquals(0, controlModel.evaluations);
+                  Assert.assertEquals(/(\{\{|\}\})/.test(source) ? "Invalid expression"
+                      : "Error: " + message, element.innerText);
+              });
+          }});
+
+      for (const entry of [
+          {source: "1300", delay: 1300},
+          {source: "  1300  ", delay: 1300},
+          {source: "001300", delay: 1300},
+          {source: "{{1000 +300}}", delay: 1300},
+          {source: "  {{1000 +300}}  ", delay: 1300},
+          {source: "{{'1300'}}", delay: 1300},
+          {source: "0", delay: 0},
+          {source: "{{0}}", delay: 0}
+      ])
+          Test.create({name: "Interval accepts digit literals and standalone expressions without restarting its timer", async test() {
+              await withControl("interval", entry.source, async (fixture, element, timers, cleared, errors) => {
+                  Assert.assertEquals(0, errors.length);
+                  Assert.assertEquals(1, timers.length);
+                  Assert.assertEquals(entry.delay, timers[0].delay);
+                  Composer.render(fixture);
+                  await controlDelay();
+                  Assert.assertEquals(1, timers.length);
+                  fixture.remove();
+                  timers[0].callback();
+                  Assert.assertTrue(cleared.includes(timers[0].id));
+              });
+          }});
+
+      for (const source of ["1{{300}}", "{{13}}00", "{{1}}{{300}}",
+          "{{controlDuration:1300}}", "{{1300", "1300}}", "1300ms", "-1",
+          "1.5", "+1300", "{{true}}", "{{null}}", "{{undefined}}",
+          "{{''}}", "{{}}", "{{ }}", "{{' 1300 '}}", "{{NaN}}", "{{-1}}", "{{1.5}}",
+          "1{{controlModel.evaluations++; 300}}"])
+          Test.create({name: "Interval rejects interpolation, declarations and invalid durations without starting a timer", async test() {
+              await withControl("interval", source, (fixture, element, timers, cleared, errors) => {
+                  const error = errors.find(error => error instanceof Error
+                      && error.message.startsWith("Invalid interval: "));
+                  Assert.assertTrue(error instanceof Error);
+                  Assert.assertEquals(0, timers.length);
+                  Assert.assertEquals(0, controlModel.evaluations);
+                  Assert.assertEquals(/(\{\{|\}\})/.test(String(error)) ? "Invalid expression"
+                      : String(error), element.textContent);
+              });
+          }});
+
+      Test.create({name: "Empty static interval does not activate a timer", async test() {
+          await withControl("interval", "  ", (fixture, element, timers, cleared, errors) => {
+              Assert.assertEquals(0, errors.length);
+              Assert.assertEquals(0, timers.length);
+              Assert.assertEquals("visible", fixture.textContent);
+          });
+      }});
+
+      Test.create({name: "Conditional removal stops the interval and reinsertion starts a new timer", async test() {
+          controlModel.visible = true;
+          await withControl("condition", "{{controlModel.visible}}", async (fixture, element, timers, cleared, errors) => {
+              Assert.assertEquals(0, errors.length);
+              Assert.assertEquals(1, timers.length);
+              controlModel.visible = false;
+              Composer.render(fixture);
+              await controlDelay();
+              Assert.assertEquals("", fixture.textContent);
+              timers[0].callback();
+              Assert.assertTrue(cleared.includes(timers[0].id));
+              controlModel.visible = true;
+              Composer.render(fixture);
+              await controlDelay();
+              Assert.assertEquals("visible", fixture.textContent);
+              Assert.assertEquals(2, timers.length);
+          }, "1300");
+      }});
+
+      Test.start({auto: true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

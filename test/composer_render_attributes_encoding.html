@@ -19,9 +19,7 @@
         // Attribute value is encoded using encodeHtml() + &quot; and set via
         // setAttribute/property -- neither of them decodes
         //     -> `title="{{'a<b'}}"` results in a literal `a&lt;b`.
-        // If the value is undefined the attribute is removed, but then
-        // selector[attribute] = undefined
-        //     -> `input.value === "undefined"`.                                                                                                                                     | composer.js:2608-2633                                                                          | 2  |
+        // Undefined removes the attribute and restores the fresh input default.
 
         Test.create({test() {
             const element = document.querySelector("#encoded");
@@ -34,7 +32,7 @@
         Test.create({test() {
             const element = document.querySelector("#undefined");
             Assert.assertNull(element.getAttribute("value"));
-            Assert.assertEquals("undefined", element.value);
+            Assert.assertEquals("", element.value);
         }});
 
         Composer.listen(Composer.EVENT_RENDER_END, () => {

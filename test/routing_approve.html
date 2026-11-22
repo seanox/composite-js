@@ -18,9 +18,10 @@
         // HTML elements are added to or removed from the DOM.
         //
         // Additionally, each model can control access through an optional
-        // permit() method. If the method exists, it is called when the path
-        // matches. Its return value determines whether the element remains in
-        // the DOM.
+        // permit() method. Rendering calls this method without arguments when
+        // evaluating the composite's routing condition, even if the current
+        // path does not cover the view. Its return value determines whether
+        // the element remains in the DOM.
         //
         // A special case is modelB: if an HTML element with the ID modelB
         // exists, named access on the Window object can cause window.modelB to

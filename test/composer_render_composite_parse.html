@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-debug-testing.js"></script>
+    <script>
+
+        Test.activate();
+
+        const failures = [];
+        const logged = [];
+        const uncaught = [];
+        const loaded = [];
+        const fixtures = [];
+        const renders = [];
+        const lifecycle = [];
+        window.invalidProbe = {attributes:0, children:0, conditions:0, identifiers:0};
+        window.validSibling = {dock() {lifecycle.push("dock");}};
+        window.replacement = {dock() {lifecycle.push("replacement");}};
+        window.reinserted = {dock() {lifecycle.push("reinserted");}};
+        window.repaired = {};
+        window.interceptorExpression = {};
+
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => failures.push(String(error)));
+        Composer.listen(Composer.EVENT_MODULE_LOAD, (event, element) => loaded.push(element));
+        Composer.listen(Composer.EVENT_RENDER_END, (event, element) => renders.push(element));
+        console.listen((level, message) => {
+            if (level === "error" && /Invalid composite declaration/.test(String(message)))
+                logged.push(String(message));
+        });
+        window.addEventListener("error", event => uncaught.push(event.message));
+        Composer.customize(element => {
+            if (!(element instanceof Element))
+                return;
+            if (element.hasAttribute("data-invalidate"))
+                element.id = "invalid-intercepted";
+            if (element.hasAttribute("data-repair"))
+                element.id = "repaired";
+            if (element.hasAttribute("data-expression-id"))
+                element.id = "{{'interceptorExpression'}}";
+        });
+
+        window.addEventListener("DOMContentLoaded", () => {
+            for (const fixture of document.querySelectorAll("[data-invalid-fixture]")) {
+                fixtures.push({
+                    element:fixture.firstElementChild,
+                    child:fixture.firstElementChild.firstElementChild,
+                    error:fixture.getAttribute("data-error")
+                });
+            }
+        });
+
+        window.addEventListener("load", () => {
+            for (const fixture of fixtures) {
+                Test.create({name:`Reject invalid composite before registration: ${fixture.error}`, test() {
+                    Assert.assertNull(window.___render_meta.get(fixture.element.uid));
+                    Assert.assertFalse(window.___render_meta.has(fixture.child.uid));
+                    Assert.assertEquals(fixture.error, fixture.element.textContent);
+                    Assert.assertEquals(0, fixture.element.children.length);
+                    Assert.assertTrue(failures.includes(fixture.error));
+                    Assert.assertFalse(loaded.includes(fixture.element));
+                    Composer.mount(fixture.element);
+                }});
+            }
+
+            Test.create({name:"Report each invalid composite once and finish independent rendering", test() {
+                Assert.assertEquals(9, fixtures.length);
+                Assert.assertEquals(fixtures.length, failures.length);
+                Assert.assertEquals(fixtures.length, logged.length);
+                Assert.assertEquals(0, uncaught.length);
+                Assert.assertEquals(0, invalidProbe.attributes);
+                Assert.assertEquals(0, invalidProbe.children);
+                Assert.assertEquals(0, invalidProbe.conditions);
+                Assert.assertTrue(renders.includes(document.body));
+                Assert.assertEquals("ready", document.getElementById("validSibling").textContent);
+                Assert.assertEquals("dock", lifecycle.join(","));
+                for (const id of ["validSibling", "repaired", "interceptorExpression", "expressionComposite"])
+                    Assert.assertTrue(window.___render_meta.has(document.getElementById(id).uid));
+            }});
+
+            Test.create({name:"Keep rejected elements ignored during explicit and observed rendering", async test() {
+                const invalid = fixtures[3].element;
+                const errors = failures.length;
+                const messages = logged.length;
+                Composer.render(invalid);
+                Composer.render(document.body);
+                invalid.id = "replacement";
+                Composer.render(invalid);
+                document.body.appendChild(invalid);
+                const child = document.querySelector("template").content.firstElementChild.cloneNode(true);
+                invalid.appendChild(child);
+                Composer.render(child);
+                await new Promise(resolve => setTimeout(resolve, 50));
+                Assert.assertNull(window.___render_meta.get(invalid.uid));
+                Assert.assertFalse(window.___render_meta.has(child.uid));
+                Assert.assertEquals("{{(invalidProbe.identifiers++, 'replacement')}}", child.id);
+                Assert.assertEquals("{{invalidProbe.children++}}", child.textContent);
+                Assert.assertEquals(0, invalidProbe.identifiers);
+                Assert.assertEquals(0, invalidProbe.children);
+                Assert.assertEquals(errors, failures.length);
+                Assert.assertEquals(messages, logged.length);
+                Assert.assertEquals(0, uncaught.length);
+                Assert.assertFalse(lifecycle.includes("replacement"));
+            }});
+
+            Test.create({name:"Remove rejected composites without mounting or undocking them", async test() {
+                const errors = failures.length;
+                for (const fixture of fixtures)
+                    fixture.element.remove();
+                await new Promise(resolve => setTimeout(resolve, 50));
+                for (const fixture of fixtures)
+                    Assert.assertFalse(window.___render_meta.has(fixture.element.uid));
+                Assert.assertEquals(errors, failures.length);
+                Assert.assertEquals(0, uncaught.length);
+                const element = document.querySelector("template").content.firstElementChild.cloneNode(true);
+                element.textContent = "{{'replacement ready'}}";
+                document.body.appendChild(element);
+                await new Promise(resolve => setTimeout(resolve, 50));
+                Assert.assertEquals("replacement", element.id);
+                Assert.assertEquals("replacement ready", element.textContent);
+                Assert.assertTrue(window.___render_meta.has(element.uid));
+                Assert.assertEquals("dock,replacement", lifecycle.join(","));
+                Assert.assertEquals(errors, failures.length);
+                Assert.assertEquals(0, uncaught.length);
+            }});
+
+            Test.create({name:"Revalidate the same rejected element after removal", async test() {
+                const element = fixtures[4].element;
+                const errors = failures.length;
+                const messages = logged.length;
+                try {
+                    document.body.appendChild(element);
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    Assert.assertEquals(errors + 1, failures.length);
+                    Assert.assertEquals(messages + 1, logged.length);
+                    Assert.assertNull(window.___render_meta.get(element.uid));
+                    Assert.assertEquals(fixtures[4].error, element.textContent);
+                    Assert.assertFalse(loaded.includes(element));
+                    Composer.render(element);
+                    Assert.assertEquals(errors + 1, failures.length);
+
+                    element.remove();
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    Assert.assertFalse(window.___render_meta.has(element.uid));
+                    element.id = "reinserted";
+                    element.innerHTML = "<span>{{'reinserted ready'}}</span>";
+                    document.body.appendChild(element);
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    Assert.assertTrue(window.___render_meta.get(element.uid) instanceof Object);
+                    Assert.assertEquals("reinserted ready", element.textContent);
+                    Assert.assertTrue(loaded.includes(element));
+                    Assert.assertEquals("dock,replacement,reinserted", lifecycle.join(","));
+                    Assert.assertEquals(errors + 1, failures.length);
+                    Assert.assertEquals(messages + 1, logged.length);
+                    Assert.assertEquals(0, uncaught.length);
+                } finally {
+                    element.remove();
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+            }});
+
+            Test.create({name:"Allow interceptors to repair a missing ID before validation", test() {
+                const element = document.createElement("div");
+                element.setAttribute("composite", "");
+                element.setAttribute("data-repair", "");
+                element.textContent = "{{'repaired ready'}}";
+                const errors = failures.length;
+                Composer.render(element);
+                Assert.assertEquals("repaired", element.id);
+                Assert.assertEquals("repaired ready", element.textContent);
+                Assert.assertTrue(window.___render_meta.get(element.uid) instanceof Object);
+                Assert.assertEquals(errors, failures.length);
+            }});
+
+            Test.create({name:"Allow interceptors to remove the composite marker before validation", test() {
+                const element = document.createElement("div");
+                element.setAttribute("composite", "");
+                element.textContent = "{{'ordinary element'}}";
+                Composer.customize(selector => {
+                    if (selector === element)
+                        selector.removeAttribute("composite");
+                });
+                const errors = failures.length;
+                Composer.render(element);
+                Assert.assertEquals("ordinary element", element.textContent);
+                Assert.assertTrue(window.___render_meta.get(element.uid) instanceof Object);
+                Assert.assertFalse(loaded.includes(element));
+                Assert.assertEquals(errors, failures.length);
+            }});
+
+            Test.create({name:"Do not reject a composite for an unexpected ID access error", test() {
+                const element = document.createElement("div");
+                element.id = "repaired";
+                element.setAttribute("composite", "");
+                element.setAttribute("data-fail-id", "");
+                Composer.customize(selector => {
+                    if (selector !== element
+                            || !element.hasAttribute("data-fail-id"))
+                        return;
+                    element.removeAttribute("data-fail-id");
+                    const getAttribute = element.getAttribute;
+                    element.getAttribute = name => {
+                        if (name !== "id")
+                            return getAttribute.call(element, name);
+                        delete element.getAttribute;
+                        throw new Error("Composite ID read failed");
+                    };
+                });
+                const errors = failures.length;
+                Composer.render(element);
+                Assert.assertEquals(errors + 1, failures.length);
+                Assert.assertEquals("Error: Composite ID read failed", failures[errors]);
+                Assert.assertEquals("Error: Composite ID read failed", element.textContent);
+                Assert.assertFalse(window.___render_meta.has(element.uid));
+                Assert.assertFalse(loaded.includes(element));
+
+                element.textContent = "{{'recovered'}}";
+                Composer.render(element);
+                Assert.assertEquals("recovered", element.textContent);
+                Assert.assertTrue(window.___render_meta.get(element.uid) instanceof Object);
+                Assert.assertEquals(errors + 1, failures.length);
+                Assert.assertEquals(0, uncaught.length);
+            }});
+            window.setTimeout(() => Test.start(), 100);
+        });
+    </script>
+  </head>
+  <body>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration">
+      <div composite title="{{invalidProbe.attributes++}}">
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration">
+      <div id="" composite>
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration">
+      <div id="   " composite>
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration for element 1invalid">
+      <div id="1invalid" composite>
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration for element invalid-name">
+      <div id="invalid-name" composite>
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration for element invalid@">
+      <div id="invalid@" composite>
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration for element invalid-expression">
+      <div id="{{'invalid-expression'}}" composite>
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration for element invalid-intercepted">
+      <div id="intercepted" composite data-invalidate>
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <section data-invalid-fixture data-error="Error: Invalid composite declaration for element invalid-condition">
+      <div id="invalid-condition" composite condition="{{(invalidProbe.conditions++, false)}}">
+        <span>{{invalidProbe.children++}}</span>
+      </div>
+    </section>
+    <div id="validSibling" composite>{{'ready'}}</div>
+    <div id="invalid-before-interceptor" composite data-repair>repaired before validation</div>
+    <div id="pending" composite data-expression-id>interceptor expression</div>
+    <div id="{{'expressionComposite'}}" composite>initial expression</div>
+    <template>
+      <div id="{{(invalidProbe.identifiers++, 'replacement')}}" composite>{{invalidProbe.children++}}</div>
+    </template>
+  </body>
+</html>

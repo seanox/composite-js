@@ -65,7 +65,7 @@
             });
         }});
 
-        Test.create({name:"Undefined removes targets and synchronizes their properties", timeout:3000, test() {
+        Test.create({name:"Undefined removes targets and restores fresh element property defaults", timeout:3000, test() {
             const element = document.querySelector("#template");
             label = undefined;
             return render(element).then(() => {
@@ -92,17 +92,15 @@
             });
         }});
 
-        ["sizeOrdinary", "sizeTemplate"].forEach((id, index) => {
-            Test.create({name:"Undefined removes " + id + " despite a throwing setter", timeout:3000, test() {
+        ["sizeOrdinary", "sizeTemplate"].forEach(id => {
+            Test.create({name:"Undefined restores the browser default for " + id, timeout:3000, test() {
                 const element = document.getElementById(id);
                 Assert.assertEquals("10", element.getAttribute("size"));
                 Assert.assertEquals(10, element.size);
-                Assert.assertEquals(index, errors.length);
+                Assert.assertEquals(0, errors.length);
                 size = undefined;
                 return render(element).then(() => {
-                    Assert.assertEquals(index + 1, errors.length);
-                    Assert.assertTrue(errors[index] instanceof DOMException);
-                    Assert.assertEquals("IndexSizeError", errors[index].name);
+                    Assert.assertEquals(0, errors.length);
                     Assert.assertNull(element.getAttribute("size"));
                     Assert.assertEquals(20, element.size);
                     Assert.assertFalse(element.hasAttribute("@size"));

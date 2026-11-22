@@ -43,7 +43,7 @@
                     finish();
             });
             Composer.listen(Composer.EVENT_ERROR, (event, error) => {
-                if (String(error).includes("Unknown composite without id"))
+                if (String(error) === "Error: Invalid composite declaration")
                     errors.push(error);
             });
 
@@ -54,7 +54,7 @@
                 Assert.assertEquals("A,B,C,D", order.join(","));
                 Assert.assertEquals(1, errors.length);
                 Assert.assertEquals("A", a.textContent);
-                Assert.assertTrue(b.textContent.includes("Unknown composite without id"));
+                Assert.assertEquals("Error: Invalid composite declaration", b.textContent);
                 Assert.assertEquals("C", c.textContent);
                 Assert.assertEquals("D", d.textContent);
             } finally {

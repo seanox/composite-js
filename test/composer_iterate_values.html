@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+
+      Test.activate();
+
+      const iterationModel = {
+          value: null,
+          entries: [],
+          capture(entry) {
+              this.entries[entry.index] = entry;
+              return entry.index;
+          }
+      };
+      const iterationReactiveModel = {value: {name: "Anna"}}.reactive();
+      const iterationErrors = [];
+      Composer.listen(Composer.EVENT_ERROR, (event, error) => iterationErrors.push(error));
+      const delay = () => new Promise(resolve => window.setTimeout(resolve, 0));
+      const withIteration = async (value, test) => {
+          const fixture = document.createElement("div");
+          fixture.setAttribute("iterate", "{{entry:iterationModel.value}}");
+          fixture.innerHTML = '<span title="{{iterationModel.capture(entry)}}">{{entry.index}}</span>';
+          iterationModel.value = value;
+          iterationModel.entries = [];
+          document.body.appendChild(fixture);
+          try {
+              await delay();
+              await test(fixture);
+          } finally {
+              fixture.remove();
+              await delay();
+              iterationModel.value = null;
+              iterationModel.entries = [];
+          }
+      };
+      const assertItems = (fixture, items) => {
+          Assert.assertEquals(items.length, fixture.children.length);
+          Assert.assertEquals(items.length, iterationModel.entries.length);
+          Assert.assertEquals(items.map((item, index) => index).join(""), fixture.textContent);
+          items.forEach((item, index) => {
+              const meta = iterationModel.entries[index];
+              Assert.assertTrue(Object.is(item, meta.item));
+              Assert.assertEquals(index, meta.index);
+              Assert.assertEquals(String(index), fixture.children[index].title);
+              Assert.assertEquals(items.length, meta.data.length);
+              Assert.assertSame(meta.data, iterationModel.entries[0].data);
+              items.forEach((value, offset) =>
+                  Assert.assertTrue(Object.is(value, meta.data[offset])));
+          });
+      };
+
+      for (const value of [{name: "Anna"}, {}, Object.create(null), true, false,
+          new Date(0), Symbol("item")])
+          Test.create({name: "Non-collection values produce one iteration with unchanged item", async test() {
+              await withIteration(value, async fixture => {
+                  assertItems(fixture, [value]);
+                  const meta = iterationModel.entries[0];
+                  for (const name of ["item", "index", "data"])
+                      Assert.assertFalse(Object.getOwnPropertyDescriptor(meta, name).writable);
+                  iterationModel.value = null;
+                  Composer.render(fixture.firstElementChild);
+                  await delay();
+                  assertItems(fixture, [value]);
+                  Assert.assertSame(meta, iterationModel.entries[0]);
+              });
+          }});
+
+      for (const value of [null, undefined])
+          Test.create({name: "Nullish values produce no iterations and clear existing output", async test() {
+              await withIteration(value, async fixture => {
+                  assertItems(fixture, []);
+                  const item = {name: "Anna"};
+                  for (const next of [item, [item, false], [], value, item, value]) {
+                      iterationModel.value = next;
+                      iterationModel.entries = [];
+                      Composer.render(fixture);
+                      await delay();
+                      assertItems(fixture, next === value ? []
+                          : Array.isArray(next) ? next : [next]);
+                  }
+              });
+          }});
+
+      for (const entry of [
+          {value: 0, items: []},
+          {value: NaN, items: []},
+          {value: 3, items: [0, 1, 2]},
+          {value: -3, items: [-2, -1, 0]},
+          {value: 1.5, items: [0, 1]},
+          {value: -1.5, items: [-0.5]},
+          {value: [], items: []},
+          {value: [null, undefined, false], items: [null, undefined, false]},
+          {value: "", items: []},
+          {value: "ab", items: ["a", "b"]},
+          {value: "\uD83D\uDE00", items: ["\uD83D\uDE00"]},
+          {value: {0: "a", 1: "b", length: 2}, items: ["a", "b"]},
+          {value: {0: "a", length: "1"}, items: ["a"]},
+          {value: {length: 0}, items: []},
+          {value: {length: undefined}, items: []},
+          {value: {[Symbol.iterator]: null}, items: []},
+          {value: Object.create({0: "a", length: 1}), items: ["a"]},
+          {value: new Set(["a", "b"]), items: ["a", "b"]},
+          {value: new Set(), items: []},
+          {value: new Map([["a", 1], ["b", 2]]), items: [["a", 1], ["b", 2]]},
+          {value: (function*() {yield "a"; yield "b";})(), items: ["a", "b"]}
+      ])
+          Test.create({name: "Collections and numeric ranges retain their existing semantics", async test() {
+              await withIteration(entry.value, fixture => {
+                  const items = entry.value instanceof Map
+                      ? iterationModel.entries.map(meta => meta.item) : entry.items;
+                  if (entry.value instanceof Map)
+                      Assert.assertEquals(JSON.stringify(entry.items), JSON.stringify(items));
+                  assertItems(fixture, items);
+              });
+          }});
+
+      Test.create({name: "Collection accessors are read once and iterators take priority over length", async test() {
+          let reads = 0;
+          const value = {
+              get [Symbol.iterator]() {
+                  reads++;
+                  return function*() {yield "a";};
+              },
+              get length() {throw new Error("Iterator must take priority");}
+          };
+          await withIteration(value, fixture => {
+              assertItems(fixture, ["a"]);
+              Assert.assertEquals(1, reads);
+          });
+      }});
+
+      Test.create({name: "DOM collections and XPath iterators retain their nodes", async test() {
+          const parent = document.createElement("div");
+          parent.innerHTML = "<span>a</span><span>b</span>";
+          const nodes = parent.querySelectorAll("span");
+          await withIteration(nodes, fixture => assertItems(fixture, Array.from(nodes)));
+          const xml = new DOMParser().parseFromString("<root><item/><item/></root>", "text/xml");
+          const result = xml.evaluate("/root/item", xml, null,
+              XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+          await withIteration(result, fixture => assertItems(fixture, Array.from(xml.documentElement.children)));
+      }});
+
+      Test.create({name: "Errors and malformed collections are reported, not wrapped as items", async test() {
+          const failure = new Error("Iteration value failure");
+          const values = [failure, {[Symbol.iterator]: 1}, {
+              [Symbol.iterator]() {throw failure;}
+          }, {
+              get length() {throw failure;}
+          }];
+          for (const value of values) {
+              const start = iterationErrors.length;
+              await withIteration(value, () => {
+                  const errors = iterationErrors.slice(start);
+                  Assert.assertTrue(errors.length > 0);
+                  if (value[Symbol.iterator] === 1)
+                      Assert.assertTrue(errors.some(error => error instanceof TypeError));
+                  else Assert.assertTrue(errors.includes(failure));
+                  Assert.assertEquals(0, iterationModel.entries.length);
+              });
+          }
+      }});
+
+      Test.create({name: "Reactive singleton fields and replacement values update the view", async test() {
+          const fixture = document.createElement("div");
+          fixture.setAttribute("iterate", "{{entry:iterationReactiveModel.value}}");
+          fixture.innerHTML = "<span>{{entry.item.name}}</span>";
+          document.body.appendChild(fixture);
+          try {
+              await delay();
+              Assert.assertEquals("Anna", fixture.textContent);
+              const child = fixture.firstElementChild;
+              iterationReactiveModel.value.name = "Ben";
+              await delay();
+              Assert.assertEquals("Ben", fixture.textContent);
+              Assert.assertSame(child, fixture.firstElementChild);
+              iterationReactiveModel.value = {name: "Clara"};
+              await delay();
+              Assert.assertEquals("Clara", fixture.textContent);
+              iterationReactiveModel.value = null;
+              await delay();
+              Assert.assertEquals(0, fixture.children.length);
+          } finally {
+              fixture.remove();
+              await delay();
+          }
+      }});
+
+      Test.start({auto: true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

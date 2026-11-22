@@ -356,6 +356,17 @@ Compose einschliesslich ES2015-Lint lief mit
 erfolgreich, ohne vorhandene lokale Release-Aenderungen zu ueberschreiben.
 Der Scope-Vertrag ist in `manuals\markup.md` beim Attribut `iterate` dokumentiert.
 
+**Ergaenzender Testnachweis 2026-11-21:** Die sechs Tasks in
+`test\composer_render_iterate_context.html` verwenden statisches Markup und
+Expressions. Containerattribute pruefen die Wiederherstellung des Elternkontexts
+und das Entfernen innerer Variablen auch nach Callback-Abbruch und Kindfehler.
+Der Queue-Test prueft sowohl Namenskollisionen als auch das Eindringen einer
+nur beim Auftraggeber vorhandenen Variable. Alle sechs Tasks bestehen in Blink,
+Gecko und WebKit. Sieben gezielte Quellmutationen ausschliesslich im
+Arbeitsspeicher eines Blink-Laufs erzeugen die jeweils erwarteten Testfehler;
+damit sind auch die beiden beim Testreview festgestellten Nachweisluecken
+geschlossen. Die Runtime-Quellen wurden hierfuer nicht geaendert.
+
 ### R03
 
 **Tag-Makros eindeutig von CSS-Selektoren unterscheiden**
@@ -485,40 +496,30 @@ Container danach erneut verwendbar ist.
 
 ### R06
 
-**Boolesche DOM-Properties typgetreu aktualisieren**
+**Allgemeine Attributwerte typgetreu weitergeben**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** erledigt am 2026-11-21
 **Paket:** `rendering` | **Abstimmung:** [R07](#r07), [R08](#r08), [R09](#r09)
-**Fundstellen:** `sources\composer.js:2647-2678, 2942-2950`
+**Fundstellen:** `sources\composer.js:2818-2845`
 
 **Konkreter Loesungsansatz**
 
-Trenne in `_render_attributes_update` drei Werte: den gespeicherten
-Expression-Text, das rohe Ergebnis `raw` und den DOM-Zielnamen aus R08/R09.
-Ein kleiner gemeinsamer Schreibhelfer fuer Renderer und
-Boolean-Normalisierung des MutationObservers kann dann zuerst `undefined`
-behandeln, danach bekannte boolesche HTML-Attribute und zuletzt Textattribute.
-Erkenne boolesche Attribute ueber eine fachliche Attribut-/Property-Zuordnung,
-nicht ueber `typeof raw === "boolean"`: `aria-hidden="false"` ist Text.
-Beachte unterschiedliche Property-Namen wie `readonly -> readOnly` und
-`autofocus -> autofocus`. Ergaenze `checked`/`selected` und die weiteren
-unterstuetzten booleschen HTML-Attribute konsistent.
+`_render_attribute_value()` gibt definierte Expression-Ergebnisse unveraendert
+an `setAttribute(target, value)` und `selector[target] = value` weiter.
+Bei `undefined` wird das Zielattribut entfernt und ein temporaeres Element
+mit gleichem Tag und Namespace im selben Dokument ausserhalb des DOMs erzeugt.
+Attribute und Kinder werden nicht kopiert. Dessen gleichnamige Property liefert
+den Browser-Default fuer die Property-Zuweisung am Ziel. Ein `finally` entfernt
+das Zielattribut auch dann, wenn der Setter es erneut erzeugt oder wirft.
+Der Zielname gilt auch fuer `@`-Attribute, deren Expressions im
+Metaobjekt fuer weitere Renderzyklen erhalten bleiben.
 
-Bei `raw === undefined` das dynamische Zielattribut entfernen, ohne den Wert
-als String auszugeben. Das gilt auch fuer den Zielnamen eines `@`-Attributs.
-Diese Attributregel legt nicht fest, welcher Wert einer zugehoerigen
-DOM-Property zugewiesen wird; diese Property-Semantik separat und typgerecht
-behandeln.
-
-Bei einem booleschen `raw === false` das Attribut entfernen und die
-zugehoerige Property auf `false` setzen; bei `true` das Praesenzattribut
-setzen und die Property auf `true`. Der aktuelle Observer-Vertrag fuer die
-Strings `"false"`/`"true"` muss in denselben Pfad einbezogen werden.
-Die abschliessende pauschale Zuweisung `selector[attribute] = value` darf den
-Wert danach nicht erneut als String schreiben. Fuer sonstige Properties
-den Rohwert und nur fuer `setAttribute` die Textdarstellung benutzen.
-Bei `checked` die aktuelle Property auch nach einem Dirty-Checkedness-Zustand
-explizit setzen; Attributreflexion allein genuegt nicht.
+Die Boolean-String-Normalisierung des MutationObservers ist entfernt.
+Attribut-/Property-Zuordnung und Boolean-Deutung sind nicht Teil dieses
+Vertrags. Der Default wird aus dem unkonfigurierten Referenzelement gelesen.
+DOM-Konvertierungen und Reflexion bestimmt der Browser. Setzfehler laufen durch
+den bestehenden Renderer-Fehlerpfad mit
+`console.error()` und `Composer.EVENT_ERROR`.
 
 **Problem und Ziel:** Der Ausdruckswert `false` wird vor der Property-Zuweisung
 zum String `"false"`. Boolesche DOM-Setter interpretieren diesen nichtleeren
@@ -526,27 +527,26 @@ String als wahr. Attributdarstellung und Property-Wert muessen getrennt bleiben.
 
 **Umsetzung**
 
-1. Bewahre den Rohwert der Expression bis zur Property-Zuweisung auf. Erzeuge
-   einen String nur fuer diejenigen Attributpfade, die Text benoetigen.
-2. Entferne bei `raw === undefined` das dynamische Zielattribut. Setze
-   boolesche Properties typgerecht und halte die zugehoerige Attributpraesenz
-   entsprechend dem bestehenden Composer-Vertrag konsistent.
-3. Stimme direkten Renderpfad und MutationObserver ab. Verhindere, dass die
-   Property-Reflexion die beabsichtigte Normalisierung vorzeitig unkenntlich macht.
-4. Behalte die Textsemantik normaler Attribute sowie von `aria-*` und `data-*`
-   bei. Fuehre keine pauschale Truthiness-Konvertierung aller Werte ein.
+1. Definierte Ergebnisse ohne vorgelagerte String-Konvertierung weitergeben.
+2. Bei `undefined` das Zielattribut entfernen, den Property-Default eines neuen
+   unkonfigurierten Elements setzen und die Attributentfernung absichern.
+3. Boolean-aehnliche Strings im MutationObserver nicht mehr normalisieren.
+4. Sonderattribute, Metadaten und Textinterpolation behalten ihre eigenen Regeln.
 
 **Regression und Abnahme**
 
-- [ ] `disabled="{{false}}"` und `checked="{{false}}"` ergeben false-Properties und keine aktivierenden Attribute.
-- [ ] Der Wechsel `false -> true -> false` funktioniert auch nach Observer-Verarbeitung.
-- [ ] `undefined` entfernt das dynamische Zielattribut, erzeugt keinen Stringwert und ein spaeterer definierter Wert wird wieder gesetzt.
-- [ ] Ein normales `title` mit dem Wert `false` sowie `aria-*`-/`data-*`-Werte behalten ihre vorgesehene Textdarstellung; es entstehen keine Observer-Schleifen.
+- [x] Primitive Ergebnisse und Objektidentitaet bleiben bis zur DOM-Grenze erhalten.
+- [x] Der Wechsel `false -> true -> false` funktioniert auch nach manuellen Checkbox-Aenderungen und Observer-Verarbeitung.
+- [x] `undefined` entfernt normale und `@`-Zielattribute und setzt deren Property auf den frischen Referenzdefault zurueck; spaetere Werte werden wieder gesetzt.
+- [x] Referenzen haben gleichen Tag und Namespace, liegen ausserhalb des DOMs und uebernehmen keine Zielattribute oder Kinder.
+- [x] Reflektierende oder werfende Default-Setter koennen das Zielattribut nicht stehen lassen; Erzeugungs- und Setterfehler bleiben sichtbar.
+- [x] Textattribute und Boolean-aehnliche Strings folgen der Browsersemantik ohne Observer-Normalisierung.
+- [x] Property-Setter- und Attributkonvertierungsfehler werden unveraendert protokolliert und gemeldet.
 
-**Testansatz:** `test\composer_render_attributes.html`,
-`test\reactive_attributes.html`.
-**Erledigt, wenn:** Boolesche Property-Semantik nicht mehr von einer zuvor
-erzeugten Stringdarstellung abhaengt.
+**Testnachweis:** Die Regressionen in `test\composer_render_attributes_types.html`
+schlagen am bisherigen Verhalten in Blink fehl; alle 27 Tasks bestehen mit
+der Korrektur in Blink, Gecko und WebKit. Alle sechs fokussierten Attribut-/
+Reactive-Testseiten sowie der isolierte Compose-Build mit ES2015-Lint bestehen.
 
 ### R07
 
@@ -606,12 +606,12 @@ Behalte `attribute` als Schluessel von `object.attributes` und als Teil des
 Expression-Cache-Identifiers bei. Bestimme daneben vor der Auswertung
 `targetName = attribute.replace(/^@+/, "")`. Ein physisches Template-Attribut
 wird unter dem Deklarationsnamen entfernt; Setzen und Entfernen des
-Ergebnisattributs verwenden immer `targetName`. Auch die Property-Zuweisung
-verwendet dessen gegebenenfalls abweichenden Property-Namen aus R06.
+Ergebnisattributs verwenden immer `targetName`. Definierte Property-Werte
+werden unter demselben Zielnamen ohne automatische Namenszuordnung geschrieben.
 Mutierende Umbenennung von `attribute` nur im definierten Ergebniszweig
 entfaellt. Bei `undefined` bleibt die Expression im Metaobjekt erhalten,
-waehrend Zielattribut und Property gemaess dem dokumentierten Vertrag
-aktualisiert werden.
+waehrend das Zielattribut entfernt und die Property gemaess dem
+Referenzdefault-Vertrag aus R06 zurueckgesetzt wird.
 
 **Problem und Ziel:** Bei `undefined` wird das `@`-Praefix nicht entfernt.
 Der Code entfernt beispielsweise `@title` statt des zuvor erzeugten `title`
@@ -622,8 +622,8 @@ und adressiert auch die falsche Property.
 1. Fuehre Deklarationsname und realen DOM-Zielnamen getrennt.
 2. Bestimme den Zielnamen vor allen Verzweigungen nach dem Expression-Ergebnis.
    Verwende ihn fuer Setzen, Entfernen und Property-Aktualisierung.
-3. Erhalte die Expression-Deklaration fuer spaetere Updates und fuehre den
-   vorgesehenen Property-Reset beim Entfernen aus.
+3. Erhalte die Expression-Deklaration fuer spaetere Updates. Bei `undefined`
+   das Zielattribut entfernen und den Property-Default aus R06 setzen.
 
 **Regression und Abnahme**
 
@@ -1616,49 +1616,19 @@ Breaking Change und ist in `CHANGES` dokumentiert.
 
 **String-Rueckgaben von permit als Weiterleitung ausfuehren**
 
-**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 2 SP | **Status:** abgelehnt am 2026-11-21
 **Paket:** `navigation` | **Voraussetzung:** [R24](#r24)
-**Fundstellen:** `sources\routing.js:206-210`
+**Entscheidung statt Umsetzung:** Die String-Weiterleitung war nur dokumentiert,
+aber nie Teil des implementierten Permission-Vertrags. `Routing.approve()`
+verwendet bei `undefined` den Pfad-Fallback, erlaubt ausschliesslich das
+primitive `true` und verweigert alle anderen Werte. `test\routing_permit.html`
+prueft explizit, dass String-Rueckgaben keine Freigabe und keine Navigation
+ausloesen. `permit()` bleibt eine wiederholbare Freigabepruefung; Redirects
+werden ueber Interceptors oder Anwendungslogik behandelt.
 
-**Konkreter Loesungsansatz**
-
-Ergaenze in `Routing.approve` nach dem `undefined`-Fall einen eigenen
-`typeof approval === "string"`-Zweig. Normalisiere den String relativ
-zum effektiven Navigationspfad aus R24, fuehre die Weiterleitung ueber
-denselben internen Navigationsablauf aus und liefere fuer den aktuell
-pruefenden View `false`. Das verhindert, dass der bisherige View aufgrund
-des nichtleeren Strings als freigegeben gilt.
-
-Ein pro Redirect-Kette gefuehrtes `Set` normalisierter Zielpfade erkennt
-Selbstweiterleitung und Zyklen. Einen Zyklus mit klarem Routingfehler
-abbrechen, nicht als erfolgreiche Freigabe behandeln. Das Set gehoert
-zur aktuellen Kette, nicht dauerhaft zur Route; spaetere regulaere
-Navigationen auf dasselbe Ziel bleiben erlaubt. Pruefe auch einen
-Permit-Redirect waehrend bereits laufendem Render-Lock, damit der
-eingereihte Ziel-Render den beibehaltenen effektiven Pfad sieht.
-
-**Problem und Ziel:** Die Implementierung akzeptiert nur `approval === true`,
-obwohl ein String laut Vertrag ein Weiterleitungsziel ist. Ein String darf
-nicht nur den bisherigen View ausblenden und die Navigation stehen lassen.
-
-**Umsetzung**
-
-1. Unterscheide `undefined`, `true`, `false` und String gemaess dem
-   dokumentierten Permission-Vertrag.
-2. Normalisiere String-Ziele ueber die vorhandenen Path-Regeln und fuehre die
-   Weiterleitung ueber den in R24 konsolidierten Navigationspfad aus.
-3. Erkenne normalisierte Selbstweiterleitungen. Verhindere auch unendliche
-   Kaskaden durch wiederkehrende Redirect-Zyklen.
-
-**Regression und Abnahme**
-
-- [ ] Bei `a.permit(){return "#c";}` wird A nicht angezeigt, C aktiviert und der Navigationszustand auf C ausgerichtet.
-- [ ] Relative Ziele und normalisierte Selbstweiterleitung funktionieren ohne Endlosschleife.
-- [ ] `undefined`, `true`, `false` und die Freigaben uebergeordneter Views behalten ihr dokumentiertes Verhalten.
-
-**Testansatz:** `test\routing_approve.html`, `test\routing_route.html`.
-**Erledigt, wenn:** Der String-Vertrag aus `manuals\routing.md` als echte
-Weiterleitung umgesetzt ist.
+Die irrefuehrende Dokumentation und das Beispiel wurden am 2026-11-21
+korrigiert. Eine Redirect-Implementierung fuer String-Rueckgaben ist nicht
+vorgesehen.
 
 ### R26
 

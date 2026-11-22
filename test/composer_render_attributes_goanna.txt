@@ -42,7 +42,7 @@ undefined
 true
 <input disabled="" type="text">
 false
-<input disabled="" type="text">
+<input type="text">
 undefined
 <span></span>
 
@@ -78,7 +78,7 @@ false
 true
 <input disabled="" type="text">
 false
-<input disabled="" type="text">
+<input type="text">
 undefined
 <span></span>
 
@@ -114,6 +114,6 @@ undefined
 true
 <input disabled="" type="text">
 false
-<input disabled="" type="text">
+<input type="text">
 undefined
 <span></span>

@@ -30,7 +30,7 @@
         });
 
         Test.create({test() {
-            Assert.assertTrue(document.body.innerText.includes("Error: Unknown composite without id"));
+            Assert.assertEquals("Error: Invalid composite declaration", document.body.innerText.trim());
         }});
     </script>
   </head>

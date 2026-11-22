@@ -20,6 +20,12 @@
     <echo>  compose-coverage  Prepare the environment for testing with max </echo>
     <echo>                    Combinable with the task start.              </echo>
     <echo>                                                                 </echo>
+    <echo>  playwright        Installs Playwright and browser binaries     </echo>
+    <echo>    blink           Runs Playwright tests with Blink             </echo>
+    <echo>    gecko           Runs Playwright tests with Gecko             </echo>
+    <echo>    webkit          Runs Playwright tests with WebKit            </echo>
+    <echo>    coverage        Runs Blink tests and collects coverage       </echo>
+    <echo>                                                                 </echo>
     <echo>  start             Starts the included development server       </echo>
     <echo>                    Console output of the access log             </echo>
     <echo>                                                                 </echo>
@@ -33,11 +39,16 @@
   <property name="workspace.sources" value="${workspace}/sources"/>
   <property name="workspace.benchmarks" value="${workspace}/benchmarks"/>
   <property name="workspace.test" value="${workspace}/test"/>
+  <property name="workspace.test.playwright" value="${workspace.test}/playwright"/>
   <property name="workspace.tutorials" value="${workspace}/tutorials"/>
 
   <property environment="env"/>
 
   <condition property="npx" value="npx.cmd" else="npx">
+    <os family="windows"/>
+  </condition>
+
+  <condition property="node" value="node.exe" else="node">
     <os family="windows"/>
   </condition>
 
@@ -488,6 +499,69 @@
   <target name="compose-coverage" depends="compose-max">
     <copy file="${release.file.coverage}"
         tofile="${workspace.test}/${ant.project.name}-testing.js" overwrite="true"/>
+  </target>
+
+  <macrodef name="playwright-runner">
+    <attribute name="engine"/>
+    <attribute name="port"/>
+    <sequential>
+      <exec executable="${node}" dir="${workspace.test}/playwright" failonerror="true">
+        <arg value="runner.js"/>
+        <arg value="-p"/>
+        <arg value="@{port}"/>
+        <arg value="-e"/>
+        <arg value="@{engine}"/>
+        <arg value="-d"/>
+        <arg value=".."/>
+      </exec>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="playwright-require">
+    <sequential>
+      <fail message="Combine the target with playwright first.">
+        <condition>
+          <not>
+            <isset property="playwright.available"/>
+          </not>
+        </condition>
+      </fail>
+    </sequential>
+  </macrodef>
+
+  <target name="playwright">
+    <exec executable="${npm}" dir="${workspace.test.playwright}" failonerror="true">
+      <arg value="install"/>
+    </exec>
+    <exec executable="${npx}" dir="${workspace.test.playwright}" failonerror="true">
+      <arg value="playwright"/>
+      <arg value="install"/>
+      <arg value="chromium"/>
+      <arg value="firefox"/>
+      <arg value="webkit"/>
+    </exec>
+    <property name="playwright.available" value="true"/>
+  </target>
+
+  <target name="blink">
+    <playwright-require/>
+    <playwright-runner engine="blink" port="8001"/>
+  </target>
+
+  <target name="gecko">
+    <playwright-require/>
+    <playwright-runner engine="gecko" port="8002"/>
+  </target>
+
+  <target name="webkit">
+    <playwright-require/>
+    <playwright-runner engine="webkit" port="8003"/>
+  </target>
+
+  <target name="coverage">
+    <playwright-require/>
+    <antcall target="compose-coverage"/>
+    <playwright-runner engine="blink" port="8001"/>
   </target>
 
   <target name="start">

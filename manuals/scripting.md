@@ -6,13 +6,17 @@
 # Scripting
 Seanox composite-js executes composite scripts as JavaScript in a separate
 function scope. The runtime provides helper functions for loading modules,
-collecting exports, publishing objects and creating __namespaces__ -- these are
-object structures rooted in `window`, which are referred to below as namespaces.
+collecting module exports, performing __object publication__ and creating
+__namespaces__ -- these are object structures rooted in `window`, which are
+referred to below as namespaces. Object publication makes an object available
+under a name in that global structure; the result is a __named application
+object__.
 
 Variables, constants and functions declared in a script remain local to that
-script unless they are explicitly exported or published. Runtime values are
-evaluated in the [Execution-Scope](architecture.md#execution-scope). Their
-lifetime and sharing behavior is summarized in the [scope overview](
+script. Module exports make selected properties available to `require`; object
+publication makes the original object globally addressable by name. Runtime
+values are evaluated in the [Execution-Scope](architecture.md#execution-scope).
+Their lifetime and sharing behavior is summarized in the [scope overview](
     architecture.md#scopes).
 
 ## Contents Overview
@@ -82,13 +86,15 @@ for JavaScript modules.
 Composite scripts run in a separate function scope with a runtime-provided
 context. It contains the current view-scope values, the `view` and `application`
 objects, and helper functions for loading modules, handling optional errors,
-creating namespaces and publishing objects for composite binding.
+creating namespaces and performing object publication.
 
 ### expose
-`expose(object)` collects the object's own enumerable string-keyed properties
-as flat exports of the current script. It returns the original object; repeated
+`expose(object)` collects the object's own enumerable string-keyed properties as
+flat exports of the current script. It returns the original object; repeated
 calls replace exports with matching names. Collected exports are available to
-scripts that load this module with `require(...)`.
+scripts that load this module with `require(...)`. The argument must be a
+non-null object; functions and primitive values are rejected. This form does not
+perform [object publication](architecture.md#object-publication).
 
 ```javascript
 const properties = {...};
@@ -98,11 +104,16 @@ const request = {...};
 expose({properties, builder, request});
 ```
 
-With `expose(object, namespace)`, the original object is also published at the
-specified dot-separated path in the object structure rooted at `window`. Use
-this form to make an object available for [composite binding](
-    composite-binding.md#composite-binding); collecting exports alone does not
-publish the object.
+With `expose(object, namespace)`, the runtime additionally performs __Object
+Publication__: the original object becomes a __Named Application Object__ at the
+specified dot-separated path in the object structure rooted at `window`. Its
+identity is preserved. Use this form to make an object available for
+[composite binding](composite-binding.md#composite-binding); collecting module
+exports alone does not create a named application object. Named application
+objects can also provide shared services, state, or configuration independently
+of a composite. Missing namespace levels are created. A namespace must use ASCII
+identifier segments; existing `null` or primitive intermediate values and failed
+assignments cause an error.
 
 ```javascript
 const login = {

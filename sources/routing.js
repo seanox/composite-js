@@ -107,9 +107,7 @@
         },
 
         /**
-         * Routes to the given path. In difference to the forward method, route
-         * is not executed directly, instead the change is triggered
-         * asynchronous by the location hash.
+         * Routes to the given path asynchronously by changing the location hash.
          * @param {string} path
          */
         route(path) {

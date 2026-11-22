@@ -14,12 +14,13 @@
 
         Test.activate();
 
-        Test.create({test() {
+        Test.create({name: "Rendering resolves Named Application Objects after Object Publication", test() {
             const expected = document.querySelector("script[type=\"text/test\"]").textContent;
             Assert.assertSameText(expected, document.body.textContent);
         }});
 
-        Test.create({test() {
+        Test.create({name: "Object Publication provides names without publishing individual module exports",
+                test() {
             Assert.assertSame(window.moduleM, window.a.b.c);
             Assert.assertEquals("exampleE_A1,exampleE_A2,exampleE_A3,exampleX_01",
                 Object.keys(window.moduleM).join(","));
@@ -36,7 +37,7 @@
         });
     </script>
     <script type="text/test">
-      before import + expose
+      before module loading + Object Publication
       ----
       exampleE_A1: undefined
       exampleE_A2: undefined
@@ -44,9 +45,9 @@
       exampleX_01: undefined
       moduleM.exampleE_A1: undefined
       a.b.c: undefined
-      import + expose
+      module loading + Object Publication
       ----
-      after import + expose
+      after module loading + Object Publication
       ----
       exampleE_A1: object
       exampleE_A1.exampleE_A1: A-AAA
@@ -64,7 +65,7 @@
   </head>
   <body>
 
-    before import + expose
+    before module loading + Object Publication
     ----
     exampleE_A1: {{String(attempt(() => exampleE_A1))}}
     exampleE_A2: {{String(attempt(() => exampleE_A2))}}
@@ -73,11 +74,11 @@
     moduleM.exampleE_A1: {{String(attempt(() => moduleM.exampleE_A1))}}
     a.b.c: {{String(attempt(() => a.b.c))}}
 
-    import + expose
+    module loading + Object Publication
     ----
     <div id="moduleM" composite></div>
 
-    after import + expose
+    after module loading + Object Publication
     ----
     exampleE_A1: {{typeof exampleE_A1}}
     exampleE_A1.exampleE_A1: {{exampleE_A1.exampleE_A1}}

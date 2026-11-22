@@ -370,7 +370,7 @@
         },
         
         /**
-         * Triggers an event.
+         * Emits an event.
          * Registered callbacks are captured and delivered synchronously,
          * including nested events. New render requests wait in the render queue
          * until delivery releases its own render start barrier.
@@ -378,7 +378,7 @@
          * @param {...*} variants Up to five additional optional arguments
          *     passed to the callback function
          */
-        fire(event, ...variants) {
+        emit(event, ...variants) {
             event = (event || "").trim();
             if (!event)
                 return;
@@ -669,9 +669,8 @@
          * Composite binding is about linking of HTML elements in markup (view)
          * with the corresponding application module.
          *
-         * Application modules are representable/projectable static JavaScript
-         * objects that can provide and receive data, states and interactions
-         * for views, comparable to managed beans and DTOs. As
+         * Application modules are provided by Named Application Objects that
+         * can provide and receive data, states and interactions for views. As
          * singleton/facade/delegate, they can use other abstractions, contain
          * business logic themselves, and be a link between the user interface
          * (view) and middleware (backend).
@@ -684,9 +683,9 @@
          *
          *     Principles
          *     ----
-         * Application modules are static JavaScript objects organized into
-         * namespaces. These namespaces form an object tree that can be accessed
-         * through syntactically valid paths.
+         * Named Application Objects are organized into namespaces rooted at
+         * window. Object Publication makes them globally addressable through
+         * syntactically valid paths; module exports alone do not.
          *
          *     Binding
          *     ----
@@ -712,8 +711,8 @@
          *     Synchronization
          *     ----
          * Composite binding and synchronization assume that a corresponding
-         * static JavaScript object (application module) exists in the same
-         * namespace for the composite. During synchronization, the element must
+         * Named Application Object provides the application module in the
+         * namespace resolved from the composite ID. During synchronization, the element must
          * also exist as a property in the application module. Accepted are
          * properties with a primitive data type and objects with a property
          * value. The synchronization expects a positive validation, otherwise
@@ -1034,7 +1033,7 @@
                 }
             } finally {
                 lock.release(() =>
-                    Composer.fire(EVENT_MOUNT_END, lock.selector));
+                    Composer.emit(EVENT_MOUNT_END, lock.selector));
             }        
         },
 
@@ -1407,7 +1406,7 @@
             } catch (error) {
 
                 console.error(error);
-                Composer.fire(EVENT_ERROR, error);
+                Composer.emit(EVENT_ERROR, error);
                 if (origin instanceof Element) {
                     error = String(error);
                     origin.innerText = (/(\{\{|\}\})/).test(error)
@@ -1470,7 +1469,7 @@
                     nodes.forEach((node) =>
                         Composer.mount(node));
 
-                    Composer.fire(EVENT_RENDER_END, lock.selector);
+                    Composer.emit(EVENT_RENDER_END, lock.selector);
                 });
             }
         },
@@ -1535,10 +1534,10 @@
             // Without a head element, the inserting causes an error.
 
             // JavaScript is not inserted as an element, it is executed
-            // directly. For this purpose eval is used. Since the method may
-            // form its own scope for variables, it is important to use the
-            // expose API to collect module exports and optionally publish
-            // variables and/or constants in the global scope.
+            // directly in a separate function scope. The expose API collects
+            // module exports; expose(object, namespace) additionally performs
+            // Object Publication, making the original object available as a
+            // Named Application Object in the global JavaScript namespace.
 
             // HTML/Markup is preloaded into the render cache if available.
             // If markup exists for the composite, ATTRIBUTE_IMPORT with the URL
@@ -1633,7 +1632,7 @@
             // Was the composite module already loaded?
             // Initially EVENT_MODULE_LOAD is triggered.
             if (_composer_resources[context + ".composite"] === undefined)
-                Composer.fire(EVENT_MODULE_LOAD, composite, resource);
+                Composer.emit(EVENT_MODULE_LOAD, composite, resource);
             _composer_resources[context + ".composite"] = null;
 
             // The sequence of loading is strictly defined: JS, CSS, HTML
@@ -1778,15 +1777,15 @@
             else _mount_lock = lock;
 
             if (context === Composer.render)
-                Composer.fire(EVENT_RENDER_START, selector);
+                Composer.emit(EVENT_RENDER_START, selector);
             else if (context === Composer.mount)
-                Composer.fire(EVENT_MOUNT_START, selector);
+                Composer.emit(EVENT_MOUNT_START, selector);
             else throw new Error("Invalid context: " + context);
         } else {
             if (context === Composer.render)
-                Composer.fire(EVENT_RENDER_NEXT, selector);
+                Composer.emit(EVENT_RENDER_NEXT, selector);
             else if (context === Composer.mount)
-                Composer.fire(EVENT_MOUNT_NEXT, selector);
+                Composer.emit(EVENT_MOUNT_NEXT, selector);
             else throw new Error("Invalid context: " + context);
         }
 
@@ -1868,11 +1867,10 @@
         if (!(element instanceof Element))
             return null;
 
-        // Composites are independent application units whose application
-        // modules are comparable to managed beans or named beans. The
-        // application module is determined by the composite ID, not by
-        // enclosing composites. An explicitly declared namespace supplies its
-        // scope path.
+        // Composites are independent application units. The Named Application
+        // Object providing the application module is addressed by the composite
+        // ID, not by enclosing composites. An explicitly declared namespace
+        // supplies its scope path.
 
         if (element.hasAttribute(ATTRIBUTE_COMPOSITE)) {
             const composite = _composite_parse(element);
@@ -2465,7 +2463,7 @@
                     if (word.match(/^\{\{\d+\}\}$/)) {
                         const serial = parseInt(word.substring(2, word.length -2).trim());
                         const object = _render_meta.get(serial);
-                        Composer.fire(EVENT_RENDER_NEXT, object.element);
+                        Composer.emit(EVENT_RENDER_NEXT, object.element);
                         object.render();
                         array[index] = object.element;
                     } else {
@@ -2473,7 +2471,7 @@
                         const serial = node.serial();
                         const object = {serial, element:node, attributes:{}, expressions:{},
                             context:[..._view_scope_workspace]};
-                        Composer.fire(EVENT_RENDER_NEXT, object.element);
+                        Composer.emit(EVENT_RENDER_NEXT, object.element);
                         object.element.textContent = word;
                         object.attributes[ATTRIBUTE_TEXT] = word;
                         _render_meta.set(serial, object);
@@ -2523,9 +2521,9 @@
         model = Object.lookup(model);
         if (model && typeof model.dock === "function") {
             const meta = _mount_lookup(selector);
-            Composer.fire(EVENT_MODULE_DOCK, meta);
+            Composer.emit(EVENT_MODULE_DOCK, meta);
             model.dock.call(model);
-            Composer.fire(EVENT_MODULE_READY, meta);
+            Composer.emit(EVENT_MODULE_READY, meta);
         }
     };
 
@@ -2920,7 +2918,7 @@
     const _request_open = XMLHttpRequest.prototype.open;
     XMLHttpRequest.prototype.open = function(...variants) {
 
-        Composer.fire(EVENT_HTTP_START, this);
+        Composer.emit(EVENT_HTTP_START, this);
 
         if (!_request_monitoring.has(this)) {
 
@@ -2930,21 +2928,21 @@
                 if (!event)
                     return;
                 if (event.type === "loadstart")
-                    Composer.fire(EVENT_HTTP_PROGRESS, event);
+                    Composer.emit(EVENT_HTTP_PROGRESS, event);
                 else if (event.type === "progress")
-                    Composer.fire(EVENT_HTTP_PROGRESS, event);
+                    Composer.emit(EVENT_HTTP_PROGRESS, event);
                 else if (event.type === "readystatechange")
-                    Composer.fire(EVENT_HTTP_RECEIVE, event);
+                    Composer.emit(EVENT_HTTP_RECEIVE, event);
                 else if (event.type === "load")
-                    Composer.fire(EVENT_HTTP_LOAD, event);
+                    Composer.emit(EVENT_HTTP_LOAD, event);
                 else if (event.type === "abort")
-                    Composer.fire(EVENT_HTTP_ABORT, event);
+                    Composer.emit(EVENT_HTTP_ABORT, event);
                 else if (event.type === "error")
-                    Composer.fire(EVENT_HTTP_ERROR, event);
+                    Composer.emit(EVENT_HTTP_ERROR, event);
                 else if (event.type === "timeout")
-                    Composer.fire(EVENT_HTTP_TIMEOUT, event);
+                    Composer.emit(EVENT_HTTP_TIMEOUT, event);
                 else if (event.type === "loadend")
-                    Composer.fire(EVENT_HTTP_END, event);
+                    Composer.emit(EVENT_HTTP_END, event);
             };
 
             this.addEventListener("loadstart", callback);
@@ -2961,7 +2959,7 @@
     };
 
     const _request_fetch_event = (...variants) => {
-        const callback = () => Composer.fire(...variants);
+        const callback = () => Composer.emit(...variants);
         if (typeof window.queueMicrotask === "function")
             window.queueMicrotask(callback);
         else Promise.resolve().then(callback);
@@ -2974,7 +2972,7 @@
      */
     const _request_fetch = window.fetch;
     window.fetch = function(resource, options) {
-        Composer.fire(EVENT_HTTP_START, resource, options);
+        Composer.emit(EVENT_HTTP_START, resource, options);
         let request;
         try {request = _request_fetch.call(this, resource, options);
         } catch (error) {
@@ -2998,7 +2996,7 @@
 
     // Listener when an error occurs and triggers a matching composite-event.
     window.addEventListener("error", (event) =>
-        Composer.fire(EVENT_ERROR, event));
+        Composer.emit(EVENT_ERROR, event));
     
     // MutationObserver detects changes at the DOM and triggers (re)rendering
     // and cleanup and prevents manipulation of ATTRIBUTE_COMPOSITE.
@@ -3074,7 +3072,7 @@
                         _models.delete(model);
                         if (typeof meta.model.undock === "function") {
                             meta.model.undock.call(meta.model);
-                            Composer.fire(EVENT_MODULE_UNDOCK, meta);
+                            Composer.emit(EVENT_MODULE_UNDOCK, meta);
                         }
                     }
                 }
@@ -3227,11 +3225,11 @@
             // state. Only the nodes from the mutation records are passed, the
             // affected child nodes are implied and not resolved.
             if (added.size > 0)
-                Composer.fire(EVENT_DOM_ADDED, Array.from(added));
+                Composer.emit(EVENT_DOM_ADDED, Array.from(added));
             if (removed.size > 0)
-                Composer.fire(EVENT_DOM_REMOVED, Array.from(removed));
+                Composer.emit(EVENT_DOM_REMOVED, Array.from(removed));
             if (moved.size > 0)
-                Composer.fire(EVENT_DOM_MOVED, Array.from(moved));
+                Composer.emit(EVENT_DOM_MOVED, Array.from(moved));
 
         })).observe(document.body, {childList:true, subtree:true, attributes:true, attributeOldValue:true, characterData:true});
 

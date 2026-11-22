@@ -95,9 +95,9 @@
                 Composer.asynchronous(resolve));
 
         const register = async (model, recipient) => {
-            Composer.fire(Composer.EVENT_RENDER_START, recipient);
+            Composer.emit(Composer.EVENT_RENDER_START, recipient);
             void model.value;
-            Composer.fire(Composer.EVENT_RENDER_END, recipient);
+            Composer.emit(Composer.EVENT_RENDER_END, recipient);
             await asynchronous();
         };
 

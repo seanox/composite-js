@@ -9,7 +9,8 @@ within the DOM. It consists of HTML, CSS, JavaScript and optional additional
 resources and is identified by a __composite ID__.
 
 Composites are declared in the markup and are realized by the composer within
-the declared DOM context.
+their declaring HTML elements. These elements and their subtrees belong to the
+browser document's shared DOM, not to separate DOMs per composite.
 
 ## Contents Overview
 - [Structure](#structure)
@@ -26,7 +27,7 @@ the declared DOM context.
 
 ## Structure
 A composite in markup consists of an HTML element marked with the attribute
-```composite``` and a unique identifier (id). The combination of both is the
+```composite``` and a unique identifier (ID). The combination of both is the
 composite ID.
 
 ```html
@@ -46,15 +47,17 @@ associated resources. It is also used for resource resolution and composite
 binding.
 
 The composite script provides the JavaScript of the application module. Its
-declarations are local to the separate function scope unless they are explicitly
-exported.
+declarations remain local to the separate function scope. [Object publication](
+    architecture.md#object-publication) makes an object available as a
+[named application object](architecture.md#named-application-object) for
+composite binding. Collecting module exports alone does not publish the object.
 
 ```javascript
 const example = {
     ...
 };
 
-#export example;
+expose(example, "example");
 ```
 
 The structure and responsibility of the application module are not prescribed by
@@ -78,11 +81,12 @@ boundary and the association between view, application module and resources. It
 has no active behavior of its own.
 
 The __[composer](architecture.md#composer)__ is the runtime component that
-realizes composites. It connects a composite module with a concrete DOM context,
-establishes the [composite binding](composite-binding.md#composite-binding)
-between the view and the application module, and performs the lifecycle
-transitions. The surrounding runtime resolves and loads the resources, executes
-the composite script and controls the composite lifecycle.
+realizes composites. It connects a composite module with the declaring HTML
+element, establishes the [composite binding](
+    composite-binding.md#composite-binding) between the view and the application
+module, and performs the lifecycle transitions. The surrounding runtime resolves
+and loads the resources, executes the composite script and controls the
+composite lifecycle.
 
 ```text
 Composite            -> concept: identified application unit
@@ -94,7 +98,7 @@ Runtime              -> infrastructure that provides loading, rendering,
 
 ```text
 Composite Module
-    + DOM context
+    + declaring HTML element
         -> Composer
             -> running Composite
 ```
@@ -144,11 +148,11 @@ The runtime inserts the CSS into a &lt;style&gt; element in the &lt;head&gt; if
 the markup (HTML) has been loaded beforehand.
 
 ### JavaScript
-The runtime executes the JavaScript provided by a Composite script in a separate
+The runtime executes the JavaScript provided by a composite script in a separate
 function scope. JavaScript is only loaded if no corresponding application module
-already exists. Declarations remain local unless explicitly exported, for
-example with the macro [#export](scripting.md#export) -- this is required for
-any object participating in Composite binding.
+already exists. Declarations remain local. Perform object publication under the
+composite namespace with [`expose(object, namespace)`](scripting.md#expose) to
+provide a named application object for composite binding.
 
 ```javascript
 const login = {
@@ -160,18 +164,21 @@ const login = {
     }
 };
 
-#export login;
+expose(login, "login");
 ```
 
-Composite scripts run in the [Execution-Scope](architecture.md#execution-scope)
-and access the View- and Application-Scope through `view` and `application`.
-Since a Composite script runs only once when loaded, use `application` for
-values shared across Composites. See the [Scope overview](
-    architecture.md#scopes).
+For each invocation, the runtime supplies the current view-scope values and
+temporary runtime variables, together with the persistent objects `view` and
+`application`. These values form the [execution scope](
+    architecture.md#execution-scope). Use `application` for values shared across
+composites. A separately stored composite script executes at most once when
+loaded. See the [Scope overview](architecture.md#scopes) for lifetime and sharing.
 
-In addition to the composite-js `#import` and `#export` macros, a Composite
-script can use the standard ECMAScript `import` and `export` mechanisms.
-ECMAScript modules remain independent of the Composite lifecycle.
+Static ECMAScript `import` and `export` declarations are not supported because
+composite scripts are not ECMAScript modules. Use `require(...)` for JavaScript
+resources in the module directory. Where the browser supports it, dynamic
+`import()` can load ECMAScript modules, which remain independent of the
+composite lifecycle.
 
 ### HTML
 The runtime loads the external markup only for an empty Composite, that is, if
@@ -209,18 +216,20 @@ These common resources provide shared application logic and styles for the
 application. They are not associated with a specific Composite ID.
 
 ## Namespace
-Namespaces provide hierarchical structuring of application objects and resources
-associated with Composites. Application objects can be used as shared objects,
-services, delegates or other application-specific structures.
+Namespaces provide hierarchical structuring of named application objects and
+resources associated with Composites. Named application objects can be used as
+shared objects, services, delegates or other application-specific structures;
+they need not belong to a composite.
 
-Namespace identifiers consist of letters, numbers and underscores separated by
-dots. Namespace levels can also be numeric and are then interpreted as array
-indices.
+Namespaces used by `use` and `expose` consist of dot-separated ASCII identifier
+segments matching `[_A-Za-z$][_A-Za-z0-9$]*`. Composite IDs declare the
+corresponding namespace with `@` and `:` separators; the runtime maps it to the
+dotted form. Numeric-only segments are not valid namespace identifiers, though
+application objects can contain numeric properties.
 
-For Composite scripts, the macros [#use](scripting.md#use) and [#export](
-    scripting.md#export) are recommended. ```#use``` creates a namespace if it
-does not already exist, while ```#export``` publishes JavaScript declarations to
-that namespace.
+In a composite script, `use(namespace)` creates a namespace and
+`expose(object, namespace)` performs object publication there, making the object
+available as a named application object.
 
 ```javascript
 const masterdata = {
@@ -232,12 +241,13 @@ const masterdata = {
     }
 };
 
-#use example.administration;
-#export masterdata@example.administration;
+use("example.administration");
+expose(masterdata, "example.administration.masterdata");
 ```
 
-The example creates the namespace ```example.administration``` if necessary and
-exports ```masterdata``` into that namespace.
+The example creates the namespace ```example.administration``` if necessary.
+Object publication makes ```masterdata``` available as the named application
+object ```example.administration.masterdata```.
 
 In markup, namespaces are derived from composite IDs. The nesting of composites
 does not define namespaces because each composite is treated independently.

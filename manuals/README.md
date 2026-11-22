@@ -118,6 +118,10 @@
     - [render](markup.md#render)
     - [route](markup.md#route)
     - [validate](markup.md#validate)
+      - [true](markup.md#true)
+      - [not true and not undefined/void](markup.md#not-true-and-not-undefinedvoid)
+      - [text](markup.md#text)
+      - [undefined/void](markup.md#undefinedvoid)
   - [@-Attributes](markup.md#-attributes)
   - [Expression Language](markup.md#expression-language)
   - [Scripting](markup.md#scripting)
@@ -302,8 +306,13 @@
   - [Events](test.md#events)
   - [Extension](test.md#extension)
     - [Element](test.md#element)
+      - [Element.prototype.typeValue](test.md#elementprototypetypevalue)
+      - [Element.prototype.toPlainString](test.md#elementprototypetoplainstring)
+      - [Element.prototype.trigger](test.md#elementprototypetrigger)
     - [Node](test.md#node)
+      - [Node.prototype.toPlainString](test.md#nodeprototypetoplainstring)
     - [Object](test.md#object)
+      - [Object.prototype.toPlainString](test.md#objectprototypetoplainstring)
 
 ### Maintenance
 - __[Maintenance](maintenance.md#maintenance)__
@@ -312,6 +321,8 @@
     - [Firewall](maintenance.md#firewall)
   - [Playground](maintenance.md#playground)
   - [Test](maintenance.md#test)
+    - [Playwright Tests](maintenance.md#playwright-tests)
+    - [Coverage Review](maintenance.md#coverage-review)
     - [Browsers for Testing](maintenance.md#browsers-for-testing)
     - [Procedure](maintenance.md#procedure)
   - [Release](maintenance.md#release)

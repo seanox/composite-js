@@ -308,7 +308,7 @@
     - [Element](test.md#element)
       - [Element.prototype.typeValue](test.md#elementprototypetypevalue)
       - [Element.prototype.toPlainString](test.md#elementprototypetoplainstring)
-      - [Element.prototype.trigger](test.md#elementprototypetrigger)
+      - [Element.prototype.dispatch](test.md#elementprototypedispatch)
     - [Node](test.md#node)
       - [Node.prototype.toPlainString](test.md#nodeprototypetoplainstring)
     - [Object](test.md#object)

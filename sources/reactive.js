@@ -16,24 +16,24 @@
  *
  *     DESCRIPTION
  *     ----
- * Reactivity rendering automatically keeps a data object in sync with its
- * representation (view). Changes to the data object trigger a partial
- * re-render of the consumers in the view.
+ * Reactive is the data bridge between application logic and the view. Its proxy
+ * exposes the same underlying object and tracks which view consumers read each
+ * property during rendering. Changes made through the proxy can trigger partial
+ * re-renders of those consumers, including assignments, deletions, property
+ * definitions, and array index or length changes. Direct changes to the
+ * original object do not trigger updates.
  *
- * The mechanism is based on notifications from getting and setting on the
- * data object, supported by the JavaScript proxy object. The resulting events
- * determine which elements/nodes in the DOM consume which data and must be
- * updated on changes.
+ * Built-in reactivity is intended for plain objects and arrays with primitive
+ * values. Nested objects, including values assigned later, are wrapped on first
+ * access. Native objects such as Date, Map, Set, WeakMap and WeakSet are not
+ * adapted; wrapping them will require the upcoming customize API.
  *
- * Reactive is an optional part of composite-js and uses the available API. It
- * works permanently recursively on all levels of a data object and also on
- * objects added later as values, even if those do not explicitly use Reactive.
+ * Reactive is optional and uses the existing composite-js API.
  *
- * Object and data object are decoupled by free (unbound) proxies: they
- * reference an object but are not bound to a level in the object tree and
- * synchronize the data bidirectionally. They are managed in a weak map with the
- * object as key, so garbage collection can dispose of objects and proxies when
- * not in use.
+ * Each original object maps to one free (unbound) proxy, cached in a WeakMap.
+ * This mapping does not keep otherwise unreachable objects alive. The proxy and
+ * original object share the same data, regardless of where the object appears
+ * in the data tree.
  *
  * see also: https://seanox.github.io/composite-js/manuals/reactive.html
  */
@@ -128,6 +128,45 @@
         _shadow.delete(serial);
         entries.forEach((recipients) =>
             recipients.delete(serial));
+    };
+
+    const _notify = (notifications, key) => {
+        Composer.asynchronous((key, notifications) => {
+            const recipients = notifications.get(key);
+            if (!recipients)
+                return;
+            for (const recipient of recipients.values()) {
+                // Fallback for receivers removed from the DOM without being
+                // detected by EVENT_DOM_REMOVED.
+                if (!document.body.contains(recipient))
+                    _shadow_release(recipient.serial());
+                else Composer.render(recipient);
+            }
+        }, key, notifications);
+    };
+
+    const _array_invalidate = (cache, notifications, length, previous) => {
+        if (length >= previous)
+            return;
+        const removed = (key) => {
+            if (typeof key !== "string")
+                return false;
+            const number = Number(key);
+            return Number.isInteger(number)
+                && number >= length
+                && number < previous
+                && String(number) === key;
+        };
+        for (const key of cache.keys())
+            if (removed(key))
+                cache.delete(key);
+        // Reads made before the mutation may still be awaiting their
+        // asynchronous subscription registration.
+        Composer.asynchronous(() => {
+            for (const key of notifications.keys())
+                if (removed(key))
+                    _notify(notifications, key);
+        });
     };
 
     /**
@@ -229,12 +268,17 @@
 
                     // The registration is delayed so that the getting of values
                     // does not block unnecessarily.
-                    Composer.asynchronous((selector, target, key, notifications) => {
+                    const selector = _selector;
+                    const inherited = selector !== null
+                            && !Object.prototype.hasOwnProperty.call(target, key)
+                            && key in target;
+                    Composer.asynchronous((selector, key, notifications, inherited) => {
 
-                        // Registration is performed only during rendering and
-                        // if the key exists in the object.
+                        // Missing properties must also be tracked so that a
+                        // later addition can update the rendered consumer.
+                        // Inherited properties are not reactive dependencies.
                         if (selector === null
-                                || !target.hasOwnProperty(key))
+                                || inherited)
                             return;
 
                         const recipients = notifications.get(key) || new Map();
@@ -271,7 +315,7 @@
                         notifications.set(key, recipients);
                         _shadow_add(selector.serial(), recipients);
 
-                    }, _selector, target, key, this.notifications);
+                    }, selector, key, this.notifications, inherited);
                 }
             },
 
@@ -296,42 +340,63 @@
                 // objects immediately, but only when they are explicitly
                 // requested via getter.
 
+                // Arrays: An index beyond the end changes the length and a
+                // shorter length removes indexes without calling a trap. Both
+                // are detected by comparing the state before and after.
+                const array = Array.isArray(target);
+                const length = array ? target.length : 0;
+
                 try {target[key] = value;
                 } finally {
 
+                    if (array && target.length !== length) {
+                        _notify(this.notifications, "length");
+                        _array_invalidate(this.cache, this.notifications, target.length, length);
+                    }
+
                     // Unwanted recursions due to repeated value assignments:
                     // a = a / a = c = b = a must be avoided so that no infinite
-                    // render cycle is initiated.
-                    if (!(this.cache.has(key)
-                            && this.cache.get(key) === value)) {
+                    // render cycle is initiated. The length of arrays is
+                    // compared by its actual state instead.
+                    if (!(array && key === "length")
+                            && !(this.cache.has(key)
+                                && this.cache.get(key) === value)) {
                         this.cache.set(key, value);
-
-                        // The registration is delayed so that the setting of
-                        // values does not block unnecessarily.
-                        Composer.asynchronous((selector, target, key, notifications) => {
-
-                            // Update only if the key exists in the object.
-                            // Recursions during rendering are prevented via
-                            // the queue and the lock in during rendering.
-                            if (!target.hasOwnProperty(key))
-                                return;
-
-                            const recipients = this.notifications.get(key) || new Map();
-                            for (const recipient of recipients.values()) {
-                                // Fallback for receivers removed from the DOM
-                                // without being detected by EVENT_DOM_REMOVED.
-                                // The shadow map removes all subscriptions
-                                // associated with this key.
-                                if (!document.body.contains(recipient))
-                                    _shadow_release(recipient.serial());
-                                else Composer.render(recipient);
-                            }
-
-                        }, _selector, target, key, this.notifications);
+                        _notify(this.notifications, key);
                     }
                 }
 
                 return true;
+            },
+
+            deleteProperty(target, key) {
+                const exists = Object.prototype.hasOwnProperty.call(target, key);
+                const result = Reflect.deleteProperty(target, key);
+                if (result && exists) {
+                    this.cache.delete(key);
+                    _notify(this.notifications, key);
+                }
+                return result;
+            },
+
+            defineProperty(target, key, descriptor) {
+                const array = Array.isArray(target);
+                const length = array ? target.length : 0;
+                let result = false;
+                try {
+                    result = Reflect.defineProperty(target, key, descriptor);
+                    if (result) {
+                        this.cache.delete(key);
+                        _notify(this.notifications, key);
+                    }
+                    return result;
+                } finally {
+                    if (array && target.length !== length) {
+                        if (key !== "length" || !result)
+                            _notify(this.notifications, "length");
+                        _array_invalidate(this.cache, this.notifications, target.length, length);
+                    }
+                }
             }
         });
 

@@ -44,8 +44,12 @@ from the perspective of composite binding.
 ### Application Module
 Provides the application logic of a composite (see [Application Module](
     architecture.md#application-module)). From a binding perspective, the key
-rule is: objects that participate in composite binding must be explicitly
-exported from the composite script.
+rule is: a [named application object](architecture.md#named-application-object)
+must be available under the composite namespace, with accessible binding targets.
+A script can provide it through [object publication](
+    architecture.md#object-publication) using `expose(object, namespace)`.
+An existing named application object also suffices; collecting module exports
+with `expose(object)` alone does not establish this prerequisite.
 
 Application modules are distinct from domain models. UI-specific state such as
 selection, visibility or presentation status belongs to the application module
@@ -61,8 +65,8 @@ behavior, but does not define application-specific logic itself.
 ### Runtime
 Provides the infrastructure that connects views and application modules,
 including resource loading, composite realization, binding, rendering and
-lifecycle management -- see [Runtime](architecture.md#runtime) for the full
-list and its [responsibilities](architecture.md#runtime-responsibilities). The
+lifecycle management -- see [Runtime](architecture.md#runtime) for the full list
+and its [responsibilities](architecture.md#runtime-responsibilities). The
 runtime does not implement application-specific behavior or define the internal
 structure of an application module.
 
@@ -91,8 +95,9 @@ mechanisms for:
 
 HTML elements inside the composite participate in the binding through their
 attributes and identifiers. The binding behavior of an element is defined by the
-corresponding declarative markup. The object exported by the composite script is
-the application module used by the binding.
+corresponding declarative markup. The named application object resolved from the
+composite ID provides the application module used by the binding. In the example,
+`expose(example, "example")` performs object publication before binding:
 
 ```javascript
 const example = {
@@ -102,7 +107,7 @@ const example = {
     }
 };
 
-#export example;
+expose(example, "example");
 ```
 
 ```html
@@ -138,7 +143,7 @@ const example = {
     }
 };
 
-#export example;
+expose(example, "example");
 ```
 
 ```html
@@ -166,7 +171,7 @@ const contact = {
     }
 };
 
-#export contact;
+expose(contact, "contact");
 ```
 
 ```html
@@ -196,7 +201,7 @@ const example = {
     }
 };
 
-#export example;
+expose(example, "example");
 ```
 
 The callback can be used to initialize or prepare application-specific state
@@ -215,7 +220,7 @@ const example = {
     }
 };
 
-#export example;
+expose(example, "example");
 ```
 
 If a composite is controlled by a condition, docking and undocking depend on the

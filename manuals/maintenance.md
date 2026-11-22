@@ -199,7 +199,6 @@ tabs or applications to reduce cache and background-activity effects. JIT
 warm-up may still affect benchmark timings.
 
 ## Release
-
 > [!IMPORTANT]
 > __Check the validity/expiration date of the NPM_AUTOMATION_TOKEN__
 
@@ -224,7 +223,6 @@ warm-up may still affect benchmark timings.
   ```
   
 ### npmjs.com
-
 > [!NOTE]
 > Manual execution is not required.
 

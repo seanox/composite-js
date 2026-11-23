@@ -174,11 +174,10 @@ or custom navigation handling and can influence whether the navigation
 continues.
 
 An interceptor is registered with `Routing.customize(path, actor)`. The `path`
-can be either a route string or a regular expression. The `actor` is a
-function that is executed when the specified path matches the requested
-navigation target. The actor is a callback that receives the previous hash and
-the new hash as parameters. The previous hash is `null` during initial
-processing.
+can be either a route string or a regular expression. The `actor` is a function
+that is executed when the specified path matches the requested navigation
+target. The actor is a callback that receives the previous hash and the new hash
+as parameters. The previous hash is `null` during initial processing.
 
 ```javascript
 Routing.customize("#a#b#c", (previousHash, newHash) => {

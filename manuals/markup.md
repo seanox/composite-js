@@ -198,34 +198,19 @@ only be executed if the condition is `true`.
 
 ```javascript
 const example = {
-    publishForm() {
-        const form = document.createElement("form");
-        const label = document.createElement("label");
-        label.textContent = "Input";
-        form.appendChild(label);
-        const input = document.createElement("input");
-        input.value = "123";
-        input.type = "text";
-        form.appendChild(input);
-        const submit = document.createElement("input");
-        submit.type = "submit";
-        form.appendChild(submit);
-        return form;
-    },
     publishImg() {
         const img = document.createElement("img");
         img.src = "https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/smile.png";
         return img;
     }
 };
+
+expose(example, "example");
 ```
 
 ```html
 <article import="{{example.publishImg()}}">
   loading image...
-</article>
-<article import="{{example.publishForm()}}">
-  loading form...
 </article>
 ```
 
@@ -233,10 +218,6 @@ Example of importing a resource below the application context path using the
 HTTP method GET.
 
 ```html
-<article import="{{'raw://resources/import_c.htmlx'}}">
-  loading resource...
-</article>
-
 <article import="raw://resources/import_c.htmlx">
   loading resource...
 </article>
@@ -246,10 +227,6 @@ Example of importing via DataSource-URL. If only one URL is specified, the URI
 for data and transformation are derived from it. 
 
 ```html
-<article import="{{'xml://example/content'}}">
-  loading resource...
-</article>
-
 <article import="xml://example/content">
   loading resource...
 </article>
@@ -266,10 +243,6 @@ transformation URL (locator of the XSLT template) are specified, separated by
 for URLs.
 
 ```html
-<article import="{{'xml://example/data + xslt://example/style'}}">
-  loading resource...
-</article>
-
 <article import="xml://example/data + xslt://example/style">
   loading resource...
 </article>
@@ -366,12 +339,9 @@ to the iteration in the template. The variable expression
 `iterate="{{tempA:example.list}}"` creates the metadata object
 `tempA = {item, index, data}`.
 
-Arrays, other iterables (such as strings and Sets) and array-like values are
-converted using `Array.from`. Values exposing `Symbol.iterator` or a `length`
-property, including inherited properties, retain that conversion behavior. Empty
-collections produce no iterations. XPath node iterators are collected into an
-array of their nodes. Passing a `Set` directly for iteration does not make it a
-supported reactive data type.
+`iterate` supports arrays, other iterables (such as strings and Sets),
+array-like values and XPath node iterators. Empty collections produce no
+iterations.
 
 Non-null values that are neither collections nor numbers are treated as an array
 containing exactly that value. For example, a single object produces one
@@ -406,27 +376,6 @@ array:
 </p>
 ```
 
-> [!NOTE]
-> If arrays are used with reactive objects, iterate accesses the arrays
-> directly. If the array is a list of values, value changes also change the
-> array and trigger re-rendering of the iterate. To change values at runtime
-> without triggering re-rendering of the iterate, the array must contain objects
-> with the values. Setting the value in the objects does not change the array
-> itself and therefore does not trigger re-rendering.
-> 
-> Alternatively, the length of the array can also be passed to the iterate. It
-> then generates a list of values with the index without accessing the elements.
-> The index can then be used by the expression within the iterate to access the
-> array.
-
-```html
-<select iterate="{{seasons:example.seasons.length}}">
-  <option value="{{seasons.index}}">
-    {{example.seasons[seasons.index]}}
-  </option>
-</select>
-```
-
 If the value for an iterator is a positive number, a list of values from 0 to
 (number -1) is used. If the value is negative, a list of values from (number +1)
 up to 0 is used. `0` and `NaN` produce no iterations.
@@ -451,15 +400,9 @@ with the attributes [validate](#validate) and [events](#events).
 </form>
 ```
 
-```html
-<form id="example" composite>
-  <input id="email" type="text" placeholder="email address"
-      pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$"
-      validate message="{{Messages['example.email.validation.message']}}"
-      events="input change" render="#example"/>
-  <input type="submit" value="submit" validate events="click"/>
-</form>
-```
+For a localized message, use
+`message="{{Messages['example.email.validation.message']}}"` with a
+[resource bundle](message.md).
 
 ### output
 Sets for the HTML element the value or result of its expression as inner HTML.
@@ -467,61 +410,21 @@ The behavior is similar to the [import](#import) attribute, except that the
 output is updated with each render cycle. It supports the same values and the
 same combination with the condition attribute.
 
-The following examples use the application module from [import](#import).
+The following examples use the application module from [import](#import) and a
+DataSource locator:
 
 ```html
 <article output="{{example.publishImg()}}">
   loading image...
 </article>
-<article output="{{example.publishForm()}}">
-  loading form...
-</article>
-```
-
-Example of outputting a raw resource.
-
-```html
-<article output="raw://resources/import_c.htmlx">
-  loading resource...
-</article>
-```
-
-Example of outputting via DataSource-URL. If only one URL is specified, the URI
-for data and transformation are derived from it.
-
-```html
-<article output="{{'xml://example/content'}}">
-  loading resource...
-</article>
-
-<article output="xml://example/content">
-  loading resource...
-</article>
-
-<article output="xml://example/content?count(//item)">
-    loading resource...
-</article>
-```
-
-Example of outputting a DataSource-URL with a specific data URL (locator) and
-transformation URL, as described for [import](#import).
-
-```html
-<article output="{{'xml://example/data + xslt://example/style'}}">
-  loading resource...
-</article>
 
 <article output="xml://example/data + xslt://example/style">
   loading resource...
 </article>
-
-<article output="xml://example/data + xslt">
-    loading resource...
-</article>
 ```
 
-The derivation of the XSLT locator and the handling of JavaScript blocks are the
-same as for [import](#import).
+Raw resources, XPath queries, derived stylesheets and the handling of JavaScript
+blocks follow the same rules as [import](#import).
 
 ### release
 Inverse indicator that an HTML element was rendered. The composer removes this
@@ -539,52 +442,16 @@ Together they define which targets are refreshed by the composer with which
 occurring events. The expected value is a CSS or query selector. Several targets
 are declared as a comma-separated selector list.
 
-```javascript
-const example = {
-    _status1: 0,
-    getStatus1() {
-        return ++example._status1;
-    },
-    _status2: 0,
-    getStatus2() {
-        return ++example._status2;
-    },
-    _status3: 0,
-    getStatus3() {
-        return ++example._status3;
-    }
-};
-```
-
 ```html
-Target #1:
-<span id="outputText1">{{example.getStatus1()}}</span>
-Events: Wheel
-<input id="text1" type="text"
-    events="wheel"
-    render="#outputText1, #outputText2, #outputText3"/>
-
-Target #2:
-<span id="outputText2">{{example.getStatus2()}}</span>
-Events: MouseDown KeyDown
-<input id="text2" type="text"
-    events="mousedown keydown"
-    render="#outputText2, #outputText3"/>
-
-Target #3:
-<span id="outputText3">{{example.getStatus3()}}</span>
-Events: MouseUp KeyUp
-<input id="text3" type="text"
-    events="mouseup keyup"
-    render="#outputText3"/>
+<input id="message" type="text"
+    events="input change" render="#preview, #length"/>
+<p id="preview">{{document.getElementById("message").value}}</p>
+<p id="length">{{document.getElementById("message").value.length}}</p>
 ```
 
-The example contains 3 input fields with different events (`events`) and targets
-(`render`), each of which represents an incremental text output and reacts to
-corresponding events.
-
-__Alternatively, [reactive rendering](reactive.md) can be used, where changes in
-the data objects trigger a partial update of the view.__
+On each `input` or `change` event, both targets are refreshed to display the
+current input value and its length. No application module is needed for this
+example because the expressions read the input element directly.
 
 ### route
 The route attribute marks a composite as a path-addressable destination in the

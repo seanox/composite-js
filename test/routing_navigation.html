@@ -48,6 +48,10 @@
             Assert.assertEquals("#initial", Routing.location);
         }});
 
+        Test.create({name:"Routing exposes URL-based navigation only", test() {
+            Assert.assertUndefined(Routing.forward);
+        }});
+
         Test.create({name:"Route changes the URL in a microtask and preserves native events", test() {
             _reset("#start");
             const oldURL = window.location.href;

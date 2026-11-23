@@ -52,29 +52,18 @@ script as values; use `view` to persist changes within the current view. Use
 `application` for values shared across Composites.
 
 ## Modules
-Each composite module groups the resources of one composite. These resources are
-stored in the module directory. A JavaScript resource within a composite module
-is called a [composite script](composite.md#javascript) and provides the
-application module.
-
-JavaScript resources in the module directory can also exist independently of a
-composite. These are referred to informally as modules and can be used without
-composites. The logic is stored in individual files in the module directory and,
-if necessary, in further subdirectories.
-
-The resources of a composite (JS, CSS, HTML) can be outsourced to the module
-directory and loaded at runtime, which supports the modular deployment of
-platform and modules in micro-frontends.
+Separately stored [composite scripts](composite.md#javascript) and standalone
+JavaScript modules are located in the module directory, optionally in
+subdirectories. A composite script can provide the application module of a
+composite; standalone script modules can provide shared code without a
+composite.
 
 ```
 + modules
   + example
-    - moduleE.js
-    - moduleF.js
-    - ...
-  - moduleA.js
-  - moduleB.js
-  - ...
+    + io
+      - api.js
+      - connector.js
 - index.html
 ```
 

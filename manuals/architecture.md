@@ -452,25 +452,11 @@ not `require`, `use` or `expose`. The [Markup Extensions for Expressions](
 aliases such as `:and` (`&&`), `:or` (`||`) and `:not` (`!`). They are
 translated before evaluation; normal JavaScript operators remain supported.
 
-For ordinary dynamic attributes, standalone values are passed to the DOM without
-Boolean-string normalization. `undefined` removes the target attribute and, when
-present, resets an eligible same-named property to the default of a fresh,
-unconfigured element. DOM writes and reset failures are reported through
-`Composer.EVENT_ERROR`. Runtime instructions such as `condition` and `interval`
-have their own rules; see [Expression results](expression.md#expressions).
-
-General dynamic attributes forward standalone expression values to the DOM
-without changing their JavaScript type. `undefined` removes the target attribute,
-first resetting its same-named property only if the attribute exists and the
-nearest property descriptor is writable or has a setter. Missing and read-only
-properties are skipped. The default comes from a detached, unconfigured element
-with the same tag and namespace; no target attributes or children are copied.
-A value already equal to this default according to `Object.is` is not assigned.
-Conversions and reflection are browser behavior. Write and reference errors are
-logged and reported through `Composer.EVENT_ERROR`; a reset error aborts the
-subsequent attribute removal without rolling back earlier changes. Runtime
-instructions such as `condition` and `interval` retain their own rules; see
-[Expression results](expression.md#expressions).
+Expressions can supply text content and dynamic attribute values. Ordinary
+attributes use native DOM conversion rules; `undefined` removes the attribute
+and may reset its same-named property. Runtime instructions such as `condition`
+and `interval` have their own value rules. See [Expression results](
+    expression.md#expressions) for value handling and error behavior.
 
 Expression execution failures are logged and returned unchanged as ordinary
 result values, which may appear in rendered output. Direct `Scripting.eval()`
@@ -723,9 +709,11 @@ application logic of its application module. Application state maintained by the
 application module and lifecycle state maintained by the runtime are therefore
 separate concerns.
 
-The concrete states and transition conditions are defined by the runtime, which
-must manage them consistently with the existence and realization of the
-composite within the DOM.
+The runtime defines the concrete lifecycle states and transition conditions, and
+manages the composite's realization, active presence, and removal in the DOM.
+Application modules do not own these transitions, but can respond to attachment
+and removal through the [`dock()`](composite-binding.md#dock) and [`undock()`](
+    composite-binding.md#undock) callbacks.
 
 ## Static Runtime Model
 Seanox composite-js uses a static runtime model for the relationship between a

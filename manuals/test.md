@@ -64,11 +64,8 @@ Test.start();
     - [Object.prototype.toPlainString](#objectprototypetoplainstring)
 
 ## Task
-The smallest component in an integration test is called _task_ because _case_ is
-a JavaScript keyword. A task can be implemented alone, but is always used in a
-scenario.
-
-Task is defined by a metadata object.
+A _task_ is a single test case defined by a metadata object. A task can be
+implemented alone, but is always used in a scenario.
 
 ```
 {name:..., test:..., timeout:..., expected:..., ignore:...}
@@ -335,19 +332,8 @@ details of the current task and the queue. Status properties are read-only;
 ```
 
 ## Output
-As a development tool, browsers provide console output that can be used to log
-information, for which different channels or levels are supported:  
-    _LOG_, _WARN_, _ERROR_, _INFO_
-
-```javascript
-console.log(message);
-console.warn(message);
-console.error(message);
-console.info(message);
-```
-
-To be able to include console output in tests, the activated Test API supports
-forwarding, listeners and buffers for console output.
+The activated Test API supports forwarding, listeners and buffers for the
+console output channels: _LOG_, _WARN_, _ERROR_, _INFO_
 
 ### Forwarding
 Forwarding distributes output to the browser console and the components of the
@@ -382,7 +368,6 @@ console.listen(function(level, ...parameters) {
 
 The callback is called for each console output with the log level as its first
 parameter, followed by the arguments passed to the corresponding console method.
-The variable number of arguments can be handled with the spread syntax `...`.
 
 ## Monitoring
 Monitoring is configured with the monitor of the Test API and is informed of the
@@ -543,38 +528,24 @@ document.querySelector("#button").dispatch("click", true, false);
 ### Node
 
 #### Node.prototype.toPlainString
-Method that creates a simple string for a node object.  
-The string is based on `XMLSerializer.serializeToString(node)`.
+Serializes a node as XML.
 
 ```javascript
-const text = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-         + "<note>"
-         + "  <to>Tove</to>"
-         + "  <from>Jani</from>"
-         + "  <heading>Reminder</heading>"
-         + "  <body>Don't forget me this weekend!</body>"
-         + "</note>";
-
-const parser = new DOMParser();
-const xml = parser.parseFromString(text, "text/xml");
-
-const nodes = xml.evaluate("/note", xml, null, XPathResult.ANY_TYPE, null);
-const result = nodes.iterateNext();
-console.log(result.toPlainString());
+const xml = new DOMParser().parseFromString(
+    "<season>Spring</season>", "text/xml");
+console.log(xml.toPlainString());
 ```
 
 Output:
 
 ```
-<note><to>Tove</to><from>Jani</from><heading>Reminder</heading><body>Don't forget me this weekend!</body></note>
+<season>Spring</season>
 ```
 
 ### Object
 
 #### Object.prototype.toPlainString
-Method that creates a simple string for an object.  
-The string is based on `JSON.stringify(object)`. Iterable objects are first
-converted to arrays.
+Serializes the object as JSON; iterable objects are serialized as arrays.
 
 ```javascript
 const example = {a:1, b:2, c() {return;}};

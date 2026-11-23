@@ -93,14 +93,13 @@ Composer.listen(Composer.EVENT_RENDER_***, function(event, selector) {
 ```
 
 ### Composer.EVENT_RENDER_START
-The event occurs when rendering starts. Processing starts after the event.
+Occurs before rendering starts.
 
 ### Composer.EVENT_RENDER_NEXT
-The event occurs during recursive rendering iteration when another HTML element
-starts rendering during a render cycle. Processing starts after the event.
+Occurs before each additional HTML element is rendered during a render cycle.
 
 ### Composer.EVENT_RENDER_END
-The event occurs after rendering has ended. Processing ends before the event.
+Occurs after rendering ends.
 
 ## Composite Binding
 The following events occur during composite binding. As with the rendering
@@ -114,14 +113,13 @@ Composer.listen(Composer.EVENT_MOUNT_***, function(event, selector) {
 ```
 
 ### Composer.EVENT_MOUNT_START
-The event occurs when binding starts. Processing starts after the event.
+Occurs before binding starts.
 
 ### Composer.EVENT_MOUNT_NEXT
-The event occurs during recursive binding iteration when another HTML element
-starts binding during a render cycle. Processing starts after the event.
+Occurs before each additional HTML element is bound during a render cycle.
 
 ### Composer.EVENT_MOUNT_END
-The event occurs after binding has ended. Processing ends before the event.
+Occurs after binding ends.
 
 ## Modules
 The following events occur when the runtime loads composite modules and connects

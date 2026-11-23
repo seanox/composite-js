@@ -239,6 +239,7 @@
   - [Math](extensions.md#math)
     - [Math.serial](extensions.md#mathserial)
   - [Object](extensions.md#object)
+    - [Object Path](extensions.md#object-path)
     - [Object.prototype.serial](extensions.md#objectprototypeserial)
     - [Object.lookup](extensions.md#objectlookup)
     - [Object.exists](extensions.md#objectexists)

@@ -57,11 +57,11 @@ Test.start();
   - [Element](#element)
     - [Element.prototype.typeValue](#elementprototypetypevalue)
     - [Element.prototype.toPlainString](#elementprototypetoplainstring)
-    - [Element.prototype.trigger](#elementprototypetrigger)
+    - [Element.prototype.dispatch](#elementprototypedispatch)
   - [Node](#node)
     - [Node.prototype.toPlainString](#nodeprototypetoplainstring)
   - [Object](#object)
-    - [Object.prototype.toPlainString](#objectprototoplainstring)
+    - [Object.prototype.toPlainString](#objectprototypetoplainstring)
 
 ## Task
 The smallest component in an integration test is called _task_ because _case_ is
@@ -273,8 +273,7 @@ Test.start({monitor: {
         // The method is called with suspension.
     },
     resume(status) {
-        // The method is called when the test run is stopped and will be
-        // continued later.
+        // The method is called after a suspended test run is resumed.
     },
     interrupt(status) {
         // The method is called if you want to abort the test run.
@@ -352,8 +351,10 @@ forwarding, listeners and buffers for console output.
 
 ### Forwarding
 Forwarding distributes output to the browser console and the components of the
-Test API. In frames, output is also forwarded to parent windows where the Test
-API is activated, and is available there through the buffer and listeners.
+Test API. In frames, output is also forwarded to accessible same-origin parent
+windows where the Test API is activated. A cross-origin parent cannot be read,
+so optional parent forwarding is skipped; local console output, buffers and
+listeners remain available.
 
 ### Buffer
 When the Test API is enabled, the console object of the JavaScript API is
@@ -442,11 +443,11 @@ Playwright to observe them. The event's type is the event name (e.g.
 property with the same name (e.g. `event.testStart`).
 
 When events originate in nested views such as frames or iframes, corresponding
-events are also dispatched on each parent window. `Test.listen` callbacks
-receive the event name and status; monitor methods receive only the status. Test
-callbacks are invoked in registration order. Synchronous callback errors are
-reported asynchronously so subsequent callbacks and parent-window propagation
-can continue.
+events are also dispatched on accessible same-origin parent windows.
+`Test.listen` callbacks receive the event name and status; monitor methods
+receive only the status. Test callbacks are invoked in registration order.
+Synchronous callback errors are reported asynchronously so subsequent callbacks
+and parent-window propagation can continue.
 
 List of available events:
 
@@ -529,14 +530,14 @@ Output:
 </form>
 ```
 
-#### Element.prototype.trigger
-Method to trigger an event for an HTML element with the optional parameters
+#### Element.prototype.dispatch
+Method to dispatch an event for an HTML element with the optional parameters
 `bubbles` (default: `false`) and `cancelable` (default: `true`).
 
 ```javascript
-document.querySelector("#button").trigger("click");
-document.querySelector("#button").trigger("click", true);
-document.querySelector("#button").trigger("click", true, false);
+document.querySelector("#button").dispatch("click");
+document.querySelector("#button").dispatch("click", true);
+document.querySelector("#button").dispatch("click", true, false);
 ```
 
 ### Node

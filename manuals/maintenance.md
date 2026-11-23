@@ -107,57 +107,52 @@ test bundles used for these checks.
 ```bash
 ant -f ./development/build.xml compose
 ant -f ./development/build.xml compose-max
-ant -f ./development/build.xml compose-coverage
 ```
 
 - __compose__ prepares the environment for testing with the standard build
 - __compose-max__ prepares the environment for testing with an unminified build
   including comments
 - __compose-coverage__ prepares a coverage-enabled test bundle for the
-  Playwright coverage run described below; it depends on __compose-max__
+  Playwright coverage run described below; it depends on __compose-max__ and is
+  invoked automatically by the __coverage__ target
 
 The __compose__ and __compose-max__ tasks can be combined with the task _start_
 for manual testing.
 
 ### Playwright Tests
-After preparing the test bundles above, run the tests locally from
-`./test/playwright` with Node.js 24 or newer. Install the dependencies and
-browser binaries once:
+After preparing the test bundles above, run the tests from the project root with
+Node.js 24 or newer. Include the __playwright__ target before each test target
+in the same Ant invocation. It installs the npm dependencies and the Chromium,
+Firefox and WebKit binaries, but does not start the tests:
 
 ```bash
-npm install
-npx playwright install chromium firefox webkit
+ant -f ./development/build.xml playwright blink gecko webkit
 ```
 
-The runner starts its own local server. Run it for each supported engine. Using
-different ports is only recommended if the runners are to run in parallel. By
-default, all servers use port 8000.
+The runner starts its own local server. The __blink__, __gecko__ and __webkit__
+targets run the tests with Chromium, Firefox and WebKit respectively. These
+targets require __playwright__ in the same invocation because Ant properties do
+not persist between separate invocations.
 
+To run a single engine, use its target with __playwright__:
 ```bash
-node runner.js -p 8001 -e blink -d ..
-node runner.js -p 8002 -e gecko -d ..
-node runner.js -p 8003 -e webkit -d ..
+ant -f ./development/build.xml playwright blink
 ```
 
 To run selected test pages, use `-f` with a filename glob. It filters page
 filenames in the document root selected by `-d`, not individual test tasks:
 
 ```bash
+cd test/playwright
 node runner.js -e blink -d .. -f "composer_*.html"
 ```
 
 ### Coverage Review
-Coverage is collected with Playwright on Blink (Chromium). From the project
-root, prepare the coverage-enabled test bundle:
+Coverage is collected with Playwright on Blink (Chromium). The __coverage__
+target prepares the coverage-enabled test bundle and runs the tests:
 
 ```bash
-ant -f ./development/build.xml compose-coverage
-```
-
-Then, from `./test/playwright`, run the Playwright tests with Blink:
-
-```bash
-node runner.js -e blink -d ..
+ant -f ./development/build.xml playwright coverage
 ```
 
 The runner writes `test/composite-js-testing.md` with total and per-file line,
@@ -204,7 +199,6 @@ tabs or applications to reduce cache and background-activity effects. JIT
 warm-up may still affect benchmark timings.
 
 ## Release
-
 > [!IMPORTANT]
 > __Check the validity/expiration date of the NPM_AUTOMATION_TOKEN__
 
@@ -229,7 +223,6 @@ warm-up may still affect benchmark timings.
   ```
   
 ### npmjs.com
-
 > [!NOTE]
 > Manual execution is not required.
 

@@ -2534,7 +2534,7 @@ unwirksam macht, ohne einen sauberen Neustart zu verhindern.
 
 **Strukturelle Reactive-Aenderungen an registrierte Verbraucher melden**
 
-**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** offen
+**Prioritaet:** mittel | **Aufwand:** 3 SP | **Status:** erledigt
 **Paket:** `rendering` | **Voraussetzung:** [R15](#r15)
 **Abstimmung:** [R12](#r12), [R14](#r14)
 **Fundstellen:** `sources\reactive.js:173-179, 278-334`
@@ -2548,26 +2548,29 @@ inzwischen aus `target` entfernt wurde. Der aktuelle Guard
 `if (!target.hasOwnProperty(key)) return` muss fuer die Benachrichtigung
 entfallen; er verhindert sonst gerade den Delete-Fall.
 
-`deleteProperty` erfasst vorab den eigenen Descriptor, ruft
+`deleteProperty` prueft vorab das Vorhandensein einer eigenen Property, ruft
 `Reflect.deleteProperty(target, key)` auf und meldet nur bei Erfolg
 und zuvor vorhandener Property die Entfernung. Den Rekursionscache
 fuer diesen Key invalidieren, damit eine spaetere Neuanlage nicht
-als alter Write unterdrueckt wird. `defineProperty` vergleicht eigene
-Deskriptoren vor/nach `Reflect.defineProperty`, ohne dafuer Getter
-auszufuehren, und meldet relevante Aenderungen.
+als alter Write unterdrueckt wird. `defineProperty` meldet erfolgreiche
+Definitionen ohne Deskriptorvergleich und invalidiert den Key-Cache.
+Unveraenderte erfolgreiche Redefinitionen duerfen erneut rendern.
 
 Arrays benoetigen einen Zusatzpfad: Beim direkten Verkuerzen von
 `length` fuehrt die Engine Loeschungen auf dem Target aus, ohne fuer
 jeden Index einen Proxy-Delete-Trap aufzurufen. Erfasse deshalb vorher
-die betroffenen abonnierten Index-Keys und benachrichtige sie nach
-einer tatsaechlichen Laengenkuerzung; bei Index-Neuanlage auch
+die Laenge und ermittle die betroffenen abonnierten Index-Keys erst
+asynchron, damit ausstehende Registrierungen beruecksichtigt werden.
+Benachrichtige sie nach einer tatsaechlichen Laengenkuerzung; bei Index-Neuanlage auch
 `length`-Verbraucher beruecksichtigen. Vergleiche den realen
 Nachzustand, nicht nur den angeforderten Wert. Array-Laengenwrites
 koennen an nichtkonfigurierbaren Indizes teilweise scheitern und
 trotzdem bereits andere Indizes entfernt haben: Fehler weitergeben,
 aber tatsaechliche Teilmutationen nicht als ungeschehen behandeln.
+Das gilt auch fuer Array-Nebenwirkungen im Define-Trap; `length` darf
+dabei nicht sowohl als definierter Key als auch als Nebenwirkung gemeldet werden.
 
-R15 verwendet `Reflect.set` am Originaltarget und vermeidet dadurch
+Der Set-Trap schreibt direkt auf das Originaltarget und vermeidet dadurch
 den doppelten Set-/Define-Pfad. Ein fehlender eigener Key darf zudem
 eine erneute Registrierung eines zuvor geloeschten und weiter
 gelesenen Felds nicht dauerhaft verhindern. Passe den Registrierungs-
@@ -2583,8 +2586,8 @@ zwangslaeufig `length` und bleibt deshalb veraltet.
 
 1. Implementiere geeignete `deleteProperty`- und `defineProperty`-Traps,
    die die tatsaechlichen Reflect-Ergebnisse und Proxy-Invarianten respektieren.
-2. Melde nur erfolgreiche relevante Struktur-/Descriptor-Aenderungen ueber
-   den bestehenden Benachrichtigungsmechanismus.
+2. Melde erfolgreiche Definitionen und tatsaechliche Array-Laengenaenderungen
+   ueber den bestehenden Benachrichtigungsmechanismus, auch bei Teilfehlern.
 3. Ermittle Verbraucher auch fuer einen Schluessel, der nach der Operation
    nicht mehr existiert.
 4. Vermeide doppelte Meldungen im Zusammenspiel von `set` und `defineProperty`.
@@ -2592,13 +2595,28 @@ zwangslaeufig `length` und bleibt deshalb veraltet.
 
 **Regression und Abnahme**
 
-- [ ] Nach Anzeige von `data[1]` aus `Reactive(["A","B"])` entfernt `data.pop()` auch das alte `B` im DOM.
-- [ ] `Object.defineProperty(model,"value",{value:"new"})` aktualisiert eine zuvor angezeigte Ausgabe `old`.
-- [ ] `delete`, `splice` und direktes Verkuerzen von `length` aktualisieren betroffene Index-Verbraucher.
-- [ ] Fehlgeschlagene Operationen auf festen Deskriptoren melden keinen Erfolg; normale Sets rendern nicht doppelt.
+- [x] Nach Anzeige von `data[1]` aus `Reactive(["A","B"])` entfernt `data.pop()` auch das alte `B` im DOM.
+- [x] `Object.defineProperty(model,"value",{value:"new"})` aktualisiert eine zuvor angezeigte Ausgabe `old`.
+- [x] `delete`, `splice` und direktes Verkuerzen von `length` aktualisieren betroffene Index-Verbraucher.
+- [x] Fehlgeschlagene Operationen auf festen Deskriptoren melden keinen Erfolg; normale Sets rendern nicht doppelt.
+- [x] Sofortiges Verkuerzen von `length` beruecksichtigt noch ausstehende Abo-Registrierungen.
+- [x] Auch teilweise gescheiterte Kuerzungen per `defineProperty` invalidieren den Cache entfernter Indizes.
+- [x] `defineProperty` meldet Array-Nebenwirkungen und Teilmutationen an Index- und Laengenverbraucher, ohne doppelte Laengenmeldung.
 
-**Testansatz:** `test\reactive_objects.html`, `test\reactive_text.html`,
+**Testansatz:** `test\reactive_structure.html`, `test\reactive_text.html`,
 `test\reactive_iterate.html`.
+**Ergebnis:** Vereinfacht umgesetzt: `defineProperty` meldet bei Erfolg ohne
+Deskriptorvergleich. Array-Laengenaenderungen erkennen Set- und Define-Trap
+am Zustand vor und nach der Operation, einschliesslich
+teilweise gescheiterter Kuerzung. Index-Abos werden erst asynchron ausgewaehlt.
+Die gemeinsame Invalidierung entfernt Index-Cache-Eintraege und benachrichtigt
+Index-Verbraucher; der Define-Trap meldet Laengenaenderungen ohne doppelte Meldung
+des definierten Keys. Fuenfzehn Regressionstests in `test\reactive_structure.html`;
+die jeweils drei ergaenzten Tests der beiden Nachkorrekturen schlugen vorher fehl.
+Alle 14 Reactive-Testseiten bestehen mit isolierten Bundles in Blink, Gecko
+und WebKit; alle
+sieben Bundle-Varianten bestehen den ES2015-Lint. Goanna wurde nicht ausgefuehrt
+(kein Playwright-Engine).
 **Erledigt, wenn:** Erfolgreiche strukturelle Aenderungen alle betroffenen
 bestehenden Verbraucher erreichen, ohne Invarianten oder Batching zu brechen.
 

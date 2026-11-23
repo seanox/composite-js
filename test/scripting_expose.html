@@ -83,14 +83,15 @@
             });
             const evaluate = () => {
                 for (const prefix of [[], [""], ["expression.js"]]) {
-                    const publish = () => expose(object);
+                    const collectExports = () => expose(object);
                     const executeChild = () => {
                         child.push(Scripting.run({}, "expose({child: true});"));
                     };
-                    Assert.assertSame(object, Scripting.eval(...prefix, {publish, executeChild},
-                        "publish(); executeChild(); publish();"));
+                    Assert.assertSame(object, Scripting.eval(...prefix, {collectExports, executeChild},
+                        "collectExports(); executeChild(); collectExports();"));
                     let error;
-                    try {Scripting.eval(...prefix, {publish, failure}, "publish(); throw failure;");
+                    try {Scripting.eval(...prefix, {collectExports, failure},
+                        "collectExports(); throw failure;");
                     } catch (caught) {
                         error = caught;
                     }
@@ -186,7 +187,7 @@
             }
         }});
 
-        Test.create({test() {
+        Test.create({name: "Module exports preserve values without Object Publication", test() {
             const nested = {a: 1};
             const object = {a: 1, b: 2, c: nested};
             const result = Scripting.run("scripting_expose.js", {object},
@@ -206,7 +207,7 @@
             Assert.assertSame(object, Scripting.eval({object, expose}, "expose(object)"));
         }});
 
-        Test.create({test() {
+        Test.create({name: "Object Publication preserves the Named Application Object's identity", test() {
             const object = {a: 1, b: 2, c: {a: 1}};
             try {
                 const result = Scripting.run("scripting_expose.js", {object},
@@ -224,7 +225,7 @@
             }
         }});
 
-        Test.create({test() {
+        Test.create({name: "Module exports and Named Application Objects retain distinct values", test() {
             const nested = {keep: true};
             const replacement = {replace: true};
             const first = {a: 1, b: 2, c: nested};
@@ -299,7 +300,7 @@
             Assert.assertEquals(2, indexed[1]);
         }});
 
-        Test.create({test() {
+        Test.create({name: "Module exports and Object Publication reject invalid arguments", test() {
             for (const object of [undefined, null, 1, true, "value", () => {}, Symbol("invalid")])
                 for (const namespaced of [false, true]) {
                     let error;
@@ -323,7 +324,7 @@
             Assert.assertUndefined(window.ScriptingExposeInvalidTest);
         }});
 
-        Test.create({test() {
+        Test.create({name: "Object Publication requires valid namespace identifiers", test() {
             const {use} = Scripting.run({}, "expose({use});");
             for (const namespace of ["", ".", ".a", "a.", "a..b", "a/b", "invalid-path", "a.invalid-path",
                     "ScriptingExposeInvalidPath.10", "ScriptingExposeInvalidPath.0b", "ScriptingExposeInvalidPath.1 0"])
@@ -346,7 +347,8 @@
             }
         }});
 
-        Test.create({test() {
+        Test.create({name: "Object Publication resolves the Named Application Object's parent namespace",
+                test() {
             const original = Object.use;
             const parent = {};
             const object = {};
@@ -369,13 +371,14 @@
             }
         }});
 
-        Test.create({test() {
+        Test.create({name: "Object Publication assigns the Named Application Object without reading the target",
+                test() {
             const object = {answer: 42};
             let writes = 0;
             let assigned;
             const parent = {};
             Object.defineProperty(parent, "object", {
-                get() {throw new Error("Publication must not read its target");},
+                get() {throw new Error("Object Publication must not read its target");},
                 set(value) {writes++; assigned = value;}
             });
             window.ScriptingExposeSetterTest = parent;
@@ -390,7 +393,7 @@
             }
         }});
 
-        Test.create({test() {
+        Test.create({name: "Failed Object Publication does not collect module exports", test() {
             const parent = {};
             const original = {};
             Object.defineProperty(parent, "locked", {value: original});
@@ -411,7 +414,8 @@
             }
         }});
 
-        Test.create({test() {
+        Test.create({name: "Object Publication can provide a Named Application Object without module exports",
+                test() {
             for (const source of ["", " \n\t ", "42;", "expose({});"])
                 for (const url of ["", "scripting_expose.js"]) {
                     const first = Scripting.run(url, {}, source);

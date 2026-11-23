@@ -36,7 +36,7 @@
             Assert.assertEquals("undefined", Scripting.eval({}, "typeof ModuleReturnPrivate"));
         }});
 
-        Test.create({name: "require returns flat exports without publishing private bindings", test() {
+        Test.create({name: "require returns flat module exports without Object Publication", test() {
             const module = require("returns/expose");
             Assert.assertEquals("object", typeof module);
             Assert.assertEquals("describe,moduleReturnValue,nested", Object.keys(module).sort().join(","));
@@ -109,22 +109,22 @@
                 Assert.assertEquals("<span>module exports</span>", Composer.load(resource, true));
         }});
 
-        Test.create({name: "Namespaced expose returns flat exports and publishes the original object",
+        Test.create({name: "Object Publication provides a Named Application Object distinct from module exports",
                 test() {
             try {
                 const exports = require("returns/namespaced");
-                const published = window.ModuleReturnPublication.branch;
+                const namedApplicationObject = window.ModuleReturnPublication.branch;
                 const cachedExports = require("returns/namespaced");
                 Assert.assertEquals(1, executions.get("namespaced"));
-                Assert.assertEquals(7, published.moduleReturnNamedValue);
-                Assert.assertSame(published, window.ModuleReturnPublication.branch);
+                Assert.assertEquals(7, namedApplicationObject.moduleReturnNamedValue);
+                Assert.assertSame(namedApplicationObject, window.ModuleReturnPublication.branch);
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnNamedValue"));
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ModuleReturnNamespaced"));
                 Assert.assertEquals("object", typeof exports);
                 Assert.assertEquals("moduleReturnNamedValue,nested", Object.keys(exports).sort().join(","));
                 Assert.assertEquals(7, exports.moduleReturnNamedValue);
-                Assert.assertSame(published.nested, exports.nested);
-                Assert.assertNotSame(published, exports);
+                Assert.assertSame(namedApplicationObject.nested, exports.nested);
+                Assert.assertNotSame(namedApplicationObject, exports);
                 Assert.assertSame(exports, cachedExports);
             } finally {
                 delete window.ModuleReturnPublication;

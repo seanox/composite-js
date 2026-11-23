@@ -90,10 +90,13 @@ const example = {
 expose(example, "example");
 ```
 
-`modules/example.js` is the executable composite script; the published `example`
-object is the application module that provides application logic at runtime.
-`expose(example, "example")` makes the object available as `window.example` for
-composite binding.
+`modules/example.js` is the executable composite script.
+`expose(example, "example")` performs __object publication__: it makes the
+original object globally available as `window.example`. This __named application
+object__ provides the application module used for composite binding.
+`expose(example)` without the namespace would only collect module exports, not
+publish the object. See [Object Publication](architecture.md#object-publication)
+and [Named Application Object](architecture.md#named-application-object).
 
 The example's object structure does not prescribe an application architecture.
 
@@ -139,9 +142,10 @@ modules/example.js
         -> modules/example.html
 ```
 
-Executing `example.js` creates the `example` application module and publishes it
-as `window.example` before the view is inserted. The composer realizes the view
-within the declared `<section>`, evaluates expressions and establishes composite
+Executing `example.js` creates the object and performs object publication as
+`window.example` before the view is inserted. This named application object
+provides the `example` application module. The composer realizes the view within
+the declared `<section>`, evaluates expressions and establishes composite
 binding:
 
 ```text

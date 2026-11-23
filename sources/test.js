@@ -58,15 +58,15 @@
 
     const _activate = () => {
 
-        const _composer_fire = Composer.fire;
-        Composer.fire = function(event, ...variants) {
+        const _composer_emit = Composer.emit;
+        Composer.emit = function(event, ...variants) {
             const type = (event || "").trim();
             if (type) {
                 const customEvent = new CustomEvent(type);
                 customEvent[type] = variants.length > 1 ? variants : variants[0];
                 window.dispatchEvent(customEvent);
             }
-            return _composer_fire.call(this, event, ...variants);
+            return _composer_emit.call(this, event, ...variants);
         };
 
         window["Test"] = {
@@ -772,11 +772,11 @@
             const element = this;
             value = (value || "").split("");
             value.forEach((digit) => {
-                element.trigger("keydown");
+                element.dispatch("keydown");
                 element.value = (element.value || "") + digit;
-                element.trigger("keyup");
+                element.dispatch("keyup");
             });
-            this.trigger("input", true);
+            this.dispatch("input", true);
         });
 
         /**
@@ -814,14 +814,14 @@
 
         /**
          * Enhancement of the JavaScript API
-         * Adds a method to trigger an event for elements.
+         * Adds a method to dispatch an event for elements.
          * @param {string} event type of event
          * @param {boolean} [bubbles] deciding whether the event should bubble
          *     up through the event chain or not
          * @param {boolean} [cancel] defining whether the event can be canceled
          */
-        compliant("Element.prototype.trigger");
-        compliant(null, Element.prototype.trigger = function(event, bubbles = false, cancel = true) {
+        compliant("Element.prototype.dispatch");
+        compliant(null, Element.prototype.dispatch = function(event, bubbles = false, cancel = true) {
 
             if (typeof event !== "string"
                     || typeof bubbles !== "boolean"

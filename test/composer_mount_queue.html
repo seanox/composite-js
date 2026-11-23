@@ -109,11 +109,11 @@
                     Composer.mount(c);
                 }
             });
-            const fire = Composer.fire;
-            Composer.fire = function(event, ...variants) {
+            const emit = Composer.emit;
+            Composer.emit = function(event, ...variants) {
                 if (event === Composer.EVENT_MOUNT_END && variants[0] === b)
                     throw failure;
-                return fire.call(this, event, ...variants);
+                return emit.call(this, event, ...variants);
             };
 
             try {
@@ -124,7 +124,7 @@
                 ]);
                 Assert.assertEquals("A,B,C", order.join(","));
             } finally {
-                Composer.fire = fire;
+                Composer.emit = emit;
                 window.removeEventListener("error", listener);
                 if (!order.includes("C")) {
                     Composer.mount(c);

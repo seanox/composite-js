@@ -78,7 +78,7 @@
                 Composer.render(pending);
             });
 
-            Composer.fire("composerQueueSynchronous");
+            Composer.emit("composerQueueSynchronous");
             Assert.assertEquals(0, starts.length);
             Composer.render(parent);
             Assert.assertEquals("child", child.textContent);

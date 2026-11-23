@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script type="text/javascript">
+
+        Test.activate();
+
+        const waitForReactiveRender = () => new Promise(resolve =>
+            window.setTimeout(resolve, 50));
+        const renderReactiveOutput = (name, model, expression) => {
+            window[name] = model;
+            const element = document.createElement("span");
+            element.textContent = expression;
+            document.body.appendChild(element);
+            Composer.render(element);
+            return element;
+        };
+
+        Test.create({name:"Reactive pop updates a removed array index", timeout:5000, async test() {
+            const name = "reactiveStructurePop";
+            const model = {values:["A", "B"]}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructurePop.values[1] || 'empty'}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("B", output.textContent);
+                model.values.pop();
+                await waitForReactiveRender();
+                Assert.assertEquals("empty", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive length shortening updates removed array indexes", timeout:5000, async test() {
+            const name = "reactiveStructureLength";
+            const model = {values:["A", "B"]}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureLength.values[1] || 'empty'}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("B", output.textContent);
+                model.values.length = 0;
+                await waitForReactiveRender();
+                Assert.assertEquals("empty", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive immediate length shortening includes pending subscriptions", timeout:5000, async test() {
+            const name = "reactiveStructureImmediateLength";
+            const model = {values:["A", "B"]}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureImmediateLength.values[1] || 'empty'}}");
+            try {
+                Assert.assertEquals("B", output.textContent);
+                model.values.length = 0;
+                await waitForReactiveRender();
+                Assert.assertEquals("empty", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive length shortening does not suppress a later index assignment", timeout:5000, async test() {
+            const name = "reactiveStructureLengthCache";
+            const model = {values:[]}.reactive();
+            model.values.push("A");
+            model.values.length = 0;
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureLengthCache.values[0] || 'empty'}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("empty", output.textContent);
+                model.values.push("A");
+                await waitForReactiveRender();
+                Assert.assertEquals("A", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive defineProperty length shortening clears removed index cache", timeout:5000, async test() {
+            const name = "reactiveStructureDefineLengthCache";
+            const model = {values:["A"]}.reactive();
+            model.values[1] = "B";
+            await waitForReactiveRender();
+            Object.defineProperty(model.values, "length", {value:0});
+            await waitForReactiveRender();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureDefineLengthCache.values[1] || 'empty'}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("empty", output.textContent);
+                model.values[1] = "B";
+                await waitForReactiveRender();
+                Assert.assertEquals("B", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive failed defineProperty truncation clears removed index cache", timeout:5000, async test() {
+            for (const reflect of [false, true]) {
+                const name = "reactiveStructurePartialDefineLengthCache";
+                const values = ["A", "B", "C"];
+                Object.defineProperty(values, "1", {configurable:false});
+                const model = {values}.reactive();
+                model.values[2] = "C";
+                await waitForReactiveRender();
+                if (reflect)
+                    Assert.assertFalse(Reflect.defineProperty(model.values, "length", {value:0}));
+                else {
+                    let failure;
+                    try {Object.defineProperty(model.values, "length", {value:0});
+                    } catch (error) {
+                        failure = error;
+                    }
+                    Assert.assertTrue(failure instanceof TypeError);
+                }
+                Assert.assertEquals(2, values.length);
+                await waitForReactiveRender();
+                const output = renderReactiveOutput(name, model,
+                    "{{reactiveStructurePartialDefineLengthCache.values[2] || 'empty'}}");
+                try {
+                    await waitForReactiveRender();
+                    Assert.assertEquals("empty", output.textContent);
+                    model.values[2] = "C";
+                    await waitForReactiveRender();
+                    Assert.assertEquals("C", output.textContent);
+                } finally {
+                    output.remove();
+                    delete window[name];
+                }
+            }
+        }});
+
+        Test.create({name:"Reactive defineProperty shortening notifies indexes and length once", timeout:5000, async test() {
+            for (const reflect of [false, true]) {
+                for (const immediate of [false, true]) {
+                    const name = "reactiveStructureDefineShorten";
+                    let reads = 0;
+                    const model = {
+                        values:["A", "B"],
+                        get size() {
+                            reads++;
+                            return this.values.length;
+                        }
+                    }.reactive();
+                    const indexOutput = renderReactiveOutput(name, model,
+                        "{{reactiveStructureDefineShorten.values[1] || 'empty'}}");
+                    const lengthOutput = renderReactiveOutput(name, model,
+                        "{{reactiveStructureDefineShorten.size}}");
+                    try {
+                        Assert.assertEquals("B", indexOutput.textContent);
+                        Assert.assertEquals("2", lengthOutput.textContent);
+                        if (!immediate)
+                            await waitForReactiveRender();
+                        reads = 0;
+                        if (reflect)
+                            Assert.assertTrue(Reflect.defineProperty(model.values, "length", {value:0}));
+                        else Assert.assertSame(model.values,
+                            Object.defineProperty(model.values, "length", {value:0}));
+                        await waitForReactiveRender();
+                        Assert.assertEquals("empty", indexOutput.textContent);
+                        Assert.assertEquals("0", lengthOutput.textContent);
+                        Assert.assertEquals(1, reads);
+                        reads = 0;
+                        Object.defineProperty(model.values, "length", {value:0});
+                        await waitForReactiveRender();
+                        Assert.assertEquals(1, reads);
+                    } finally {
+                        indexOutput.remove();
+                        lengthOutput.remove();
+                        delete window[name];
+                    }
+                }
+            }
+        }});
+
+        Test.create({name:"Reactive defineProperty index growth notifies length consumers", timeout:5000, async test() {
+            for (const reflect of [false, true]) {
+                const name = "reactiveStructureDefineGrow";
+                let reads = 0;
+                const model = {
+                    values:["A"],
+                    get size() {
+                        reads++;
+                        return this.values.length;
+                    }
+                }.reactive();
+                const indexOutput = renderReactiveOutput(name, model,
+                    "{{reactiveStructureDefineGrow.values[2] || 'empty'}}");
+                const lengthOutput = renderReactiveOutput(name, model,
+                    "{{reactiveStructureDefineGrow.size}}");
+                try {
+                    await waitForReactiveRender();
+                    Assert.assertEquals("empty", indexOutput.textContent);
+                    Assert.assertEquals("1", lengthOutput.textContent);
+                    reads = 0;
+                    const descriptor = {value:"C", configurable:true, writable:true};
+                    if (reflect)
+                        Assert.assertTrue(Reflect.defineProperty(model.values, "2", descriptor));
+                    else Object.defineProperty(model.values, "2", descriptor);
+                    await waitForReactiveRender();
+                    Assert.assertEquals("C", indexOutput.textContent);
+                    Assert.assertEquals("3", lengthOutput.textContent);
+                    Assert.assertEquals(1, reads);
+                    reads = 0;
+                    Object.defineProperty(model.values, "02", {value:"ordinary property"});
+                    await waitForReactiveRender();
+                    Assert.assertEquals("3", lengthOutput.textContent);
+                    Assert.assertEquals(0, reads);
+                } finally {
+                    indexOutput.remove();
+                    lengthOutput.remove();
+                    delete window[name];
+                }
+            }
+        }});
+
+        Test.create({name:"Reactive partial defineProperty truncation notifies actual changes", timeout:5000, async test() {
+            for (const reflect of [false, true]) {
+                const name = "reactiveStructureDefinePartial";
+                const values = ["A", "B", "C"];
+                Object.defineProperty(values, "1", {configurable:false});
+                let reads = 0;
+                const model = {
+                    values,
+                    get size() {
+                        reads++;
+                        return this.values.length;
+                    }
+                }.reactive();
+                const indexOutput = renderReactiveOutput(name, model,
+                    "{{reactiveStructureDefinePartial.values[2] || 'empty'}}");
+                const lengthOutput = renderReactiveOutput(name, model,
+                    "{{reactiveStructureDefinePartial.size}}");
+                try {
+                    await waitForReactiveRender();
+                    Assert.assertEquals("C", indexOutput.textContent);
+                    Assert.assertEquals("3", lengthOutput.textContent);
+                    reads = 0;
+                    if (!reflect) {
+                        let failure;
+                        try {Object.defineProperty(model.values, "length", {value:0});
+                        } catch (error) {
+                            failure = error;
+                        }
+                        Assert.assertTrue(failure instanceof TypeError);
+                    } else Assert.assertFalse(Reflect.defineProperty(model.values, "length", {value:0}));
+                    Assert.assertEquals(2, values.length);
+                    await waitForReactiveRender();
+                    Assert.assertEquals("empty", indexOutput.textContent);
+                    Assert.assertEquals("2", lengthOutput.textContent);
+                    Assert.assertEquals(1, reads);
+                    reads = 0;
+                    Assert.assertFalse(Reflect.defineProperty(model.values, "length", {value:0}));
+                    await waitForReactiveRender();
+                    Assert.assertEquals(0, reads);
+                } finally {
+                    indexOutput.remove();
+                    lengthOutput.remove();
+                    delete window[name];
+                }
+            }
+        }});
+
+        Test.create({name:"Reactive splice updates a removed array index", timeout:5000, async test() {
+            const name = "reactiveStructureSplice";
+            const model = {values:["A", "B", "C"]}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureSplice.values[2] || 'empty'}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("C", output.textContent);
+                model.values.splice(1, 1);
+                await waitForReactiveRender();
+                Assert.assertEquals("empty", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive array index addition updates length consumers", timeout:5000, async test() {
+            const name = "reactiveStructureIndex";
+            const model = {values:["A"]}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureIndex.values.length}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("1", output.textContent);
+                model.values[2] = "C";
+                await waitForReactiveRender();
+                Assert.assertEquals("3", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive partial array truncation updates removed indexes", timeout:5000, async test() {
+            const name = "reactiveStructurePartialLength";
+            const values = ["A", "B", "C"];
+            Object.defineProperty(values, "1", {configurable:false});
+            const model = {values}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructurePartialLength.values[2] || 'empty'}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("C", output.textContent);
+                let failed = false;
+                try {model.values.length = 0;
+                } catch (error) {
+                    failed = true;
+                }
+                Assert.assertTrue(failed);
+                Assert.assertEquals(2, values.length);
+                await waitForReactiveRender();
+                Assert.assertEquals("empty", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive defineProperty updates its consumer", timeout:5000, async test() {
+            const name = "reactiveStructureDefine";
+            const model = {value:"old"}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureDefine.value}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("old", output.textContent);
+                Object.defineProperty(model, "value", {value:"new"});
+                await waitForReactiveRender();
+                Assert.assertEquals("new", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive delete and re-add updates its consumer", timeout:5000, async test() {
+            const name = "reactiveStructureDelete";
+            const model = {value:"old"}.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureDelete.value || 'missing'}}");
+            try {
+                await waitForReactiveRender();
+                Assert.assertEquals("old", output.textContent);
+                delete model.value;
+                await waitForReactiveRender();
+                Assert.assertEquals("missing", output.textContent);
+                model.value = "new";
+                await waitForReactiveRender();
+                Assert.assertEquals("new", output.textContent);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.create({name:"Reactive failed mutations do not render and set renders once", timeout:5000, async test() {
+            const name = "reactiveStructureFixed";
+            const source = {value:"old"};
+            Object.defineProperty(source, "locked", {
+                value:"fixed",
+                writable:false,
+                configurable:false,
+                enumerable:true
+            });
+            const model = source.reactive();
+            const output = renderReactiveOutput(name, model,
+                "{{reactiveStructureFixed.value}} {{reactiveStructureFixed.locked}}");
+            try {
+                await waitForReactiveRender();
+                let renders = 0;
+                Composer.listen(Composer.EVENT_RENDER_START, () => renders++);
+                Assert.assertFalse(Reflect.deleteProperty(model, "locked"));
+                Assert.assertFalse(Reflect.defineProperty(model, "locked", {value:"new"}));
+                await waitForReactiveRender();
+                Assert.assertEquals(0, renders);
+                Assert.assertEquals("old fixed", output.textContent);
+                model.value = "new";
+                await waitForReactiveRender();
+                Assert.assertEquals("new fixed", output.textContent);
+                Assert.assertEquals(1, renders);
+            } finally {
+                output.remove();
+                delete window[name];
+            }
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+  </body>
+</html>

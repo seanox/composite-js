@@ -23,7 +23,7 @@
             Assert.assertFalse(Composer.PATTERN_EVENT.test("TEST_EVENT"));
         }});
 
-        // Errors in the listen/fire method must not prevent the following
+        // Errors in Composer.listen/emit must not prevent the following
         // events from being triggered.
         const collector = [];
         Composer.listen("composerTestEvent", () => {
@@ -46,7 +46,7 @@
             collector.push("composer-render-E");
         });
         Test.create({test() {
-            Composer.fire("composerTestEvent");
+            Composer.emit("composerTestEvent");
             console.debug(collector.join("\n"));
             Assert.assertSameTo("script[type='text/test']", collector.join("\n"));
         }});

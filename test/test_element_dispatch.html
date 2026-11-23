@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+  </head>
+  <body>
+    <script>
+        Test.activate();
+
+        Test.create({name:"Element.prototype.dispatch", test() {
+            const parent = document.createElement("div");
+            const element = document.createElement("button");
+            const received = [];
+            const bubbled = [];
+            parent.appendChild(element);
+            document.body.appendChild(parent);
+            try {
+                element.addEventListener("dispatchTest", event => received.push(event));
+                parent.addEventListener("dispatchTest", event => bubbled.push(event));
+
+                element.dispatch("dispatchTest");
+                Assert.assertEquals(1, received.length);
+                Assert.assertTrue(received[0].target === element);
+                Assert.assertFalse(received[0].bubbles);
+                Assert.assertTrue(received[0].cancelable);
+                Assert.assertEquals(0, bubbled.length);
+
+                element.dispatch("dispatchTest", true, false);
+                Assert.assertEquals(2, received.length);
+                Assert.assertTrue(received[1].bubbles);
+                Assert.assertFalse(received[1].cancelable);
+                Assert.assertEquals(1, bubbled.length);
+                Assert.assertTrue(bubbled[0] === received[1]);
+            } finally {
+                parent.parentNode.removeChild(parent);
+            }
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </body>
+</html>

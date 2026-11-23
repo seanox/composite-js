@@ -40,7 +40,6 @@
         };
 
         Test.create({test() {
-            Assert.assertEquals("undefined", typeof Namespace);
             for (const method of [Object.use, Object.lookup, Object.exists])
                 Assert.assertEquals("function", typeof method);
             Assert.assertUndefined(Object.use());

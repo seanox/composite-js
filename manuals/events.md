@@ -72,6 +72,11 @@ regarded as removed.__
 ### Composer.EVENT_DOM_ADDED
 Occurs when nodes are inserted into the DOM.
 
+### Composer.EVENT_DOM_REMOVED
+Occurs when nodes are removed from the &lt;body&gt; element. Nodes moved outside
+the observed &lt;body&gt; scope are treated as removed. The event is fired after
+the runtime has cleaned up the removed nodes.
+
 ### Composer.EVENT_DOM_MOVED
 Occurs when nodes are moved within the &lt;body&gt; element. Nodes moved outside
 the  &lt;body&gt; element are treated as removed.

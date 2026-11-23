@@ -53,12 +53,12 @@
             Composer.listen("composerReentrantOuter", () => {
                 order.push("composer-first");
                 console.forward("log", ["reentrant-output"], () => order.push("console-output"));
-                Composer.fire("composerReentrantInner");
+                Composer.emit("composerReentrantInner");
             });
             Composer.listen("composerReentrantOuter", () => order.push("composer-last"));
             Composer.listen("composerReentrantInner", () => order.push("composer-inner"));
             try {
-                Composer.fire("composerReentrantOuter");
+                Composer.emit("composerReentrantOuter");
                 Assert.assertEquals(
                     "composer-window,monitor,test-window,test-listener,composer-first,"
                         + "console-output,console-listener,composer-inner,composer-last",
@@ -72,23 +72,24 @@
             [Composer, Test].forEach((api, index) => {
                 const event = index ? "testReentrantSnapshot" : "composerReentrantSnapshot";
                 const order = [];
+                const emit = index ? api.fire : api.emit;
                 const repeated = (event, depth) => order.push("repeat" + depth);
                 api.listen(event, (event, depth) => {
                     order.push("first" + depth);
                     if (depth !== 0)
                         return;
                     api.listen(event, (event, depth) => order.push("before" + depth));
-                    api.fire(event, 1);
+                    emit.call(api, event, 1);
                     order.push("returned0");
                     api.listen(event, (event, depth) => order.push("after" + depth));
                 });
                 api.listen(event, repeated);
                 api.listen(event, repeated);
-                api.fire(event, 0);
+                emit.call(api, event, 0);
                 Assert.assertEquals("first0,first1,repeat1,repeat1,before1,returned0,repeat0,repeat0",
                     order.join(","));
                 order.length = 0;
-                api.fire(event, 2);
+                emit.call(api, event, 2);
                 Assert.assertEquals("first2,repeat2,repeat2,before2,after2", order.join(","));
             });
         }});
@@ -122,10 +123,10 @@
             Composer.listen("composerReentrantRecursive", (event, depth) => {
                 order.push("enter" + depth);
                 if (depth > 0)
-                    Composer.fire(event, depth -1);
+                    Composer.emit(event, depth -1);
                 order.push("exit" + depth);
             });
-            Composer.fire("composerReentrantRecursive", 3);
+            Composer.emit("composerReentrantRecursive", 3);
             Assert.assertEquals("enter3,enter2,enter1,enter0,exit0,exit1,exit2,exit3", order.join(","));
         }});
 
@@ -140,7 +141,7 @@
             };
             window.addEventListener("error", listener);
             Composer.listen("composerReentrantFailure", () => {
-                Composer.fire("composerReentrantAfterFailure");
+                Composer.emit("composerReentrantAfterFailure");
                 throw new Error("REENTRANT_CALLBACK");
             });
             Composer.listen("composerReentrantFailure", () => order.push("remaining"));
@@ -154,9 +155,9 @@
                     order.push("console-remaining");
             });
             try {
-                Composer.fire("composerReentrantFailure");
+                Composer.emit("composerReentrantFailure");
                 console.forward("error", ["reentrant-console-error"]);
-                Composer.fire("composerReentrantAfterFailure");
+                Composer.emit("composerReentrantAfterFailure");
                 Assert.assertEquals("nested,remaining,console-remaining,nested", order.join(","));
                 await new Promise(resolve => setTimeout(resolve, 50));
                 Assert.assertEquals(1, errors.length);
@@ -182,7 +183,7 @@
             });
             Composer.listen("composerReentrantRender", () => renderOrder.push("remaining"));
             try {
-                Composer.fire("composerReentrantRender");
+                Composer.emit("composerReentrantRender");
                 Assert.assertEquals("request,returned,remaining", renderOrder.join(","));
                 Assert.assertEquals("{{ReentrantModel.value}}", element.textContent);
                 await new Promise(resolve => setTimeout(resolve, 0));
@@ -209,7 +210,7 @@
                 if (module === "reentrantModule")
                     order.push("module");
             });
-            Composer.fire("composerReentrantInclude");
+            Composer.emit("composerReentrantInclude");
             Assert.assertEquals("request,module,available-before-module-code,returned,remaining",
                 order.join(","));
             Assert.assertEquals("available-before-module-code", reentrantModule.message);
@@ -246,7 +247,7 @@
                     Composer.mount(input);
                     order.push("returned");
                 });
-                Composer.fire("composerReentrantMount");
+                Composer.emit("composerReentrantMount");
                 Assert.assertEquals("request,mount,returned", order.join(","));
             } finally {
                 element.remove();
@@ -306,19 +307,19 @@
                 const pending = document.createElement("span");
                 const prefix = "EVENT_" + method.toUpperCase() + "_";
                 const failure = new Error("REENTRANT_RELEASE");
-                const fire = Composer.fire;
+                const emit = Composer.emit;
                 let caught;
-                Composer.fire = function(event, ...variants) {
+                Composer.emit = function(event, ...variants) {
                     if (event === Composer[prefix + "END"] && variants[0] === element)
                         throw failure;
-                    return fire.call(this, event, ...variants);
+                    return emit.call(this, event, ...variants);
                 };
                 try {
                     Composer[method](element);
                 } catch (error) {
                     caught = error;
                 } finally {
-                    Composer.fire = fire;
+                    Composer.emit = emit;
                 }
                 Assert.assertTrue(caught === failure);
                 let started = false;
@@ -371,7 +372,7 @@
                 const result = target.dispatchEvent(new Event("probe", {cancelable:true}));
                 order.push(String(result));
             });
-            Composer.fire("composerReentrantNative");
+            Composer.emit("composerReentrantNative");
             Assert.assertEquals("first,false", order.join(","));
         }});
 
@@ -389,7 +390,7 @@
             const observed = [];
             Composer.listen("composerBarrierInner", () => Composer.render(nested));
             Composer.listen("composerBarrierOuter", () => {
-                Composer.fire("composerBarrierInner");
+                Composer.emit("composerBarrierInner");
                 observed.push(nested.textContent);
                 Composer.render.lock = false;
                 Composer.render(outer);
@@ -397,7 +398,7 @@
             });
             try {
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(Composer.render, "lock"));
-                Composer.fire("composerBarrierOuter");
+                Composer.emit("composerBarrierOuter");
                 Assert.assertEquals("{{'rendered'}},{{'rendered'}}", observed.join(","));
                 Composer.render(after);
                 Assert.assertEquals("rendered", after.textContent);
@@ -418,7 +419,7 @@
             Composer.listen(Composer.EVENT_RENDER_START, (event, selector) => {
                 if (selector !== original)
                     return;
-                Composer.fire("composerTransactionNested");
+                Composer.emit("composerTransactionNested");
                 Composer.render(pending);
                 observed.push(pending.textContent);
             });
@@ -477,7 +478,7 @@
                 throw new Error("RENDER_BARRIER_FAILURE");
             });
             try {
-                Composer.fire("composerBarrierFailure");
+                Composer.emit("composerBarrierFailure");
                 Assert.assertEquals("{{'rendered'}}", pending.textContent);
                 Composer.render(after);
                 Assert.assertEquals("rendered", after.textContent);

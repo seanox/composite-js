@@ -51,11 +51,14 @@
 
     /**
      * Collects an object's own enumerable string keys as flat module exports.
-     * An optional namespace also publishes the original object on window,
-     * using Object.use to obtain or create its parent namespace.
+     * An optional namespace additionally performs Object Publication: the
+     * original object becomes a Named Application Object on window, using
+     * Object.use to obtain or create its parent namespace. Without a namespace,
+     * only module exports are collected; no Object Publication occurs.
      * Later calls replace exports with the same keys without merging values.
      * @param {object} object Values to export
-     * @param {string} [namespace] Full optional publication path on window
+     * @param {string} [namespace] Optional path of the Named Application Object
+     *     on window
      * @returns {object} The original object
      * @throws {TypeError} If the object or namespace has an invalid type
      * @throws {Error} In case of an invalid namespace or failed assignment
@@ -180,7 +183,7 @@
          * @returns {*} The expression result
          * @throws {Error} In case of invalid data types or syntax.
          *
-         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#script-api
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#api
          *           https://seanox.github.io/composite-js/manuals/expression.html
          */
         eval(...variants) {
@@ -219,7 +222,8 @@
          * Executes Composite JavaScript and returns its flat collected exports,
          * or a fresh empty object if no entries are exported. Provides require,
          * use, expose and attempt as local bindings. Context values take
-         * precedence over these defaults.
+         * precedence over these defaults. Module exports are distinct from
+         * Named Application Objects created through Object Publication.
          *
          * The function uses variable parameters and has the following
          * signatures:
@@ -234,7 +238,7 @@
          * @returns {object} Collected exports
          * @throws {Error} In case of invalid data types or syntax.
          *
-         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#script-api
+         * see also: https://seanox.github.io/composite-js/manuals/scripting.html#api
          */
         run(...variants) {
 

@@ -1,5 +1,5 @@
 &#9665; [Routing](routing.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#datasource)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#runtime)
 &nbsp;&nbsp;&nbsp;&nbsp; [Resource Bundle](message.md) &#9655;
 - - -
 
@@ -74,9 +74,11 @@ with the language declared as default.
 For localized text, see [Messages](message.md).
 
 ## Locator
-Data in the data storage is addressed through a locator URL (`xml://...` or
-`xslt://...`), supporting percent-encoded URLs. Single and double slashes are
-supported. A locator can be used contextually or explicitly.
+Data in the data storage is addressed through a locator (`xml://...` or
+`xslt://...`) that supports percent-encoded paths and queries. Repeated
+separators, backslashes and dot segments are normalized. DataSource resolves the
+resulting URL against the application context and rejects other origins or
+paths outside that context before making a request.
 
 - __Contextual locator__: Uses an absolute path without a file extension
   relative to the datasource directory and does not contain a locale (language 
@@ -84,15 +86,17 @@ supported. A locator can be used contextually or explicitly.
   the browser's language setting or, if not supported, the default locale from
   the `locales.xml` in the datasource data storage.
 
-- __Explicit locator__: Uses a fully qualified URL with a file extension
-  (`xml://....xml` or `xslt://....xslt`). This locator addresses an absolute
-  path under the current application context and is not enriched with the
-  locale. Requests outside the application context are rejected.
+- __Explicit locator__: Uses an absolute path with a file extension
+  (`xml://....xml` or `xslt://....xslt`). This locator addresses a path under
+  the current application context and is not enriched with the locale.
 
 The locator scheme determines how the data is processed. Schemes are
 case-insensitive and normalized to lowercase. Contextual locators have the
 extension associated with their scheme appended. For explicit locators, the file
 extension remains part of the path but does not determine the processing type.
+The normalized `uri` returned by `Locator.parse` remains valid for a subsequent
+parse or DataSource call, including when a path or query contains a percent
+literal.
 
 ```
 xml://fileA -> ./data/en/fileA.xml
@@ -123,6 +127,10 @@ The return value depends on the XPath and can be boolean, number, string,
 NodeList, or null. When querying nodes using XPath, nodes are always returned.
 This also includes attributes and text nodes.
 
+Selecting the document node returns a `NodeList` containing a clone of its
+document element. Each returned projection is independent of the source
+document.
+
 Attributes are returned as nodes with the name _attribute_. The name and value
 of the addressed attribute are represented in the node as attributes _name_ and
 _value_.
@@ -149,6 +157,10 @@ const document = DataSource.fetch("xml://paper");
 
 const data = DataSource.fetch("xml://paper?//*/@price");
 ```
+
+Each `fetch()` call resolves and requests its resource independently. It does
+not share a DataSource cache with other calls, including calls made while a
+collection is being assembled.
 
 ## transform
 XSLT (1.0) transformation of XML data provides another way to create dynamic
@@ -233,16 +245,16 @@ escaping.
 ```
 
 ## collect
-Results from one or more XML locators can be collected into a new XMLDocument.
-Locators may include XPath. XMLDocument results are added under the collector
-root, node results are appended as nodes, and scalar XPath results are wrapped
-in &lt;text&gt; elements.
-
-
 Results from one or more XML locators can be combined in a new XMLDocument.
 Locators may include XPath; their results are added under a root element named
-`collection` by default. XPath results that are strings, numbers, or booleans
-are wrapped in &lt;text&gt; elements.
+`collection` by default, or under a specified collector name. XML documents and
+node results are added as nodes; scalar XPath results are wrapped in
+&lt;text&gt; elements.
+
+During one `collect()` call, source documents are cached by their normalized
+resource URL. Each use receives an independent copy; XPath projections and
+collection results are not cached. A later `collect()` call starts with an empty
+cache.
 
 As an example, 3 XML files: paper.xml, envelope.xml, pen.xml
 
@@ -342,5 +354,5 @@ derived from the name of the XML locator and used for the transformation.
 
 - - -
 &#9665; [Routing](routing.md)
-&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#datasource)
+&nbsp;&nbsp;&nbsp;&nbsp; &#8801; [Table of Contents](README.md#runtime)
 &nbsp;&nbsp;&nbsp;&nbsp; [Resource Bundle](message.md) &#9655;

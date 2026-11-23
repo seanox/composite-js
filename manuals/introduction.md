@@ -124,10 +124,8 @@ composite-specific relationships and instructions are processed by the runtime
 in the browser.
 
 ### Optional Build Process
-A build process can be used for packaging, optimization, or deployment, but it
-does not define the semantics of the application model. The relationships
-between composite, composite module, view, application module, composer, and
-runtime remain independent of such a process.
+A build process can package or optimize application resources for deployment; it
+does not replace composition at runtime.
 
 ## Summary
 Seanox composite-js is a browser application runtime for Single-Page

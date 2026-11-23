@@ -24,10 +24,6 @@ and options for customization.
   - [render](#render)
   - [route](#route)
   - [validate](#validate)
-    - [true](#true)
-    - [not true and not undefined/void](#not-true-and-not-undefinedvoid)
-    - [text](#text)
-    - [undefined/void](#undefinedvoid)
 - [@-Attributes](#-attributes) 
 - [Expression Language](#expression-language)
 - [Scripting](#scripting)
@@ -436,16 +432,9 @@ If the value for an iterator is a positive number, a list of values from 0 to
 up to 0 is used. `0` and `NaN` produce no iterations.
 
 > [!NOTE]
-> Individual objects and Booleans that previously produced no iterations now
-> produce one. To explicitly suppress output, use `null`, `undefined` or an
-> empty array. Errors returned by the expression and errors during collection
-> conversion are still reported through the Composer error handling; they are
-> not converted to single items.
-
-> TODO: produced no iterations now produce one.
-> now: Ist ein Bezug auf die Vorversion, dass soll komplett entfallen
-> Bitte auch in den anderen manuals (manuals/*.md) prüfen und diese stellen so anpassen
-> das sie keinen Bezug auf Vorgängerversionen nehmen
+> Errors returned by the expression and errors during collection conversion
+> are reported through the Composer error handling; they are not converted to
+> single items.
 
 ### message
 Message is an optional part of [Validation](#validate) and is used for text and
@@ -489,9 +478,13 @@ The following examples use the application module from [import](#import).
 </article>
 ```
 
-> TODO: Example of outputting a raw://... resource
-> Das fehlt hier?
-> Siehe Attribute import, dort ist ein Beispiel für raw://... Ressourcen.Bitte prüfen ob das hier auch noch ergänzt werden soll.
+Example of outputting a raw resource.
+
+```html
+<article output="raw://resources/import_c.htmlx">
+  loading resource...
+</article>
+```
 
 Example of outputting via DataSource-URL. If only one URL is specified, the URI
 for data and transformation are derived from it.
@@ -623,36 +616,26 @@ the application module as the synchronization target.
 Validation works in two steps and starts with standard HTML5 validation. If this
 does not detect deviations from the expected result or no HTML5 validation is
 specified, the validation of the application module is used. This requires a
-corresponding validate method `boolean validate(element, value)` and an element
+corresponding `validate(element, value)` method and an element
 embedded in a composite.
 
-Validation directly affects synchronization and the browser default action. It
-can use four return states: `true`, `not true`, `text`, `undefined/void`.
+In strict mode, validation directly affects synchronization and the browser
+default action:
 
-#### true
-Validation was successful. No error is shown and the browser default action is
-used. If possible, the value is synchronized.
+| Return value                   | Validation result and error message                             | Synchronization and default action                                    |
+|--------------------------------|-----------------------------------------------------------------|-----------------------------------------------------------------------|
+| `true`                         | Passes; no error is shown.                                      | The value is synchronized if possible; the default action is allowed. |
+| `undefined` or no return value | Fails; the [`message`](#message) attribute is used if provided. | The value is not synchronized; the default action is allowed.         |
 
-#### not true and not undefined/void
-The validation failed and an error is shown. The return value indicates that the
-default behavior (action) should not be executed by the browser and is thus
-blocked.
+Any other return value fails validation and blocks the browser's default
+action. In strict mode, it also prevents synchronization. A non-blank string is
+trimmed and used as the error message; an empty or whitespace-only string falls
+back to the [`message`](#message) attribute. Other values use that attribute if
+provided.
 
-#### text
-The validation has failed with an error message. If the error message is empty,
-the message from the message attribute is used as an alternative.
-
-#### undefined/void
-Validation failed and an error is shown. Without a return value, the default
-behavior (action) is executed by the browser. This behavior is important for
-validating input fields, for example, so that the input reaches the user
-interface.
-
-Validation works strictly by default: input is synchronized with the application
-module, and its event handler is invoked, only when validation returns `true`.
-With `validate="optional"`, synchronization and the handler can proceed despite
-the validation result. A result other than `true` or `undefined` can still
-prevent the browser's default action.
+By default, synchronization and the event handler proceed only when validation
+returns `true`. With `validate="optional"`, they can proceed despite a failed
+validation.
 
 ```html
 <form id="example" composite>
@@ -663,13 +646,13 @@ prevent the browser's default action.
 </form>
 ```
 
-By default, validation message are shown as a native browser toolbox for the
+By default, validation messages are shown as a native browser toolbox for the
 &lt;input&gt; element. The corresponding message is set via the attribute of the
 same name. If custom validation and output need to be implemented, this behavior
 can be changed by redirecting the message to an attribute of the &lt;input&gt;
 element. For this purpose, the message, which at this point also includes the
-return value of expressions, must begin as follows: `@<attribute>:`.
-> TODO: @<attribute> dass sollte ein Link auf das Kapitel @-Attribute sein
+return value of expressions, must begin as follows: `@<attribute>:`. See
+[@-Attributes](#-attributes).
 
 A general strategy or standard implementation for error output is deliberately
 not provided, as this is too strict in most cases and can be implemented
@@ -724,25 +707,24 @@ has been loaded and initially displayed by the browser. This is a problem for
 HTML elements whose attributes the browser already interprets before rendering
 -- for example the `src` attribute of the &lt;img&gt; element. For these cases
 @-attributes are templates for real attributes. The composer resolves the
-expression, adds the target attribute and removes the template attribute. The
-expression remains available for later rendering, including when its value is
-`undefined`. The target attribute follows the ordinary dynamic-attribute rules
+expression and removes the template attribute. A defined value sets the target
+attribute; `undefined` removes it. The expression remains available for later
+render cycles, so the target attribute can be set again when the expression
+returns a value. The target follows the ordinary dynamic-attribute rules
 described in [Expression Language](#expression-language).
-> TODO: das mit dem undefined verstehe ich nicht
 
 ```html
 <img @src="{{...}}"/>
 ```
 
 ## Expression Language
-> TODO: in text oder as free text?
-> TODO: supported HTML attributes -- Gibt es nicht unterstützte Attribute?
-The expression language can be used in text and in supported HTML attributes;
-&lt;script&gt; and &lt;style&gt; contents are excluded. Text expressions produce
-text, not HTML. Use `output` or `import` when markup or DOM content is intended.
-For dynamic attribute values and errors, see [Expression Language](
-    expression.md#expressions). Runtime instructions and metadata retain their
-own rules.
+The expression language can be used in text nodes and HTML attribute values;
+the contents of &lt;script&gt; and &lt;style&gt; elements are excluded. Ordinary
+HTML attributes do not require a separate allowlist, but runtime instructions
+and initial metadata have their own rules. Text-node expressions produce text,
+not HTML. Use `output` or `import` when markup or DOM content is intended. For
+dynamic attribute values and errors, see [Expression Language](
+    expression.md#expressions).
 
 ```html
 <article title="{{example.title}}">

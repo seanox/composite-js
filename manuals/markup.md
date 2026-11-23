@@ -622,15 +622,19 @@ embedded in a composite.
 In strict mode, validation directly affects synchronization and the browser
 default action:
 
-| Return value                   | Validation result and error message                             | Synchronization and default action                                    |
-|--------------------------------|-----------------------------------------------------------------|-----------------------------------------------------------------------|
-| `true`                         | Passes; no error is shown.                                      | The value is synchronized if possible; the default action is allowed. |
-| `undefined` or no return value | Fails; the [`message`](#message) attribute is used if provided. | The value is not synchronized; the default action is allowed.         |
+__`true`__  
+Validation passes and no error is shown. If possible, the value is synchronized
+and the browser's default action is allowed.
 
-Any other return value fails validation and blocks the browser's default
-action. In strict mode, it also prevents synchronization. A non-blank string is
-trimmed and used as the error message; an empty or whitespace-only string falls
-back to the [`message`](#message) attribute. Other values use that attribute if
+__`undefined` or no return value__  
+Validation fails and the [`message`](#message) attribute is used if provided.
+The value is not synchronized, but the browser's default action is allowed.
+
+__other return values__  
+Any other return value fails validation and blocks the browser's default action.
+In strict mode, it also prevents synchronization. A non-blank string is trimmed
+and used as the error message; an empty or whitespace-only string falls back to
+the [`message`](#message) attribute. Other values use that attribute if
 provided.
 
 By default, synchronization and the event handler proceed only when validation

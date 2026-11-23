@@ -37,31 +37,17 @@ after assignment, so expressions read the resulting property values, which can
 be relevant when using getters and setters. A change to `undefined` also updates
 registered consumers.
 
-No new reactive instance can be created from an existing one &ndash;
-`Object.prototype.reactive()` and `Reactive(...)` always return a reference to
-the same instance. The same original object also yields the same reactive
-instance when accessed through another reactive object, including after
-assignment as a property value.
+Wrapping an original object again, or wrapping its reactive proxy, returns the
+same proxy.
 
 ```javascript
-const objectA = ({}).reactive();
-const objectB = objectA.reactive();
-const objectC = Reactive(objectA);
+const object = {};
+const instance = Reactive(object);
 
 // Assertions
-objectA === objectB
-objectA === objectC
-objectB === objectC
-
-const objectD = ({objectA}).reactive();
-
-// Assertion
-objectD.objectA === objectA
-
-objectC.objectB = objectB;
-
-// Assertion
-objectC.objectB === objectB
+Reactive(object) === instance;
+Reactive(instance) === instance;
+instance.reactive() === instance;
 ```
 
 ## Consumers
@@ -111,33 +97,29 @@ with `delete`, redefining a property with `Object.defineProperty(...)`, and
 array operations that remove entries, such as `pop()`.
 
 ```javascript
-const object = {valueA:1};
+const object = {value:1};
 const instance = Reactive(object);
-window.setTimeout(() =>
-    object.valueB = 2, 1000);
-window.setTimeout(() =>
-    console.log(instance.valueB), 2000);
-window.setTimeout(() =>
-    object.valueA = 3, 3000);
-window.setTimeout(() =>
-    console.log(instance.valueA), 4000);
-window.setTimeout(() =>
-    console.log(instance.valueB), 5000);
-window.setTimeout(() =>
-    instance.valueA = 5, 6000);
+
+object.value = 2;
+console.log(instance.value);
+// output: 2
+
+instance.value = 3;
+console.log(object.value);
+// output: 3
 ```
 
-In this example, after approx. 2 and 5 seconds, `instance.valueB` reads `2` from
-the original object. After approx. 4 seconds, `instance.valueA` reads `3`. These
-reads do not trigger view updates. After approx. 6 seconds, the write access to
-`instance` schedules rendering of any registered consumers of `valueA`.
+The direct write to `object` changes the shared data without refreshing the
+view. The write through `instance` updates the same data and schedules an
+asynchronous refresh of registered consumers of `value`.
 
 ## Nested Objects
 Reactive is intended for arrays and associative application objects, including
 nested objects and objects added later as property values. Nested proxies are
 created on first read and reused for subsequent accesses. They forward property
 access to the original objects, but are separate instances and not identical to
-them.
+them. The same original object yields the same proxy wherever it is referenced,
+including after assignment to another property.
 
 Native objects with internal state, such as `Date`, `Map` and `Set`, are outside
 the reactive data contract and should not be wrapped. DOM nodes and collections
@@ -150,43 +132,19 @@ access returns it without a reactive proxy, so changes made through that
 reference do not trigger reactive rendering.
 
 ```javascript
-const objectA = {}
-const objectB = {}
-objectA.objectB = objectB;
+const product = {name: "Ruler"};
+const model = Reactive({featured: product, selected: null});
 
 // Assertions
-objectA.objectB === objectB
+model.featured !== product;
+model.featured === Reactive(product);
 
-const objectC = objectA.reactive();
+model.selected = model.featured;
+model.selected === model.featured;
 
-// Assertions
-objectC.objectB !== objectA.objectB
-objectC.objectB !== objectB
-objectA.objectB === objectB
-
-const objectD = ({}).reactive();
-objectD.objectB = objectB;
-objectD.objectB.text = "A";
-
-// Assertions
-objectD.objectB !== objectB;
-objectD.objectB === objectC.objectB;
-objectD.objectB.text === "A";
-objectC.objectB.text === "A";
-
-const objectE = {text: "A"};
-const objectF = objectE.reactive();
-objectF.text = "B";
-
-// Assertions
-objectE.text === "B";
-objectF.text === "B";
-
-objectE.text = "C";
-
-// Assertions
-objectE.text === "C"
-objectF.text === "C"
+model.featured.name = "Metal ruler";
+console.log(product.name);
+// output: Metal ruler
 ```
 
 ## Proxies
@@ -210,11 +168,45 @@ const instance = new Proxy(Reactive(object), {
 ```
 
 ## Notes
-Reactive itself has no direct influence on the view, but triggers the composer
-to render the affected consuming HTML elements. This must be taken into account
-especially when expressions use temporary variables, such as those used in the
-attribute [iterate](markup.md#iterate), which is already taken into account
-automatically.
+Markup event handling with [events](markup.md#events) and explicit rendering
+with [render](markup.md#render) work independently of Reactive. When an
+expression reads application data through a reactive proxy, changes made through
+that proxy automatically refresh only the markup that depends on the changed
+data; no explicit `render` target is needed. The `events` attribute is still
+needed to synchronize input values with the corresponding properties in the
+application module.
+
+When [iterate](markup.md#iterate) reads a reactive array directly, it reads the
+entries while building the output. Changing an entry through its proxy therefore
+rebuilds the iterative element's inner HTML. To update product properties
+without rebuilding the iteration, make `iterate` depend only on the array's
+length and read the product data in the template:
+
+```javascript
+const example = {
+    products: [
+        {name: "Ruler"},
+        {name: "Ballpoint pen"},
+        {name: "Pencil"}
+    ]
+}.reactive();
+
+expose(example, "example");
+```
+
+```html
+<select iterate="{{products:example.products.length}}">
+  <option value="{{example.products[products.index].name}}">
+    {{example.products[products.index].name}}
+  </option>
+</select>
+```
+
+Here, the iteration depends on the number of products, while each option reads a
+product's name. Changing a name through the proxy refreshes that option's value
+and text without rebuilding the iteration. Adding or removing a product changes
+the array's length and rebuilds the iteration. The Composer preserves the
+iteration context when it refreshes an option's value or text individually.
 
 
 

@@ -24,6 +24,10 @@ and options for customization.
   - [render](#render)
   - [route](#route)
   - [validate](#validate)
+    - [true](#true)
+    - [not true and not undefined/void](#not-true-and-not-undefinedvoid)
+    - [text](#text)
+    - [undefined/void](#undefinedvoid)
 - [@-Attributes](#-attributes) 
 - [Expression Language](#expression-language)
 - [Scripting](#scripting)
@@ -36,11 +40,10 @@ and options for customization.
 
 ## Attributes
 In _composite-js_, the declarative approach is implemented with attributes. They
-can be used and combined in all HTML elements starting with the &lt;body&gt;
-element. Attribute values can be static or dynamic through the expression
-language. If an attribute contains an expression, the [composer](
-    architecture.md#composer) updates the value with each render cycle based on
-the initial expression.
+can be used and combined in HTML elements starting with the &lt;body&gt; element.
+Attribute values can use expressions where supported. Expressions are evaluated
+during rendering; metadata and runtime instructions can have their own
+initialization and value rules, described in the relevant attribute sections.
 
 ### composite
 Marks an element in the markup as a [composite](composite.md#composite). A
@@ -62,21 +65,25 @@ Composites are also the basis for [composite binding](
 markup (view) with the corresponding application module. The view as
 presentation and user interface for interactions remains decoupled from the
 application module. Application modules provide the data, state and behavior
-that are exposed to the view through composite binding. Binding links views and
-application modules bidirectionally based on the composite IDs, so no manual
-wiring between HTML elements and application module is required.
+that are accessible to the view through composite binding. The application
+module is provided by a [named application object](
+    architecture.md#named-application-object) resolved from the composite ID;
+[object publication](architecture.md#object-publication) can make that object
+available. Binding links views and application modules bidirectionally based on
+the composite IDs, so no manual wiring between HTML elements and application
+module is required.
 
-Details on the use of composites are described in the chapters
-[Composite](composite.md#composite) and [Composite Binding](
+Details on the use of composites are described in the chapters [Composite](
+    composite.md#composite) and [Composite Binding](
     composite-binding.md#composite-binding).
 
 ### condition
 As a condition, the attribute specifies whether an element remains contained in
 the DOM. Like [interval](#interval), it accepts either an explicit static text
-value or one standalone expression, not a mixture of text and expressions.
-For condition, the only static values are the case-sensitive literals `true`
-and `false`. They always retain or exclude the element, respectively, and can
-be useful as temporary switches during development.
+value or one standalone expression, not a mixture of text and expressions. For
+condition, the only static values are the case-sensitive literals `true` and
+`false`. They always retain or exclude the element, respectively, and can be
+useful as temporary switches during development.
 
 A standalone expression must explicitly return Boolean `true` to retain the
 element; the string `"true"` and other truthy values do not satisfy a condition.
@@ -97,7 +104,7 @@ Invalid syntax is reported as `Invalid condition` through console output and
 </article>
 
 <article condition="false">
-  Temporarily excluded during development.
+  ...
 </article>
 ```
 
@@ -183,8 +190,8 @@ no effect.
 
 ### import
 Sets the value or result of an expression as the content of the HTML element and
-replaces its existing inner HTML. The behavior is similar to the
-[output](#output) attribute, except that the import is done once and the import
+replaces its existing inner HTML. The behavior is similar to the [output](
+    #output) attribute, except that the import is done once and the import
 attribute is removed after rendering. DOM values such as `Document`,
 `DocumentFragment`, `NodeList` and `Node` are inserted as DOM content. Other
 values are inserted as text/markup. URLs (locators) with the `raw:`, `xml:` or
@@ -354,27 +361,27 @@ JavaScript as a composite script.
 ```
 
 ### iterate
-Iterative output accepts collections, numeric ranges and individual values.
-If an HTML element is declared as iterative, the inner HTML is used as a template
+Iterative output accepts collections, numeric ranges and individual values. If
+an HTML element is declared as iterative, the inner HTML is used as a template
 from which updated content is generated and inserted as inner HTML with each
-render cycle.
-The attribute value expects a [variable expression](
-    expression.md#variable-expression). It creates a meta-object that allows
-access to the iteration in the template. The variable expression
-`iterate="{{tempA:example.list}}"` creates the meta-object
+render cycle. The attribute value expects a [variable declaration](
+    expression.md#declarations). It creates a metadata object that allows access
+to the iteration in the template. The variable expression
+`iterate="{{tempA:example.list}}"` creates the metadata object
 `tempA = {item, index, data}`.
 
 Arrays, other iterables (such as strings and Sets) and array-like values are
 converted using `Array.from`. Values exposing `Symbol.iterator` or a `length`
-property, including inherited properties, retain that conversion behavior.
-Empty collections produce no iterations. XPath node iterators are collected
-into an array of their nodes.
+property, including inherited properties, retain that conversion behavior. Empty
+collections produce no iterations. XPath node iterators are collected into an
+array of their nodes. Passing a `Set` directly for iteration does not make it a
+supported reactive data type.
 
-Non-null values that are neither collections nor numbers are treated as an
-array containing exactly that value.
-For example, a single object produces one iteration over the object, not its
-properties. Both `true` and `false` produce one iteration. `null` and `undefined`
-produce no iterations and clear any previous output.
+Non-null values that are neither collections nor numbers are treated as an array
+containing exactly that value. For example, a single object produces one
+iteration over the object, not its properties. Both `true` and `false` produce
+one iteration. `null` and `undefined` produce no iterations and clear any
+previous output.
 
 For a single value, `item` retains the original value, `index` is `0`, and `data`
 is the generated one-element array. For collections and numeric ranges, `data`
@@ -430,10 +437,15 @@ up to 0 is used. `0` and `NaN` produce no iterations.
 
 > [!NOTE]
 > Individual objects and Booleans that previously produced no iterations now
-> produce one. To explicitly suppress output, use `null`, `undefined` or an empty
-> array. Errors returned by the expression and errors during collection
+> produce one. To explicitly suppress output, use `null`, `undefined` or an
+> empty array. Errors returned by the expression and errors during collection
 > conversion are still reported through the Composer error handling; they are
 > not converted to single items.
+
+> TODO: produced no iterations now produce one.
+> now: Ist ein Bezug auf die Vorversion, dass soll komplett entfallen
+> Bitte auch in den anderen manuals (manuals/*.md) prüfen und diese stellen so anpassen
+> das sie keinen Bezug auf Vorgängerversionen nehmen
 
 ### message
 Message is an optional part of [Validation](#validate) and is used for text and
@@ -476,6 +488,10 @@ The following examples use the application module from [import](#import).
   loading form...
 </article>
 ```
+
+> TODO: Example of outputting a raw://... resource
+> Das fehlt hier?
+> Siehe Attribute import, dort ist ein Beispiel für raw://... Ressourcen.Bitte prüfen ob das hier auch noch ergänzt werden soll.
 
 Example of outputting via DataSource-URL. If only one URL is specified, the URI
 for data and transformation are derived from it.
@@ -632,13 +648,11 @@ behavior (action) is executed by the browser. This behavior is important for
 validating input fields, for example, so that the input reaches the user
 interface.
 
-__Validation works strictly by default. This means that the validation must
-explicitly be `true` and only then is the input data of the HTML elements
-synchronized with the application module. This protects against invalid data in
-the application module which may then be reflected in the view. If attribute
-`validate` is declared as `optional`, this behaviour can be specifically
-deactivated and the input data is then always synchronized with the application
-module. The effects of validation are then only optional.__
+Validation works strictly by default: input is synchronized with the application
+module, and its event handler is invoked, only when validation returns `true`.
+With `validate="optional"`, synchronization and the handler can proceed despite
+the validation result. A result other than `true` or `undefined` can still
+prevent the browser's default action.
 
 ```html
 <form id="example" composite>
@@ -655,6 +669,7 @@ same name. If custom validation and output need to be implemented, this behavior
 can be changed by redirecting the message to an attribute of the &lt;input&gt;
 element. For this purpose, the message, which at this point also includes the
 return value of expressions, must begin as follows: `@<attribute>:`.
+> TODO: @<attribute> dass sollte ein Link auf das Kapitel @-Attribute sein
 
 A general strategy or standard implementation for error output is deliberately
 not provided, as this is too strict in most cases and can be implemented
@@ -708,42 +723,26 @@ Expressions are resolved by the composer only during rendering, after the page
 has been loaded and initially displayed by the browser. This is a problem for
 HTML elements whose attributes the browser already interprets before rendering
 -- for example the `src` attribute of the &lt;img&gt; element. For these cases
-@-attributes can be used. These work like templates for attributes. The composer
-will resolve their value and then add the attributes of the same name to the
-element. After that, they behave like all other attributes, including being
-updated by the composer during rendering if the attributes contain expressions.
-The template attribute itself is removed even if its first result is
-`undefined`; its expression remains available for later rendering. `undefined`
-resets the same-named property before removing an existing target attribute, but
-only if the property is writable and differs from the default of a detached,
-unconfigured element with the same tag and namespace. Absent targets do not
-trigger a property reset. Reset errors are logged and reported through
-`Composer.EVENT_ERROR`; they abort the subsequent target attribute removal.
+@-attributes are templates for real attributes. The composer resolves the
+expression, adds the target attribute and removes the template attribute. The
+expression remains available for later rendering, including when its value is
+`undefined`. The target attribute follows the ordinary dynamic-attribute rules
+described in [Expression Language](#expression-language).
+> TODO: das mit dem undefined verstehe ich nicht
 
 ```html
 <img @src="{{...}}"/>
 ```
 
 ## Expression Language
-The expression language can be used in the markup as free text and in the
-attributes of the HTML elements. &lt;script&gt; and &lt;style&gt; elements are
-excluded. The expression language is not supported here. When used as free text,
-pure text (plain text) is always generated as output. The addition of markup,
-especially HTML code, is not possible and is only supported with the attributes
-`output` and `import`.
-
-For general dynamic attributes, standalone expression results retain their
-JavaScript type until the browser writes them. Only `undefined` is special: it
-removes the attribute, first resetting its same-named property if the attribute
-exists, the nearest property descriptor is writable or has a setter, and the
-value differs from the default according to `Object.is`. Missing or read-only
-properties are skipped. Defaults come from a new, detached element with the same
-tag and namespace; no target attributes or children are copied. composite-js does
-not interpret Boolean-looking strings; DOM conversions and reflection belong to
-the browser. Write and default-reference errors are logged and reported through
-`Composer.EVENT_ERROR`. A reset error aborts the subsequent attribute removal;
-changes already made are not rolled back. Runtime instructions and metadata
-retain their own rules.
+> TODO: in text oder as free text?
+> TODO: supported HTML attributes -- Gibt es nicht unterstützte Attribute?
+The expression language can be used in text and in supported HTML attributes;
+&lt;script&gt; and &lt;style&gt; contents are excluded. Text expressions produce
+text, not HTML. Use `output` or `import` when markup or DOM content is intended.
+For dynamic attribute values and errors, see [Expression Language](
+    expression.md#expressions). Runtime instructions and metadata retain their
+own rules.
 
 ```html
 <article title="{{example.title}}">
@@ -834,10 +833,9 @@ Composer.customize(function(element) {
 ```
 
 ### Parameters
-`Composer.customize(...)` also accepts configuration parameters instead of a
-tag or a selector. Parameters begin with the character `@` and are case
-insensitive. The configuration can be done several times, the values are then
-merged.
+`Composer.customize(...)` also accepts configuration parameters instead of a tag
+or a selector. Parameters begin with the character `@` and are case insensitive.
+The configuration can be done several times, the values are then merged.
 
 ```javascript
 Composer.customize("@ATTRIBUTES-STATICS", "action name src type");
@@ -862,11 +860,11 @@ are read when an element is created in the DOM and restored when manipulated
 > afterwards and only for composite-internal and static attributes. It does not
 > protect against manipulation with full access to the runtime.
 
-Static attributes are configured with the
-[parameter](#parameters) `@ATTRIBUTES-STATICS`. The configuration can be done
-several times, the values are then merged, but they cannot be removed. If static
-attributes are declared later at runtime, their current values must be captured
-for all elements with a complete scan of the DOM.
+Static attributes are configured with the [parameter](#parameters)
+`@ATTRIBUTES-STATICS`. The configuration can be done several times, the values
+are then merged, but they cannot be removed. If static attributes are declared
+later at runtime, their current values must be captured for all elements with a
+complete scan of the DOM.
 
 ```javascript
 Composer.customize("@ATTRIBUTES-STATICS", "action name src type");

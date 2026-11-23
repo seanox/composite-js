@@ -94,9 +94,6 @@ The locator scheme determines how the data is processed. Schemes are
 case-insensitive and normalized to lowercase. Contextual locators have the
 extension associated with their scheme appended. For explicit locators, the file
 extension remains part of the path but does not determine the processing type.
-The normalized `uri` returned by `Locator.parse` remains valid for a subsequent
-parse or DataSource call, including when a path or query contains a percent
-literal.
 
 ```
 xml://fileA -> ./data/en/fileA.xml
@@ -318,37 +315,23 @@ The result is the same as before, but with `articles` as the root element
 instead of `collection`.
 
 ## Notes
-The datasource can also be used directly in the markup with the attributes
-[import](markup.md#import) and [output](markup.md#output).
+The datasource can also be used directly in markup. Use [import](
+    markup.md#import) to insert content once and [output](markup.md#output) to
+update it on each render cycle.
 
 ```html
 <article import="xml://example/content">
   loading resource...
 </article>
 
-<article import="xml://example/data + xslt://example/style">
-  loading resource...
-</article>
-
-<article import="xml://example/data + xslt">
-  loading resource...
-</article>
-
-<article output="xml://example/content">
-  loading resource...
-</article>
-
 <article output="xml://example/data + xslt://example/style">
-  loading resource...
-</article>
-
-<article output="xml://example/data + xslt">
   loading resource...
 </article>
 ```
 
-If only _xslt_ is specified without a locator, a corresponding XSLT locator is
-derived from the name of the XML locator and used for the transformation.
+Both attributes support the locator and stylesheet forms described under
+[import](markup.md#import), including ` + xslt` to derive a stylesheet locator
+from the XML locator.
 
 
 

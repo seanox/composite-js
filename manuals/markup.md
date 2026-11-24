@@ -24,7 +24,7 @@ and options for customization.
   - [render](#render)
   - [route](#route)
   - [validate](#validate)
-- [@-Attributes](#-attributes) 
+- [Attribute Directives](#attribute-directives)
 - [Expression Language](#expression-language)
 - [Scripting](#scripting)
 - [Customizing](#customizing)
@@ -36,11 +36,10 @@ and options for customization.
 
 ## Attributes
 In _composite-js_, the declarative approach is implemented with attributes. They
-can be used and combined in all HTML elements starting with the &lt;body&gt;
-element. Attribute values can be static or dynamic through the expression
-language. If an attribute contains an expression, the [composer](
-    architecture.md#composer) updates the value with each render cycle based on
-the initial expression.
+can be used and combined in HTML elements starting with the &lt;body&gt; element.
+Attribute values can use expressions where supported. Expressions are evaluated
+during rendering; metadata and runtime instructions can have their own
+initialization and value rules, described in the relevant attribute sections.
 
 ### composite
 Marks an element in the markup as a [composite](composite.md#composite). A
@@ -62,21 +61,25 @@ Composites are also the basis for [composite binding](
 markup (view) with the corresponding application module. The view as
 presentation and user interface for interactions remains decoupled from the
 application module. Application modules provide the data, state and behavior
-that are exposed to the view through composite binding. Binding links views and
-application modules bidirectionally based on the composite IDs, so no manual
-wiring between HTML elements and application module is required.
+that are accessible to the view through composite binding. The application
+module is provided by a [named application object](
+    architecture.md#named-application-object) resolved from the composite ID;
+[object publication](architecture.md#object-publication) can make that object
+available. Binding links views and application modules bidirectionally based on
+the composite IDs, so no manual wiring between HTML elements and application
+module is required.
 
-Details on the use of composites are described in the chapters
-[Composite](composite.md#composite) and [Composite Binding](
+Details on the use of composites are described in the chapters [Composite](
+    composite.md#composite) and [Composite Binding](
     composite-binding.md#composite-binding).
 
 ### condition
 As a condition, the attribute specifies whether an element remains contained in
 the DOM. Like [interval](#interval), it accepts either an explicit static text
-value or one standalone expression, not a mixture of text and expressions.
-For condition, the only static values are the case-sensitive literals `true`
-and `false`. They always retain or exclude the element, respectively, and can
-be useful as temporary switches during development.
+value or one standalone expression, not a mixture of text and expressions. For
+condition, the only static values are the case-sensitive literals `true` and
+`false`. They always retain or exclude the element, respectively, and can be
+used as temporary switches during development.
 
 A standalone expression must explicitly return Boolean `true` to retain the
 element; the string `"true"` and other truthy values do not satisfy a condition.
@@ -97,7 +100,7 @@ Invalid syntax is reported as `Invalid condition` through console output and
 </article>
 
 <article condition="false">
-  Temporarily excluded during development.
+  ...
 </article>
 ```
 
@@ -183,8 +186,8 @@ no effect.
 
 ### import
 Sets the value or result of an expression as the content of the HTML element and
-replaces its existing inner HTML. The behavior is similar to the
-[output](#output) attribute, except that the import is done once and the import
+replaces its existing inner HTML. The behavior is similar to the [output](
+    #output) attribute, except that the import is done once and the import
 attribute is removed after rendering. DOM values such as `Document`,
 `DocumentFragment`, `NodeList` and `Node` are inserted as DOM content. Other
 values are inserted as text/markup. URLs (locators) with the `raw:`, `xml:` or
@@ -195,34 +198,19 @@ only be executed if the condition is `true`.
 
 ```javascript
 const example = {
-    publishForm() {
-        const form = document.createElement("form");
-        const label = document.createElement("label");
-        label.textContent = "Input";
-        form.appendChild(label);
-        const input = document.createElement("input");
-        input.value = "123";
-        input.type = "text";
-        form.appendChild(input);
-        const submit = document.createElement("input");
-        submit.type = "submit";
-        form.appendChild(submit);
-        return form;
-    },
     publishImg() {
         const img = document.createElement("img");
         img.src = "https://raw.githubusercontent.com/seanox/composite-js/master/test/resources/smile.png";
         return img;
     }
 };
+
+expose(example, "example");
 ```
 
 ```html
 <article import="{{example.publishImg()}}">
   loading image...
-</article>
-<article import="{{example.publishForm()}}">
-  loading form...
 </article>
 ```
 
@@ -230,10 +218,6 @@ Example of importing a resource below the application context path using the
 HTTP method GET.
 
 ```html
-<article import="{{'raw://resources/import_c.htmlx'}}">
-  loading resource...
-</article>
-
 <article import="raw://resources/import_c.htmlx">
   loading resource...
 </article>
@@ -243,10 +227,6 @@ Example of importing via DataSource-URL. If only one URL is specified, the URI
 for data and transformation are derived from it. 
 
 ```html
-<article import="{{'xml://example/content'}}">
-  loading resource...
-</article>
-
 <article import="xml://example/content">
   loading resource...
 </article>
@@ -259,14 +239,9 @@ for data and transformation are derived from it.
 Example of importing a DataSource-URL with a specific data URL (locator) and
 transformation URL. As a value, the data URL (locator of the XML file) and the
 transformation URL (locator of the XSLT template) are specified, separated by
-` + `. Reserved characters in either locator can be percent-encoded as usual
-for URLs.
+` + `. Reserved characters in either locator can be percent-encoded.
 
 ```html
-<article import="{{'xml://example/data + xslt://example/style'}}">
-  loading resource...
-</article>
-
 <article import="xml://example/data + xslt://example/style">
   loading resource...
 </article>
@@ -354,27 +329,24 @@ JavaScript as a composite script.
 ```
 
 ### iterate
-Iterative output accepts collections, numeric ranges and individual values.
-If an HTML element is declared as iterative, the inner HTML is used as a template
+Iterative output accepts collections, numeric ranges and individual values. If
+an HTML element is declared as iterative, the inner HTML is used as a template
 from which updated content is generated and inserted as inner HTML with each
-render cycle.
-The attribute value expects a [variable expression](
-    expression.md#variable-expression). It creates a meta-object that allows
-access to the iteration in the template. The variable expression
-`iterate="{{tempA:example.list}}"` creates the meta-object
+render cycle. The attribute value expects a [variable declaration](
+    expression.md#declarations). It creates a metadata object that allows access
+to the iteration in the template. The variable expression
+`iterate="{{tempA:example.list}}"` creates the metadata object
 `tempA = {item, index, data}`.
 
-Arrays, other iterables (such as strings and Sets) and array-like values are
-converted using `Array.from`. Values exposing `Symbol.iterator` or a `length`
-property, including inherited properties, retain that conversion behavior.
-Empty collections produce no iterations. XPath node iterators are collected
-into an array of their nodes.
+`iterate` supports arrays, other iterables (such as strings and Sets),
+array-like values and XPath node iterators. Empty collections produce no
+iterations.
 
-Non-null values that are neither collections nor numbers are treated as an
-array containing exactly that value.
-For example, a single object produces one iteration over the object, not its
-properties. Both `true` and `false` produce one iteration. `null` and `undefined`
-produce no iterations and clear any previous output.
+Non-null values that are neither collections nor numbers are treated as an array
+containing exactly that value. For example, a single object produces one
+iteration over the object, not its properties. Both `true` and `false` produce
+one iteration. `null` and `undefined` produce no iterations and clear any
+previous output.
 
 For a single value, `item` retains the original value, `index` is `0`, and `data`
 is the generated one-element array. For collections and numeric ranges, `data`
@@ -403,37 +375,14 @@ array:
 </p>
 ```
 
-> [!NOTE]
-> If arrays are used with reactive objects, iterate accesses the arrays
-> directly. If the array is a list of values, value changes also change the
-> array and trigger re-rendering of the iterate. To change values at runtime
-> without triggering re-rendering of the iterate, the array must contain objects
-> with the values. Setting the value in the objects does not change the array
-> itself and therefore does not trigger re-rendering.
-> 
-> Alternatively, the length of the array can also be passed to the iterate. It
-> then generates a list of values with the index without accessing the elements.
-> The index can then be used by the expression within the iterate to access the
-> array.
-
-```html
-<select iterate="{{seasons:example.seasons.length}}">
-  <option value="{{seasons.index}}">
-    {{example.seasons[seasons.index]}}
-  </option>
-</select>
-```
-
 If the value for an iterator is a positive number, a list of values from 0 to
 (number -1) is used. If the value is negative, a list of values from (number +1)
 up to 0 is used. `0` and `NaN` produce no iterations.
 
 > [!NOTE]
-> Individual objects and Booleans that previously produced no iterations now
-> produce one. To explicitly suppress output, use `null`, `undefined` or an empty
-> array. Errors returned by the expression and errors during collection
-> conversion are still reported through the Composer error handling; they are
-> not converted to single items.
+> Errors returned by the expression and errors during collection conversion
+> are reported through the Composer error handling; they are not converted to
+> single items.
 
 ### message
 Message is an optional part of [Validation](#validate) and is used for text and
@@ -450,15 +399,9 @@ with the attributes [validate](#validate) and [events](#events).
 </form>
 ```
 
-```html
-<form id="example" composite>
-  <input id="email" type="text" placeholder="email address"
-      pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$"
-      validate message="{{Messages['example.email.validation.message']}}"
-      events="input change" render="#example"/>
-  <input type="submit" value="submit" validate events="click"/>
-</form>
-```
+For a localized message, use
+`message="{{Messages['example.email.validation.message']}}"` with a
+[resource bundle](message.md).
 
 ### output
 Sets for the HTML element the value or result of its expression as inner HTML.
@@ -466,53 +409,21 @@ The behavior is similar to the [import](#import) attribute, except that the
 output is updated with each render cycle. It supports the same values and the
 same combination with the condition attribute.
 
-The following examples use the application module from [import](#import).
+The following examples use the application module from [import](#import) and a
+DataSource locator:
 
 ```html
 <article output="{{example.publishImg()}}">
   loading image...
 </article>
-<article output="{{example.publishForm()}}">
-  loading form...
-</article>
-```
-
-Example of outputting via DataSource-URL. If only one URL is specified, the URI
-for data and transformation are derived from it.
-
-```html
-<article output="{{'xml://example/content'}}">
-  loading resource...
-</article>
-
-<article output="xml://example/content">
-  loading resource...
-</article>
-
-<article output="xml://example/content?count(//item)">
-    loading resource...
-</article>
-```
-
-Example of outputting a DataSource-URL with a specific data URL (locator) and
-transformation URL, as described for [import](#import).
-
-```html
-<article output="{{'xml://example/data + xslt://example/style'}}">
-  loading resource...
-</article>
 
 <article output="xml://example/data + xslt://example/style">
   loading resource...
 </article>
-
-<article output="xml://example/data + xslt">
-    loading resource...
-</article>
 ```
 
-The derivation of the XSLT locator and the handling of JavaScript blocks are the
-same as for [import](#import).
+Raw resources, XPath queries, derived stylesheets and the handling of JavaScript
+blocks follow the same rules as [import](#import).
 
 ### release
 Inverse indicator that an HTML element was rendered. The composer removes this
@@ -530,52 +441,16 @@ Together they define which targets are refreshed by the composer with which
 occurring events. The expected value is a CSS or query selector. Several targets
 are declared as a comma-separated selector list.
 
-```javascript
-const example = {
-    _status1: 0,
-    getStatus1() {
-        return ++example._status1;
-    },
-    _status2: 0,
-    getStatus2() {
-        return ++example._status2;
-    },
-    _status3: 0,
-    getStatus3() {
-        return ++example._status3;
-    }
-};
-```
-
 ```html
-Target #1:
-<span id="outputText1">{{example.getStatus1()}}</span>
-Events: Wheel
-<input id="text1" type="text"
-    events="wheel"
-    render="#outputText1, #outputText2, #outputText3"/>
-
-Target #2:
-<span id="outputText2">{{example.getStatus2()}}</span>
-Events: MouseDown KeyDown
-<input id="text2" type="text"
-    events="mousedown keydown"
-    render="#outputText2, #outputText3"/>
-
-Target #3:
-<span id="outputText3">{{example.getStatus3()}}</span>
-Events: MouseUp KeyUp
-<input id="text3" type="text"
-    events="mouseup keyup"
-    render="#outputText3"/>
+<input id="message" type="text"
+    events="input change" render="#preview, #length"/>
+<p id="preview">{{document.getElementById("message").value}}</p>
+<p id="length">{{document.getElementById("message").value.length}}</p>
 ```
 
-The example contains 3 input fields with different events (`events`) and targets
-(`render`), each of which represents an incremental text output and reacts to
-corresponding events.
-
-__Alternatively, [reactive rendering](reactive.md) can be used, where changes in
-the data objects trigger a partial update of the view.__
+On each `input` or `change` event, both targets are refreshed to display the
+current input value and its length. No application module is needed for this
+example because the expressions read the input element directly.
 
 ### route
 The route attribute marks a composite as a path-addressable destination in the
@@ -607,38 +482,30 @@ the application module as the synchronization target.
 Validation works in two steps and starts with standard HTML5 validation. If this
 does not detect deviations from the expected result or no HTML5 validation is
 specified, the validation of the application module is used. This requires a
-corresponding validate method `boolean validate(element, value)` and an element
+corresponding `validate(element, value)` method and an element
 embedded in a composite.
 
-Validation directly affects synchronization and the browser default action. It
-can use four return states: `true`, `not true`, `text`, `undefined/void`.
+In strict mode, validation directly affects synchronization and the browser
+default action:
 
-#### true
-Validation was successful. No error is shown and the browser default action is
-used. If possible, the value is synchronized.
+__`true`__  
+Validation passes and no error is shown. If possible, the value is synchronized
+and the browser's default action is allowed.
 
-#### not true and not undefined/void
-The validation failed and an error is shown. The return value indicates that the
-default behavior (action) should not be executed by the browser and is thus
-blocked.
+__`undefined` or no return value__  
+Validation fails and the [`message`](#message) attribute is used if provided.
+The value is not synchronized, but the browser's default action is allowed.
 
-#### text
-The validation has failed with an error message. If the error message is empty,
-the message from the message attribute is used as an alternative.
+__other return values__  
+Any other return value fails validation and blocks the browser's default action.
+In strict mode, it also prevents synchronization. A non-blank string is trimmed
+and used as the error message; an empty or whitespace-only string falls back to
+the [`message`](#message) attribute. Other values use that attribute if
+provided.
 
-#### undefined/void
-Validation failed and an error is shown. Without a return value, the default
-behavior (action) is executed by the browser. This behavior is important for
-validating input fields, for example, so that the input reaches the user
-interface.
-
-__Validation works strictly by default. This means that the validation must
-explicitly be `true` and only then is the input data of the HTML elements
-synchronized with the application module. This protects against invalid data in
-the application module which may then be reflected in the view. If attribute
-`validate` is declared as `optional`, this behaviour can be specifically
-deactivated and the input data is then always synchronized with the application
-module. The effects of validation are then only optional.__
+By default, synchronization and the event handler proceed only when validation
+returns `true`. With `validate="optional"`, they can proceed despite a failed
+validation.
 
 ```html
 <form id="example" composite>
@@ -649,16 +516,17 @@ module. The effects of validation are then only optional.__
 </form>
 ```
 
-By default, validation message are shown as a native browser toolbox for the
+By default, validation messages are shown as a native browser toolbox for the
 &lt;input&gt; element. The corresponding message is set via the attribute of the
 same name. If custom validation and output need to be implemented, this behavior
 can be changed by redirecting the message to an attribute of the &lt;input&gt;
 element. For this purpose, the message, which at this point also includes the
-return value of expressions, must begin as follows: `@<attribute>:`.
+return value of expressions, must begin as follows: `@<attribute>:`. This
+message redirection syntax is independent of [Attribute Directives](
+    #attribute-directives).
 
-A general strategy or standard implementation for error output is deliberately
-not provided, as this is too strict in most cases and can be implemented
-individually as a central solution.
+Custom validation error output is implemented by the application, either
+centrally or for individual input elements.
 
 ```css
 input[type='text']:not([fault]) {
@@ -703,47 +571,34 @@ is deleted from the attribute `fault`. Below the input field is the control
 output of the corresponding property in the application module. This property is
 only synchronized if the validate method returns the value `true`.
 
-## @-Attributes
-Expressions are resolved by the composer only during rendering, after the page
-has been loaded and initially displayed by the browser. This is a problem for
-HTML elements whose attributes the browser already interprets before rendering
--- for example the `src` attribute of the &lt;img&gt; element. For these cases
-@-attributes can be used. These work like templates for attributes. The composer
-will resolve their value and then add the attributes of the same name to the
-element. After that, they behave like all other attributes, including being
-updated by the composer during rendering if the attributes contain expressions.
-The template attribute itself is removed even if its first result is
-`undefined`; its expression remains available for later rendering. `undefined`
-resets the same-named property before removing an existing target attribute, but
-only if the property is writable and differs from the default of a detached,
-unconfigured element with the same tag and namespace. Absent targets do not
-trigger a property reset. Reset errors are logged and reported through
-`Composer.EVENT_ERROR`; they abort the subsequent target attribute removal.
+## Attribute Directives
+Expressions are resolved by the composer during rendering, after the page has
+been loaded and initially displayed by the browser. The browser may interpret
+attributes such as `src` on an &lt;img&gt; element before their expressions are
+resolved. Attribute directives defer setting these target attributes until
+rendering.
+
+An attribute directive acts as a template for a target attribute. The composer
+resolves the expression and removes the template attribute. A defined value
+sets the target attribute; `undefined` removes it. The expression remains
+available for later render cycles, so the target attribute can be set again
+when the expression returns a value. The target follows the dynamic attribute
+value rules described in [Expression Language](#expression-language).
 
 ```html
-<img @src="{{...}}"/>
+<img [src]="{{image.url}}">
+<img [src]="images/logo.png">
+<img [src]="">
 ```
 
 ## Expression Language
-The expression language can be used in the markup as free text and in the
-attributes of the HTML elements. &lt;script&gt; and &lt;style&gt; elements are
-excluded. The expression language is not supported here. When used as free text,
-pure text (plain text) is always generated as output. The addition of markup,
-especially HTML code, is not possible and is only supported with the attributes
-`output` and `import`.
-
-For general dynamic attributes, standalone expression results retain their
-JavaScript type until the browser writes them. Only `undefined` is special: it
-removes the attribute, first resetting its same-named property if the attribute
-exists, the nearest property descriptor is writable or has a setter, and the
-value differs from the default according to `Object.is`. Missing or read-only
-properties are skipped. Defaults come from a new, detached element with the same
-tag and namespace; no target attributes or children are copied. composite-js does
-not interpret Boolean-looking strings; DOM conversions and reflection belong to
-the browser. Write and default-reference errors are logged and reported through
-`Composer.EVENT_ERROR`. A reset error aborts the subsequent attribute removal;
-changes already made are not rolled back. Runtime instructions and metadata
-retain their own rules.
+The expression language can be used in text nodes and HTML attribute values;
+the contents of &lt;script&gt; and &lt;style&gt; elements are excluded. HTML
+attributes do not require a separate allowlist, but runtime instructions and
+initial metadata have their own rules. Text-node expressions produce text, not
+HTML. Use `output` or `import` when markup or DOM content is intended. For
+dynamic attribute values and errors, see [Expression Language](
+    expression.md#expressions).
 
 ```html
 <article title="{{example.title}}">
@@ -834,10 +689,9 @@ Composer.customize(function(element) {
 ```
 
 ### Parameters
-`Composer.customize(...)` also accepts configuration parameters instead of a
-tag or a selector. Parameters begin with the character `@` and are case
-insensitive. The configuration can be done several times, the values are then
-merged.
+`Composer.customize(...)` also accepts configuration parameters instead of a tag
+or a selector. Parameters begin with the character `@` and are case insensitive.
+The configuration can be done several times, the values are then merged.
 
 ```javascript
 Composer.customize("@ATTRIBUTES-STATICS", "action name src type");
@@ -862,11 +716,11 @@ are read when an element is created in the DOM and restored when manipulated
 > afterwards and only for composite-internal and static attributes. It does not
 > protect against manipulation with full access to the runtime.
 
-Static attributes are configured with the
-[parameter](#parameters) `@ATTRIBUTES-STATICS`. The configuration can be done
-several times, the values are then merged, but they cannot be removed. If static
-attributes are declared later at runtime, their current values must be captured
-for all elements with a complete scan of the DOM.
+Static attributes are configured with the [parameter](#parameters)
+`@ATTRIBUTES-STATICS`. The configuration can be done several times, the values
+are then merged, but they cannot be removed. If static attributes are declared
+later at runtime, their current values must be captured for all elements with a
+complete scan of the DOM.
 
 ```javascript
 Composer.customize("@ATTRIBUTES-STATICS", "action name src type");

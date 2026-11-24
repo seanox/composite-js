@@ -13,6 +13,7 @@ properties described below.
 - [Math](#math)
   - [Math.serial](#mathserial)
 - [Object](#object)
+  - [Object Path](#object-path)
   - [Object.prototype.serial](#objectprototypeserial)
   - [Object.lookup](#objectlookup)
   - [Object.exists](#objectexists)
@@ -55,14 +56,10 @@ const options = Arguments.bind(["items", 10], [
 // returns {name: "items", limit: 10}, frozen
 ```
 
-Only signatures with the effective argument count are considered: the smaller of
-`values.length` and the longest signature's parameter count. Surplus values
-beyond that maximum are ignored. Missing values are not filled in, and type
-mismatches do not cause a retry with a shorter signature. An empty signature
-`{}` supports calls with no values.
-
-Among signatures with that count, the first matching signature wins; more
-specific types do not receive priority. Type checks do not coerce values:
+Arguments beyond the longest signature are ignored. The remaining argument
+count must match a signature's parameter count; missing values are not filled
+in. Among matching signatures, the first with compatible types wins. Types are
+not converted, and a type mismatch does not fall back to a shorter signature.
 
 | Allowed type                                    | Accepted values                                                           |
 |-------------------------------------------------|---------------------------------------------------------------------------|
@@ -71,9 +68,8 @@ specific types do not receive priority. Type checks do not coerce values:
 | `Object`                                        | Non-null objects, including arrays; not functions.                        |
 | Other types, such as `Array`, `Date`, `Element` | Values accepted by `instanceof` for that type.                            |
 
-Invalid definitions, missing matching argument counts and type mismatches throw
-`TypeError`. All signature definitions are validated before matching. An empty
-type list accepts no value; an empty signatures array matches no call.
+Invalid signature definitions, unsupported argument counts and type mismatches
+throw `TypeError`.
 
 ## Math
 
@@ -88,27 +84,15 @@ Math.serial()
 ```
 
 ## Object
-`Object.lookup`, `Object.exists` and `Object.use` address namespaces as object
-trees. They share the same arguments: an optional object or array root and a
-single complete string path, for example `Object.lookup(model,
-"items[0].name")`. Variadic path fragments are not supported.
 
-The supported signatures are `method()`, `method(path)`, `method(root)`,
-`method(root, path)` and `method(undefined, path)`. A defined path requires an
-object/array root or `undefined` and must be a string. An `undefined` path is
-treated as omitted. `lookup` and `exists` ignore arguments after the path. `use`
-additionally supports `Object.use(root, path, value)`, which requires an
-explicit non-null object/array root and a valid path, and ignores arguments
-after the value. In the assignment form, missing `root` and `path` arguments are
-checked first and throw `TypeError` with `Missing argument: root` or `Missing
-argument: path`. An `undefined` value is treated as omitted: `use` ensures the
-object structure without assigning `undefined`.
+### Object Path
+An Object path is a string interpreted as static property-addressing syntax, not
+as a JavaScript expression. The following path-based Object API operations use
+this syntax.
 
-| Method                         | Operation                                                     | Result                                                                             |
-|--------------------------------|---------------------------------------------------------------|------------------------------------------------------------------------------------|
-| [Object.lookup](#objectlookup) | Read without mutation.                                        | Resolved value of any type, or `undefined`.                                        |
-| [Object.use](#objectuse)       | Ensure a structure, or assign a value below an explicit root. | Last object/array, assigned value, or `undefined` if the implicit root is missing. |
-| [Object.exists](#objectexists) | Check for a value other than `null`/`undefined`.              | Boolean; not a property-presence or truthiness test.                               |
+The path-based operations accept `method(root, path)` with an object or array
+root, or `method(path)` for global names. Path fragments cannot be passed as
+separate arguments.
 
 __Prefer an explicit root in application code.__ Resolution then stays on that
 object, without global lookup or publication. Without a root, or with
@@ -119,47 +103,37 @@ object, without global lookup or publication. Without a root, or with
 | `App`                       | Global name, including `const`/`let` in classic scripts; if `undefined`, fall back to `window.App`. |
 | `[App]`, `["App"]`, `"App"` | `window.App` only, without lexical name lookup.                                                     |
 
-Local function and ES-module bindings require an explicit root. Remaining
-fragments always use property access, including inherited properties. Accessing
-a global `const`/`let` binding before its initialization throws
-`ReferenceError`; there is no fallback to `window` in that case. Passing only an
-object/array returns it from `lookup`/`use`, and `true` from `exists`. Without
-arguments, or with only `undefined`, the results are `undefined`, `undefined`
-and `false`, respectively.
+Local function and ECMAScript module bindings require an explicit root.
+Remaining fragments use property access, including inherited properties.
 
-__Paths are an addressing grammar, not JavaScript expressions:__
+__Path syntax__
 
-| Path notation                                  | Meaning                                                       |
-|------------------------------------------------|---------------------------------------------------------------|
-| `a.b`                                          | ASCII identifiers matching `[A-Za-z_$][A-Za-z0-9_$]*`.        |
-| `a[property]`                                  | Fixed key `"property"`, not a variable.                       |
-| `items[007]`                                   | Numeric key `"7"`, normalized without rounding.               |
-| `items["007"]`                                 | Exact string key `"007"`.                                     |
-| `a["-1"]`, `a["child.name"]`, `a."child.name"` | Literal keys; single quotes and backticks are also supported. |
+| Path notation     | Meaning                                                |
+|-------------------|--------------------------------------------------------|
+| `a.b`             | ASCII identifiers matching `[_A-Za-z$][_A-Za-z0-9$]*`. |
+| `items[0]`        | Numeric key `"0"`, typically an array index.           |
+| `a[property]`     | Fixed key `"property"`, not a variable.                |
+| `a["child.name"]` | Literal key `"child.name"`, not a nested path.         |
 
-Literals allow any string key, including Unicode and empty keys. Escapes are
-decoded once; decoded dots/brackets stay inside the key. Backticks do not
-interpolate. Whitespace is allowed only inside literals and bracket padding.
-`[-1]`, `[1.5]`, `items.7` and numeric path arguments are invalid. Beyond the
-native array-index range, numeric keys are ordinary array properties and do not
-change `length`.
+Quoted keys allow Unicode, punctuation and empty strings. Single quotes and
+backticks are also supported; backticks do not interpolate. Escapes are decoded
+once. Whitespace is allowed only inside literals and bracket padding. Negative
+or fractional keys must be quoted; unquoted numeric keys ignore leading zeros.
 
-The complete path is validated before traversal or mutation. Required branches
-must be non-null objects or arrays; DOM objects are supported and functions
-cannot serve as branches. Invalid arguments/branches throw `TypeError`, invalid
-paths or malformed escapes throw `SyntaxError`, and out-of-range Unicode escapes
-throw `RangeError`.
+Roots and intermediate branches must be non-null objects or arrays; DOM objects
+are supported, but functions cannot serve as branches. Invalid arguments or
+branches throw `TypeError`; malformed paths and escapes throw `SyntaxError`.
+Well-formed `\u{...}` escapes with code points above U+10FFFF throw
+`RangeError`. Native access and assignment errors propagate.
 
 ### Object.prototype.serial
-Returns the object's `uid`. If `uid` is `undefined`, generates a numeric
-identifier from a runtime-local counter and stores it using
-`Object.defineProperty`. A newly created property is non-enumerable,
-non-writable and non-configurable. Native property-definition errors propagate.
+Returns the object's `uid`. If it is `undefined`, creates a numeric runtime
+identifier. The new property is non-enumerable, non-writable and
+non-configurable.
 
-An existing `uid` value other than `undefined`, including an inherited value, is
-returned unchanged; its uniqueness and immutability are not enforced. Native
-property-definition errors propagate, for example when creating a UID on a
-non-extensible object after `Object.freeze` or `Object.seal`.
+Existing values other than `undefined`, including inherited values, are returned
+unchanged; their uniqueness and immutability are not enforced. Native errors
+propagate, for example when adding `uid` to a frozen or sealed object.
 
 ```javascript
 const object1 = {};
@@ -174,45 +148,44 @@ element1.serial() != element2.serial();
 ```
 
 ### Object.lookup
-Reads a path without changing the tree. The end value is returned unchanged,
-including arrays, primitives, functions and `null`. A missing root or branch
-returns `undefined`; traversing through an incompatible value throws.
+Resolves an [Object path](#object-path) without changing the tree. The end value
+is returned unchanged, including arrays, primitives, functions and `null`. A
+missing root or branch returns `undefined`; traversing through an incompatible
+value throws.
 
 ```javascript
-const model = {items: [{name: "example"}], keys: {"x\ny": 1}};
-Object.lookup(model, "items[000].name");
-// returns "example"
+const model = {products: [{name: "Ruler"}], keys: {"child.name": 1}};
+Object.lookup(model, "products[0].name");
+// returns "Ruler"
+Object.lookup(model, 'keys["child.name"]');
+// returns 1
 Object.lookup(model, "missing.child");
 // returns undefined; no mutation
-Object.lookup(model, 'keys["x\\ny"]');
-// returns 1; splitter decodes the escape
-Object.lookup(model, 'keys["x\ny"]');
-// returns 1; JavaScript already decoded it
 ```
 
 ### Object.exists
-Equivalent to `Object.usable(Object.lookup(root, path))`: only `null` and
-`undefined` produce `false`; `false`, `0` and `""` produce `true`. This is
-__not__ an `in`/own-property check or a Boolean conversion. Lookup errors
-propagate; no objects are created.
+Equivalent to `Object.usable(Object.lookup(root, path))` for an [Object path](
+    #object-path): only `null` and `undefined` produce `false`; `false`, `0` and
+`""` produce `true`. This is __not__ an `in`/own-property check or a Boolean
+conversion. Lookup errors propagate; no objects are created.
 
 ```javascript
-const settings = {enabled: false, theme: null};
-Object.exists(settings, "enabled");
+const product = {available: false, sku: null};
+Object.exists(product, "available");
 // returns true
-Object.exists(settings, "theme");
+Object.exists(product, "sku");
 // returns false, although the property is present
-"theme" in settings;
+"sku" in product;
 // returns true
-Object.exists(settings, "missing");
+Object.exists(product, "missing");
 // returns false
 ```
 
 ### Object.use
-Without a value, or with `undefined`, an __ensure operation__, not just a
-lookup: creates missing structure below an existing root and returns the last
-object/array reference. Existing containers are reused, never converted or
-overwritten with a different type.
+Without a value, or with `undefined`, `Object.use` performs an ensure operation
+on an [Object path](#object-path): it creates missing structure below an
+existing root and returns the last object/array reference. Existing containers
+are reused, never converted or overwritten with a different type.
 
 A missing container becomes `[]` if the __next fragment__ is an unquoted
 all-digit index; otherwise it becomes `{}`. Quoted numeric keys do not request
@@ -221,42 +194,33 @@ non-null object or array.
 
 ```javascript
 const root = {};
-const details = Object.use(root, "items[007].details");
-// creates root.items as [], root.items[7] and its details as {}
-details === root.items[7].details; // true
-Object.use(root, 'named["007"]["-1"]');
-// creates {} containers and preserves the literal keys
+const details = Object.use(root, "products[0].details");
+// creates root.products as [], root.products[0] and its details as {}
+details === root.products[0].details; // true
 ```
 
-An implicit root must already exist: `Object.use("MissingApp.settings")` returns
-`undefined` if `MissingApp` is absent. To create a global root, pass `window`
-explicitly: `Object.use(window, "NewApp.settings")`. No lexical bindings are
-created. Native assignment errors propagate, including writes to frozen
-containers or missing indexed `window` properties, which represent child frames
-rather than writable array slots.
+An implicit global root must already exist; otherwise `Object.use(path)` returns
+`undefined`. To create a global root, pass `window` explicitly:
+`Object.use(window, "NewApp.settings")`.
 
 With a value other than `undefined`, `Object.use(root, path, value)` creates
-missing intermediate branches, assigns `value` to the final key using normal
-strict-mode JavaScript assignment, and returns `value` unchanged. The root must
-be an explicit non-null object or array, and the path must be a valid nonempty
-string. An implicit or `undefined` root is not allowed in this mode.
+missing intermediate branches, sets the final property and returns `value`.
+This form requires an explicit object or array root and a valid, nonempty string
+path.
 
-All defined values are accepted, including `null`, `false`, `0`, `""` and
-functions. Existing end values are overwritten; intermediate objects/arrays are
-reused without conversion, and incompatible intermediate values still throw. The
-final property is not read before assignment, so setters receive the value once
-without an intermediate placeholder. Native assignment errors propagate.
+Existing end values are overwritten, including with `null`, `false`, `0`, `""`
+or functions. Intermediate containers are reused, and incompatible branches
+cause an error. Native assignment errors, such as writes to frozen objects,
+propagate.
 
 ```javascript
 const root = {};
-Object.use(root, "a.b.c[10]", "a");
-// returns "a"; c is [], c[10] is "a"
-Object.use(root, 'named["a"]', 10);
-// returns 10; named is {}, named.a is 10
-Object.use(root, "a.b.c[11]", undefined);
-// ensures and returns {} at c[11]
-Object.use(root, "named", false);
-// overwrites the final object with false
+Object.use(root, "products[0].name", "Ruler");
+// returns "Ruler"; creates {products: [{name: "Ruler"}]}
+Object.use(root, "products[1]", undefined);
+// ensures and returns {} at products[1]
+Object.use(root, "products[0].available", false);
+// returns false; assigns a Boolean
 ```
 
 ### Object.usable
@@ -361,9 +325,8 @@ arbitrary binary data.
 ```
 
 ### String.prototype.encodeHtml
-Escapes the string for use as text in HTML markup by assigning it to a temporary
-element's `textContent` and returning its `innerHTML`. Quotes are not escaped;
-this is not an encoder for HTML attribute values, JavaScript or URLs.
+Escapes text for use in HTML markup. Quotes are not escaped; this is not an
+encoder for HTML attribute values, JavaScript or URLs.
 
 ```javascript
 ("<hello world> & abc").encodeHtml();
@@ -386,7 +349,7 @@ forms are `\0` to `\777` (one to three octal digits), `\xHH`, `\uHHHH`, and
 
 Decoding happens once from left to right. Each `\\` pair becomes one literal
 backslash; decoded characters are not interpreted as another escape sequence.
-Unknown simple escapes such as `\q` yield the escaped character (`q`). Malformed
+Unknown escapes such as `\q` yield the escaped character (`q`). Malformed
 hexadecimal or Unicode escapes and a trailing unpaired backslash throw
 `SyntaxError`. Unicode code points above U+10FFFF throw `RangeError`.
 
@@ -420,9 +383,9 @@ resolves to a value other than `undefined`, it throws `Error("JavaScript
 incompatibility detected for: " + context)`. An existing property with value
 `undefined` can be assigned.
 
-A simple identifier publishes a property on `window`. For nested targets, the
-parent object must already exist; missing parents and native assignment errors
-propagate.
+An unqualified ASCII identifier such as `example` publishes a property on
+`window`. For nested targets, the parent object must already exist; missing
+parents and native assignment errors propagate.
 
 ```javascript
 window.compliant("example", {});
@@ -432,12 +395,12 @@ window.compliant("example.function", (param1, param2, param3) => {});
 ```
 
 The target is evaluated as JavaScript, not parsed with the
-[Object path grammar](#object). Use application-defined targets, not untrusted
-input.
+[Object path grammar](#object-path). Use application-defined targets, not
+untrusted input.
 
-With `null` or `undefined` as `context`, the method simply returns `payload`
-without assigning it. An omitted payload is `undefined`; assigning it does not
-reserve the target against subsequent calls.
+With `null` or `undefined` as `context`, the method returns `payload` without
+assigning it. An omitted payload is `undefined`; assigning it does not reserve
+the target against subsequent calls.
 
 ### window.compliant.version
 Property to get the version of Seanox composite-js.

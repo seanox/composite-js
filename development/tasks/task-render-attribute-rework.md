@@ -1,13 +1,17 @@
-# User Story: Attributnamen und DOM-Property-Mappings explizit festlegen
+# User Story: Attribute Directives und DOM-Property-Mappings explizit festlegen
 
 ## User Story
 
-Als Anwendungsentwicklerin möchte ich bei dynamischen Markup-Attributen
-Attributname und JavaScript-Property getrennt und ausdrücklich angeben können,
-damit der Renderer die gewünschte DOM-Property setzt, ohne sich auf implizite
+Als Anwendungsentwicklerin möchte ich bei Attribute Directives Attributname
+und JavaScript-Property getrennt und ausdrücklich angeben können, damit der
+Renderer die gewünschte DOM-Property setzt, ohne sich auf implizite
 Namenszuordnungen verlassen zu müssen.
 
 ## Ausgangslage und Umfang
+
+Die geklammerte Syntax für dynamische Markup-Attribute heisst in diesem Ticket
+__Attribute Directives__. Der Begriff bezeichnet die Attributvorlagen, die der
+Composer erst beim Rendering in echte Attribute umwandelt.
 
 Die Markup-Dokumentation beschreibt `@`-Attribute als Vorlagen, die der
 Composer erst beim Rendering in echte Attribute umwandelt. Das verhindert,
@@ -73,7 +77,8 @@ ihren Browser-Default beim Entfernen erhalten.
 
 ## Abnahmekriterien
 
-- [ ] Die `@`-Attributvorlagen werden durch die neue geklammerte Syntax ersetzt;
+- [ ] Die bisherigen `@`-Attributvorlagen werden durch Attribute Directives
+  mit der neuen geklammerten Syntax ersetzt;
   die Beispiele und Verhaltensweisen verwenden keine `@`-Attributvorlagen
   mehr.
 - [ ] Ein vollständig geklammertes Attribut wird erst beim Rendering als

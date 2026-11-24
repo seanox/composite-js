@@ -37,8 +37,8 @@ The surrounding markup determines how results are rendered:
 | Context                       | Example                              | Result                                     |
 |-------------------------------|--------------------------------------|--------------------------------------------|
 | Text node                     | `{{undefined}}` or `{{null}}`        | No output                                  |
-| Ordinary attribute            | `title="{{undefined}}"`              | Attribute removed                          |
-| Ordinary attribute            | `title="{{null}}"`                   | Attribute value `"null"`                   |
+| Attribute                     | `title="{{undefined}}"`              | Attribute removed                          |
+| Attribute                     | `title="{{null}}"`                   | Attribute value `"null"`                   |
 | Mixed attribute interpolation | `title="before {{undefined}} after"` | Attribute value `"before undefined after"` |
 | Content instruction           | `output="{{}}"` or `import="{{}}"`   | Text `"undefined"`                         |
 
@@ -50,11 +50,12 @@ standalone empty value expression evaluates to `undefined`.
 Errors thrown during expression evaluation are logged with the expression
 context and used as expression results.
 
-For ordinary dynamic attributes, including [@-attribute templates](
-    markup.md#-attributes), a standalone result is passed to the DOM APIs
-without converting it or interpreting `"true"` and `"false"` as Booleans. Native
-DOM APIs and property setters perform their own conversions. Use `String(...)`
-explicitly when text is required. Mixed interpolation remains text.
+For dynamic attributes, including [attribute directives](
+    markup.md#attribute-directives) such as `[src]="{{image.url}}"`, a standalone
+result is passed to the DOM APIs without converting it or interpreting `"true"`
+and `"false"` as Booleans. Native DOM APIs and property setters perform their own
+conversions. Use `String(...)` explicitly when text is required. Mixed
+interpolation remains text.
 
 Attribute names are not mapped to differently cased property names, and Boolean
 HTML attributes are controlled by presence rather than by their text value.
@@ -108,8 +109,8 @@ error, without logging.
 
 ### Declarations
 In text nodes, `{{name: expression}}` creates or sets a variable in the view
-scope without producing output. Names follow the usual ASCII naming pattern for
-JavaScript variables. The colon must immediately follow the name.
+scope without producing output. Names must match `[A-Za-z_$][A-Za-z0-9_$]*`.
+The colon must immediately follow the name.
 
 ```html
 {{label: Example.object.field}}
@@ -141,7 +142,7 @@ for example, `&amp;&amp;` becomes JavaScript's `&&`:
 In markup, a match starts at `{{` and ends at the first subsequent `}}`.
 JavaScript strings, comments, template literals, and backslashes do not mask
 this boundary. For example, `\{{value}}` evaluates the expression and retains
-the preceding backslash. Unmatched `{{` and stray `}}` remain ordinary text.
+the preceding backslash. Unmatched `{{` and stray `}}` remain literal text.
 
 To include `}}` in a JavaScript string, write `\}\}`. Separate adjacent
 structural closing braces with whitespace:

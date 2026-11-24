@@ -93,14 +93,13 @@ Composer.listen(Composer.EVENT_RENDER_***, function(event, selector) {
 ```
 
 ### Composer.EVENT_RENDER_START
-The event occurs when rendering starts. Processing starts after the event.
+Occurs before rendering starts.
 
 ### Composer.EVENT_RENDER_NEXT
-The event occurs during recursive rendering iteration when another HTML element
-starts rendering during a render cycle. Processing starts after the event.
+Occurs before each additional HTML element is rendered during a render cycle.
 
 ### Composer.EVENT_RENDER_END
-The event occurs after rendering has ended. Processing ends before the event.
+Occurs after rendering ends.
 
 ## Composite Binding
 The following events occur during composite binding. As with the rendering
@@ -114,14 +113,13 @@ Composer.listen(Composer.EVENT_MOUNT_***, function(event, selector) {
 ```
 
 ### Composer.EVENT_MOUNT_START
-The event occurs when binding starts. Processing starts after the event.
+Occurs before binding starts.
 
 ### Composer.EVENT_MOUNT_NEXT
-The event occurs during recursive binding iteration when another HTML element
-starts binding during a render cycle. Processing starts after the event.
+Occurs before each additional HTML element is bound during a render cycle.
 
 ### Composer.EVENT_MOUNT_END
-The event occurs after binding has ended. Processing ends before the event.
+Occurs after binding ends.
 
 ## Modules
 The following events occur when the runtime loads composite modules and connects
@@ -137,7 +135,7 @@ addressed programmatically in JavaScript.
 ### Composer.EVENT_MODULE_DOCK
 Occurs when a composite is added to the DOM, before the `dock` method of the
 application module is called. The callback method is passed the event and a
-meta-object with information about the module.
+metadata object with information about the module.
 
 ```javascript
 Composer.listen(Composer.EVENT_MODULE_DOCK, function(event, meta) {
@@ -148,8 +146,8 @@ Composer.listen(Composer.EVENT_MODULE_DOCK, function(event, meta) {
 ### Composer.EVENT_MODULE_READY
 Occurs after the `dock` method of the application module has been executed. At
 this point the application module is connected to the composite and can be used.
-The callback method is passed the event and a meta-object with information about
-the module.
+The callback method is passed the event and a metadata object with information
+about the module.
 
 ```javascript
 Composer.listen(Composer.EVENT_MODULE_READY, function(event, meta) {
@@ -160,7 +158,7 @@ Composer.listen(Composer.EVENT_MODULE_READY, function(event, meta) {
 ### Composer.EVENT_MODULE_UNDOCK
 Occurs after a composite has been removed from the DOM and the `undock` method
 of the application module has been executed. The callback method is passed the
-event and a meta-object with information about the module.
+event and a metadata object with information about the module.
 
 ```javascript
 Composer.listen(Composer.EVENT_MODULE_UNDOCK, function(event, meta) {
@@ -182,7 +180,7 @@ Composer.listen(Composer.EVENT_HTTP_***, function(event, payload) {
 HTTP events follow the composite-js runtime lifecycle rather than the native
 lifecycle of the underlying request API. Requests via `XMLHttpRequest` and
 `fetch` are therefore intercepted centrally and forwarded through
-`Composer.fire()`, independently of their native event mechanisms.
+`Composer.emit()`, independently of their native event mechanisms.
 
 ### XMLHttpRequest
 `EVENT_HTTP_START` is triggered when `open()` is called, not on the native

@@ -62,7 +62,7 @@ expose(example, "example");
 
 The structure and responsibility of the application module are not prescribed by
 the runtime. It can be implemented as an object, function, class or another
-suitable structure.
+structure.
 
 The composite ID can also be used for CSS selector mapping.
 
@@ -76,25 +76,12 @@ The selector mapping is a resource convention and does not change the meaning of
 the composite ID.
 
 ## Composite and Composer
-A __composite__ is the conceptual application unit. It defines identity,
-boundary and the association between view, application module and resources. It
-has no active behavior of its own.
-
-The __[composer](architecture.md#composer)__ is the runtime component that
-realizes composites. It connects a composite module with the declaring HTML
-element, establishes the [composite binding](
-    composite-binding.md#composite-binding) between the view and the application
-module, and performs the lifecycle transitions. The surrounding runtime resolves
-and loads the resources, executes the composite script and controls the
+A __composite__ is an application unit with a view, optional application logic
+and associated resources. The __[composer](architecture.md#composer)__ realizes
+it within its declaring HTML element and establishes [composite binding](
+    composite-binding.md#composite-binding). The composer is part of the
+runtime, which resolves and loads resources, executes scripts and manages the
 composite lifecycle.
-
-```text
-Composite            -> concept: identified application unit
-Composite Module     -> resource unit of a composite
-Composer             -> runtime component that realizes composites
-Runtime              -> infrastructure that provides loading, rendering,
-                        lifecycle and the composer
-```
 
 ```text
 Composite Module
@@ -102,10 +89,6 @@ Composite Module
         -> Composer
             -> running Composite
 ```
-
-Consequently, a composite does not load its own resources, does not render 
-itself and does not establish its own binding. These actions are performed by
-the runtime and the composer.
 
 ## Resources
 The resources associated with a composite can be stored externally. The default

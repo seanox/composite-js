@@ -57,18 +57,15 @@ Test.start();
   - [Element](#element)
     - [Element.prototype.typeValue](#elementprototypetypevalue)
     - [Element.prototype.toPlainString](#elementprototypetoplainstring)
-    - [Element.prototype.trigger](#elementprototypetrigger)
+    - [Element.prototype.dispatch](#elementprototypedispatch)
   - [Node](#node)
     - [Node.prototype.toPlainString](#nodeprototypetoplainstring)
   - [Object](#object)
-    - [Object.prototype.toPlainString](#objectprototoplainstring)
+    - [Object.prototype.toPlainString](#objectprototypetoplainstring)
 
 ## Task
-The smallest component in an integration test is called _task_ because _case_ is
-a JavaScript keyword. A task can be implemented alone, but is always used in a
-scenario.
-
-Task is defined by a metadata object.
+A _task_ is a single test case defined by a metadata object. A task can be
+implemented alone, but is always used in a scenario.
 
 ```
 {name:..., test:..., timeout:..., expected:..., ignore:...}
@@ -273,8 +270,7 @@ Test.start({monitor: {
         // The method is called with suspension.
     },
     resume(status) {
-        // The method is called when the test run is stopped and will be
-        // continued later.
+        // The method is called after a suspended test run is resumed.
     },
     interrupt(status) {
         // The method is called if you want to abort the test run.
@@ -336,24 +332,15 @@ details of the current task and the queue. Status properties are read-only;
 ```
 
 ## Output
-As a development tool, browsers provide console output that can be used to log
-information, for which different channels or levels are supported:  
-    _LOG_, _WARN_, _ERROR_, _INFO_
-
-```javascript
-console.log(message);
-console.warn(message);
-console.error(message);
-console.info(message);
-```
-
-To be able to include console output in tests, the activated Test API supports
-forwarding, listeners and buffers for console output.
+The activated Test API supports forwarding, listeners and buffers for the
+console output channels: _LOG_, _WARN_, _ERROR_, _INFO_
 
 ### Forwarding
 Forwarding distributes output to the browser console and the components of the
-Test API. In frames, output is also forwarded to parent windows where the Test
-API is activated, and is available there through the buffer and listeners.
+Test API. In frames, output is also forwarded to accessible same-origin parent
+windows where the Test API is activated. A cross-origin parent cannot be read,
+so optional parent forwarding is skipped; local console output, buffers and
+listeners remain available.
 
 ### Buffer
 When the Test API is enabled, the console object of the JavaScript API is
@@ -381,7 +368,6 @@ console.listen(function(level, ...parameters) {
 
 The callback is called for each console output with the log level as its first
 parameter, followed by the arguments passed to the corresponding console method.
-The variable number of arguments can be handled with the spread syntax `...`.
 
 ## Monitoring
 Monitoring is configured with the monitor of the Test API and is informed of the
@@ -442,11 +428,11 @@ Playwright to observe them. The event's type is the event name (e.g.
 property with the same name (e.g. `event.testStart`).
 
 When events originate in nested views such as frames or iframes, corresponding
-events are also dispatched on each parent window. `Test.listen` callbacks
-receive the event name and status; monitor methods receive only the status. Test
-callbacks are invoked in registration order. Synchronous callback errors are
-reported asynchronously so subsequent callbacks and parent-window propagation
-can continue.
+events are also dispatched on accessible same-origin parent windows.
+`Test.listen` callbacks receive the event name and status; monitor methods
+receive only the status. Test callbacks are invoked in registration order.
+Synchronous callback errors are reported asynchronously so subsequent callbacks
+and parent-window propagation can continue.
 
 List of available events:
 
@@ -506,8 +492,8 @@ document.querySelector("#inputText").typeValue("Hello World!", false);
 ```
 
 #### Element.prototype.toPlainString
-Method that creates a simple string for an HTML element object.  
-The string is based on `Element.prototype.outerHTML`.
+Method that returns the HTML serialization of an element as a string, using
+`Element.prototype.outerHTML`.
 
 ```html
 <form action="/api/example" method="POST">
@@ -529,51 +515,37 @@ Output:
 </form>
 ```
 
-#### Element.prototype.trigger
-Method to trigger an event for an HTML element with the optional parameters
+#### Element.prototype.dispatch
+Method to dispatch an event for an HTML element with the optional parameters
 `bubbles` (default: `false`) and `cancelable` (default: `true`).
 
 ```javascript
-document.querySelector("#button").trigger("click");
-document.querySelector("#button").trigger("click", true);
-document.querySelector("#button").trigger("click", true, false);
+document.querySelector("#button").dispatch("click");
+document.querySelector("#button").dispatch("click", true);
+document.querySelector("#button").dispatch("click", true, false);
 ```
 
 ### Node
 
 #### Node.prototype.toPlainString
-Method that creates a simple string for a node object.  
-The string is based on `XMLSerializer.serializeToString(node)`.
+Serializes a node as XML.
 
 ```javascript
-const text = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-         + "<note>"
-         + "  <to>Tove</to>"
-         + "  <from>Jani</from>"
-         + "  <heading>Reminder</heading>"
-         + "  <body>Don't forget me this weekend!</body>"
-         + "</note>";
-
-const parser = new DOMParser();
-const xml = parser.parseFromString(text, "text/xml");
-
-const nodes = xml.evaluate("/note", xml, null, XPathResult.ANY_TYPE, null);
-const result = nodes.iterateNext();
-console.log(result.toPlainString());
+const xml = new DOMParser().parseFromString(
+    "<season>Spring</season>", "text/xml");
+console.log(xml.toPlainString());
 ```
 
 Output:
 
 ```
-<note><to>Tove</to><from>Jani</from><heading>Reminder</heading><body>Don't forget me this weekend!</body></note>
+<season>Spring</season>
 ```
 
 ### Object
 
 #### Object.prototype.toPlainString
-Method that creates a simple string for an object.  
-The string is based on `JSON.stringify(object)`. Iterable objects are first
-converted to arrays.
+Serializes the object as JSON; iterable objects are serialized as arrays.
 
 ```javascript
 const example = {a:1, b:2, c() {return;}};

@@ -63,23 +63,17 @@ attributes to access application data, handle interactions and control rendering
 behavior, but does not define application-specific logic itself.
 
 ### Runtime
-Provides the infrastructure that connects views and application modules,
-including resource loading, composite realization, binding, rendering and
-lifecycle management -- see [Runtime](architecture.md#runtime) for the full list
-and its [responsibilities](architecture.md#runtime-responsibilities). The
-runtime does not implement application-specific behavior or define the internal
-structure of an application module.
+The infrastructure for resource loading, rendering, binding and lifecycle
+management -- see [Runtime](architecture.md#runtime).
 
 ### Composer
 The runtime component that realizes composites and establishes composite binding
 between view and application module -- see [Composer](architecture.md#composer).
 
 ### Composite
-An independently identified, domain-oriented application unit within the DOM,
-consisting of HTML (view), CSS, JavaScript (composite script) and optional
-additional resources -- see [Composite](composite.md#composite) for structure
-and resource layout. Each composite is identified by a composite ID that
-connects it with its view, application module and associated resources.
+An identified application unit. Its composite ID addresses the application
+module used for binding, if one exists. See [Composite](composite.md#composite)
+for structure and resources.
 
 ## Binding
 Composite binding connects the HTML view of a composite with its application
@@ -253,9 +247,9 @@ application-specific responsibilities to Services.
 <img src="composite-binding_mvcs.svg"/>
 
 ### Other Architectures
-An application module can just as well implement a Service, an application
-model, or another application-specific structure. In every case, composite
-binding connects view and application module the same way.
+An application module can also implement a Service, an application model, or
+another application-specific structure. In every case, composite binding
+connects view and application module the same way.
 
 
 

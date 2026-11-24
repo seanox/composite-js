@@ -13,6 +13,7 @@ scope.
   - [Values](#values)
   - [Function Calls](#function-calls)
   - [Declarations](#declarations)
+  - [Properties](#properties)
   - [Markup Encoding](#markup-encoding)
   - [Delimiters](#delimiters)
   - [Line Breaks](#line-breaks)
@@ -128,6 +129,42 @@ statements.
 > assignments. Mutations of referenced objects can persist. Access persistent
 > application state through `application`; see the [scope overview](
 >     architecture.md#scopes).
+
+### Properties
+Property expressions use the same `{{name: expression}}` syntax and naming
+rules as [declaration expressions](#declarations), but target the named property
+of the element instead of a view scope variable. They are used in dynamic
+attributes, with or without an [attribute directive](
+    markup.md#attribute-directives):
+
+```html
+<input tabindex="{{tabIndex: tabOrder}}">
+<input [tabindex]="{{tabIndex: tabOrder}}">
+```
+
+Both forms set the attribute `tabindex` and property `element.tabIndex`. The
+property name is literal and case-sensitive, not a scope lookup. Without an
+explicit name, the property name matches the attribute exactly (`tabindex`, not
+`tabIndex`).
+
+Use `null:` to assign only to the attribute; `undefined:` is an equivalent
+alternative. Both are fixed targets that disable explicit property reads, writes
+and resets, but do not prevent native browser reflection:
+
+```html
+<input [tabindex]="{{null: tabOrder}}">
+```
+
+An `undefined` result removes the attribute under the rules described [above](
+    #expressions), but resets the selected property, if assignable, rather than
+the property with the attribute name. Attribute-only targets skip the reset.
+
+A property expression must occupy the entire attribute value apart from outer
+whitespace. Combining it with literal text or further expressions is
+unsupported; each embedded property expression contributes
+`Error: Unsupported expression type` to the interpolated text without evaluating
+its value expression or selecting a property. Ordinary interpolation such as
+`title="Hello {{name}}"` remains supported.
 
 ### Markup Encoding
 Expressions in HTML or XML source follow the encoding rules of the surrounding

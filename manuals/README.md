@@ -99,6 +99,7 @@
     - [Values](expression.md#values)
     - [Function Calls](expression.md#function-calls)
     - [Declarations](expression.md#declarations)
+    - [Properties](expression.md#properties)
     - [Markup Encoding](expression.md#markup-encoding)
     - [Delimiters](expression.md#delimiters)
     - [Line Breaks](expression.md#line-breaks)

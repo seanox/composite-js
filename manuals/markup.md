@@ -591,6 +591,22 @@ value rules described in [Expression Language](#expression-language).
 <img [src]="">
 ```
 
+Names must be fully bracketed, without whitespace or nested brackets. The target
+attribute name is always lowercase. Literal and empty directive values,
+including `[disabled]` without a value, are consumed once and set as native
+attributes without an explicit property assignment. Native browser reflection
+still applies.
+
+Expressions can also explicitly name the element property independently of the
+attribute name:
+
+```html
+<input [tabindex]="{{tabIndex: tabOrder}}">
+```
+
+The [property expression](expression.md#properties) `{{tabIndex: tabOrder}}`
+assigns the result to `element.tabIndex` as well as the `tabindex` attribute.
+
 ## Expression Language
 The expression language can be used in text nodes and HTML attribute values;
 the contents of &lt;script&gt; and &lt;style&gt; elements are excluded. HTML

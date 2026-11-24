@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-debug-testing.js"></script>
+    <script>
+
+      Test.activate();
+
+      const propertyModel = {value: 7, evaluations: 0, visible: true};
+      const scope = window.___view_scope;
+      const errors = [];
+      const expectedErrors = [];
+      const delay = () => new Promise(resolve => window.setTimeout(resolve, 0));
+      const render = async element => {
+          Composer.render(element);
+          await delay();
+      };
+      const withFixture = async (selector, test, prepare, pattern) => {
+          const source = document.getElementById("propertyFixtures").content.querySelector(selector);
+          Assert.assertNotNull("Missing markup fixture: " + selector, source);
+          const fixture = document.createElement("div");
+          const element = source.cloneNode(true);
+          const snapshots = [];
+          const capture = (phase, values) => snapshots.push([phase].concat(
+              Object.keys(values).map(name => {
+                  const value = values[name];
+                  const type = Array.isArray(value) ? "array" : typeof value;
+                  return name + ": " + (value === null ? "null" : type + ":" + JSON.stringify(value));
+              })).join(" | "));
+          fixture.appendChild(element);
+          if (prepare)
+              prepare(element);
+          document.body.appendChild(fixture);
+          try {
+              await delay();
+              await test(element, capture);
+              Assert.assertSameTo("#expected-" + (pattern || source.getAttribute("data-case")),
+                  snapshots.join("\n"));
+          } finally {
+              fixture.remove();
+              await delay();
+          }
+      };
+      Composer.listen(Composer.EVENT_ERROR, (event, error) => errors.push(error));
+
+      for (const directive of [false, true]) {
+          const variant = directive ? "directive" : "attribute";
+          const hasDirective = element => Array.from(element.attributes)
+              .some(attribute => attribute.name.startsWith("["));
+          const withAttribute = (name, test, prepare, pattern) => withFixture(
+              '[data-variant="' + variant + '"] [data-case="' + name + '"]',
+              async (element, capture) => {
+                  await test(element, capture);
+                  Assert.assertFalse(hasDirective(element));
+              }, element => {
+                  Assert.assertEquals(directive, hasDirective(element));
+                  if (prepare)
+                      prepare(element);
+              }, pattern);
+
+          Test.create({name: "Exact property targets and unchanged view bindings: " + variant, async test() {
+              scope.tabIndex = "scope value";
+              propertyModel.value = 7;
+              try {
+                  await withAttribute("mapping",
+                      async (element, capture) => {
+                          const collect = phase => capture(phase, {
+                              attribute: element.getAttribute("tabindex"), tabIndex: element.tabIndex,
+                              ownLowercase: element.hasOwnProperty("tabindex"), view: scope.tabIndex
+                          });
+                          collect("first");
+                          propertyModel.value = 9;
+                          await render(element);
+                          collect("updated");
+                      });
+              } finally {
+                  delete scope.tabIndex;
+              }
+          }});
+
+          for (const name of ["default-value", "default-target"])
+              Test.create({name: "Default property names are not case-adjusted: " + variant, async test() {
+                  propertyModel.value = 8;
+                  await withAttribute(name, (element, capture) => capture("first", {
+                      attribute: element.getAttribute("tabindex"), tabindex: element.tabindex,
+                      ownLowercase: element.hasOwnProperty("tabindex"), tabIndex: element.tabIndex
+                  }), null, "default");
+              }});
+
+          for (const name of ["probe", "$", "$amount", "item$2", "__", "constructor", "Null", "Undefined"])
+              Test.create({name: "Declaration names are literal property targets " + name + ": " + variant,
+                  async test() {
+                      propertyModel.value = 13;
+                      await withAttribute("name-" + name,
+                          (element, capture) => capture("first", {
+                              attribute: element.getAttribute("data-probe"), property: element[name],
+                              ownAttribute: Object.prototype.hasOwnProperty.call(element, "data-probe"),
+                              viewOwnTarget: Object.prototype.hasOwnProperty.call(scope, name)
+                          }), null, "name");
+                  }});
+
+          Test.create({name: "Mapped properties preserve result types and their full lifecycle: " + variant,
+              async test() {
+                  propertyModel.value = 1;
+                  const assignments = [];
+                  let stored;
+                  await withAttribute("lifecycle",
+                      async (element, capture) => {
+                          const collect = phase => capture(phase, {
+                              attribute: element.getAttribute("data-probe"), stored,
+                              assignments: assignments.length, assigned: assignments[0],
+                              viewOwnTarget: Object.prototype.hasOwnProperty.call(scope, "mappedProperty")
+                          });
+                          collect("first");
+                          for (const [phase, value] of [
+                              ["false", false], ["true", true], ["zero", 0], ["empty", ""],
+                              ["whitespace", " \tline\n "], ["null", null],
+                              ["object", {value: 2}], ["array", [1, 2]]
+                          ]) {
+                              propertyModel.value = value;
+                              assignments.length = 0;
+                              await render(element);
+                              if (value !== null && typeof value === "object") {
+                                  Assert.assertEquals(value, assignments[0]);
+                                  Assert.assertEquals(value, stored);
+                              }
+                              collect(phase);
+                          }
+                          propertyModel.value = undefined;
+                          assignments.length = 0;
+                          await render(element);
+                          collect("removed");
+                          stored = "edited while absent";
+                          assignments.length = 0;
+                          await render(element);
+                          collect("absent");
+                          propertyModel.value = 17;
+                          await render(element);
+                          collect("restored");
+                      }, element => {
+                          Object.defineProperty(element, "mappedProperty", {
+                              get() {return stored;},
+                              set(value) {assignments.push(value); stored = value;}
+                          });
+                          Object.defineProperty(element, "data-probe", {
+                              get() {throw new Error("Unmapped property read");},
+                              set() {throw new Error("Unmapped property write");}
+                          });
+                      });
+              }});
+
+          Test.create({name: "Undefined resets the named native property to its browser default: " + variant,
+              async test() {
+                  propertyModel.value = 6;
+                  await withAttribute("reset", async (element, capture) => {
+                      element.tabIndex = 21;
+                      propertyModel.value = undefined;
+                      await render(element);
+                      capture("removed", {
+                          attribute: element.getAttribute("tabindex"),
+                          browserDefault: element.tabIndex === document.createElement("input").tabIndex,
+                          ownLowercase: element.hasOwnProperty("tabindex")
+                      });
+                      propertyModel.value = 12;
+                      await render(element);
+                      capture("restored", {
+                          attribute: element.getAttribute("tabindex"), tabIndex: element.tabIndex
+                      });
+                  });
+              }});
+
+          Test.create({name: "Read-only mapped getters are not read during removal: " + variant, async test() {
+              propertyModel.value = undefined;
+              await withAttribute("readonly",
+                  (element, capture) => capture("removed", {attribute: element.getAttribute("data-probe")}),
+                  element => {
+                      if (directive)
+                          element.setAttribute("data-probe", "present");
+                      Object.defineProperty(element, "mappedProperty", {
+                          get() {throw new Error("Read-only mapped getter must not be evaluated");}
+                      });
+                  });
+          }});
+
+          for (const target of ["null", "undefined"])
+              Test.create({name: "Attribute-only mapping never accesses properties " + target + ": " + variant,
+                  async test() {
+                      propertyModel.value = undefined;
+                      scope.undefined = "mappedProperty";
+                      const previousNull = Object.getOwnPropertyDescriptor(window, "null");
+                      Object.defineProperty(window, "null", {
+                          value: "mappedProperty", configurable: true
+                      });
+                      const createElementNS = document.createElementNS;
+                      let references = 0;
+                      document.createElementNS = function() {
+                          references++;
+                          return createElementNS.apply(this, arguments);
+                      };
+                      try {
+                          await withAttribute("attribute-only-" + target,
+                              async (element, capture) => {
+                                  const collect = phase => capture(phase, {
+                                      attribute: element.getAttribute("value"), references,
+                                      view: scope.undefined, global: window.null
+                                  });
+                                  collect("initial");
+                                  for (const [phase, value] of [
+                                      ["first", "first"], ["null", null],
+                                      ["removed", undefined], ["restored", "again"]
+                                  ]) {
+                                      propertyModel.value = value;
+                                      await render(element);
+                                      collect(phase);
+                                  }
+                              }, element => {
+                                  for (const name of ["value", "mappedProperty", "null", "undefined"])
+                                      Object.defineProperty(element, name, {
+                                          get() {throw new Error("Disabled property read: " + name);},
+                                          set() {throw new Error("Disabled property write: " + name);}
+                                      });
+                              }, "attribute-only");
+                      } finally {
+                          document.createElementNS = createElementNS;
+                          delete scope.undefined;
+                          if (previousNull)
+                              Object.defineProperty(window, "null", previousNull);
+                          else delete window.null;
+                      }
+                  }});
+
+          Test.create({name: "Attribute-only mappings preserve native Boolean reflection: " + variant, async test() {
+              propertyModel.value = false;
+              await withAttribute("reflection", async (element, capture) => {
+                  const collect = phase => capture(phase, {
+                      attribute: element.getAttribute("disabled"), disabled: element.disabled
+                  });
+                  collect("first");
+                  propertyModel.value = undefined;
+                  await render(element);
+                  collect("removed");
+              });
+          }});
+
+          Test.create({name: "An explicit mapping replaces the special input value assignment: " + variant,
+              async test() {
+                  propertyModel.value = "mapped";
+                  await withAttribute("replace-value",
+                      async (element, capture) => {
+                          const collect = phase => capture(phase, {
+                              attribute: element.getAttribute("value"), property: element.mappedProperty
+                          });
+                          collect("first");
+                          propertyModel.value = undefined;
+                          await render(element);
+                          collect("removed");
+                      }, element => Object.defineProperty(element, "value", {
+                          get() {throw new Error("Replaced value property read");},
+                          set() {throw new Error("Replaced value property write");}
+                      }));
+              }});
+
+          for (const target of ["mappedProperty", "null", "undefined"])
+              for (const name of ["text", "suffix", "prefix"])
+                  Test.create({name: "Embedded declarations are rejected without execution "
+                          + target + ": " + variant, async test() {
+                      propertyModel.value = 4;
+                      propertyModel.evaluations = 0;
+                      await withAttribute("mixed-" + target + "-" + name, async (element, capture) => {
+                          const collect = phase => capture(phase, {
+                              attribute: element.getAttribute("data-probe"),
+                              evaluations: propertyModel.evaluations,
+                              ownTarget: element.hasOwnProperty(target),
+                              viewOwnTarget: Object.prototype.hasOwnProperty.call(scope, target)
+                          });
+                          collect("first");
+                          await render(element);
+                          collect("repeated");
+                      }, null, "mixed-" + name);
+                  }});
+
+          Test.create({name: "Mixed value expressions remain interpolation: " + variant, async test() {
+              propertyModel.value = 3;
+              await withAttribute("interpolation",
+                  async (element, capture) => {
+                      capture("first", {title: element.title});
+                      propertyModel.value = 5;
+                      await render(element);
+                      capture("updated", {title: element.title});
+                  });
+          }});
+
+          Test.create({name: "Mapped setter and reset failures retain existing error reporting: " + variant,
+              async test() {
+                  const failure = new Error("Mapped property failure");
+                  let stored;
+                  let fail = false;
+                  propertyModel.value = 1;
+                  await withAttribute("failure",
+                      async (element, capture) => {
+                          fail = true;
+                          expectedErrors.push(failure);
+                          propertyModel.value = 2;
+                          await render(element);
+                          Assert.assertEquals(failure, errors[errors.length -1]);
+                          capture("failed-write", {
+                              attribute: element.getAttribute("data-probe"), stored
+                          });
+                          expectedErrors.push(failure);
+                          propertyModel.value = undefined;
+                          await render(element);
+                          Assert.assertEquals(failure, errors[errors.length -1]);
+                          capture("failed-reset", {attribute: element.getAttribute("data-probe"), stored});
+                      }, element => Object.defineProperty(element, "mappedProperty", {
+                          get() {return stored;},
+                          set(value) {
+                              if (fail)
+                                  throw failure;
+                              stored = value;
+                          }
+                      }));
+              }});
+      }
+
+      Test.create({name: "Property syntax reuses the declaration name and separator rules", async test() {
+          await withFixture('[data-case="syntax"]', (fixture, capture) => {
+              const elements = fixture.querySelectorAll("input");
+              capture("fixtures", {count: elements.length});
+              elements.forEach((element, index) => {
+                  const expression = window.___render_meta.get(element.serial()).expressions.title;
+                  capture("syntax-" + index, {type: expression.type, variable: expression.variable});
+                  if (element.hasAttribute("data-error"))
+                      capture("error-" + index, {syntaxError: element.title.startsWith("SyntaxError:")});
+                  else if (expression.type === "declaration")
+                      capture("result-" + index, {attribute: element.getAttribute("title")});
+              });
+          });
+      }});
+
+      Test.create({name: "Initially undefined mapped directives retain their expressions", async test() {
+          propertyModel.value = undefined;
+          let accesses = 0;
+          await withFixture('[data-case="initial"]', async (element, capture) => {
+              const collect = phase => capture(phase, {
+                  attribute: element.getAttribute("tabindex"),
+                  directive: element.hasAttribute("[tabindex]"), accesses
+              });
+              collect("initial");
+              propertyModel.value = 5;
+              await render(element);
+              collect("assigned");
+          }, element => Object.defineProperty(element, "tabIndex", {
+              get() {accesses++; return 0;},
+              set() {accesses++;}
+          }));
+      }});
+
+      Test.create({name: "Mapped src directives defer browser processing and survive removal", async test() {
+          const source = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+          propertyModel.value = undefined;
+          await withFixture('[data-case="source"]', async (element, capture) => {
+              const collect = phase => capture(phase, {
+                  attribute: element.getAttribute("src"), directive: element.hasAttribute("[src]"),
+                  width: element.naturalWidth
+              });
+              capture("initial", {
+                  attribute: element.getAttribute("src"), directive: element.hasAttribute("[src]")
+              });
+              for (const [phase, value] of [
+                  ["loaded", source], ["removed", undefined], ["reloaded", source]
+              ]) {
+                  propertyModel.value = value;
+                  if (value === undefined) {
+                      await render(element);
+                      capture(phase, {attribute: element.getAttribute("src")});
+                  } else {
+                      const loaded = new Promise((resolve, reject) => {
+                          element.onload = resolve;
+                          element.onerror = reject;
+                      });
+                      await render(element);
+                      await loaded;
+                      collect(phase);
+                  }
+              }
+          }, element => {
+              Assert.assertNull(element.getAttribute("src"));
+              Assert.assertEquals("", element.src);
+              Assert.assertTrue(element.hasAttribute("[src]"));
+          });
+      }});
+
+      Test.create({name: "Text declarations and conditional/iterated property mappings keep their scopes",
+          async test() {
+              propertyModel.value = 2;
+              propertyModel.visible = true;
+              try {
+                  await withFixture('[data-case="context"]', async (fixture, capture) => {
+                      const collect = phase => capture(phase, {
+                          text: fixture.textContent, view: scope.propertyLabel,
+                          tabIndexes: Array.from(fixture.querySelectorAll("input"))
+                              .map(element => element.tabIndex),
+                          section: !!fixture.querySelector("section"),
+                          viewOwnTarget: Object.prototype.hasOwnProperty.call(scope, "tabIndex")
+                      });
+                      collect("first");
+                      propertyModel.value = 5;
+                      propertyModel.visible = false;
+                      await render(fixture);
+                      collect("hidden");
+                      propertyModel.visible = true;
+                      await render(fixture);
+                      collect("restored");
+                  });
+              } finally {
+                  delete scope.propertyLabel;
+              }
+          }});
+
+      Test.create({name: "Only the expected mapped property failures were reported", test() {
+          Assert.assertEquals(expectedErrors.length, errors.length);
+          errors.forEach((error, index) => Assert.assertEquals(expectedErrors[index], error));
+      }});
+
+      Test.start({auto: true});
+    </script>
+    <script type="text/test" id="expected-mapping">
+      first | attribute: string:"7" | tabIndex: number:7 | ownLowercase: boolean:false | view: string:"scope value"
+      updated | attribute: string:"9" | tabIndex: number:9 | ownLowercase: boolean:false | view: string:"scope value"
+    </script>
+    <script type="text/test" id="expected-default">
+      first | attribute: string:"8" | tabindex: number:8 | ownLowercase: boolean:true | tabIndex: number:8
+    </script>
+    <script type="text/test" id="expected-name">
+      first | attribute: string:"13" | property: number:13 | ownAttribute: boolean:false | viewOwnTarget: boolean:false
+    </script>
+    <script type="text/test" id="expected-lifecycle">
+      first | attribute: string:"1" | stored: number:1 | assignments: number:1 | assigned: number:1 | viewOwnTarget: boolean:false
+      false | attribute: string:"false" | stored: boolean:false | assignments: number:1 | assigned: boolean:false | viewOwnTarget: boolean:false
+      true | attribute: string:"true" | stored: boolean:true | assignments: number:1 | assigned: boolean:true | viewOwnTarget: boolean:false
+      zero | attribute: string:"0" | stored: number:0 | assignments: number:1 | assigned: number:0 | viewOwnTarget: boolean:false
+      empty | attribute: string:"" | stored: string:"" | assignments: number:1 | assigned: string:"" | viewOwnTarget: boolean:false
+      whitespace | attribute: string:" \tline\n " | stored: string:" \tline\n " | assignments: number:1 | assigned: string:" \tline\n " | viewOwnTarget: boolean:false
+      null | attribute: string:"null" | stored: null | assignments: number:1 | assigned: null | viewOwnTarget: boolean:false
+      object | attribute: string:"[object Object]" | stored: object:{"value":2} | assignments: number:1 | assigned: object:{"value":2} | viewOwnTarget: boolean:false
+      array | attribute: string:"1,2" | stored: array:[1,2] | assignments: number:1 | assigned: array:[1,2] | viewOwnTarget: boolean:false
+      removed | attribute: null | stored: undefined:undefined | assignments: number:1 | assigned: undefined:undefined | viewOwnTarget: boolean:false
+      absent | attribute: null | stored: string:"edited while absent" | assignments: number:0 | assigned: undefined:undefined | viewOwnTarget: boolean:false
+      restored | attribute: string:"17" | stored: number:17 | assignments: number:1 | assigned: number:17 | viewOwnTarget: boolean:false
+    </script>
+    <script type="text/test" id="expected-reset">
+      removed | attribute: null | browserDefault: boolean:true | ownLowercase: boolean:false
+      restored | attribute: string:"12" | tabIndex: number:12
+    </script>
+    <script type="text/test" id="expected-readonly">
+      removed | attribute: null
+    </script>
+    <script type="text/test" id="expected-attribute-only">
+      initial | attribute: null | references: number:0 | view: string:"mappedProperty" | global: string:"mappedProperty"
+      first | attribute: string:"first" | references: number:0 | view: string:"mappedProperty" | global: string:"mappedProperty"
+      null | attribute: string:"null" | references: number:0 | view: string:"mappedProperty" | global: string:"mappedProperty"
+      removed | attribute: null | references: number:0 | view: string:"mappedProperty" | global: string:"mappedProperty"
+      restored | attribute: string:"again" | references: number:0 | view: string:"mappedProperty" | global: string:"mappedProperty"
+    </script>
+    <script type="text/test" id="expected-reflection">
+      first | attribute: string:"false" | disabled: boolean:true
+      removed | attribute: null | disabled: boolean:false
+    </script>
+    <script type="text/test" id="expected-replace-value">
+      first | attribute: string:"mapped" | property: string:"mapped"
+      removed | attribute: null | property: undefined:undefined
+    </script>
+    <script type="text/test" id="expected-mixed-text">
+      first | attribute: string:"before Error: Unsupported expression type after" | evaluations: number:0 | ownTarget: boolean:false | viewOwnTarget: boolean:false
+      repeated | attribute: string:"before Error: Unsupported expression type after" | evaluations: number:0 | ownTarget: boolean:false | viewOwnTarget: boolean:false
+    </script>
+    <script type="text/test" id="expected-mixed-suffix">
+      first | attribute: string:"Error: Unsupported expression type4" | evaluations: number:0 | ownTarget: boolean:false | viewOwnTarget: boolean:false
+      repeated | attribute: string:"Error: Unsupported expression type4" | evaluations: number:0 | ownTarget: boolean:false | viewOwnTarget: boolean:false
+    </script>
+    <script type="text/test" id="expected-mixed-prefix">
+      first | attribute: string:"4Error: Unsupported expression type" | evaluations: number:0 | ownTarget: boolean:false | viewOwnTarget: boolean:false
+      repeated | attribute: string:"4Error: Unsupported expression type" | evaluations: number:0 | ownTarget: boolean:false | viewOwnTarget: boolean:false
+    </script>
+    <script type="text/test" id="expected-interpolation">
+      first | title: string:"before 3 / undefined after"
+      updated | title: string:"before 5 / undefined after"
+    </script>
+    <script type="text/test" id="expected-failure">
+      failed-write | attribute: string:"2" | stored: number:1
+      failed-reset | attribute: string:"2" | stored: number:1
+    </script>
+    <script type="text/test" id="expected-syntax">
+      fixtures | count: number:14
+      syntax-0 | type: string:"value" | variable: undefined:undefined
+      syntax-1 | type: string:"value" | variable: undefined:undefined
+      syntax-2 | type: string:"value" | variable: undefined:undefined
+      syntax-3 | type: string:"value" | variable: undefined:undefined
+      syntax-4 | type: string:"value" | variable: undefined:undefined
+      error-4 | syntaxError: boolean:true
+      syntax-5 | type: string:"value" | variable: undefined:undefined
+      error-5 | syntaxError: boolean:true
+      syntax-6 | type: string:"value" | variable: undefined:undefined
+      error-6 | syntaxError: boolean:true
+      syntax-7 | type: string:"declaration" | variable: string:"name"
+      result-7 | attribute: string:"7"
+      syntax-8 | type: string:"declaration" | variable: string:"$"
+      result-8 | attribute: string:"7"
+      syntax-9 | type: string:"declaration" | variable: string:"$amount"
+      result-9 | attribute: string:"7"
+      syntax-10 | type: string:"declaration" | variable: string:"item$2"
+      result-10 | attribute: string:"7"
+      syntax-11 | type: string:"declaration" | variable: string:"__"
+      result-11 | attribute: string:"7"
+      syntax-12 | type: string:"declaration" | variable: string:"null"
+      result-12 | attribute: string:"7"
+      syntax-13 | type: string:"declaration" | variable: string:"undefined"
+      result-13 | attribute: string:"7"
+    </script>
+    <script type="text/test" id="expected-initial">
+      initial | attribute: null | directive: boolean:false | accesses: number:0
+      assigned | attribute: string:"5" | directive: boolean:false | accesses: number:1
+    </script>
+    <script type="text/test" id="expected-source">
+      initial | attribute: null | directive: boolean:false
+      loaded | attribute: string:"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" | directive: boolean:false | width: number:1
+      removed | attribute: null
+      reloaded | attribute: string:"data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" | directive: boolean:false | width: number:1
+    </script>
+    <script type="text/test" id="expected-context">
+      first | text: string:"Text  after 2" | view: number:2 | tabIndexes: array:[3,4] | section: boolean:true | viewOwnTarget: boolean:false
+      hidden | text: string:"Text  after 5" | view: number:5 | tabIndexes: array:[] | section: boolean:false | viewOwnTarget: boolean:false
+      restored | text: string:"Text  after 5" | view: number:5 | tabIndexes: array:[3,4] | section: boolean:true | viewOwnTarget: boolean:false
+    </script>
+  </head>
+  <body>
+    <template id="propertyFixtures">
+      <section data-variant="attribute">
+        <input data-case="mapping" tabindex=" &#9;{{tabIndex: propertyModel.value}}&#10; ">
+        <input data-case="default-value" tabindex="{{propertyModel.value}}">
+        <input data-case="default-target" tabindex="{{tabindex: propertyModel.value}}">
+        <input data-case="name-probe" data-probe="{{probe: propertyModel.value}}">
+        <input data-case="name-$" data-probe="{{$: propertyModel.value}}">
+        <input data-case="name-$amount" data-probe="{{$amount: propertyModel.value}}">
+        <input data-case="name-item$2" data-probe="{{item$2: propertyModel.value}}">
+        <input data-case="name-__" data-probe="{{__: propertyModel.value}}">
+        <input data-case="name-constructor" data-probe="{{constructor: propertyModel.value}}">
+        <input data-case="name-Null" data-probe="{{Null: propertyModel.value}}">
+        <input data-case="name-Undefined" data-probe="{{Undefined: propertyModel.value}}">
+        <input data-case="lifecycle" data-probe="{{mappedProperty: propertyModel.value}}">
+        <input data-case="reset" tabindex="{{tabIndex: propertyModel.value}}">
+        <input data-case="readonly" data-probe="{{mappedProperty: propertyModel.value}}">
+        <input data-case="attribute-only-null" value="{{null: propertyModel.value}}">
+        <input data-case="attribute-only-undefined" value="{{undefined: propertyModel.value}}">
+        <input data-case="reflection" disabled="{{null: propertyModel.value}}">
+        <input data-case="replace-value" value="{{mappedProperty: propertyModel.value}}">
+        <input data-case="mixed-mappedProperty-text"
+            data-probe="before {{mappedProperty: propertyModel.evaluations++; 9}} after">
+        <input data-case="mixed-mappedProperty-suffix"
+            data-probe="{{mappedProperty: propertyModel.evaluations++; 9}}{{propertyModel.value}}">
+        <input data-case="mixed-mappedProperty-prefix"
+            data-probe="{{propertyModel.value}}{{mappedProperty: propertyModel.evaluations++; 9}}">
+        <input data-case="mixed-null-text"
+            data-probe="before {{null: propertyModel.evaluations++; 9}} after">
+        <input data-case="mixed-null-suffix"
+            data-probe="{{null: propertyModel.evaluations++; 9}}{{propertyModel.value}}">
+        <input data-case="mixed-null-prefix"
+            data-probe="{{propertyModel.value}}{{null: propertyModel.evaluations++; 9}}">
+        <input data-case="mixed-undefined-text"
+            data-probe="before {{undefined: propertyModel.evaluations++; 9}} after">
+        <input data-case="mixed-undefined-suffix"
+            data-probe="{{undefined: propertyModel.evaluations++; 9}}{{propertyModel.value}}">
+        <input data-case="mixed-undefined-prefix"
+            data-probe="{{propertyModel.value}}{{undefined: propertyModel.evaluations++; 9}}">
+        <input data-case="interpolation" title="before {{propertyModel.value}} / {{undefined}} after">
+        <input data-case="failure" data-probe="{{mappedProperty: propertyModel.value}}">
+      </section>
+      <section data-variant="directive">
+        <input data-case="mapping" [tabindex]=" &#9;{{tabIndex: propertyModel.value}}&#10; ">
+        <input data-case="default-value" [tabindex]="{{propertyModel.value}}">
+        <input data-case="default-target" [tabindex]="{{tabindex: propertyModel.value}}">
+        <input data-case="name-probe" [data-probe]="{{probe: propertyModel.value}}">
+        <input data-case="name-$" [data-probe]="{{$: propertyModel.value}}">
+        <input data-case="name-$amount" [data-probe]="{{$amount: propertyModel.value}}">
+        <input data-case="name-item$2" [data-probe]="{{item$2: propertyModel.value}}">
+        <input data-case="name-__" [data-probe]="{{__: propertyModel.value}}">
+        <input data-case="name-constructor" [data-probe]="{{constructor: propertyModel.value}}">
+        <input data-case="name-Null" [data-probe]="{{Null: propertyModel.value}}">
+        <input data-case="name-Undefined" [data-probe]="{{Undefined: propertyModel.value}}">
+        <input data-case="lifecycle" [data-probe]="{{mappedProperty: propertyModel.value}}">
+        <input data-case="reset" [tabindex]="{{tabIndex: propertyModel.value}}">
+        <input data-case="readonly" [data-probe]="{{mappedProperty: propertyModel.value}}">
+        <input data-case="attribute-only-null" [value]="{{null: propertyModel.value}}">
+        <input data-case="attribute-only-undefined" [value]="{{undefined: propertyModel.value}}">
+        <input data-case="reflection" [disabled]="{{null: propertyModel.value}}">
+        <input data-case="replace-value" [value]="{{mappedProperty: propertyModel.value}}">
+        <input data-case="mixed-mappedProperty-text"
+            [data-probe]="before {{mappedProperty: propertyModel.evaluations++; 9}} after">
+        <input data-case="mixed-mappedProperty-suffix"
+            [data-probe]="{{mappedProperty: propertyModel.evaluations++; 9}}{{propertyModel.value}}">
+        <input data-case="mixed-mappedProperty-prefix"
+            [data-probe]="{{propertyModel.value}}{{mappedProperty: propertyModel.evaluations++; 9}}">
+        <input data-case="mixed-null-text"
+            [data-probe]="before {{null: propertyModel.evaluations++; 9}} after">
+        <input data-case="mixed-null-suffix"
+            [data-probe]="{{null: propertyModel.evaluations++; 9}}{{propertyModel.value}}">
+        <input data-case="mixed-null-prefix"
+            [data-probe]="{{propertyModel.value}}{{null: propertyModel.evaluations++; 9}}">
+        <input data-case="mixed-undefined-text"
+            [data-probe]="before {{undefined: propertyModel.evaluations++; 9}} after">
+        <input data-case="mixed-undefined-suffix"
+            [data-probe]="{{undefined: propertyModel.evaluations++; 9}}{{propertyModel.value}}">
+        <input data-case="mixed-undefined-prefix"
+            [data-probe]="{{propertyModel.value}}{{undefined: propertyModel.evaluations++; 9}}">
+        <input data-case="interpolation" [title]="before {{propertyModel.value}} / {{undefined}} after">
+        <input data-case="failure" [data-probe]="{{mappedProperty: propertyModel.value}}">
+      </section>
+      <div data-case="syntax">
+        <input title="{{name : 7}}">
+        <input title="{{name&#9;: 7}}">
+        <input title="{{name&#10;: 7}}">
+        <input title="{{name/*comment*/: 7}}">
+        <input data-error title="{{a.b: 7}}">
+        <input data-error title="{{a-b: 7}}">
+        <input data-error title="{{1name: 7}}">
+        <input title=" &#10;{{name: 7}}&#9;">
+        <input title=" &#10;{{$: 7}}&#9;">
+        <input title=" &#10;{{$amount: 7}}&#9;">
+        <input title=" &#10;{{item$2: 7}}&#9;">
+        <input title=" &#10;{{__: 7}}&#9;">
+        <input title=" &#10;{{null: 7}}&#9;">
+        <input title=" &#10;{{undefined: 7}}&#9;">
+      </div>
+      <input data-case="initial" [tabindex]="{{tabIndex: propertyModel.value}}">
+      <img data-case="source" [src]="{{null: propertyModel.value}}">
+      <div data-case="context">Text {{propertyLabel: propertyModel.value}} after {{propertyLabel}}<section
+          condition="{{propertyModel.visible}}"><div iterate="{{propertyEntry: [3, 4]}}"><input
+          [tabindex]="{{tabIndex: propertyEntry.item}}"></div></section></div>
+    </template>
+  </body>
+</html>

@@ -202,7 +202,8 @@
               element.querySelectorAll(".condition").forEach(node =>
                   Assert.assertEquals("Invalid expression", node.textContent));
               element.querySelectorAll(".attribute").forEach(node => {
-                  Assert.assertEquals("Error: Unsupported expression type", node.title);
+                  Assert.assertEquals("true", node.title);
+                  Assert.assertEquals(true, node.value);
                   Assert.assertEquals("before Error: Unsupported expression type after",
                       node.getAttribute("data-mixed"));
               });

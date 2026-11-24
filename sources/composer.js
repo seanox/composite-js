@@ -91,7 +91,7 @@
      */
     const PATTERN_ATTRIBUTE_STATIC = /^(composite|id)$/i;
 
-    /** Pattern for delayed native attributes without whitespace or nested brackets. */
+    /** Pattern for attribute directives */
     const PATTERN_ATTRIBUTE_DIRECTIVE = /^\[([^\s[\]]+)\]$/;
 
     /** Pattern for all markup expression operators */
@@ -2834,26 +2834,30 @@
                 }
                 return;
             }
-            value = _expression_eval(object.expressions[attribute],
-                EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
+            const expression = _expression_eval(object.expressions[attribute],
+                EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_DECLARATION, EXPRESSION_TYPE_INTERPOLATION);
+            const property = expression.variable === "null" || expression.variable === "undefined"
+                ? undefined : expression.variable === undefined ? target : expression.variable;
+            value = expression.result;
             // Consume the directive independently of its result.
             // Its expression remains in the metadata for later render cycles.
             if (directive)
                 selector.removeAttribute(attribute);
             if (value === undefined) {
-                if (selector.hasAttribute(target)) {
+                if (property !== undefined
+                        && selector.hasAttribute(target)) {
                     let descriptor;
                     for (let prototype = selector; prototype; prototype = Object.getPrototypeOf(prototype)) {
-                        descriptor = Object.getOwnPropertyDescriptor(prototype, target);
+                        descriptor = Object.getOwnPropertyDescriptor(prototype, property);
                         if (descriptor)
                             break;
                     }
                     if (descriptor && (descriptor.writable === true
                             || typeof descriptor.set === "function")) {
                         value = selector.ownerDocument.createElementNS(
-                            selector.namespaceURI, selector.localName)[target];
-                        if (!Object.is(selector[target], value))
-                            selector[target] = value;
+                            selector.namespaceURI, selector.localName)[property];
+                        if (!Object.is(selector[property], value))
+                            selector[property] = value;
                     }
                 }
                 selector.removeAttribute(target);
@@ -2862,10 +2866,12 @@
             // Preserve the result type; DOM APIs perform their own conversions.
             // Set value before its attribute to preserve input state handling.
             if (attribute.toLowerCase() === ATTRIBUTE_VALUE
+                    && property === ATTRIBUTE_VALUE
                     && ATTRIBUTE_VALUE in selector)
                 selector.value = value;
             selector.setAttribute(target, value);
-            selector[target] = value;
+            if (property !== undefined)
+                selector[property] = value;
         });
     };
 

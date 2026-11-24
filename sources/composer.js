@@ -648,20 +648,7 @@
 
                 if ((valid === true || value === undefined)
                             && object.message) {
-                    const property = object.message.property;
-                    let descriptor;
-                    for (let prototype = selector; prototype; prototype = Object.getPrototypeOf(prototype)) {
-                        descriptor = Object.getOwnPropertyDescriptor(prototype, property);
-                        if (descriptor)
-                            break;
-                    }
-                    if (descriptor && (descriptor.writable === true
-                            || typeof descriptor.set === "function")) {
-                        const value = selector.ownerDocument.createElementNS(
-                            selector.namespaceURI, selector.localName)[property];
-                        if (!Object.is(selector[property], value))
-                            selector[property] = value;
-                    }
+                    _element_property_reset(selector, object.message.property);
                     delete object.message;
                 }
                 if (property !== undefined
@@ -1807,6 +1794,27 @@
         return lock;
     }
 
+    /**
+     * Resets a writable property to the value of a fresh element.
+     * @param {Element} selector Element whose property is reset
+     * @param {string} property Property name
+     */
+    const _element_property_reset = (selector, property) => {
+        let descriptor;
+        for (let prototype = selector; prototype; prototype = Object.getPrototypeOf(prototype)) {
+            descriptor = Object.getOwnPropertyDescriptor(prototype, property);
+            if (descriptor)
+                break;
+        }
+        if (descriptor && (descriptor.writable === true
+                || typeof descriptor.set === "function")) {
+            const value = selector.ownerDocument.createElementNS(
+                selector.namespaceURI, selector.localName)[property];
+            if (!Object.is(selector[property], value))
+                selector[property] = value;
+        }
+    };
+
     const _recursion_detection = (element) => {
         const id = (element instanceof Element ? element.id || "" : "").trim();
         const pattern = id.toLowerCase();
@@ -2857,21 +2865,8 @@
                 selector.removeAttribute(attribute);
             if (value === undefined) {
                 if (property !== undefined
-                        && selector.hasAttribute(target)) {
-                    let descriptor;
-                    for (let prototype = selector; prototype; prototype = Object.getPrototypeOf(prototype)) {
-                        descriptor = Object.getOwnPropertyDescriptor(prototype, property);
-                        if (descriptor)
-                            break;
-                    }
-                    if (descriptor && (descriptor.writable === true
-                            || typeof descriptor.set === "function")) {
-                        value = selector.ownerDocument.createElementNS(
-                            selector.namespaceURI, selector.localName)[property];
-                        if (!Object.is(selector[property], value))
-                            selector[property] = value;
-                    }
-                }
+                        && selector.hasAttribute(target))
+                    _element_property_reset(selector, property);
                 selector.removeAttribute(target);
                 return;
             }

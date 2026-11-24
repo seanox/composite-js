@@ -22,8 +22,8 @@
 ## Automation and Build
 For automation and build processes, the project uses [Apache Ant](
     https://ant.apache.org/) as its automation tool. The build script
-`build.xml` is located in `./development` and is usually run from the project
-root directory.
+`build.xml` is located in `./development` and is run from the project root
+directory.
 
 ```bash
 ant -f ./development/build.xml
@@ -42,16 +42,15 @@ root is derived from the build file's location, not the current working
 directory.
 
 ## Server
-The project contains a completely preconfigured web server, which can be started
-and also terminated most simply by command line from the project directory with
-the included Ant script.
+The project includes a preconfigured web server. Start and stop it from the
+project root with the included Ant script.
 
 ```
 ant -f ./development/build.xml start
 ant -f ./development/build.xml stop
 ```
 
-The following important addresses are configured:
+The following addresses are configured:
 
 | Adresse                          | Usage                           |
 |----------------------------------|---------------------------------|
@@ -91,9 +90,8 @@ netsh advfirewall firewall delete rule -?
 ```
 
 ## Playground
-Playground is used for quick testing and bug analysis with the current sources,
-even without creating a build, because the components are used individually as a
-link.
+Playground loads runtime components directly from their source files for testing
+and bug analysis, without creating a build.
 
 http://127.0.0.1:8000/playground
 

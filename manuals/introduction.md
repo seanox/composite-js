@@ -55,8 +55,8 @@ corresponding application module and default resource paths.
 The runtime resolves and loads these application resources as needed and
 realizes each composite within its declaring HTML element, so composition is
 part of the running application rather than exclusively a build-time operation.
-Accordingly, the DOM is not merely the output of the application but also part
-of its running state, interpreted and processed by the runtime.
+The DOM serves as both application output and running state, interpreted and
+processed by the runtime.
 
 ## Declarative UI Concepts
 Seanox composite-js combines the browser's native programming model with
@@ -100,8 +100,8 @@ instructions in addition to visual content. The DOM is therefore part of the
 running program state processed by the runtime.
 
 ### HTML as the Primary View Language
-A view uses regular markup together with the declarative concepts and
-instructions processed by the runtime. CSS defines its presentation.
+A view uses HTML markup together with the declarative concepts and instructions
+processed by the runtime. CSS defines its presentation.
 
 ### JavaScript as the Primary Application Language
 Application logic is implemented in JavaScript. A composite script can establish

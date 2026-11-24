@@ -94,6 +94,9 @@ The locator scheme determines how the data is processed. Schemes are
 case-insensitive and normalized to lowercase. Contextual locators have the
 extension associated with their scheme appended. For explicit locators, the file
 extension remains part of the path but does not determine the processing type.
+The normalized `uri` returned by `Locator.parse` remains valid for a subsequent
+parse or DataSource call, including when a path or query contains a percent
+literal.
 
 ```
 xml://fileA -> ./data/en/fileA.xml

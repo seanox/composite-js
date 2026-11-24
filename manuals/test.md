@@ -492,8 +492,8 @@ document.querySelector("#inputText").typeValue("Hello World!", false);
 ```
 
 #### Element.prototype.toPlainString
-Method that creates a simple string for an HTML element object.  
-The string is based on `Element.prototype.outerHTML`.
+Method that returns the HTML serialization of an element as a string, using
+`Element.prototype.outerHTML`.
 
 ```html
 <form action="/api/example" method="POST">

@@ -183,10 +183,9 @@ Object.exists(product, "missing");
 
 ### Object.use
 Without a value, or with `undefined`, `Object.use` performs an ensure operation
-on an [Object path](#object-path), not just a lookup: it creates missing
-structure below an existing root and returns the last object/array reference.
-Existing containers are reused, never converted or overwritten with a different
-type.
+on an [Object path](#object-path): it creates missing structure below an
+existing root and returns the last object/array reference. Existing containers
+are reused, never converted or overwritten with a different type.
 
 A missing container becomes `[]` if the __next fragment__ is an unquoted
 all-digit index; otherwise it becomes `{}`. Quoted numeric keys do not request
@@ -350,7 +349,7 @@ forms are `\0` to `\777` (one to three octal digits), `\xHH`, `\uHHHH`, and
 
 Decoding happens once from left to right. Each `\\` pair becomes one literal
 backslash; decoded characters are not interpreted as another escape sequence.
-Unknown simple escapes such as `\q` yield the escaped character (`q`). Malformed
+Unknown escapes such as `\q` yield the escaped character (`q`). Malformed
 hexadecimal or Unicode escapes and a trailing unpaired backslash throw
 `SyntaxError`. Unicode code points above U+10FFFF throw `RangeError`.
 
@@ -384,9 +383,9 @@ resolves to a value other than `undefined`, it throws `Error("JavaScript
 incompatibility detected for: " + context)`. An existing property with value
 `undefined` can be assigned.
 
-A simple identifier publishes a property on `window`. For nested targets, the
-parent object must already exist; missing parents and native assignment errors
-propagate.
+An unqualified ASCII identifier such as `example` publishes a property on
+`window`. For nested targets, the parent object must already exist; missing
+parents and native assignment errors propagate.
 
 ```javascript
 window.compliant("example", {});
@@ -399,9 +398,9 @@ The target is evaluated as JavaScript, not parsed with the
 [Object path grammar](#object-path). Use application-defined targets, not
 untrusted input.
 
-With `null` or `undefined` as `context`, the method simply returns `payload`
-without assigning it. An omitted payload is `undefined`; assigning it does not
-reserve the target against subsequent calls.
+With `null` or `undefined` as `context`, the method returns `payload` without
+assigning it. An omitted payload is `undefined`; assigning it does not reserve
+the target against subsequent calls.
 
 ### window.compliant.version
 Property to get the version of Seanox composite-js.

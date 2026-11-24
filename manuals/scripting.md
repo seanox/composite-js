@@ -33,11 +33,11 @@ Their lifetime and sharing behavior is summarized in the [scope overview](
 Embedded scripting has specific runtime behavior. Standard scripts are executed
 automatically by the browser and independently of rendering. Markup for
 rendering therefore supports the additional script type `composite/javascript`.
-It uses normal JavaScript, but the browser does not recognize it as
-`text/javascript` and does not execute it directly. The composer recognizes the
-JavaScript code and executes it in every relevant render cycle. This allows
-&lt;script&gt; elements to be combined with declarative attributes such as
-`condition` to control execution.
+It uses JavaScript, but the browser does not recognize it as `text/javascript`
+and does not execute it directly. The composer recognizes the JavaScript code
+and executes it in every relevant render cycle. This allows &lt;script&gt;
+elements to be combined with declarative attributes such as `condition` to
+control execution.
 
 ```html
 <script type="composite/javascript">
@@ -156,8 +156,7 @@ When loading composite scripts, the runtime supplies their module path as a
 
 This allows browser DevTools to expose the dynamically executed script as a
 source in the sources panel. Composite scripts can therefore be opened,
-searched, and debugged with breakpoints and the Debugger like regular JavaScript
-sources.
+searched, and debugged with breakpoints and the Debugger.
 
 
 

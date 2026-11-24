@@ -169,9 +169,8 @@ expose(example, "example");
 ## Interceptors
 Interceptors allow custom logic to be executed during navigation before routing
 checks path validity, resolves the target view and updates the view flow. They
-are suitable for tasks such as authentication checks, redirects, route migration
-or custom navigation handling and can influence whether the navigation
-continues.
+can be used for authentication checks, redirects, route migration or custom
+navigation handling and can influence whether the navigation continues.
 
 An interceptor is registered with `Routing.customize(path, actor)`. The `path`
 can be either a route string or a regular expression. The `actor` is a function

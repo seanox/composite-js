@@ -166,6 +166,11 @@ unsupported; each embedded property expression contributes
 its value expression or selecting a property. Ordinary interpolation such as
 `title="Hello {{name}}"` remains supported.
 
+The [`message`](markup.md#message) instruction also accepts exclusive property
+expressions, but has no implicit property target. Its value expression is
+evaluated only when needed as a message source. See [Validation](
+    markup.md#validate) for message selection, output and lifecycle.
+
 ### Markup Encoding
 Expressions in HTML or XML source follow the encoding rules of the surrounding
 markup. The browser resolves character references before expression evaluation;

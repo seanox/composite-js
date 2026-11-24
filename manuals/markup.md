@@ -403,6 +403,21 @@ For a localized message, use
 `message="{{Messages['example.email.validation.message']}}"` with a
 [resource bundle](message.md).
 
+Literal messages and expressions without an explicit target only supply the
+native browser message; they do not assign `element.message`. An exclusive
+[property expression](expression.md#properties) additionally writes the message
+to the exact, case-sensitive element property:
+
+```html
+<input validate message="{{fault:Messages['example.email.validation.message']}}"
+    events="input change"/>
+```
+
+This writes to `element.fault`, not to a DOM attribute. Message output occurs
+during validation, not rendering. See [Validation](#validate) for message
+priority, value conversion, property resets, error behavior and migration from
+the former attribute redirection.
+
 ### output
 Sets for the HTML element the value or result of its expression as inner HTML.
 The behavior is similar to the [import](#import) attribute, except that the
@@ -516,28 +531,39 @@ validation.
 </form>
 ```
 
-By default, validation messages are shown as a native browser toolbox for the
-&lt;input&gt; element. The corresponding message is set via the attribute of the
-same name. If custom validation and output need to be implemented, this behavior
-can be changed by redirecting the message to an attribute of the &lt;input&gt;
-element. For this purpose, the message, which at this point also includes the
-return value of expressions, must begin as follows: `@<attribute>:`. This
-message redirection syntax is independent of [Attribute Directives](
-    #attribute-directives).
+During validation, the composer sets the browser message with
+`setCustomValidity()` on elements that support this method. An exclusive
+property expression in [`message`](#message) also assigns the selected message
+value to the named element property. The targets `null:` and `undefined:` skip
+this property assignment and the property reset.
+
+The element property receives the expression result with its original type; the
+browser message receives its string conversion. An `undefined` result sets the
+browser text to `"undefined"` and resets the tracked message property.
+Successful validation clears the custom browser message and also resets the
+tracked property. The reset assigns the default from a fresh element with the
+same tag and namespace, provided the property is assignable. For a custom
+property without a native default, this value is `undefined` and the property
+remains present. The composer tracks properties assigned by this message output;
+tracking ends after the reset. See [property expressions](
+    expression.md#properties) for the reset rules.
+
+A non-blank string returned by `validate()` supplies both the browser message
+and the mapped property value; the fallback expression is skipped. Returned
+strings are processed as message text, including `{{...}}`. Expression
+evaluation errors are logged and used as result values. Property assignment and
+reset errors propagate through the validation caller or event error path and
+abort the current validation call. Changes already made are retained.
 
 Custom validation error output is implemented by the application, either
 centrally or for individual input elements.
 
 ```css
-input[type='text']:not([fault]) {
-    background:#EEEEFF;
-    border-color:#7777AA;
-}
-input[type='text'][fault=''] {
+input[type='text']:valid {
     background:#EEFFEE;
     border-color:#77AA77;
 }
-input[type='text'][fault]:not([fault='']) {
+input[type='text']:invalid {
     background:#FFEEEE;
     border-color:#AA7777;
 }
@@ -557,8 +583,9 @@ const example = {
 ```html
 <form id="example" composite>
   <input id="text1" type="text" placeholder="e-mail address"
-      validate message="@fault:Wrong e-mail address"
+      validate message="{{fault:'Wrong e-mail address'}}"
       events="input change" render="#example"/>
+  <span>{{document.querySelector('#example input').fault || ''}}</span>
   example.text1: {{example.text1}}
   <input type="submit" value="submit" validate events="click"/>
 </form>
@@ -566,10 +593,13 @@ const example = {
 
 In this example, the input field expects an e-mail address. The value is checked
 continuously during the input and in case of an invalid value an error message
-is written into the attribute `fault`, or in case of a valid value the content
-is deleted from the attribute `fault`. Below the input field is the control
-output of the corresponding property in the application module. This property is
-only synchronized if the validate method returns the value `true`.
+is written into the property `fault`. Successful validation resets that property
+as described above. The text expression displays it on the next render; CSS
+uses native validation pseudo-classes. Applications that need a custom attribute
+must set it explicitly through an attribute binding or application logic. Below
+the input field is the control output of the corresponding property in the
+application module. That model property is only synchronized if the validate
+method returns the value `true`.
 
 ## Attribute Directives
 Expressions are resolved by the composer during rendering, after the page has

@@ -615,21 +615,19 @@
             // purpose, the browser function of HTML5 form validation is used,
             // which shows the message as a browser validation tooltip/message.
             //
-            // The browser validation tooltip/message can be redirected to an
-            // attribute of the validated element if the message begins with the
-            // prefix '@<attribute>:', which includes the return value of
-            // expressions. Redirection to static and protected attributes is
-            // ignored and the message is suppressed for these destinations.
-            // This redirection can be helpful if a custom error concept needs
-            // to be implemented.
+            // An exclusive declaration in ATTRIBUTE_MESSAGE selects an
+            // additional property target without evaluating the fallback.
+            // Message text itself is never interpreted as an instruction.
 
             if (typeof selector.setCustomValidity === "function") {
 
-                if (valid === true
-                        && Object.usable(object.message)
-                        && Object.usable(object.message.attribute))
-                    selector.removeAttribute(object.message.attribute);
-
+                const expression = object.expressions[ATTRIBUTE_MESSAGE];
+                const property = expression
+                        && expression.type === EXPRESSION_TYPE_DECLARATION
+                        && expression.variable !== "null"
+                        && expression.variable !== "undefined"
+                    ? expression.variable : undefined;
+                let value;
                 if (valid !== true) {
                     let message;
                     if (typeof valid === "string"
@@ -639,23 +637,37 @@
                         if (object.attributes.hasOwnProperty(ATTRIBUTE_MESSAGE))
                             message = String(object.attributes[ATTRIBUTE_MESSAGE] || "");
                         if ((message || "").match(PATTERN_EXPRESSION_CONTAINS))
-                            message = String(_expression_eval(object.expressions[ATTRIBUTE_MESSAGE],
-                                EXPRESSION_TYPE_INTERPOLATION).result);
+                            message = _expression_eval(expression,
+                                EXPRESSION_TYPE_DECLARATION, EXPRESSION_TYPE_INTERPOLATION).result;
                     }
+                    value = message;
+                    if (object.attributes.hasOwnProperty(ATTRIBUTE_MESSAGE)
+                            || typeof message === "string")
+                        selector.setCustomValidity(String(message));
+                }
 
-                    if (Object.usable(message)) {
-                        const PATTERN_MESSAGE_REDIRECT = /^@([_a-z](?:[\w-]*\w)?):\s*(.*?)\s*$/i;
-                        const redirect = message.match(PATTERN_MESSAGE_REDIRECT);
-                        if (redirect) {
-                            const attribute = redirect[1];
-                            if (!(object.statics || {}).hasOwnProperty(attribute.toLowerCase())
-                                    && !PATTERN_ATTRIBUTE_STATIC.test(attribute)) {
-                                object.message = {attribute:attribute};
-                                selector.setAttribute(attribute, redirect[2]);
-                            }
-                            selector.setCustomValidity(redirect[2]);
-                        } else selector.setCustomValidity(message);
+                if ((valid === true || value === undefined)
+                            && object.message) {
+                    const property = object.message.property;
+                    let descriptor;
+                    for (let prototype = selector; prototype; prototype = Object.getPrototypeOf(prototype)) {
+                        descriptor = Object.getOwnPropertyDescriptor(prototype, property);
+                        if (descriptor)
+                            break;
                     }
+                    if (descriptor && (descriptor.writable === true
+                            || typeof descriptor.set === "function")) {
+                        const value = selector.ownerDocument.createElementNS(
+                            selector.namespaceURI, selector.localName)[property];
+                        if (!Object.is(selector[property], value))
+                            selector[property] = value;
+                    }
+                    delete object.message;
+                }
+                if (property !== undefined
+                        && value !== undefined) {
+                    selector[property] = value;
+                    object.message = {property};
                 }
             }
 

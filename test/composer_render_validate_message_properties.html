@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-debug-testing.js"></script>
+    <script>
+
+      Test.activate();
+
+      const MessageModel = {
+          field: "", result: false, fallback: "Fallback", evaluations: 0, validations: 0,
+          validate() {this.validations++; return this.result;},
+          message() {this.evaluations++; return this.fallback;}
+      };
+      const delay = () => new Promise(resolve => window.setTimeout(resolve, 0));
+      const errors = [];
+      const expectedErrors = [];
+      const preparations = new Map();
+      const testedInputs = new Set();
+      const targets = ["fault", "Fault", "validationMessageText", "$fault", "_fault", "Null", "Undefined"];
+      Composer.listen(Composer.EVENT_ERROR, (event, error) => errors.push(error.error || error));
+      const withMessage = async (name, test) => {
+          const source = document.querySelector('#MessageModel [data-case="' + name + '"]');
+          Assert.assertNotNull("Missing markup fixture: " + name, source);
+          Assert.assertFalse("Markup fixture already used: " + name, testedInputs.has(source));
+          testedInputs.add(source);
+          MessageModel.field = "";
+          MessageModel.result = false;
+          MessageModel.fallback = "Fallback";
+          MessageModel.evaluations = 0;
+          MessageModel.validations = 0;
+          await test(source);
+      };
+      const validate = input => Composer.validate(input, false);
+
+      Test.create({name: "Live markup is rendered before the validation tests", test() {
+          const inputs = Array.from(document.querySelectorAll("#MessageModel input"));
+          Assert.assertEquals(45, inputs.length);
+          Assert.assertEquals(inputs.length, new Set(inputs.map(input => input.id)).size);
+          Assert.assertEquals(0, MessageModel.evaluations);
+          Assert.assertEquals(0, MessageModel.validations);
+          Assert.assertEquals(0, errors.length);
+          inputs.forEach(input => {
+              Assert.assertTrue(input.isConnected);
+              Assert.assertTrue(window.___render_meta.has(input.uid));
+              Assert.assertFalse(input.hasAttribute("message"));
+              Assert.assertFalse(input.hasAttribute("validate"));
+              Assert.assertFalse(input.validity.customError);
+          });
+      }});
+
+      for (const target of targets)
+          Test.create({name: "Exact property target and lifecycle: " + target, async test() {
+              const scope = window.___view_scope;
+              try {
+                  await withMessage("target-" + target, async input => {
+                      Assert.assertUndefined(input[target]);
+                      Assert.assertEquals(0, MessageModel.evaluations);
+                      Assert.assertFalse(validate(input));
+                      Assert.assertEquals("Fallback", input.validationMessage);
+                      Assert.assertEquals("Fallback", input[target]);
+                      Assert.assertEquals("Unchanged scope", scope[target]);
+                      Assert.assertFalse(input.hasAttribute(target));
+                      Assert.assertFalse(Object.prototype.hasOwnProperty.call(input,
+                          target === "fault" ? "Fault" : "fault"));
+                      Assert.assertFalse(validate(input));
+                      Assert.assertEquals("Fallback", input[target]);
+                      MessageModel.result = true;
+                      Assert.assertTrue(validate(input));
+                      Assert.assertEquals("", input.validationMessage);
+                      Assert.assertUndefined(input[target]);
+                      input[target] = "Not owned by message output";
+                      Assert.assertTrue(validate(input));
+                      Assert.assertEquals("Not owned by message output", input[target]);
+                      MessageModel.result = false;
+                      MessageModel.fallback = "Again";
+                      Assert.assertFalse(validate(input));
+                      Assert.assertEquals("Again", input[target]);
+                      Assert.assertEquals("Again", input.validationMessage);
+                      Composer.render(input);
+                      await delay();
+                      Assert.assertEquals("Again", input[target]);
+                      Assert.assertEquals(3, MessageModel.evaluations);
+                  });
+              } finally {
+                  delete scope[target];
+              }
+          }});
+
+      for (const [name, expected] of [
+          ["absent", ""], ["empty", ""], ["empty-expression", ""], ["literal", "Literal"],
+          ["value", "Fallback"], ["interpolation", "Prefix Fallback"],
+          ["disabled-null", "Fallback"], ["disabled-undefined", "Fallback"]
+      ]) {
+          preparations.set(name, input => {
+              for (const property of ["message", "null", "undefined", "fault"])
+                  Object.defineProperty(input, property, {
+                      get() {throw new Error("Unexpected property read: " + property);},
+                      set() {throw new Error("Unexpected property write: " + property);}
+                  });
+          });
+          Test.create({name: "No implicit or disabled property access: " + name, async test() {
+              await withMessage(name, input => {
+                  for (const result of [false, true, false, true]) {
+                      MessageModel.result = result;
+                      Assert.assertEquals(result, validate(input));
+                      Assert.assertEquals(result ? "" : expected, input.validationMessage);
+                  }
+              });
+          }});
+      }
+
+      preparations.set("unassigned", input => Object.defineProperty(input, "fault", {
+          get() {throw new Error("Unassigned property read");},
+          set() {throw new Error("Unassigned property write");}
+      }));
+      Test.create({name: "A successful validation does not touch an unassigned mapped property", async test() {
+          await withMessage("unassigned", input => {
+              MessageModel.result = true;
+              Assert.assertTrue(validate(input));
+              Assert.assertEquals(0, MessageModel.evaluations);
+          });
+      }});
+
+      Test.create({name: "Message values retain their types; browser messages remain strings", async test() {
+          await withMessage("values", input => {
+              for (const value of [false, true, 0, 7, "", " \ttext\n ", null, {value: 1}, [1, 2]]) {
+                  MessageModel.fallback = value;
+                  Assert.assertFalse(validate(input));
+                  Assert.assertEquals(value, input.fault);
+                  Assert.assertEquals(String(value), input.validationMessage);
+                  Assert.assertFalse(input.hasAttribute("fault"));
+              }
+              MessageModel.fallback = undefined;
+              Assert.assertFalse(validate(input));
+              Assert.assertEquals("undefined", input.validationMessage);
+              Assert.assertUndefined(input.fault);
+              input.fault = "Edited after reset";
+              Assert.assertFalse(validate(input));
+              Assert.assertEquals("Edited after reset", input.fault);
+              MessageModel.fallback = "Restored";
+              Assert.assertFalse(validate(input));
+              Assert.assertEquals("Restored", input.fault);
+          });
+      }});
+
+      for (const success of [false, true])
+          Test.create({name: "Reset uses a fresh element's native default, success=" + success, async test() {
+              await withMessage("native-default-" + success, input => {
+                  MessageModel.fallback = 6;
+                  Assert.assertFalse(validate(input));
+                  Assert.assertEquals(6, input.tabIndex);
+                  MessageModel.result = success;
+                  MessageModel.fallback = undefined;
+                  Assert.assertEquals(success, validate(input));
+                  Assert.assertEquals(document.createElementNS(input.namespaceURI, input.localName).tabIndex,
+                      input.tabIndex);
+                  Assert.assertEquals(success ? "" : "undefined", input.validationMessage);
+              });
+          }});
+
+      preparations.set("initial-undefined", input => Object.defineProperty(input, "fault", {
+          get() {throw new Error("Initial undefined property read");},
+          set() {throw new Error("Initial undefined property write");}
+      }));
+      Test.create({name: "Initial undefined does not reset a property never assigned by the message", async test() {
+          await withMessage("initial-undefined", input => {
+              Assert.assertFalse(validate(input));
+              Assert.assertEquals("undefined", input.validationMessage);
+              MessageModel.result = true;
+              Assert.assertTrue(validate(input));
+          });
+      }});
+
+      Test.create({name: "Custom message properties neither write nor remove existing attributes", async test() {
+          await withMessage("attribute", input => {
+              Assert.assertFalse(validate(input));
+              Assert.assertEquals("Fallback", input.fault);
+              Assert.assertEquals("Application attribute", input.getAttribute("fault"));
+              MessageModel.result = true;
+              Assert.assertTrue(validate(input));
+              Assert.assertUndefined(input.fault);
+              Assert.assertEquals("Application attribute", input.getAttribute("fault"));
+          });
+      }});
+
+      for (const [name, result] of [
+          ["priority-text", "  Priority text  "], ["priority-prefix", "@fault:Text"],
+          ["priority-delimiters", "{{MessageModel.evaluations++}}"]
+      ])
+          Test.create({name: "Application message wins without executing fallback: " + result, async test() {
+              await withMessage(name, input => {
+                  MessageModel.result = result;
+                  Assert.assertEquals(result, validate(input));
+                  Assert.assertEquals(result.trim(), input.validationMessage);
+                  Assert.assertEquals(result.trim(), input.fault);
+                  Assert.assertFalse(input.hasAttribute("fault"));
+                  Assert.assertEquals(0, MessageModel.evaluations);
+              });
+          }});
+
+      for (const [name, result] of [
+          ["fallback-empty", ""], ["fallback-whitespace", " \t "], ["fallback-false", false],
+          ["fallback-null", null], ["fallback-undefined", undefined]
+      ])
+          Test.create({name: "Blank or non-string validation result uses fallback: " + String(result), async test() {
+              await withMessage(name, input => {
+                  MessageModel.result = result;
+                  Assert.assertEquals(result, validate(input));
+                  Assert.assertEquals("Fallback", input.validationMessage);
+                  Assert.assertEquals("Fallback", input.fault);
+                  Assert.assertEquals(1, MessageModel.evaluations);
+              });
+          }});
+
+      for (const expression of [false, true])
+          Test.create({name: "Former redirection is ordinary message text, expression=" + expression, async test() {
+              await withMessage(expression ? "former-expression" : "former-literal", input => {
+                  MessageModel.fallback = "@fault:Text";
+                  Assert.assertFalse(validate(input));
+                  Assert.assertEquals("@fault:Text", input.validationMessage);
+                  Assert.assertFalse(input.hasAttribute("fault"));
+                  Assert.assertUndefined(input.fault);
+              });
+          }});
+
+      for (const [name, result] of [
+          ["unmapped-prefix", "@fault:Text"], ["unmapped-delimiters", "{{MessageModel.evaluations++}}"]
+      ])
+          Test.create({name: "Unmapped validate strings remain text: " + result, async test() {
+              await withMessage(name, input => {
+                  MessageModel.result = result;
+                  Assert.assertEquals(result, validate(input));
+                  Assert.assertEquals(result, input.validationMessage);
+                  Assert.assertEquals(0, MessageModel.evaluations);
+                  Assert.assertUndefined(input.fault);
+                  Assert.assertFalse(input.hasAttribute("fault"));
+              });
+          }});
+
+      for (const name of ["mixed-text", "mixed-suffix", "mixed-disabled"])
+          Test.create({name: "Embedded declarations are not executed or mapped: " + name, async test() {
+              await withMessage(name, input => {
+                  Assert.assertFalse(validate(input));
+                  Assert.assertTrue(input.validationMessage.includes("Error: Unsupported expression type"));
+                  Assert.assertEquals(0, MessageModel.evaluations);
+                  Assert.assertUndefined(input.fault);
+              });
+          }});
+
+      Test.create({name: "Native validation takes priority over application validation", async test() {
+          await withMessage("native-validation", input => {
+              MessageModel.result = "Application";
+              Assert.assertFalse(validate(input));
+              Assert.assertEquals(0, MessageModel.validations);
+              Assert.assertEquals("Fallback", input.fault);
+              Assert.assertEquals("Fallback", input.validationMessage);
+              input.value = "Present";
+              MessageModel.result = true;
+              Assert.assertTrue(validate(input));
+              Assert.assertEquals(1, MessageModel.validations);
+              Assert.assertUndefined(input.fault);
+              Assert.assertEquals("", input.validationMessage);
+          });
+      }});
+
+      for (const optional of [false, true])
+          Test.create({name: "Event validation preserves synchronization, optional=" + optional, async test() {
+              await withMessage("optional-" + optional, async input => {
+                  input.value = "Invalid input";
+                  const event = new Event("input", {bubbles: true, cancelable: true});
+                  input.dispatchEvent(event);
+                  await delay();
+                  Assert.assertTrue(event.defaultPrevented);
+                  Assert.assertEquals(optional ? "Invalid input" : "", MessageModel.field);
+                  Assert.assertEquals("Fallback", input.fault);
+                  MessageModel.result = true;
+                  input.value = "Valid input";
+                  const accepted = new Event("input", {bubbles: true, cancelable: true});
+                  input.dispatchEvent(accepted);
+                  await delay();
+                  Assert.assertFalse(accepted.defaultPrevented);
+                  Assert.assertEquals("Valid input", MessageModel.field);
+                  Assert.assertUndefined(input.fault);
+                  Assert.assertEquals("", input.validationMessage);
+              });
+          }});
+
+      for (const phase of ["assignment", "reset"]) {
+          let stored;
+          let fail = phase === "assignment";
+          const failure = new Error("Message property " + phase + " failure");
+          preparations.set("property-error-" + phase, input => Object.defineProperty(input, "fault", {
+              get() {return stored;},
+              set(value) {
+                  if (fail)
+                      throw failure;
+                  stored = value;
+              }
+          }));
+          Test.create({name: "Property " + phase + " failures propagate rather than return success", async test() {
+              await withMessage("property-error-" + phase, input => {
+                  if (phase === "reset") {
+                      Assert.assertFalse(validate(input));
+                      MessageModel.result = true;
+                      fail = true;
+                  }
+                  let caught;
+                  try {validate(input);
+                  } catch (error) {caught = error;}
+                  Assert.assertEquals(failure, caught);
+                  fail = false;
+                  MessageModel.result = true;
+                  Assert.assertTrue(validate(input));
+                  Assert.assertUndefined(stored);
+              });
+          }});
+      }
+
+      for (const phase of ["assignment", "reset"]) {
+          let stored;
+          let fail = phase === "assignment";
+          const failure = new Error("Message event " + phase + " failure");
+          preparations.set("event-error-" + phase, input => Object.defineProperty(input, "fault", {
+              get() {return stored;},
+              set(value) {
+                  if (fail)
+                      throw failure;
+                  stored = value;
+              }
+          }));
+          Test.create({name: "Event property errors use Composer error reporting: " + phase, async test() {
+              await withMessage("event-error-" + phase, async input => {
+                  if (phase === "reset") {
+                      Assert.assertFalse(validate(input));
+                      MessageModel.result = true;
+                      fail = true;
+                  }
+                  const suppress = event => {
+                      if (event.error === failure)
+                          event.preventDefault();
+                  };
+                  window.addEventListener("error", suppress);
+                  expectedErrors.push(failure);
+                  try {
+                      input.value = "Must not synchronize";
+                      input.dispatchEvent(new Event("input", {bubbles: true, cancelable: true}));
+                      await delay();
+                      Assert.assertEquals(failure, errors[errors.length -1]);
+                      Assert.assertEquals("", MessageModel.field);
+                  } finally {
+                      window.removeEventListener("error", suppress);
+                  }
+              });
+          }});
+      }
+
+      Test.create({name: "Expression failures remain visible and invalid", async test() {
+          await withMessage("expression-error", input => {
+              Assert.assertFalse(validate(input));
+              Assert.assertTrue(input.fault instanceof Error);
+              Assert.assertEquals("Error: Message expression failure", input.validationMessage);
+          });
+      }});
+
+      Test.create({name: "Read-only properties are not read during reset", async test() {
+          await withMessage("readonly", input => {
+              Assert.assertFalse(validate(input));
+              Object.defineProperty(input, "fault", {
+                  configurable: true,
+                  get() {throw new Error("Read-only reset getter");}
+              });
+              MessageModel.result = true;
+              Assert.assertTrue(validate(input));
+          });
+      }});
+
+      Test.create({name: "Only expected Composer errors were reported", test() {
+          Assert.assertEquals(45, testedInputs.size);
+          Assert.assertEquals(expectedErrors.length, errors.length);
+          expectedErrors.forEach((error, index) => Assert.assertEquals(error, errors[index]));
+      }});
+
+      window.addEventListener("DOMContentLoaded", () => {
+          preparations.forEach((prepare, name) => {
+              const input = document.querySelector('#MessageModel [data-case="' + name + '"]');
+              if (!input)
+                  throw new Error("Missing markup fixture: " + name);
+              prepare(input);
+          });
+          targets.forEach(target => window.___view_scope[target] = "Unchanged scope");
+      });
+
+      let rendered = false;
+      Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
+          if (rendered || selector !== document.body)
+              return;
+          rendered = true;
+          window.setTimeout(() => Test.start(), 0);
+      });
+    </script>
+  </head>
+  <body>
+    <form id="MessageModel" composite>
+      <input id="field#target_fault" data-case="target-fault" validate events="input"
+          message="  {{fault:MessageModel.message()}}  ">
+      <input id="field#target_Fault" data-case="target-Fault" validate events="input"
+          message="  {{Fault:MessageModel.message()}}  ">
+      <input id="field#target_validationMessageText" data-case="target-validationMessageText" validate events="input"
+          message="  {{validationMessageText:MessageModel.message()}}  ">
+      <input id="field#target_dollar_fault" data-case="target-$fault" validate events="input"
+          message="  {{$fault:MessageModel.message()}}  ">
+      <input id="field#target_underscore_fault" data-case="target-_fault" validate events="input"
+          message="  {{_fault:MessageModel.message()}}  ">
+      <input id="field#target_Null" data-case="target-Null" validate events="input"
+          message="  {{Null:MessageModel.message()}}  ">
+      <input id="field#target_Undefined" data-case="target-Undefined" validate events="input"
+          message="  {{Undefined:MessageModel.message()}}  ">
+
+      <input id="field#absent" data-case="absent" validate events="input">
+      <input id="field#empty" data-case="empty" validate events="input" message="">
+      <input id="field#empty_expression" data-case="empty-expression" validate events="input" message="{{}}">
+      <input id="field#literal" data-case="literal" validate events="input" message="Literal">
+      <input id="field#value" data-case="value" validate events="input" message="{{MessageModel.message()}}">
+      <input id="field#interpolation" data-case="interpolation" validate events="input"
+          message="Prefix {{MessageModel.message()}}">
+      <input id="field#disabled_null" data-case="disabled-null" validate events="input"
+          message="{{null:MessageModel.message()}}">
+      <input id="field#disabled_undefined" data-case="disabled-undefined" validate events="input"
+          message="{{undefined:MessageModel.message()}}">
+
+      <input id="field#unassigned" data-case="unassigned" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#values" data-case="values" validate events="input" message="{{fault:MessageModel.message()}}">
+      <input id="field#native_default_false" data-case="native-default-false" validate events="input"
+          message="{{tabIndex:MessageModel.message()}}">
+      <input id="field#native_default_true" data-case="native-default-true" validate events="input"
+          message="{{tabIndex:MessageModel.message()}}">
+      <input id="field#initial_undefined" data-case="initial-undefined" validate events="input" message="{{fault:undefined}}">
+      <input id="field#attribute" data-case="attribute" validate events="input"
+          message="{{fault:MessageModel.message()}}" fault="Application attribute">
+
+      <input id="field#priority_text" data-case="priority-text" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#priority_prefix" data-case="priority-prefix" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#priority_delimiters" data-case="priority-delimiters" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#fallback_empty" data-case="fallback-empty" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#fallback_whitespace" data-case="fallback-whitespace" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#fallback_false" data-case="fallback-false" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#fallback_null" data-case="fallback-null" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#fallback_undefined" data-case="fallback-undefined" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+
+      <input id="field#former_literal" data-case="former-literal" validate events="input" message="@fault:Text">
+      <input id="field#former_expression" data-case="former-expression" validate events="input"
+          message="{{MessageModel.message()}}">
+      <input id="field#unmapped_prefix" data-case="unmapped-prefix" validate events="input">
+      <input id="field#unmapped_delimiters" data-case="unmapped-delimiters" validate events="input">
+      <input id="field#mixed_text" data-case="mixed-text" validate events="input"
+          message="Text {{fault:MessageModel.message()}}">
+      <input id="field#mixed_suffix" data-case="mixed-suffix" validate events="input"
+          message="{{fault:MessageModel.message()}}{{1}}">
+      <input id="field#mixed_disabled" data-case="mixed-disabled" validate events="input"
+          message="{{null:MessageModel.message()}} text">
+
+      <input id="field#native_validation" data-case="native-validation" validate events="input"
+          message="{{fault:MessageModel.message()}}" required>
+      <input id="field#optional_false" data-case="optional-false" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#optional_true" data-case="optional-true" validate="optional" events="input"
+          message="{{fault:MessageModel.message()}}">
+
+      <input id="field#property_error_assignment" data-case="property-error-assignment" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#property_error_reset" data-case="property-error-reset" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#event_error_assignment" data-case="event-error-assignment" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#event_error_reset" data-case="event-error-reset" validate events="input"
+          message="{{fault:MessageModel.message()}}">
+      <input id="field#expression_error" data-case="expression-error" validate events="input"
+          message="{{fault:(() => {throw new Error('Message expression failure')})()}}">
+      <input id="field#readonly" data-case="readonly" validate events="input" message="{{fault:MessageModel.message()}}">
+    </form>
+  </body>
+</html>

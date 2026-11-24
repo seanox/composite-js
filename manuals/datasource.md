@@ -203,14 +203,14 @@ depends on the browser and XSLT processor.
 JavaScript &lt;script&gt; elements without a type or with the type
 `text/javascript` are changed to `composite/javascript`. They are therefore not
 executed during embedding, but are interpreted by the composer during
-rendering. This is important when using [condition](markup.md#condition).
+rendering. The [condition](markup.md#condition) attribute can therefore control
+their execution during rendering.
 
-Text creation/output during transformation has another special behavior. The
-XSLT Processor always generates XML-valid text output. Any XML syntax in text is
-escaped automatically, which makes markup generation difficult. The attribute
-`escape` can be used in XML and/or XSLT files for this case. It expects the
-values `yes`, `on`, `true` or `1`. These values cancel or undo automatic
-escaping.
+The XSLT processor generates XML-valid text output. XML syntax in text is
+escaped automatically, so markup in text is rendered as text rather than
+interpreted as elements. The attribute `escape` can be used in XML and/or XSLT
+files to cancel or undo this escaping. It expects the values `yes`, `on`, `true`
+or `1`.
 
 ```xml
 <?xml version="1.0"?>

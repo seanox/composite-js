@@ -131,8 +131,8 @@ resolved. Content outside this context is not considered application code unless
 explicitly included by the application. This is a resource boundary, not an
 execution boundary.
 
-External or user-provided data must be handled appropriately before being
-introduced as executable application content.
+External or user-provided data must not be introduced as executable application
+content unless the application explicitly trusts it as code.
 
 ## Scopes
 The runtime distinguishes four scopes. They differ in lifetime, ownership, and
@@ -167,8 +167,8 @@ per composite.
 
 Expressions and composite scripts execute in the execution scope. View scope
 variables are available there by name, while the persistent scopes are reached
-through the reserved objects `view` and `application`. These explicit objects
-make the intended lifetime and sharing of a value clear:
+through the reserved objects `view` and `application`. Using these scope objects
+specifies where a value is stored and how it is shared:
 
 ```javascript
 view.selectedId = item.id;
@@ -439,8 +439,8 @@ requirements and error behavior.
 ## View
 The view describes the declarative presentation of a composite.
 
-It is defined by markup and styled by CSS. In addition to regular HTML, the view
-can contain expressions and runtime instructions that are evaluated during
+It is defined by markup and styled by CSS. In addition to HTML, the view can
+contain expressions and runtime instructions that are evaluated during
 rendering.
 
 The view does not provide the application logic. Instead, it refers to objects
@@ -450,18 +450,18 @@ Expressions contain JavaScript enclosed in `{{...}}` and receive `attempt`, but
 not `require`, `use` or `expose`. The [Markup Extensions for Expressions](
     expression.md#markup-extensions-for-expressions) provide optional operator
 aliases such as `:and` (`&&`), `:or` (`||`) and `:not` (`!`). They are
-translated before evaluation; normal JavaScript operators remain supported.
+translated before evaluation; JavaScript operators remain supported.
 
-Expressions can supply text content and dynamic attribute values. Ordinary
-attributes use native DOM conversion rules; `undefined` removes the attribute
-and may reset its same-named property. Runtime instructions such as `condition`
-and `interval` have their own value rules. See [Expression results](
+Expressions can supply text content and dynamic attribute values. Attribute
+values follow native DOM conversion rules; `undefined` removes the attribute and
+may reset its same-named property. Runtime instructions such as `condition` and
+`interval` have their own value rules. See [Expression results](
     expression.md#expressions) for value handling and error behavior.
 
-Expression execution failures are logged and returned unchanged as ordinary
-result values, which may appear in rendered output. Direct `Scripting.eval()`
-and `Scripting.run()` calls instead propagate execution failures to their
-caller. See [Expression error handling](expression.md#expressions).
+Expression execution failures are logged and returned unchanged as result
+values, which may appear in rendered output. Direct `Scripting.eval()` and
+`Scripting.run()` calls instead propagate execution failures to their caller.
+See [Expression error handling](expression.md#expressions).
 
 Expressions use the [execution scope](#execution-scope) managed by the composer,
 distinct from the application module itself. See [Scopes](#scopes) for
@@ -480,8 +480,7 @@ persistent variables, temporary values, and assignment rules.
 > - connects both concepts
 
 The composer realizes the view within the declaring composite element. The
-resulting DOM subtree is part of the running state of the composite rather than
-merely a passive output representation.
+resulting DOM subtree is part of the running state of the composite.
 
 ### View Responsibilities
 The view is responsible for the declarative presentation and for the

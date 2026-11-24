@@ -247,9 +247,9 @@ application-specific responsibilities to Services.
 <img src="composite-binding_mvcs.svg"/>
 
 ### Other Architectures
-An application module can just as well implement a Service, an application
-model, or another application-specific structure. In every case, composite
-binding connects view and application module the same way.
+An application module can also implement a Service, an application model, or
+another application-specific structure. In every case, composite binding
+connects view and application module the same way.
 
 
 

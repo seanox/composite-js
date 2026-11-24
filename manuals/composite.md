@@ -62,7 +62,7 @@ expose(example, "example");
 
 The structure and responsibility of the application module are not prescribed by
 the runtime. It can be implemented as an object, function, class or another
-suitable structure.
+structure.
 
 The composite ID can also be used for CSS selector mapping.
 

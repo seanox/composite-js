@@ -24,7 +24,7 @@ and options for customization.
   - [render](#render)
   - [route](#route)
   - [validate](#validate)
-- [@-Attributes](#-attributes) 
+- [Attribute Directives](#attribute-directives)
 - [Expression Language](#expression-language)
 - [Scripting](#scripting)
 - [Customizing](#customizing)
@@ -79,7 +79,7 @@ the DOM. Like [interval](#interval), it accepts either an explicit static text
 value or one standalone expression, not a mixture of text and expressions. For
 condition, the only static values are the case-sensitive literals `true` and
 `false`. They always retain or exclude the element, respectively, and can be
-useful as temporary switches during development.
+used as temporary switches during development.
 
 A standalone expression must explicitly return Boolean `true` to retain the
 element; the string `"true"` and other truthy values do not satisfy a condition.
@@ -239,8 +239,7 @@ for data and transformation are derived from it.
 Example of importing a DataSource-URL with a specific data URL (locator) and
 transformation URL. As a value, the data URL (locator of the XML file) and the
 transformation URL (locator of the XSLT template) are specified, separated by
-` + `. Reserved characters in either locator can be percent-encoded as usual
-for URLs.
+` + `. Reserved characters in either locator can be percent-encoded.
 
 ```html
 <article import="xml://example/data + xslt://example/style">
@@ -522,12 +521,12 @@ By default, validation messages are shown as a native browser toolbox for the
 same name. If custom validation and output need to be implemented, this behavior
 can be changed by redirecting the message to an attribute of the &lt;input&gt;
 element. For this purpose, the message, which at this point also includes the
-return value of expressions, must begin as follows: `@<attribute>:`. See
-[@-Attributes](#-attributes).
+return value of expressions, must begin as follows: `@<attribute>:`. This
+message redirection syntax is independent of [Attribute Directives](
+    #attribute-directives).
 
-A general strategy or standard implementation for error output is deliberately
-not provided, as this is too strict in most cases and can be implemented
-individually as a central solution.
+Custom validation error output is implemented by the application, either
+centrally or for individual input elements.
 
 ```css
 input[type='text']:not([fault]) {
@@ -572,28 +571,32 @@ is deleted from the attribute `fault`. Below the input field is the control
 output of the corresponding property in the application module. This property is
 only synchronized if the validate method returns the value `true`.
 
-## @-Attributes
-Expressions are resolved by the composer only during rendering, after the page
-has been loaded and initially displayed by the browser. This is a problem for
-HTML elements whose attributes the browser already interprets before rendering
--- for example the `src` attribute of the &lt;img&gt; element. For these cases
-@-attributes are templates for real attributes. The composer resolves the
-expression and removes the template attribute. A defined value sets the target
-attribute; `undefined` removes it. The expression remains available for later
-render cycles, so the target attribute can be set again when the expression
-returns a value. The target follows the ordinary dynamic-attribute rules
-described in [Expression Language](#expression-language).
+## Attribute Directives
+Expressions are resolved by the composer during rendering, after the page has
+been loaded and initially displayed by the browser. The browser may interpret
+attributes such as `src` on an &lt;img&gt; element before their expressions are
+resolved. Attribute directives defer setting these target attributes until
+rendering.
+
+An attribute directive acts as a template for a target attribute. The composer
+resolves the expression and removes the template attribute. A defined value
+sets the target attribute; `undefined` removes it. The expression remains
+available for later render cycles, so the target attribute can be set again
+when the expression returns a value. The target follows the dynamic attribute
+value rules described in [Expression Language](#expression-language).
 
 ```html
-<img @src="{{...}}"/>
+<img [src]="{{image.url}}">
+<img [src]="images/logo.png">
+<img [src]="">
 ```
 
 ## Expression Language
 The expression language can be used in text nodes and HTML attribute values;
-the contents of &lt;script&gt; and &lt;style&gt; elements are excluded. Ordinary
-HTML attributes do not require a separate allowlist, but runtime instructions
-and initial metadata have their own rules. Text-node expressions produce text,
-not HTML. Use `output` or `import` when markup or DOM content is intended. For
+the contents of &lt;script&gt; and &lt;style&gt; elements are excluded. HTML
+attributes do not require a separate allowlist, but runtime instructions and
+initial metadata have their own rules. Text-node expressions produce text, not
+HTML. Use `output` or `import` when markup or DOM content is intended. For
 dynamic attribute values and errors, see [Expression Language](
     expression.md#expressions).
 

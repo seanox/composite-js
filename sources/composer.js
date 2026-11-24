@@ -91,6 +91,9 @@
      */
     const PATTERN_ATTRIBUTE_STATIC = /^(composite|id)$/i;
 
+    /** Pattern for delayed native attributes without whitespace or nested brackets. */
+    const PATTERN_ATTRIBUTE_DIRECTIVE = /^\[([^\s[\]]+)\]$/;
+
     /** Pattern for all markup expression operators */
     const MARKUP_EXPRESSION_OPERATORS = {
         and: "&&", empty: "!", div: "/", eq: "==", eeq: "===",
@@ -2160,15 +2163,19 @@
 
     /**
      * Analyses the attributes of an element initially. Attributes containing an
-     * expression, attributes relevant for the rendering and static attributes
-     * are cached in the metadata object.
+     * expression, attribute directives, attributes relevant for the rendering
+     * and static attributes are cached in the metadata object.
      * @param {Element} selector Element to be rendered
      * @param {object} object Metadata object of the element
      */
     const _render_attribute_initialize = (selector, object) => {
         Array.from(selector.attributes).forEach((attribute) => {
-            attribute = {name:attribute.name.toLowerCase(), value:(attribute.value || "").trim()};
+            attribute = {name:attribute.name.toLowerCase(), value:attribute.value || ""};
+            const directive = PATTERN_ATTRIBUTE_DIRECTIVE.test(attribute.name);
+            if (!directive || attribute.value.match(PATTERN_EXPRESSION_CONTAINS))
+                attribute.value = attribute.value.trim();
             if (attribute.value.match(PATTERN_EXPRESSION_CONTAINS)
+                    || directive
                     || attribute.name.match(PATTERN_ATTRIBUTE_ACCEPT)
                     || _statics.has(attribute.name)) {
 
@@ -2815,16 +2822,23 @@
             if (attribute.match(PATTERN_ATTRIBUTE_ACCEPT)
                     && !attribute.match(PATTERN_ATTRIBUTE_STATIC))
                 return;
+            const target = attribute.replace(PATTERN_ATTRIBUTE_DIRECTIVE, "$1");
+            const directive = target !== attribute;
             let value = String(object.attributes[attribute] || "");
-            if (!value.match(PATTERN_EXPRESSION_CONTAINS))
+            if (!value.match(PATTERN_EXPRESSION_CONTAINS)) {
+                if (directive) {
+                    selector.removeAttribute(attribute);
+                    selector.setAttribute(target, value);
+                    delete object.attributes[attribute];
+                    delete object.expressions[attribute];
+                }
                 return;
+            }
             value = _expression_eval(object.expressions[attribute],
                 EXPRESSION_TYPE_VALUE, EXPRESSION_TYPE_INTERPOLATION).result;
-            // @-ATTRIBUTE: Consume the template independently of its result.
+            // Consume the directive independently of its result.
             // Its expression remains in the metadata for later render cycles.
-            const target = attribute.startsWith("@")
-                ? attribute.replace(/^@+/, "") : attribute;
-            if (target !== attribute)
+            if (directive)
                 selector.removeAttribute(attribute);
             if (value === undefined) {
                 if (selector.hasAttribute(target)) {

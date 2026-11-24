@@ -72,7 +72,7 @@
                 const element = document.getElementById(id);
                 Assert.assertEquals(false, element["data-probe"]);
                 Assert.assertEquals("false", element.getAttribute("data-probe"));
-                Assert.assertFalse(element.hasAttribute("@data-probe"));
+                Assert.assertFalse(element.hasAttribute("[data-probe]"));
             });
             Assert.assertEquals(0, errors.length);
         }});
@@ -110,7 +110,7 @@
                     const element = document.getElementById(id);
                     Assert.assertNull(element.getAttribute("data-probe"));
                     Assert.assertUndefined(element["data-probe"]);
-                    Assert.assertFalse(element.hasAttribute("@data-probe"));
+                    Assert.assertFalse(element.hasAttribute("[data-probe]"));
                 });
                 Assert.assertEquals(0, unsetAssignments.length);
                 Assert.assertNull(document.getElementById("unset").getAttribute("data-probe"));
@@ -321,7 +321,7 @@
                     const element = document.getElementById(id);
                     Assert.assertNull(element.getAttribute("value"));
                     Assert.assertEquals("", element.value);
-                    Assert.assertFalse(element.hasAttribute("@value"));
+                    Assert.assertFalse(element.hasAttribute("[value]"));
                 });
             });
         }});
@@ -559,8 +559,8 @@
   </head>
   <body>
     <span id="ordinary" data-probe="{{attributeModel.value}}"></span>
-    <span id="template" @data-probe="{{attributeModel.value}}"></span>
-    <span id="unset" @data-probe="{{attributeModel.unset}}"></span>
+    <span id="template" [data-probe]="{{attributeModel.value}}"></span>
+    <span id="unset" [data-probe]="{{attributeModel.unset}}"></span>
     <span id="readonlyData" data-probe="{{attributeModel.unset}}"></span>
     <span id="readonlyGetter" data-probe="{{attributeModel.unset}}"></span>
     <span id="missingProperty" data-probe="{{attributeModel.unset}}"></span>
@@ -577,11 +577,11 @@
     <input id="formInput" form="{{attributeModel.unset}}">
     <input id="listInput" list="{{attributeModel.unset}}">
     <input id="ordinaryInput" value="{{attributeModel.input}}">
-    <input id="templateInput" @value="{{attributeModel.input}}">
+    <input id="templateInput" [value]="{{attributeModel.input}}">
     <input id="checked" type="checkbox" checked="{{attributeModel.value}}">
-    <input id="templateChecked" type="checkbox" @checked="{{attributeModel.value}}">
+    <input id="templateChecked" type="checkbox" [checked]="{{attributeModel.value}}">
     <input id="disabled" disabled="{{attributeModel.value}}">
-    <input id="templateDisabled" @disabled="{{attributeModel.value}}">
+    <input id="templateDisabled" [disabled]="{{attributeModel.value}}">
     <span id="text" title="{{attributeModel.value}}" aria-hidden="{{attributeModel.value}}" data-flag="{{attributeModel.value}}"></span>
     <input id="observer">
     <span id="setter" data-probe="{{attributeModel.setterValue}}"></span>

@@ -24,8 +24,12 @@
           if (snapshots.length > 0)
               return;
           const snapshot = () => {
-              const content = document.querySelector("#text1").outerHTML
-                      + " " + Model.text1;
+              const input = document.querySelector("#text1");
+              const failed = input.validity.customError;
+              Assert.assertEquals(failed ? "wrong email" : "", input.validationMessage);
+              Assert.assertEquals(failed ? "wrong email" : undefined, input.new_attr);
+              Assert.assertFalse(input.hasAttribute("new_attr"));
+              const content = input.outerHTML + " " + Model.text1;
               snapshots.push(content);
           };
           snapshot();
@@ -56,7 +60,7 @@
     <form id="Model" composite>
       <input id="text1" type="text" placeholder="e-mail address"
           pattern="^\w+([\w\.\-]*\w)*@\w+([\w\.\-]*\w{2,})$"
-          message="@new_attr:wrong email"
+          message="{{new_attr:'wrong email'}}"
           validate="optional" events="input change" render="#Model"/>
       Model.text1: {{Model.text1}}
       <input type="submit" value="submit" validate events="click"/>

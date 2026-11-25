@@ -146,9 +146,7 @@
               queue = queue.textContent.trim().split(/\s+/);
               queue = queue.filter(entry => !entry.match(/^\*/));
               queue.forEach(entry => {
-                  const id = entry.hashCode();
                   const item = document.createElement("div");
-                  item.id = id;
                   item.dataset.test = entry;
                   item.innerHTML = `${entry}<br><meter></meter> <span>-</span>/<span>-</span>`;
                   fragment.appendChild(item);
@@ -204,8 +202,7 @@
                   window.focus();
                   document.body.focus();
 
-                  let test = locateTest();
-                  test = document.querySelector("#" + test.hashCode());
+                  const test = locateTestElement();
                   if (test && !test.className) {
                       test.scrollIntoView(false);
                       test.className = "progress";
@@ -252,6 +249,16 @@
               return String(iframeElement.getAttribute("src").match(/^[^\?]+/));
           };
 
+          const locateTestElement = () => {
+              const test = locateTest();
+              for (let index = 0; index < progressElement.children.length; index++) {
+                  const element = progressElement.children[index];
+                  if (element.dataset.test === test)
+                      return element;
+              }
+              throw new Error("Unable to locate progress for " + test);
+          };
+
           const locateEngine = () => {
               if (navigator.engine !== "webkit")
                   return navigator.engine;
@@ -283,8 +290,7 @@
           };
 
           const performTest = (event, status) => {
-              let test = locateTest();
-              test = document.querySelector("#" + test.hashCode());
+              const test = locateTestElement();
               test.scrollIntoView(false);
 
               const meter = test.querySelector("meter");

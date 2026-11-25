@@ -91,6 +91,25 @@ arithmetic, and type conversion.
 The benchmark measures expression parsing and evaluation performance under
 high-frequency execution, with a focus on efficient resolution of deep property
 paths without unnecessary overhead.
+
+The three values listed for each version correspond to these measurements, in
+order:
+
+__Benchmark 1 - initial render__  
+Time from benchmark setup until the first completed `Composer.EVENT_RENDER_END`
+while rendering 140 copies of the expression in the document body. The rendered
+output is checked.
+
+__Benchmark 2 - 2,500 evaluations__  
+Time for 2,500 calls to `Expression.eval` with the same expression. Each result
+is checked.
+
+__Benchmark 3 - 25,000 evaluations__  
+The same direct evaluation and result check, repeated 25,000 times.
+
+The second and third measurements include the `Assert.assertEquals` checks
+inside their loops; they measure direct expression evaluation rather than DOM
+rendering.
 </details>
 
 ## Reactive: Batching
@@ -118,10 +137,10 @@ middle of the view (index 5000).
 The benchmark measures whether the reactive system updates only the affected
 binding or unnecessarily re-evaluates unrelated nodes.
 
-__Ideal:__  
+__Ideal__  
 State change &rarr; one dependency &rarr; one text node update.
 
-__Poor implementations:__  
+__Poor implementations__  
 State change &rarr; view re-evaluation &rarr; many expression evaluations &rarr;
 many DOM updates.
 

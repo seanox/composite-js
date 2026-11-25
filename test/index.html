@@ -16,7 +16,12 @@
     <main>
       <div id="progress"></div>
       <div id="output"></div>
-      <div id="frame"><iframe></iframe></div>
+      <div id="frame">
+        <iframe></iframe>
+        <div id="frame-status" role="status" aria-live="polite" hidden>
+          Test in progress...
+        </div>
+      </div>
     </main>
   </body>
 </html>

@@ -56,6 +56,23 @@ main {
   height: 100%;
 }
 
+#frame-status {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1em;
+  color: var(--line);
+  background: rgba(255, 255, 255, .9);
+  text-align: center;
+  pointer-events: none;
+}
+#frame-status[hidden] {
+  display: none;
+}
+
 #progress > div {
   padding: 0.75em;
   border-left: 0.5em solid var(--gray);

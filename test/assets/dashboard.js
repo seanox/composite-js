@@ -17,6 +17,9 @@
     let progressElement;
     let outputElement;
     let iframeElement;
+    let frameStatusElement;
+    let frameObserver;
+    let frameTestRunning = false;
 
     let queue;
     let faults;
@@ -61,6 +64,8 @@
         Test.activate();
 
         Test.listen(Test.EVENT_START, (event, status) => {
+            frameTestRunning = true;
+            updateFrameStatus();
             outputMessage("info",
                     `Start of ${locateTest()}\r\n\t${status.queue.size} tests found`);
         });
@@ -71,6 +76,8 @@
 
         Test.listen(Test.EVENT_FINISH, (event, status) => {
 
+            frameTestRunning = false;
+            updateFrameStatus();
             performTest(event, status);
             if (queue.length <= 0) {
                 if (faults)
@@ -99,6 +106,8 @@
         });
 
         Test.listen(Test.EVENT_INTERRUPT, (event, status) => {
+            frameTestRunning = false;
+            updateFrameStatus();
             outputMessage("warn", "Interrupt of " + locateTest());
             performTest(event, status);
             if (queue.length > 0)
@@ -131,6 +140,8 @@
         progressElement = document.querySelector("#progress");
         outputElement = document.querySelector("#output");
         iframeElement = document.querySelector("#frame iframe");
+        frameStatusElement = document.querySelector("#frame-status");
+        iframeElement.addEventListener("load", observeFrame);
         attachTestListeners();
         try {
             const request = new XMLHttpRequest();
@@ -186,10 +197,35 @@
 
     const loadTest = (test) => {
         const name = test || queue.shift();
+        frameTestRunning = false;
+        updateFrameStatus();
         activeTest = name;
         outputMessage("info", "Loading " + name);
         iframeElement.contentWindow.location.replace(
                 testingDirectory + name + (test ? "" : "?" + Date.now()));
+    };
+
+    const observeFrame = () => {
+        if (frameObserver) {
+            frameObserver.disconnect();
+            frameObserver = null;
+        }
+        const frameDocument = iframeElement.contentDocument;
+        const body = frameDocument && frameDocument.body;
+        if (body) {
+            frameObserver = new MutationObserver(updateFrameStatus);
+            frameObserver.observe(body, {childList:true, characterData:true, subtree:true});
+        }
+        updateFrameStatus();
+    };
+
+    const updateFrameStatus = () => {
+        const frameDocument = iframeElement && iframeElement.contentDocument;
+        const body = frameDocument && frameDocument.body;
+        const empty = body
+                && body.children.length === 0
+                && !body.textContent.trim();
+        frameStatusElement.hidden = !(frameTestRunning && empty);
     };
 
     const performTest = (event, status) => {

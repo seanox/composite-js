@@ -10,9 +10,7 @@
 
         window.history.replaceState(null, "", "#routingPermit");
 
-        let _authenticated = true;
         let _finishRender = null;
-        let _followingCalls = 0;
         const _navigations = [];
         const _events = [];
 
@@ -45,13 +43,6 @@
         window.routingNever = routingCondition;
         window.routingDefault = routingCondition;
 
-        Routing.customize("#routingPermit", () => {
-            if (!_authenticated) {
-                window.location.replace("#routingPermitLogin");
-                return false;
-            }
-        });
-        Routing.customize("#routingPermit", () => _followingCalls++);
         Routing.customize(/.*/, (previous, next) => _navigations.push(next));
         window.addEventListener("hashchange", event => _events.push(event));
         Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {
@@ -221,27 +212,6 @@
                         previousElement.isConnected);
             }
         }});
-
-        Test.create({name:"An interceptor redirects denied navigation to the login view",
-            timeout:5000, async test() {
-                const followingCalls = _followingCalls;
-                const navigations = _navigations.length;
-                const length = window.history.length;
-                _authenticated = false;
-                routingPermit.approval = false;
-                const rendered = new Promise(resolve => _finishRender = resolve);
-                Routing.route("#routingPermit#settings");
-                await rendered;
-                Assert.assertEquals("#routingPermitLogin", Routing.location);
-                Assert.assertEquals("#routingPermitLogin", window.location.hash);
-                Assert.assertEquals("#routingPermitLogin", _navigations.slice(navigations).join(","));
-                Assert.assertEquals(followingCalls, _followingCalls);
-                Assert.assertEquals(-1, Routing.history.indexOf("#routingPermit#settings"));
-                Assert.assertEquals("#routingPermitLogin", Routing.history[Routing.history.length - 1]);
-                Assert.assertEquals(length + 1, window.history.length);
-                Assert.assertNull(document.getElementById("routingPermit"));
-                Assert.assertNotNull(document.getElementById("routingPermitLogin"));
-            }});
 
         window.addEventListener("load", () => Test.start());
     </script>

@@ -188,7 +188,7 @@
         const name = test || queue.shift();
         activeTest = name;
         outputMessage("info", "Loading " + name);
-        iframeElement.setAttribute("src",
+        iframeElement.contentWindow.location.replace(
                 testingDirectory + name + (test ? "" : "?" + Date.now()));
     };
 

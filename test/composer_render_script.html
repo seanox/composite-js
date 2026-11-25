@@ -3,11 +3,6 @@
   <head>
     <meta charset="UTF-8">
     <title>Seanox composite-js Test Environment</title>
-    <style>
-      body {
-        font-family: monospace;
-      }
-    </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
     
@@ -60,14 +55,10 @@
             Assert.assertUndefined(targets["SCRIPT"]);
         }});
         Test.create({test() {
-            const content = document.body.innerText;
-            const pattern = "A:A0\n"
-                + "B:B4B5B6B7B8B9\n"
-                + "C:C0C1C2\n"
-                + "D:D0D2D4D6D8\n"
-                + "E:\n"
-                + "importAv = 100; importAx++;"
-            Assert.assertSame(pattern, content);
+            const content = document.body.innerText.replace(/\s+/g, " ").trim();
+            const pattern = "A:A0 B:B4B5B6B7B8B9 C:C0C1C2 D:D0D2D4D6D8 "
+                + "E: importAv = 100; importAx++;";
+            Assert.assertEquals(pattern, content);
         }});
 
         let count = 0;

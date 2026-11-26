@@ -45,36 +45,44 @@ provide styling and optional UI components without replacing HTML or managing
 rendering, component lifecycle or application state.
 
 # Features
-- __Composite__  
-  Modular application unit with its own identity, consisting of HTML, CSS,
-  JavaScript and additional resources, composed at runtime.
+- __Declarative HTML and Expressions__  
+  HTML attributes control conditions, iteration, imports and rendering.
+  JavaScript expressions in text nodes and attributes access application data
+  and browser APIs. Attribute directives and property expressions control
+  assignment to native attributes and DOM properties during rendering.
 - __Runtime Composition__  
-  Composite resources are resolved and loaded by the runtime, which realizes the
-  composite within a concrete DOM context -- without compilation.
-- __Expression Language__  
-  Expressions in markup provide access to client-side JavaScript, such as
-  application data and the application module.
-- __Composite Binding__  
-  Connects the view with the application module, without an additional wiring
-  layer.
+  Composites are application units consisting of HTML with optional CSS,
+  JavaScript and additional resources. At runtime, resources are loaded within
+  the application context and views are composed in the shared DOM, without an
+  application compilation step.
 - __Reactive Rendering__  
-  Updates the affected parts of the view when reactive application data changes.
+  Reactive is a data bridge between application logic and the view. Rendering
+  tracks dependencies; changes through reactive proxies trigger asynchronous
+  updates of affected parts of the view.
+- __Runtime Events and Extensions__  
+  Events for DOM changes, rendering, binding, module lifecycle and errors.
+  Callbacks for custom tags, selectors and rendering interceptors extend markup
+  processing.
+- __Test API and Browser Automation__  
+  Browser-based unit, integration and UI tests with assertions, simulated input
+  and lifecycle events for test automation with tools such as Playwright.
+- __Composite Binding__  
+  Binds views to application modules, with value synchronization, validation,
+  event handlers and lifecycle callbacks. The runtime does not prescribe an
+  application architecture.
 - __Routing__  
-  Declarative routing through paths (view flow), based on nested composites,
-  with navigation, permission checks and interceptors.
-- __Architecture Neutrality__  
-  The runtime provides the infrastructure for structuring and composing
-  applications, without prescribing a specific application architecture such as
-  MVC, MVCS or MVVM.
-- __DataSource__  
-  Immutable XML data source for static application data, with locales, querying
-  and transformation via XPath and XSLT.
-- __Resource Bundle__  
-  DataSource extension for internationalization (i18n), localization (l10n) and
-  other client-related texts, based on key-value entries.
-- __Test API__  
-  API and runtime environment for integration and unit tests, with mechanisms
-  for automated execution and simulated user input.
+  Paths control navigation through nested composites (view flow), with view
+  permissions and interceptors.
+- __Internationalization and Localization__  
+  Resource bundles for application-wide and module-specific messages, with
+  locale selection, key-based access and parameterized text.
+- __Scripting and Scopes__  
+  JavaScript in composites loads modules, collects exports and publishes named
+  application objects. This JavaScript and expressions in markup use an
+  execution context with access to persistent view and application scopes.
+- __XML DataSource__  
+  Immutable XML data source for static application data, with locales, XPath
+  queries, aggregation of multiple sources and XSLT transformations.
   
 # Manuals
 - [Motivation](https://seanox.github.io/composite-js/manuals/motivation.html)
@@ -109,7 +117,7 @@ specific language governing permissions and limitations under the License.
 
 # System Requirement
 - ECMAScript 6 support or higher (normally the current browsers)  
-  Engines (tested): Blink, Gecko, Goanna, WebKit
+  Engines (tested): Blink, Gecko, Goanna, LibWeb, WebKit
 - Web server for hosting
 
 # Downloads

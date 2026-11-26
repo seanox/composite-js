@@ -19,7 +19,7 @@
     let iframeElement;
     let frameStatusElement;
     let frameObserver;
-    let frameTestRunning = false;
+    let frameTestRunning;
 
     let queue;
     let faults;

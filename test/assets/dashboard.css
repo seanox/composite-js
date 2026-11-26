@@ -65,7 +65,6 @@ main {
   justify-content: center;
   padding: 1em;
   color: var(--line);
-  background: rgba(255, 255, 255, .9);
   text-align: center;
   pointer-events: none;
 }

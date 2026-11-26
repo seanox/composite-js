@@ -3,11 +3,6 @@
   <head>
     <meta charset="UTF-8">
     <title>Seanox composite-js Test Environment</title>
-    <style>
-      body {
-        font-family: monospace;
-      }
-    </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript"> 
     
@@ -23,7 +18,6 @@
             snapshot = snapshot.replace(/^\s+/mg, "");
             snapshot = snapshot.replace(/(:)\s+/g, "$1 ");
             snapshot = snapshot.replace(/\sout.*?;/g, "");
-            snapshot = snapshot.replace(/\sPlease.*$/im, "");
             snapshot = snapshot.replace(/:\s+(\S+)/g, ":$1");
             snapshot = snapshot.replace(/[\r\n]+/g, ",");
             snapshot = snapshot.replace(/(\w+)/g, "\"$1\"");
@@ -121,10 +115,7 @@
                     }
                     
                     if (count === 100)
-                        Composer.asynchronous(() => {
-                            document.body.textContent = "Please wait, test in progress...";
-                            Test.start();
-                        });
+                        Composer.asynchronous(() => Test.start());
                 });
             })).observe(document.body, {childList:true, subtree:true, attributes:true, characterData:true});
         });
@@ -175,7 +166,5 @@
     <script type="composite/javascript" interval="1500">
       outputScript2.textContent = ++view.s2;
     </script>
-    <br>
-    Please wait, test in progress...
   </body>
 </html>

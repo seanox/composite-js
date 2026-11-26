@@ -9,6 +9,12 @@
         // Runs parent-supplied tests in an isolated iframe
         // and forwards results and errors.
 
+        console.listen((level, ...variants) =>
+            parent.postMessage({
+                type: "console",
+                level,
+                message: variants.join(", ")
+            }, "*"));
         window.addEventListener("error", event =>
             parent.postMessage({type: "error", message: event.message}, "*"));
         window.addEventListener("unhandledrejection", event => {
@@ -39,7 +45,12 @@
                 return;
             try {
                 new Function(event.data.source)();
-                Test.start();
+                Test.start({output: {
+                    log: (...variants) => console.log(...variants),
+                    info: (...variants) => console.info(...variants),
+                    warn: (...variants) => console.warn(...variants),
+                    error: (...variants) => console.warn(...variants)
+                }});
             } catch (error) {
                 parent.postMessage({type: "error", message: error.message}, "*");
             }

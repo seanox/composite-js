@@ -37,8 +37,8 @@
   <property name="workspace.release" value="${workspace}/release"/>
   <property name="workspace.release.temp" value="${workspace.release}/temp"/>
   <property name="workspace.sources" value="${workspace}/sources"/>
-  <property name="workspace.benchmarks" value="${workspace}/benchmarks"/>
   <property name="workspace.test" value="${workspace}/test"/>
+  <property name="workspace.test.benchmarks" value="${workspace.test}/benchmarks"/>
   <property name="workspace.test.playwright" value="${workspace.test}/playwright"/>
   <property name="workspace.tutorials" value="${workspace}/tutorials"/>
 
@@ -377,7 +377,23 @@
     <pathconvert property="test.files.list" refid="test.files" pathsep="${line.separator}">
       <mapper type="flatten"/>
     </pathconvert>
-    <echo file="${workspace.test}/${ant.project.name}.tests" message="${test.files.list}"/>
+    <echo file="${workspace.test}/${ant.project.name}.tests"
+        message="${test.files.list}"/>
+
+    <fileset id="benchmark.files" dir="${workspace.test.benchmarks}"
+        includes="*.html" excludes="index.html" casesensitive="true">
+      <or>
+        <contains text="&lt;script src=&quot;../${release.file.name}&quot;&gt;"/>
+        <contains text="&lt;script src=&quot;../${release.file.debug.testing.name}&quot;&gt;"/>
+        <contains text="&lt;script src=&quot;../${release.file.testing.name}&quot;&gt;"/>
+      </or>
+    </fileset>
+    <pathconvert property="benchmark.files.list" refid="benchmark.files"
+        pathsep="${line.separator}">
+      <mapper type="regexp" from="^.*[\\/](.+)$" to="benchmarks/\1"/>
+    </pathconvert>
+    <echo file="${workspace.test}/${ant.project.name}.benchmarks"
+        message="${benchmark.files.list}"/>
   </target>
 
   <target name="release" depends="changes,compose">

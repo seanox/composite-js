@@ -3,17 +3,14 @@
   <head>
     <meta charset="UTF-8">
     <title>Seanox composite-js Test Environment</title>
-    <style>
-      body {
-        font-family: monospace;
-        white-space: pre;
-      }
-    </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
 
         Test.activate();
 
+        let _authenticated = true;
+        let _guardFollowingCalls = 0;
+        const _guardNavigations = [];
         let _actors = "!";
         const modelX = {
             get actors() {
@@ -22,6 +19,8 @@
         };
         const _snapshots = [];
         const _matches = [];
+        window.interceptorProtected = {};
+        window.interceptorLogin = {};
         const _settle = () => new Promise(resolve =>
             window.setTimeout(resolve, 100));
         const _navigate = path => new Promise(resolve => {
@@ -88,6 +87,15 @@
         });
         Routing.customize("#regexp#a", () => false);
 
+        Routing.customize("#interceptorProtected", () => {
+            if (!_authenticated) {
+                window.location.replace("#interceptorLogin");
+                return false;
+            }
+        });
+        Routing.customize("#interceptorProtected", () => _guardFollowingCalls++);
+        Routing.customize(/.*/, (previous, next) => _guardNavigations.push(next));
+
         Test.create({name:"Interceptors run in order and stop after explicit false",
             timeout:5000, async test() {
                 const sequence = ["#a", "#b#c", "#a#b#c", "#c#d", "#b#x",
@@ -127,6 +135,36 @@
             return _navigate("#regexp#frozen").then(() => Assert.assertTrue(matched));
         }});
 
+        Test.create({name:"An interceptor redirects denied navigation to the login view",
+            timeout:5000, async test() {
+                const followingCalls = _guardFollowingCalls;
+                const navigations = _guardNavigations.length;
+                const redirected = new Promise(resolve => {
+                    const listener = event => {
+                        if (new URL(event.newURL, window.location.href).hash !== "#interceptorLogin")
+                            return;
+                        window.removeEventListener("hashchange", listener);
+                        resolve();
+                    };
+                    window.addEventListener("hashchange", listener);
+                });
+                _authenticated = false;
+                Routing.route("#interceptorProtected#settings");
+                await redirected;
+                await _settle();
+                Assert.assertEquals("#interceptorLogin", Routing.location);
+                Assert.assertEquals("#interceptorLogin", window.location.hash);
+                Assert.assertEquals("#interceptorLogin",
+                    _guardNavigations.slice(navigations).join(","));
+                Assert.assertEquals(followingCalls, _guardFollowingCalls);
+                Assert.assertEquals(-1,
+                    Routing.history.indexOf("#interceptorProtected#settings"));
+                Assert.assertEquals("#interceptorLogin",
+                    Routing.history[Routing.history.length - 1]);
+                Assert.assertNull(document.getElementById("interceptorProtected"));
+                Assert.assertNotNull(document.getElementById("interceptorLogin"));
+            }});
+
         document.addEventListener("DOMContentLoaded", () => {
             window.setTimeout(() => Test.start(), 100);
         });
@@ -156,5 +194,7 @@
   <body route>
     {{_snapshots.length}}
     {{modelX.actors}}
+    <span id="interceptorProtected" composite route></span>
+    <span id="interceptorLogin" composite route></span>
   </body>
 </html>

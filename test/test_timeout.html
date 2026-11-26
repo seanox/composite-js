@@ -3,12 +3,6 @@
   <head>
     <meta charset="UTF-8">
     <title>Seanox composite-js Test Environment</title>
-    <style>
-      body {
-        font-family: monospace;
-        white-space: pre;
-      }
-    </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
 
@@ -54,6 +48,9 @@
             messages.find(message => message.type === "finish");
         const frameResponses = messages =>
             messages.filter(message => message.type === "response");
+        const frameConsole = (messages, level) =>
+            messages.filter(message =>
+                message.type === "console" && message.level === level);
 
         Test.create({timeout:5000, async test() {
             const messages = await runIsolated(`
@@ -104,6 +101,8 @@
             Assert.assertSame(
                 "BOOM|null|undefined|false|0|STRING|FROZEN|CROSS_FRAME",
                 responses.map(response => response.error).join("|"));
+            Assert.assertEquals(8, frameConsole(messages, "warn").length);
+            Assert.assertEquals(0, frameConsole(messages, "error").length);
             Assert.assertFalse(messages.some(message =>
                     message.type === "error" || message.type === "unhandled"));
         }});

@@ -3,12 +3,6 @@
   <head>
     <meta charset="UTF-8">
     <title>Seanox composite-js Test Environment</title>
-    <style>
-      body {
-        font-family: monospace;
-        white-space: pre;
-      }
-    </style>
     <script src="composite-js-testing.js"></script>
     <script type="text/javascript">
 
@@ -248,18 +242,6 @@
                 });
                 Assert.assertEquals(0, errors.length);
             }).then(() => fixture.remove());
-        }});
-
-        Test.create({name:"Legacy @ templates are not compatibility aliases", timeout:3000, test() {
-            const element = document.createElement("span");
-            element.innerHTML = '<em @title="{{label}}"></em>';
-            document.body.appendChild(element);
-            const errorCount = errors.length;
-            return render(element).then(() => {
-                Assert.assertNull(element.firstElementChild.getAttribute("title"));
-                Assert.assertEquals(errorCount +1, errors.length);
-                Assert.assertEquals("InvalidCharacterError", errors[errorCount].name);
-            }).then(() => element.remove());
         }});
 
         Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => {

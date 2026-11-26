@@ -55,7 +55,6 @@
         Test.create({name:"Route changes the URL in a microtask and preserves native events", test() {
             _reset("#start");
             const oldURL = window.location.href;
-            const length = window.history.length;
             Routing.route("#owned");
             Assert.assertEquals(oldURL, window.location.href);
             Assert.assertEquals(0, _events.length);
@@ -75,7 +74,6 @@
                 Assert.assertEquals(1, _popstates.length);
                 Assert.assertTrue(_popstates[0].isTrusted);
                 Assert.assertEquals("#owned", Routing.location);
-                Assert.assertEquals(length + 1, window.history.length);
                 Assert.assertEquals(1, _events.length);
                 Assert.assertEquals(1, _navigations.length);
                 Assert.assertEquals("#owned", Routing.history[Routing.history.length - 1]);
@@ -109,17 +107,28 @@
                 }});
         }
 
-        Test.create({name:"Repeated queued destinations do not add events or history entries", test() {
-            _reset("#start");
-            const length = window.history.length;
-            Routing.route("#repeated");
-            Routing.route("#repeated");
-            return _settle().then(() => {
-                Assert.assertEquals(1, _events.length);
-                Assert.assertEquals(1, _navigations.length);
-                Assert.assertEquals(length + 1, window.history.length);
-            });
-        }});
+        Test.create({name:"Repeated queued destinations do not add events or history entries",
+            timeout:5000, test() {
+                _reset("#start");
+                Routing.route("#repeated");
+                Routing.route("#repeated");
+                return _settle().then(() => {
+                    Assert.assertEquals(1, _events.length);
+                    Assert.assertEquals(1, _navigations.length);
+                    return new Promise(resolve => {
+                        const listener = event => {
+                            window.removeEventListener("popstate", listener);
+                            resolve(event);
+                        };
+                        window.addEventListener("popstate", listener);
+                        window.history.back();
+                    });
+                }).then(event => {
+                    Assert.assertTrue(event.isTrusted);
+                    Assert.assertEquals("#start", window.location.hash);
+                    return _settle();
+                });
+            }});
 
         Test.create({name:"Queued relative paths keep their call-time base", test() {
             _reset("#parent");

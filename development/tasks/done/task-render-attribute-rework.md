@@ -112,15 +112,15 @@ ihren Browser-Default beim Entfernen erhalten.
   werden.
 - Prüfe das Zurücksetzen einer Property auf ihren Browser-Default bei einem
   nicht leeren Mapping und einem entfernten Attributwert.
-- Aktualisiere `../../manuals/markup.md` und `../../manuals/expression.md` um
+- Aktualisiere `../../../manuals/markup.md` und `../../manuals/expression.md` um
   Syntax, Laufzeitverhalten und Migrationshinweise. Ergänze `../../CHANGES`
   um den Syntaxwechsel.
 
 ## Technischer Umfang
 
-- Runtime-Quelle: `../../sources/composer.js`
-- Tests und Fixtures: betroffene Markup- und Composer-Tests unter `../../test/`
-- Dokumentation: `../../manuals/markup.md`, `../../manuals/expression.md` und
+- Runtime-Quelle: `../../../sources/composer.js`
+- Tests und Fixtures: betroffene Markup- und Composer-Tests unter `../../../test`
+- Dokumentation: `../../../manuals/markup.md`, `../../manuals/expression.md` und
   `../../CHANGES`
 - Generierte Test-Bundles werden bei Runtime-Änderungen aus den Quellen mit
   dem vorhandenen Build erzeugt; generierte Dateien werden nicht manuell

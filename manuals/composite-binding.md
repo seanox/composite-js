@@ -95,7 +95,7 @@ composite ID provides the application module used by the binding. In the example
 
 ```javascript
 const example = {
-    message: "Hello",
+    message: "Hello World!",
     submit() {
         ...
     }
@@ -131,7 +131,7 @@ application module.
 
 ```javascript
 const example = {
-    message: "",
+    message: "Hello World!",
     validate(element, value) {
         return true;
     }
@@ -154,34 +154,27 @@ application module. Event handlers are resolved from the application module
 based on the element IDs inside the composite.
 
 ```javascript
-const contact = {
-    mail: {
+const example = {
+    showMessage: {
         onClick(event) {
-            const mail =
-                "mailto:mail@local?subject=Test&body=Greetings";
-            document.location.href = mail;
+            window.alert("Hello World!");
             return false;
         }
     }
 };
 
-expose(contact, "contact");
+expose(example, "example");
 ```
 
 ```html
-<div id="contact" composite>
-  <p>
-    Example for use of events.
-  </p>
-  <button id="mail">
-    Click Me!
-  </button>
+<div id="example" composite>
+  <button id="showMessage">Show message</button>
 </div>
 ``` 
 
 The composer establishes the event connection as part of composite binding. The
 application module remains responsible for the application-specific behavior
-executed by the event handler.
+executed by the event handler. Clicking the button displays `Hello World!`.
 
 ## Dock
 When a composite becomes part of the document, the composer integrates its

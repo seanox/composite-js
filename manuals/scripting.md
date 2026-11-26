@@ -105,16 +105,9 @@ identifier segments; existing `null` or primitive intermediate values and failed
 assignments cause an error.
 
 ```javascript
-const login = {
-    validate(element, value) {
-    },
-    logon: {
-        onClick(event) {
-        }
-    }
-};
+const object = {value: 1};
 
-expose(login, "login");
+expose(object, "a.b.c");
 ```
 
 ### require

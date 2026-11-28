@@ -19,6 +19,12 @@
 
         Test.activate();
 
+        const errors = [];
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => {
+            if (error instanceof ReferenceError && String(error).includes("moduleE"))
+                errors.push(error);
+        });
+
         const snapshots = [];
         Composer.listen(Composer.EVENT_RENDER_END, () => {
             const snapshot = document.body.textContent.trim();
@@ -47,11 +53,15 @@
             Assert.assertUndefined(moduleH.test);
         }});
 
-        Test.create({test() {
-            const content = document.body.innerText;
-            Assert.assertTrue(content, content.includes("moduleE is not defined")
-                    || content.includes("undeclared variable moduleE")
-                    || content.includes("Can't find variable: moduleE"));
+        Test.create({name:"Report the undeclared module reference to console without DOM error output", test() {
+            Assert.assertEquals(1, errors.length);
+            Assert.assertTrue(errors[0] instanceof ReferenceError);
+            Assert.assertTrue(String(errors[0]).includes("moduleE"));
+            const output = String(console.output.error);
+            Assert.assertTrue(output.includes(Composer.MODULES + "/moduleK.js, ReferenceError"));
+            Assert.assertEquals(2, output.split("ReferenceError").length -1);
+            Assert.assertEquals(2, output.split("moduleE").length -1);
+            Assert.assertFalse(document.body.innerText.includes(String(errors[0])));
         }});
     </script>
   </head>

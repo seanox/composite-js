@@ -27,6 +27,17 @@
             capture.validate();
         }});
 
+        Test.create({name:"Log recursion errors, keep them out of the DOM and stop resource expansion", test() {
+            const output = String(console.output.error);
+            Assert.assertTrue(output.includes("Error: Recursion detected for composite: compositeModuleA"));
+            Assert.assertTrue(output.includes("Error: Recursion detected for composite: compositeModuleB"));
+            Assert.assertTrue(output.includes("Error: Recursion detected for composite: compositeModuleC"));
+            Assert.assertFalse(document.body.textContent.includes("Recursion detected"));
+            Assert.assertEquals(2, document.querySelectorAll("#compositeModuleA").length);
+            Assert.assertEquals(3, document.querySelectorAll("#compositeModuleB").length);
+            Assert.assertEquals(3, document.querySelectorAll("#compositeModuleC").length);
+        }});
+
         const moduleI = {x: false}.reactive();
         window.setTimeout(() => {moduleI.x = !moduleI.x;}, 1000);
         window.setTimeout(() => {moduleI.x = !moduleI.x;}, 1250);
@@ -44,72 +55,45 @@
     </script>
     <script type="text/test">
       hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
+      A--A
+      B--B
+      C--C
       D-D-D
       hello
       ____
     </script>
     <script type="text/test">
       hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
-      D-D-D
-      hello
-      ____
-    </script>
-    <script type="text/test">
-      hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
-      D-D-D
-      hello
-      ____
-    </script>
-    <script type="text/test">
-      hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
-      D-D-D
-      hello
-      ____
-    </script>
-    <script type="text/test">
-      hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
+      A--A
+      B--B
+      C--C
       D-D-D
       hello
       __I__
     </script>
     <script type="text/test">
       hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
+      A--A
+      B--B
+      C--C
       D-D-D
       hello
       ____
     </script>
     <script type="text/test">
       hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
+      A--A
+      B--B
+      C--C
       D-D-D
       hello
       __I__
     </script>
     <script type="text/test">
       hello
-      A-Error: Recursion detected for composite: compositeModuleA-A
-      B-Error: Recursion detected for composite: compositeModuleB-B
-      C-Error: Recursion detected for composite: compositeModuleC-C
+      A--A
+      B--B
+      C--C
       D-D-D
       hello
       ____

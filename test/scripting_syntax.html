@@ -9,7 +9,7 @@
 
         Test.activate();
 
-        Composer.include("syntax");
+        Composer.load(Composer.MODULES + "/syntax.js");
 
         const capture = new Capture();
         Composer.listen(Composer.EVENT_RENDER_END, () => {

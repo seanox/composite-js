@@ -198,19 +198,29 @@
         }});
 
         Test.create({test() {
+            const composite = document.createElement("div");
+            composite.id = "reentrantModule";
+            composite.setAttribute("composite", "");
+            composite.textContent = "Existing content";
+            const compose = Composer.compose;
+            Composer.compose = () => {};
+            try {Composer.render(composite);
+            } finally {
+                Composer.compose = compose;
+            }
             const order = [];
-            Composer.listen("composerReentrantInclude", () => {
+            Composer.listen("composerReentrantCompose", () => {
                 order.push("request");
-                Composer.include("reentrantModule");
+                Composer.compose(composite);
                 order.push(reentrantModule.message);
                 order.push("returned");
             });
-            Composer.listen("composerReentrantInclude", () => order.push("remaining"));
+            Composer.listen("composerReentrantCompose", () => order.push("remaining"));
             Composer.listen(Composer.EVENT_MODULE_LOAD, (event, context, module) => {
                 if (module === "reentrantModule")
                     order.push("module");
             });
-            Composer.emit("composerReentrantInclude");
+            Composer.emit("composerReentrantCompose");
             Assert.assertEquals("request,module,available-before-module-code,returned,remaining",
                 order.join(","));
             Assert.assertEquals("available-before-module-code", reentrantModule.message);

@@ -13,11 +13,11 @@
         });
 
         Test.create({test() {
-            Assert.assertEquals(3, calls.length);
+            Assert.assertEquals(2, calls.length);
         }});
 
         Test.create({test() {
-            const expected = "common,common,[object HTMLDivElement],nsX/a,[object HTMLDivElement],nsX/b";
+            const expected = "[object HTMLDivElement],nsX/a,[object HTMLDivElement],nsX/b";
             Assert.assertEquals(expected, String(calls));
         }});
 

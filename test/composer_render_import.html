@@ -8,6 +8,12 @@
     <script type="text/javascript">
     
         Test.activate();
+
+        const composeErrors = [];
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => {
+            if (error instanceof TypeError && error.message === "Invalid require: undefined")
+                composeErrors.push(error);
+        });
         
         const urlMap = new Map();
         Composer.listen(Composer.EVENT_HTTP_END, (event, requestEvent) => {
@@ -122,12 +128,12 @@
             Assert.assertEquals(0, stylesX.length);
         }});
 
-        Test.create({expected:/Invalid object path: io\/moduleE/, test() {
-            Composer.include("io/moduleE");
+        Test.create({test() {
+            Assert.assertEquals(undefined, Composer.load(Composer.MODULES + "/io/moduleE.js"));
         }});
 
-        Test.create({expected:/Invalid object path: io\/moduleY/, test() {
-            Composer.include("io/moduleY");
+        Test.create({test() {
+            Assert.assertEquals(undefined, Composer.load(Composer.MODULES + "/io/moduleY.js"));
         }});
 
         Test.create({test() {
@@ -153,7 +159,18 @@
         }});
 
         Test.create({test() {
-            Assert.assertEquals("TypeError: Invalid require: undefined", document.getElementById("moduleF").innerText);
+            Assert.assertEquals(1, composeErrors.length);
+            Assert.assertEquals("", document.getElementById("moduleF").innerText);
+        }});
+
+        Test.create({name:"Log expected import and composite errors to the console", test() {
+            const output = String(console.output.error);
+            Assert.assertEquals(1, output.split("/resources/import_o.htmlx").length -1);
+            Assert.assertTrue(output.includes("Error: HTTP status 404 for "));
+            Assert.assertTrue(output.includes(Composer.MODULES + "/moduleF.js, "
+                + "TypeError: Invalid require: undefined"));
+            const failure = "TypeError: Invalid require: undefined";
+            Assert.assertEquals(2, output.split(failure).length -1);
         }});
 
         Test.create({test() {
@@ -168,7 +185,6 @@
         const _error_collector = [];
     </script>
     <script type="text/test">
-      /modules/common.xml 404 X
       /modules/common.js 200 X
       /modules/common.css 200 X
       /resources/import_a.htmlx 200 X
@@ -200,6 +216,7 @@
       /modules/nix/nix/nix.js 404 X
       /modules/moduleJ.css 404 X
       /modules/moduleJ.html 404 X
+      /modules/io/moduleE.js 404 X
       /nix.xxx 404 XXX
     </script>
   </head>
@@ -227,8 +244,8 @@
       <div id="moduleE" composite></div>
     </section>
 
-    very special case: moduleF.html is not loaded because an empty import runs
-    into an error at moduleF.js and the import is aborted at this point
+    moduleF.js fails: resource preparation stops without writing error text;
+    rendering continues with the empty composite.
     -FA<div id="moduleF" composite></div>AF-
 
     <div id="moduleG" composite>moduleG</div>

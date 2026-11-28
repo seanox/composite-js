@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+
+        Test.activate();
+
+        window.composeCases = {};
+        window.composeContent = "Rendered content";
+        window.composeCondition = false;
+        const errors = [];
+        const logged = [];
+        const modules = [];
+        const startup = [];
+        const render = Composer.render;
+        const load = Composer.load;
+        Composer.render = function() {
+            if (arguments[0] !== document.body)
+                return render.apply(Composer, arguments);
+        };
+        Composer.load = function(resource) {
+            if (resource === Composer.MODULES + "/common.js"
+                    || resource === Composer.MODULES + "/common.css")
+                startup.push(resource);
+            return load.apply(Composer, arguments);
+        };
+        window.addEventListener("load", () => {
+            Composer.render = render;
+            Composer.load = load;
+        });
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => errors.push(error));
+        Composer.listen(Composer.EVENT_MODULE_LOAD, (event, element, module) =>
+            modules.push({element, module}));
+        console.listen((level, error) => {
+            if (level === "error")
+                logged.push(error);
+        });
+
+        const reset = () => {
+            errors.length = logged.length = modules.length = 0;
+        };
+        const prepare = name => {
+            const element = document.getElementById(name + "@composeCases");
+            const compose = Composer.compose;
+            Composer.compose = () => {};
+            try {Composer.render(element);
+            } finally {
+                Composer.compose = compose;
+            }
+            reset();
+            return element;
+        };
+        const withLoads = (operation, response) => {
+            const calls = [];
+            const load = Composer.load;
+            Composer.load = resource => {
+                const path = resource.substring(Composer.MODULES.length +1);
+                calls.push(path);
+                return response ? response(path) : "<span class='loaded'>Loaded content</span>";
+            };
+            try {operation(calls);
+            } finally {
+                Composer.load = load;
+            }
+        };
+        const assertReported = failure => {
+            Assert.assertEquals(1, errors.length);
+            Assert.assertSame(failure, errors[0]);
+            Assert.assertEquals(1, logged.length);
+            Assert.assertSame(failure, logged[0]);
+        };
+        const testThrownValue = (name, failure) => {
+            const element = prepare(name);
+            const child = element.firstChild;
+            const markup = element.innerHTML;
+            const observer = new MutationObserver(() => {});
+            observer.observe(element, {attributes:true, childList:true, characterData:true, subtree:true});
+            try {
+                withLoads(calls => {
+                    Assert.assertEquals(undefined, Composer.compose(element));
+                    assertReported(failure);
+                    Assert.assertEquals("composeCases/" + name + ".js", calls.join(","));
+                    Assert.assertEquals(markup, element.innerHTML);
+                    Assert.assertSame(child, element.firstChild);
+                    Assert.assertEquals(0, observer.takeRecords().length);
+                }, () => {throw failure;});
+            } finally {
+                observer.disconnect();
+            }
+        };
+
+        Test.create({name:"Expose compose instead of include and load common resources separately", test() {
+            Assert.assertEquals("function", typeof Composer.compose);
+            Assert.assertFalse("include" in Composer);
+            Assert.assertEquals(Composer.MODULES + "/common.js," + Composer.MODULES + "/common.css",
+                startup.join(","));
+            const common = modules.filter(entry => entry.module === "common");
+            Assert.assertEquals(0, common.length);
+        }});
+
+        Test.create({name:"Compose an empty prepared composite synchronously in JS, CSS, HTML order", test() {
+            const element = prepare("empty");
+            withLoads(calls => {
+                Assert.assertEquals(undefined, Composer.compose(element));
+                Assert.assertEquals("composeCases/empty.js,composeCases/empty.css,composeCases/empty.html",
+                    calls.join(","));
+                Assert.assertEquals("Loaded content", element.textContent);
+                Assert.assertEquals(1, modules.length);
+                Assert.assertSame(element, modules[0].element);
+                Assert.assertEquals("composeCases/empty", modules[0].module);
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name:"Preserve existing markup and load only missing application logic", test() {
+            const element = prepare("populated");
+            const markup = element.innerHTML;
+            withLoads(calls => {
+                Composer.compose(element);
+                Assert.assertEquals("composeCases/populated.js", calls.join(","));
+                Assert.assertEquals(markup, element.innerHTML);
+                composeCases.populated = {};
+                Composer.compose(element);
+                Assert.assertEquals(1, calls.length);
+                Assert.assertEquals(1, modules.length);
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name:"Skip JavaScript for an existing application module", test() {
+            const element = prepare("provided");
+            composeCases.provided = {};
+            withLoads(calls => {
+                Composer.compose(element);
+                Assert.assertEquals("composeCases/provided.css,composeCases/provided.html",
+                    calls.join(","));
+                Assert.assertEquals("Loaded content", element.textContent);
+            });
+        }});
+
+        Test.create({name:"Leave markup imports and outputs to the renderer", test() {
+            const imported = document.getElementById("imported@composeCases");
+            const output = document.getElementById("output@composeCases");
+            reset();
+            withLoads(calls => {
+                Composer.render(imported);
+                Composer.render(output);
+                Assert.assertEquals("composeCases/imported.js,composeCases/imported.css,"
+                    + "composeCases/output.js,composeCases/output.css", calls.join(","));
+                Assert.assertEquals("", imported.innerHTML);
+                Assert.assertEquals("", output.innerHTML);
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name:"Process selector matches individually and continue after a resource failure", test() {
+            const first = prepare("first");
+            const bad = prepare("bad");
+            const last = prepare("last");
+            const failure = new Error("Composite resource failed");
+            const markup = bad.innerHTML;
+            reset();
+            withLoads(calls => {
+                Assert.assertEquals(undefined, Composer.compose(".compose-target"));
+                assertReported(failure);
+                Assert.assertEquals("composeCases/first.js,composeCases/first.css,composeCases/first.html,"
+                    + "composeCases/bad.js,composeCases/last.js,composeCases/last.css,composeCases/last.html",
+                    calls.join(","));
+                Assert.assertEquals("Loaded content", first.textContent);
+                Assert.assertEquals(markup, bad.innerHTML);
+                Assert.assertEquals("Loaded content", last.textContent);
+                Assert.assertEquals(3, modules.length);
+                Assert.assertSame(first, modules[0].element);
+                Assert.assertSame(bad, modules[1].element);
+                Assert.assertSame(last, modules[2].element);
+            }, path => {
+                if (path === "composeCases/bad.js")
+                    throw failure;
+                return "<span class='loaded'>Loaded content</span>";
+            });
+        }});
+
+        Test.create({name:"Report the original Error without DOM error output", test() {
+            testThrownValue("error", new Error("Compose probe failed"));
+        }});
+        Test.create({name:"Report the original string without DOM error output", test() {
+            testThrownValue("string", "Compose probe failed");
+        }});
+        Test.create({name:"Report the original undefined without DOM error output", test() {
+            testThrownValue("undefined", undefined);
+        }});
+        Test.create({name:"Report the original null without DOM error output", test() {
+            testThrownValue("null", null);
+        }});
+
+        Test.create({name:"Keep completed resource steps when a later step fails", test() {
+            const element = prepare("partial");
+            const failure = new Error("Stylesheet failed");
+            withLoads(calls => {
+                Composer.compose(element);
+                assertReported(failure);
+                Assert.assertTrue(composeCases.partial.ready);
+                Assert.assertEquals("composeCases/partial.js,composeCases/partial.css", calls.join(","));
+                Assert.assertEquals("", element.innerHTML);
+            }, path => {
+                if (path.endsWith(".css"))
+                    throw failure;
+                composeCases.partial = {ready:true};
+            });
+        }});
+
+        Test.create({name:"Skip unsupported, missing, unrendered and non-composite targets without traversal", test() {
+            const element = prepare("nested");
+            const parent = element.parentElement;
+            reset();
+            withLoads(calls => {
+                Composer.compose();
+                Composer.compose(null);
+                Composer.compose(false);
+                Composer.compose(0);
+                Composer.compose({});
+                Composer.compose(["composeCases", "nested"]);
+                Composer.compose(document.createTextNode("text"));
+                Composer.compose("");
+                Composer.compose("   ");
+                Composer.compose("#missingComposeTarget");
+                Composer.compose("common");
+                Composer.compose(document.getElementById("unrendered@composeCases"));
+                Composer.compose(document.getElementById("invalid@"));
+                Composer.compose(parent);
+                Composer.compose(parent.firstElementChild);
+                Assert.assertEquals(0, calls.length);
+                Assert.assertEquals(0, modules.length);
+                Assert.assertEquals(0, errors.length);
+            });
+        }});
+
+        Test.create({name:"Report malformed selectors and allow subsequent composition", test() {
+            const element = prepare("afterSelector");
+            withLoads(calls => {
+                Composer.compose("[");
+                Assert.assertEquals(1, errors.length);
+                Assert.assertEquals("SyntaxError", errors[0].name);
+                Assert.assertSame(errors[0], logged[0]);
+                Composer.compose("[id='afterSelector@composeCases']");
+                Assert.assertEquals("Loaded content", element.textContent);
+                Assert.assertEquals(3, calls.length);
+                Assert.assertEquals(1, errors.length);
+            });
+        }});
+
+        Test.create({name:"Support prepared detached composite references", test() {
+            const element = prepare("detached");
+            element.remove();
+            try {
+                withLoads(calls => {
+                    Composer.compose(element);
+                    Assert.assertEquals(3, calls.length);
+                    Assert.assertEquals("Loaded content", element.textContent);
+                    Assert.assertEquals(0, errors.length);
+                });
+            } finally {
+                document.body.appendChild(element);
+            }
+        }});
+
+        Test.create({name:"Report invalid composite declarations without DOM error output", test() {
+            const element = prepare("invalidDeclaration");
+            const id = element.id;
+            const markup = element.innerHTML;
+            element.id = "invalid@";
+            try {
+                withLoads(calls => {
+                    Composer.compose(element);
+                    Assert.assertEquals(1, errors.length);
+                    Assert.assertTrue(errors[0].message.includes("Invalid composite declaration"));
+                    Assert.assertSame(errors[0], logged[0]);
+                    Assert.assertEquals(0, calls.length);
+                    Assert.assertEquals(markup, element.innerHTML);
+                });
+            } finally {
+                element.id = id;
+            }
+        }});
+
+        Test.create({name:"Compose synchronously during event delivery without a queue", test() {
+            const element = prepare("reentrant");
+            const order = [];
+            Composer.listen("composeReentrant", () => {
+                order.push("request");
+                Composer.compose(element);
+                order.push("returned");
+            });
+            Composer.listen("composeReentrant", () => order.push("remaining"));
+            Composer.listen(Composer.EVENT_MODULE_LOAD, (event, target) => {
+                if (target === element)
+                    order.push("module");
+            });
+            withLoads(calls => {
+                Composer.emit("composeReentrant");
+                Assert.assertEquals("request,module,loaded,returned,remaining", order.join(","));
+                Assert.assertEquals("composeCases/reentrant.js", calls.join(","));
+                Assert.assertEquals(0, errors.length);
+            }, () => {
+                order.push("loaded");
+            });
+        }});
+
+        Test.create({name:"Continue rendering the failing composite and later selector matches", test() {
+            const failure = new Error("Render resource failed");
+            const first = document.getElementById("renderBad@composeCases");
+            const last = document.getElementById("renderLast@composeCases");
+            reset();
+            withLoads(calls => {
+                Composer.render(".compose-render-target");
+                assertReported(failure);
+                Assert.assertEquals("composeCases/renderBad.js,composeCases/renderLast.js",
+                    calls.join(","));
+                Assert.assertEquals("Rendered content", first.querySelector("span").textContent);
+                Assert.assertEquals("Rendered content", last.querySelector("span").textContent);
+                Assert.assertFalse(first.innerHTML.includes(failure.message));
+                Assert.assertFalse(last.innerHTML.includes(failure.message));
+            }, path => {
+                if (path === "composeCases/renderBad.js")
+                    throw failure;
+            });
+        }});
+
+        Test.create({name:"Continue conditional composite realization after a resource failure", test() {
+            const parent = document.getElementById("composeConditionalParent");
+            Composer.render(parent);
+            Assert.assertEquals(null, parent.querySelector("[composite]"));
+            const failure = new Error("Conditional resource failed");
+            composeCondition = true;
+            reset();
+            withLoads(calls => {
+                Composer.render(parent);
+                assertReported(failure);
+                Assert.assertEquals("composeCases/conditional.js", calls.join(","));
+                const element = parent.querySelector("[composite]");
+                Assert.assertNotNull(element);
+                Assert.assertEquals("Rendered content", element.querySelector("span").textContent);
+                Assert.assertFalse(element.innerHTML.includes(failure.message));
+            }, () => {throw failure;});
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+    <div id="empty@composeCases" composite hidden></div>
+    <div id="populated@composeCases" composite hidden><span>Existing content</span></div>
+    <div id="provided@composeCases" composite hidden></div>
+    <div id="imported@composeCases" composite import="" hidden></div>
+    <div id="output@composeCases" composite output="" hidden></div>
+    <div class="compose-target">Not a composite</div>
+    <div id="first@composeCases" class="compose-target" composite hidden></div>
+    <div id="bad@composeCases" class="compose-target" composite hidden><span>Existing content</span></div>
+    <div id="last@composeCases" class="compose-target" composite hidden></div>
+    <div id="error@composeCases" composite hidden><span>Existing content</span></div>
+    <div id="string@composeCases" composite hidden><span>Existing content</span></div>
+    <div id="undefined@composeCases" composite hidden><span>Existing content</span></div>
+    <div id="null@composeCases" composite hidden><span>Existing content</span></div>
+    <div id="partial@composeCases" composite hidden></div>
+    <section>
+      <span>Not a composite</span>
+      <div id="nested@composeCases" composite hidden></div>
+    </section>
+    <div id="unrendered@composeCases" composite hidden></div>
+    <div id="invalid@" composite hidden></div>
+    <div id="afterSelector@composeCases" composite hidden></div>
+    <div id="detached@composeCases" composite hidden></div>
+    <div id="invalidDeclaration@composeCases" composite hidden><span>Existing content</span></div>
+    <div id="reentrant@composeCases" composite hidden><span>Existing content</span></div>
+    <div id="renderBad@composeCases" class="compose-render-target" composite hidden>
+      <span>{{composeContent}}</span>
+    </div>
+    <div id="renderLast@composeCases" class="compose-render-target" composite hidden>
+      <span>{{composeContent}}</span>
+    </div>
+    <section id="composeConditionalParent">
+      <div id="conditional@composeCases" composite condition="{{composeCondition}}" hidden>
+        <span>{{composeContent}}</span>
+      </div>
+    </section>
+  </body>
+</html>

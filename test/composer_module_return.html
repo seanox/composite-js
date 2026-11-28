@@ -131,7 +131,7 @@
             }
         }});
 
-        Test.create({name: "require returns exports loaded by composite rendering and Composer.include",
+        Test.create({name: "require returns exports loaded by composite rendering and Composer.compose",
                 async test() {
             const composite = document.createElement("div");
             composite.id = "moduleReturn";
@@ -142,7 +142,7 @@
                 Composer.render(composite);
                 await new Promise(resolve => window.setTimeout(resolve, 0));
                 Assert.assertEquals(1, executions.get("composite"));
-                Composer.include("moduleReturn");
+                Composer.compose(composite);
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "ModuleReturnCompositeLocal"));
                 Assert.assertFalse(Object.prototype.hasOwnProperty.call(window, "moduleReturnCompositeValue"));
                 const exports = require("moduleReturn");

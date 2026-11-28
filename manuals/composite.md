@@ -21,7 +21,7 @@ browser document's shared DOM, not to separate DOMs per composite.
   - [JavaScript](#javascript)
   - [HTML](#html)
 - [Modules](#modules)
-- [Common Resources](#common-resources)
+- [Runtime Resources](#runtime-resources)
 - [Namespace](#namespace)
 - [Notes](#notes)
 
@@ -122,13 +122,9 @@ External resource loading is optional and determined per composite and resource
 based on whether the resource is provided. Resources are loaded and embedded in
 the following order:
 
-1. CSS
-2. JavaScript
+1. JavaScript
+2. CSS
 3. HTML/Markup
-
-### CSS
-The runtime inserts the CSS into a &lt;style&gt; element in the &lt;head&gt; if
-the markup (HTML) has been loaded beforehand.
 
 ### JavaScript
 The runtime executes the JavaScript provided by a composite script in a separate
@@ -163,6 +159,12 @@ resources in the module directory. Where the browser supports it, dynamic
 `import()` can load ECMAScript modules, which remain independent of the
 composite lifecycle.
 
+### CSS
+The runtime loads CSS for an empty composite element and inserts it into a
+&lt;style&gt; element in the &lt;head&gt;. Existing inline markup suppresses
+this CSS loading. An `import` or `output` declaration suppresses external HTML
+loading, but does not suppress CSS loading for an empty element.
+
 ### HTML
 The runtime loads the external markup only for an empty Composite, that is, if
 the declaring element contains no inner markup and neither the ```import``` nor
@@ -181,22 +183,28 @@ therefore be used with the appropriate qualification. Full definitions are in
   module using `import`/`export`, independent of the Composite system and its
   lifecycle
 
-## Common Resources
-When the page is loaded and the runtime and application are initialized, the
-common resources in the modules directory are loaded automatically. They can
-consist of the JavaScript file ```common.js``` and/or the stylesheet
-```common.css``` for shared application logic and styles.
+## Runtime Resources
+Application-wide scripts and styles may need to be available before composites
+are rendered.
+
+[`Composer.EVENT_READY`](events.md#composer-event-ready) fires before the
+renderer starts. Applications use it to load the resources they need into the
+runtime before rendering begins. `common.js` and `common.css` are examples of
+shared JavaScript and stylesheets; applications can load them like any other
+application resource.
+
+`Composer.load` supports HTML, CSS and JavaScript resources located exclusively
+within the [application context path](extensions.md#windowlocationcontextpath).
+See the [resource boundary](architecture.md#trust-boundary) for the limits of
+that application context.
 
 ```text
-+ modules
++ assets
   - common.css
   - common.js
   - ...
 - index.html
 ```
-
-These common resources provide shared application logic and styles for the
-application. They are not associated with a specific Composite ID.
 
 ## Namespace
 Namespaces provide hierarchical structuring of named application objects and

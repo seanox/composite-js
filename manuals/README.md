@@ -148,7 +148,7 @@
     - [JavaScript](composite.md#javascript)
     - [HTML](composite.md#html)
   - [Modules](composite.md#modules)
-  - [Common Resources](composite.md#common-resources)
+  - [Runtime Resources](composite.md#runtime-resources)
   - [Namespace](composite.md#namespace)
   - [Notes](composite.md#notes)
 - __[Reactivity Rendering](reactive.md#reactivity-rendering)__

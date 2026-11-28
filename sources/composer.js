@@ -1364,7 +1364,7 @@
                         if (_render_attribute_condition_initialize(selector, object, serial, lock))
                             return;
                         if (object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
-                            Composer.include(selector);
+                            Composer.compose(selector);
                     }
                 }
 
@@ -1567,107 +1567,82 @@
         },
 
         /**
-         * Loads the resources of a composite module. The assumption is, for
-         * composites, the resources are outsourced. JS and HTML are supported.
-         * Resources are stored in the module directory (./modules by default is
-         * relative to the page URL). The resources (response) are stored in the
-         * render cache, but only to detect and prevent repeated loading. The
-         * resources will only be requested once. If they do not exist (status
-         * 404), it is not tried again. Otherwise, an error is thrown if the
-         * request is not answered with status 200.
-         *
-         * The method also supports string arrays for resources with path. Then
-         * each path element is an array entry.
+         * Loads the resources of a composite module into the runtime for its
+         * realization. Selectors may match multiple elements, processed
+         * individually; an element does not traverse its descendants.
+         * Unsupported, unrendered and excluded elements are skipped. Resources
+         * are loaded from the module directory (./modules by default, relative
+         * to the page URL) in JS, CSS, HTML order. The load method caches
+         * resources and does not repeat unsuccessful requests.
          *
          * Following rules apply to loading resources:
-         * - Composite ID / namespace / path must have a valid syntax
+         * - The element must declare a composite with a valid ID and namespace
          * - HTML is loaded only for elements when the elements have no content
-         * - CSS is only loaded when HTML is also loaded
+         *   and neither import nor output is declared
+         * - CSS is loaded only for elements when the elements have no content
          * - JavaScript is loaded only if no corresponding application module
          *   exists
          *
-         * @param {Element|string} composite DOM element or a string
-         * @throws {TypeError|Error} In case of invalid composite or invalid
-         *     composite declaration
+         * Errors are logged and reported through Composer.EVENT_ERROR.
+         * Processing stops for the current composite, but other selected
+         * composites continue. No error output is written to the DOM and
+         * completed changes are not rolled back. Rendering may continue
+         * with the resources and markup already available.
+         *
+         * @param {Element|string} [selector] Composite element or CSS selector
          */
-        include(...composite) {
-
-            if (composite.length <= 0
-                    || (composite.length === 1
-                            && !(composite[0] instanceof Element)
-                            && typeof composite[0] !== "string"))
-                throw new TypeError("Invalid composite for include");
-            if (composite.length === 1
-                    && composite[0] instanceof Element)
-                composite = composite[0];
-
-            let resource = composite;
-
-            let object = null;
-            if (composite instanceof Element) {
-                object = _render_meta.get(composite.uid);
-                if (!composite.hasAttribute(ATTRIBUTE_ID) || !object)
-                    throw new Error("Requires a composite");
-                const meta = _mount_locate(composite);
-                if (!meta.scope)
-                    meta.scope = [];
-                meta.scope.push(meta.model);
-                resource = meta.scope;
-            }
-
-            const context = Composer.MODULES + "/" + resource.join("/");
-
-            // Based on namespace and resource a corresponding JavaScript object
-            // is searched for. Later, it is also decided whether JavaScript
-            // must be loaded. This is only necessary if lookup cannot determine
-            // an application module (undefined or element). Theoretically an
-            // error can occur here with invalid namespace/composite IDs, but
-            // this must already have been noticed before -- otherwise this is a
-            // bug!
-
-            const lookup = Object.lookup(resource.join("."));
-
-            resource = resource.join("/");
-
-            // Was the composite module already loaded?
-            // Initially EVENT_MODULE_LOAD is triggered.
-            if (_composer_resources[context + ".composite"] === undefined)
-                Composer.emit(EVENT_MODULE_LOAD, composite, resource);
-            _composer_resources[context + ".composite"] = null;
-
-            // The sequence of loading is strictly defined: JS, CSS, HTML
-
-            // JavaScript is only loaded if no corresponding object exists for
-            // the Composite ID or the object is an element object
-            if (lookup === undefined
-                    || lookup instanceof Element
-                    || lookup instanceof HTMLCollection
-                    || resource === "common")
-                this.load(context + ".js");
-
-            // CSS for common is loaded once and independent of an element.
-            if (resource === "common")
-                this.load(context + ".css");
-
-            // CSS for a composite is only loaded if the element does not
-            // contain a markup (inner HTML). It is assumed that an empty
-            // composite element has outsourced markup.
-            if (composite instanceof Element
-                    && !composite.innerHTML.trim())
-                this.load(context + ".css");
-
-            // HTML/markup is only required if the composite has no content and
-            // will not be filled with ATTRIBUTE_IMPORT or ATTRIBUTE_OUTPUT.
-            if (composite instanceof Element
-                    && !composite.innerHTML.trim()
-                    && !object.attributes.hasOwnProperty(ATTRIBUTE_IMPORT)
-                    && !object.attributes.hasOwnProperty(ATTRIBUTE_OUTPUT)) {
-                const content = this.load(context + ".html");
-                if (content === undefined)
+        compose(selector) {
+            try {
+                if (typeof selector === "string") {
+                    selector = selector.trim();
+                    if (!selector)
+                        return;
+                    document.querySelectorAll(selector).forEach(element =>
+                        Composer.compose(element));
                     return;
-                _recursion_detection(composite);
-                if (composite instanceof Element)
-                    composite.innerHTML = content;
+                }
+
+                if (!(selector instanceof Element)
+                        || selector.nodeName.match(PATTERN_ELEMENT_IGNORE)
+                        || _render_element_ignore(selector))
+                    return;
+                const object = _render_meta.get(selector.uid);
+                if (!object
+                        || !object.attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
+                    return;
+
+                const composite = _composite_parse(selector);
+                if (composite.error)
+                    throw composite.error;
+                const path = composite.scope.concat(composite.name);
+                const resource = path.join("/");
+                const context = Composer.MODULES + "/" + resource;
+                const lookup = Object.lookup(path.join("."));
+
+                if (_composer_resources[context + ".composite"] === undefined)
+                    Composer.emit(EVENT_MODULE_LOAD, selector, resource);
+                _composer_resources[context + ".composite"] = null;
+
+                if (lookup === undefined
+                        || lookup instanceof Element
+                        || lookup instanceof HTMLCollection)
+                    this.load(context + ".js");
+
+                if (!selector.innerHTML.trim())
+                    this.load(context + ".css");
+
+                if (!selector.innerHTML.trim()
+                        && !object.attributes.hasOwnProperty(ATTRIBUTE_IMPORT)
+                        && !object.attributes.hasOwnProperty(ATTRIBUTE_OUTPUT)) {
+                    const content = this.load(context + ".html");
+                    if (content === undefined)
+                        return;
+                    _recursion_detection(selector);
+                    selector.innerHTML = content;
+                }
+            } catch (error) {
+                console.error(error);
+                Composer.emit(EVENT_ERROR, error);
             }
         }
     });
@@ -2368,9 +2343,9 @@
 
             // Load the composite module resources.
             // That no resources are loaded more than once is taken care of by
-            // the include method of Composer.
+            // the compose method of Composer.
             if (attributes.hasOwnProperty(ATTRIBUTE_COMPOSITE))
-                Composer.include(element);
+                Composer.compose(element);
 
             selector.parentNode.insertBefore(element, selector);
 
@@ -3036,7 +3011,8 @@
         // initialize the single page application. They consist of common.js and
         // common.css. The configuration of the routing and essential styles
         // can/should be stored here.
-        Composer.include("common");
+        Composer.load(Composer.MODULES + "/common.js");
+        Composer.load(Composer.MODULES + "/common.css");
 
         const _cleanup = (node) => {
             // The MutationObserver also maps the moving of nodes, which is

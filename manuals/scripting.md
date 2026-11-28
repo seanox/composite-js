@@ -67,9 +67,10 @@ composite.
 - index.html
 ```
 
-Use `Composer.include(...)` for composite modules and `Composer.load(...)` for
-specific resources; from a composite script, prefer [`require(...)`](#require)
-for JavaScript modules.
+`Composer.compose` prepares the resources available and required to realize a
+composite. `Composer.load` loads individual resources from within the
+application's context path. From a composite script, prefer
+[`require(...)`](#require) for JavaScript modules.
 
 ## API
 Composite scripts run in a separate function scope with a runtime-provided

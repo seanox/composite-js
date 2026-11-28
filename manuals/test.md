@@ -532,14 +532,14 @@ Serializes a node as XML.
 
 ```javascript
 const xml = new DOMParser().parseFromString(
-    "<season>Spring</season>", "text/xml");
+    "<example>Hello World!</example>", "text/xml");
 console.log(xml.toPlainString());
 ```
 
 Output:
 
 ```
-<season>Spring</season>
+<example>Hello World!</example>
 ```
 
 ### Object
@@ -548,8 +548,8 @@ Output:
 Serializes the object as JSON; iterable objects are serialized as arrays.
 
 ```javascript
-const example = {a:1, b:2, c() {return;}};
-console.log(example.toPlainString());
+const object = {a:1, b:2, c() {return;}};
+console.log(object.toPlainString());
 ```
 
 Output:

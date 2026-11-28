@@ -10,13 +10,9 @@ Dokumentation technisch präzise, konsistent, verständlich und praxisnah ist.
 1. __HTML-Begriffe vereinheitlichen.__ Wo das HTML-Element gemeint ist, steht
    beispielsweise BODY-Tag statt `<body>`-Element. Die Unterscheidung wird auch
    bei `<script>`, `<style>` und anderen Elementen berücksichtigt.
-2. __Beispiele vereinheitlichen.__ Durchgängiges Thema ist ein fiktiver,
-   funktionsfähiger Online-Shop für Schreibwaren als klassische Web-Anwendung
-   mit Frontend und Backend. Die Beispiele behandeln ausschließlich
-   Shop-Funktionen, Benutzerkonten/Accounts, Administration, Artikelpflege und
-   -verwaltung sowie Mehrsprachigkeit. Andere Themen werden nicht verwendet.
-   Wenn konkreter Inhalt für das Lernziel keinen Mehrwert bietet, wird er durch
-   `...` ersetzt.
+2. __Beispiele vereinheitlichen.__ Regeln, Beispielarten und Umsetzung sind in
+   die eigene Story [Beispiele in den Manuals](
+       task-manuals-review-examples.md) ausgelagert.
 3. __Didaktische Reihenfolge prüfen.__ Kapitel und Abschnitte sollen einen
    nachvollziehbaren Lern- und Arbeitsablauf unterstützen.
 4. __Identifier-Terminologie vereinheitlichen.__ Bezeichnungen für

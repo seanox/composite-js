@@ -73,21 +73,22 @@ Errors from DOM writes or property resets are logged and reported through
 changes already made are not rolled back.
 
 ### Values
-The examples assume that `Example` is available to the expression, for example
-as a [named application object](architecture.md#named-application-object). Local
-composite-script bindings are not automatically available to expressions.
-[Object publication](architecture.md#object-publication) through
-`expose(object, namespace)` makes an object globally addressable; collecting
-module exports with `expose(object)` alone does not. See [expose](
-    scripting.md#expose) and [scopes](architecture.md#scopes).
+The examples assume that `exampleInput` is available to the expression, for
+example as a [named application object](
+    architecture.md#named-application-object). Local composite-script bindings
+are not automatically available to expressions. [Object publication](
+    architecture.md#object-publication) through `expose(object, namespace)`
+makes an object globally addressable; collecting module exports with
+`expose(object)` alone does not. See [expose](scripting.md#expose) and [scopes](
+    architecture.md#scopes).
 
 ```text
-{{Example.object.field}}
+{{exampleInput.title}}
 ```
 
 ```html
-<input id="ExampleInput" value="Hello World!">
-{{document.getElementById("ExampleInput").value}}
+<input id="exampleInput" value="Hello World!">
+{{document.getElementById("exampleInput").value}}
 ```
 
 Bare element-ID names may resolve through browser named access; they are not a
@@ -95,13 +96,13 @@ composite-js expression feature.
 
 ### Function Calls
 ```text
-{{Example.getData()}}
+{{exampleInput.getTitle()}}
 ```
 
 If a property may be absent and no output is acceptable:
 
 ```text
-{{attempt(() => Example.object.optional.value)}}
+{{attempt(() => exampleInput.optional.title)}}
 ```
 
 [`attempt(callback)`](scripting.md#attempt) is automatically available in
@@ -114,7 +115,7 @@ scope without producing output. Names must match `[A-Za-z_$][A-Za-z0-9_$]*`.
 The colon must immediately follow the name.
 
 ```html
-{{label: Example.object.field}}
+{{label: exampleInput.title}}
 <p>{{label}}</p>
 ```
 
@@ -177,7 +178,7 @@ markup. The browser resolves character references before expression evaluation;
 for example, `&amp;&amp;` becomes JavaScript's `&&`:
 
 ```html
-{{label: example.enabled &amp;&amp; example.ready ? example.title.toUpperCase() : ''}}
+{{label: exampleInput.visible &amp;&amp; exampleInput.ready ? exampleInput.title.toUpperCase() : ''}}
 ```
 
 ### Delimiters
@@ -223,7 +224,7 @@ an extension, not a declaration of `foo`.
 Usage example
 
 ```text
-{{label: example.enabled :and example.ready ? example.title.toUpperCase() : ''}}
+{{label: exampleInput.visible :and exampleInput.ready ? exampleInput.title.toUpperCase() : ''}}
 ```
 
 

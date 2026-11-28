@@ -119,7 +119,9 @@ Occurs before binding starts.
 Occurs before each additional HTML element is bound during a render cycle.
 
 ### Composer.EVENT_MOUNT_END
-Occurs after binding ends.
+Occurs after the mount transaction ends, including when individual elements
+failed. It signals completion, not successful binding of every element. Mount
+failures are reported separately through `Composer.EVENT_ERROR`.
 
 ## Modules
 The following events occur when the runtime loads composite modules and connects
@@ -267,8 +269,9 @@ Composer.listen(Composer.EVENT_ERROR, function(event, error) {
 ```
 
 ### Composer.EVENT_ERROR
-The error event is triggered for unhandled runtime errors. Syntax errors that
-prevent JavaScript from being executed generally cannot trigger the error event.
+The error event is triggered for unhandled runtime errors. The callback receives
+the original error or thrown value. Syntax errors that prevent JavaScript from
+being executed generally cannot trigger the error event.
 
 
 

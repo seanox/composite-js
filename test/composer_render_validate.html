@@ -50,7 +50,9 @@
                 if (element === document.querySelector("#model #submit")
                         || element === document.querySelector("#model #button")
                         || element === document.querySelector("#model #link")) {
-                    return Composer.validate("#model #email, #model #password");
+                    const results = Array.from(document.querySelectorAll("#model #email, #model #password"),
+                        field => Composer.validate(field));
+                    return results.every(result => result === true);
                 }
                 return Composer.validate(element);
             },

@@ -145,6 +145,34 @@ expose(example, "example");
     events="input change" validate/>
 ```
 
+The public method `Composer.validate(elementOrSelector, lock)` validates one
+element, not its subtree. A CSS selector must match at most one element, as with
+`Composer.lookup`: multiple matches throw `Error("Selector is not unique")`
+before any element is validated. No matches, an empty selector or an unrendered
+element return `undefined`. Invalid CSS selector syntax throws the browser's
+selector error.
+
+For one match, the selector returns exactly the same validation result as the
+element reference, including error strings and `undefined`, without Boolean
+normalization. HTML5 validation runs first. By default, `lock` is `true` and
+application module validation is disabled, allowing its `validate` method to
+delegate to HTML5 validation without calling itself again. Pass `false` to also
+allow application module validation.
+
+The application module selects field groups and interprets their results
+explicitly. To validate every selected field before deciding whether all passed:
+
+```javascript
+const results = Array.from(document.querySelectorAll("#example input[required]"),
+    element => Composer.validate(element, false));
+const valid = results.length > 0 && results.every(result => result === true);
+```
+
+This example requires at least one field and a `true` result from every field.
+Other group rules belong to the application logic. Calling `Composer.validate`
+alone updates validation messages but does not synchronize values, invoke event
+handlers or prevent browser events; those effects belong to the event binding.
+
 More details about the usage can be found in chapter
 [validate](markup.md#validate).
 

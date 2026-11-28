@@ -480,14 +480,13 @@
         },
         
         /**
-         * Validates the as selector passed element(s), if the element(s) are
-         * marked with ATTRIBUTE_VALIDATE, a two-step validation is performed.
-         * In the first step, the HTML5 validation is checked if it exists. If
-         * this validation is valid or does not exist, the application module
-         * based validation is executed if it exists. For this purpose, the
-         * static method validate is expected in the application module. The
-         * current element and the current value (if available) are passed as
-         * arguments.
+         * Validates the as selector passed element. If the element is marked
+         * with ATTRIBUTE_VALIDATE, a two-step validation is performed. In the
+         * first step, the HTML5 validation is checked if it exists. If  this
+         * validation is valid or does not exist, the application module based
+         * validation is executed if it exists. For this purpose, the static
+         * method validate is expected in the application module. The current
+         * element and the current value (if available) are passed as arguments.
          * 
          * The validation can have four states:
          *
@@ -511,12 +510,12 @@
          * In all states except true, a possible value is not synchronized with
          * the application module.
          *
-         * @param {Element|string} selector DOM element or a string
+         * @param {Element|string} selector DOM element or a unique CSS selector
          * @param {boolean} [lock=true] Unlocking of the application module
          *     validation
-         * @returns {boolean|undefined} Validation result
-         *     true, false, undefined/void
-         * @throws {Error} In case of a non-unique selector
+         * @returns {*} Unchanged validation result of the element; undefined if
+         *     no element is found or the element was not rendered
+         * @throws {Error} If the selector is not unique (several nodes found).
          */
         validate(selector, lock) {
             
@@ -528,19 +527,12 @@
                 selector = selector.trim();
                 if (!selector)
                     return;
-                let validate = Array.from(document.querySelectorAll(selector));
-                validate.forEach((node, index) => {
-                    validate[index] = Composer.validate(node, lock);
-                    if (validate[index] === undefined)
-                        validate[index] = 0;
-                    else validate[index] = validate[index] === true ? 1 : 2;
-                });
-                validate = validate.join("");
-                if (validate.match(/^1+$/))
-                    return true;
-                if (validate.match(/2/))
-                    return false;
-                return;
+                const nodes = document.querySelectorAll(selector);
+                if (nodes.length <= 0)
+                    return;
+                if (nodes.length > 1)
+                    throw new Error("Selector is not unique");
+                return Composer.validate(nodes[0], lock);
             }
 
             if (!(selector instanceof Element))
@@ -664,9 +656,10 @@
         },
 
         /**
-         * Mounts the as selector passed element(s) with all its children where
-         * a composite binding is possible. Mount is possible for all elements
-         * with ATTRIBUTE_ID, not only for composite objects and their children.
+         * Mounts the selected rendered element(s) where a composite binding is
+         * possible. Selectors may match multiple elements; this method does not
+         * traverse their descendants. Mount is possible for all elements with
+         * ATTRIBUTE_ID, not only for composite objects and their children.
          *
          * Composite binding is about linking of HTML elements in markup (view)
          * with the corresponding application module.
@@ -744,12 +737,14 @@
          * selector once the lock is free, removing it before processing.
          * A parameterless call does nothing when the queue is empty.
          *
+         * Mount errors are logged and reported through Composer.EVENT_ERROR.
+         * Processing stops for the current element, but other selected elements
+         * and queued requests continue. No error output is written to the DOM;
+         * changes already made are not rolled back.
+         *
          * @param {Element|string} [selector] DOM element or a string; omitted
          *     to resume queued mounting
          * @param {object} [lock] Shared transaction lock for internal calls
-         * @throws {Error} In the following cases:
-         *     - TOOD: composite or element ID is invalid
-         *     - TOOD: application module path traverses an unsupported object node
          */
         mount(selector, lock) {
 
@@ -1033,6 +1028,9 @@
                             selector[ATTRIBUTE_VALUE] = value;
                     }
                 }
+            } catch (error) {
+                console.error(error);
+                Composer.emit(EVENT_ERROR, error);
             } finally {
                 lock.release(() =>
                     Composer.emit(EVENT_MOUNT_END, lock.selector));

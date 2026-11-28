@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Seanox composite-js Test Environment</title>
+    <script src="composite-js-testing.js"></script>
+    <script>
+
+        Test.activate();
+
+        const errors = [];
+        const logged = [];
+        const mounts = [];
+        const renders = [];
+        window.mountErrors = {};
+        const render = Composer.render;
+        Composer.render = function() {
+            if (arguments[0] !== document.body)
+                return render.apply(Composer, arguments);
+        };
+        window.addEventListener("load", () => {
+            Composer.render = render;
+        });
+        Composer.listen(Composer.EVENT_ERROR, (event, error) => errors.push(error));
+        Composer.listen(Composer.EVENT_MOUNT_END, (event, selector) => mounts.push(selector));
+        Composer.listen(Composer.EVENT_RENDER_END, (event, selector) => renders.push(selector));
+        console.listen((level, error) => {
+            if (level === "error")
+                logged.push(error);
+        });
+
+        const prepare = (id, model) => {
+            errors.length = logged.length = mounts.length = renders.length = 0;
+            const fixture = document.getElementById(id);
+            const name = id.substring(0, id.indexOf("@"));
+            window.mountErrors[name] = Object.assign({content:"Existing content"}, model);
+            const mount = Composer.mount;
+            Composer.mount = () => {};
+            try {Composer.render(fixture);
+            } finally {
+                Composer.mount = mount;
+            }
+            Assert.assertEquals(0, errors.length);
+            Assert.assertEquals(window.mountErrors[name].content,
+                fixture.querySelector(".mount-error-content").textContent);
+            errors.length = logged.length = mounts.length = renders.length = 0;
+            return fixture;
+        };
+        const invoke = operation => {
+            let escaped = false;
+            try {operation();
+            } catch (error) {
+                escaped = true;
+            }
+            Assert.assertFalse("Mount failures must be reported without escaping", escaped);
+        };
+        const assertReported = failure => {
+            Assert.assertEquals(1, errors.length);
+            Assert.assertEquals(failure, errors[0]);
+            Assert.assertEquals(1, logged.length);
+            Assert.assertEquals(failure, logged[0]);
+        };
+
+        const testReportedFailure = (id, badId, laterId, failure) => {
+            const model = {};
+            model[badId] = {};
+            model[laterId] = "Later";
+            const fixture = prepare(id, model);
+            const bad = fixture.querySelector("[data-test='bad']");
+            const child = bad.firstChild;
+            const content = bad.innerHTML;
+            const name = id.substring(0, id.indexOf("@"));
+            Object.defineProperty(window.mountErrors[name][badId], "probe",
+                {enumerable:true, get() {throw failure;}});
+            const observer = new MutationObserver(() => {});
+            observer.observe(bad, {attributes:true, childList:true, characterData:true, subtree:true});
+            try {
+                invoke(() => Composer.mount(bad));
+                assertReported(failure);
+                Assert.assertEquals(content, bad.innerHTML);
+                Assert.assertEquals(child, bad.firstChild);
+                Assert.assertEquals(0, observer.takeRecords().length);
+                Assert.assertEquals(bad, mounts[0]);
+                const later = fixture.querySelector("[data-test='later']");
+                Composer.mount(later);
+                Assert.assertEquals("Later", later.value);
+                Assert.assertEquals(later, mounts[1]);
+            } finally {
+                observer.disconnect();
+            }
+        };
+
+        Test.create({name:"Report the original Error without DOM error output", test() {
+            testReportedFailure("MountErrorsError@mountErrors", "badError", "laterError",
+                new Error("Mount probe failed"));
+        }});
+        Test.create({name:"Report the original string without DOM error output", test() {
+            testReportedFailure("MountErrorsString@mountErrors", "badString", "laterString",
+                "Mount probe failed");
+        }});
+        Test.create({name:"Report the original undefined value without DOM error output", test() {
+            testReportedFailure("MountErrorsUndefined@mountErrors", "badUndefined", "laterUndefined",
+                undefined);
+        }});
+        Test.create({name:"Report the original null value without DOM error output", test() {
+            testReportedFailure("MountErrorsNull@mountErrors", "badNull", "laterNull", null);
+        }});
+
+        const testContinueAfterErrors = (id, suffix, mode) => {
+            const firstId = "first" + suffix;
+            const badId = "bad" + suffix;
+            const brokenValueId = "brokenValue" + suffix;
+            const laterId = "later" + suffix;
+            const checkedId = "checked" + suffix;
+            const probeFailure = new Error("Mount event discovery failed");
+            const valueFailure = new Error("Mount value assignment failed");
+            let changes = 0;
+            const model = {};
+            model[firstId] = "First";
+            model[badId] = {};
+            model[brokenValueId] = "New";
+            model[laterId] = {value:"Later", onChange() {changes++;}};
+            model[checkedId] = true;
+            const fixture = prepare(id, model);
+            const bad = fixture.querySelector("[data-test='bad']");
+            const child = bad.firstChild;
+            const content = bad.innerHTML;
+            const name = id.substring(0, id.indexOf("@"));
+            Object.defineProperty(window.mountErrors[name][badId], "probe",
+                {enumerable:true, get() {throw probeFailure;}});
+            const brokenValue = fixture.querySelector("[data-test='broken-value']");
+            Object.defineProperty(brokenValue, "value", {
+                get() {return "Existing";},
+                set() {throw valueFailure;}
+            });
+            const selector = ".mount-target-" + mode;
+            if (mode === "selector") {
+                invoke(() => Composer.mount(selector));
+                Assert.assertEquals(1, mounts.length);
+                Assert.assertEquals(selector, mounts[0]);
+            } else {
+                invoke(() => Composer.render(fixture));
+                Assert.assertTrue(renders.includes(fixture));
+                Assert.assertTrue(mounts.includes(bad));
+                Assert.assertTrue(mounts.includes(brokenValue));
+            }
+            Assert.assertEquals(2, errors.length);
+            Assert.assertEquals(probeFailure, errors[0]);
+            Assert.assertEquals(valueFailure, errors[1]);
+            Assert.assertEquals(2, logged.length);
+            Assert.assertEquals(probeFailure, logged[0]);
+            Assert.assertEquals(valueFailure, logged[1]);
+            Assert.assertEquals(content, bad.innerHTML);
+            Assert.assertEquals(child, bad.firstChild);
+            Assert.assertEquals("Existing", brokenValue.value);
+            Assert.assertEquals("First", fixture.querySelector("[data-test='first']").value);
+            const later = fixture.querySelector("[data-test='later']");
+            Assert.assertEquals("Later", later.value);
+            Assert.assertTrue(fixture.querySelector("[data-test='checked']").checked);
+            later.dispatchEvent(new Event("change"));
+            Assert.assertEquals(1, changes);
+        };
+
+        Test.create({name:"Continue after multiple mount errors during selector mounting", test() {
+            testContinueAfterErrors("MountErrorsSelector@mountErrors", "Selector", "selector");
+        }});
+        Test.create({name:"Continue after multiple mount errors during rendering", test() {
+            testContinueAfterErrors("MountErrorsRender@mountErrors", "Render", "render");
+        }});
+
+        Test.create({name:"Keep existing listeners when a later registration fails", test() {
+            const failure = new Error("Mount listener registration failed");
+            let clicks = 0;
+            const fixture = prepare("MountErrorsListener@mountErrors", {
+                badListener:{onClick() {clicks++;}}
+            });
+            const bad = fixture.querySelector("[data-test='bad']");
+            const child = bad.firstChild;
+            const addEventListener = bad.addEventListener;
+            bad.addEventListener = function(event, listener) {
+                if (event === "change")
+                    throw failure;
+                return addEventListener.call(this, event, listener);
+            };
+            try {
+                invoke(() => Composer.mount(bad));
+                assertReported(failure);
+                Assert.assertEquals(child, bad.firstChild);
+                bad.dispatchEvent(new MouseEvent("click", {cancelable:true}));
+                Assert.assertEquals(1, clicks);
+            } finally {
+                delete bad.addEventListener;
+            }
+        }});
+
+        Test.create({name:"Continue queued mounting and requests made by an error listener", async test() {
+            const failure = new Error("Queued mount failed");
+            const fixture = prepare("MountErrorsQueued@mountErrors", {
+                firstQueued:"First", badQueued:{}, laterQueued:"Later", followQueued:"Follow"
+            });
+            const first = fixture.querySelector("[data-test='first']");
+            const bad = fixture.querySelector("[data-test='bad']");
+            const badMarkup = bad.innerHTML;
+            const later = fixture.querySelector("[data-test='later']");
+            const follow = fixture.querySelector("[data-test='follow']");
+            Object.defineProperty(window.mountErrors.MountErrorsQueued.badQueued, "probe",
+                {enumerable:true, get() {throw failure;}});
+            Composer.listen(Composer.EVENT_MOUNT_START, (event, selector) => {
+                if (selector === first) {
+                    Composer.mount(bad);
+                    Composer.mount(later);
+                }
+            });
+            Composer.listen(Composer.EVENT_ERROR, (event, error) => {
+                if (error === failure)
+                    Composer.mount(follow);
+            });
+            const uncaught = [];
+            const listener = event => {
+                if (event.error === failure) {
+                    uncaught.push(event.error);
+                    event.preventDefault();
+                }
+            };
+            window.addEventListener("error", listener);
+            try {
+                Composer.mount(first);
+                Assert.assertEquals("First", first.value);
+                Assert.assertEquals("", later.value);
+                await new Promise(resolve => setTimeout(resolve, 0));
+                assertReported(failure);
+                Assert.assertEquals("Later", later.value);
+                Assert.assertEquals("Follow", follow.value);
+                Assert.assertEquals("firstQueued,badQueued,laterQueued,followQueued",
+                    mounts.map(element => element.id).join(","));
+                Assert.assertEquals(0, uncaught.length);
+                Assert.assertEquals(badMarkup, bad.innerHTML);
+                Assert.assertEquals("Existing content", bad.querySelector("span").textContent);
+            } finally {
+                window.removeEventListener("error", listener);
+            }
+        }});
+
+        Test.create({name:"Report invalid selectors and release the lock for later requests", test() {
+            const fixture = prepare("MountErrorsInvalid@mountErrors", {laterInvalid:"Later"});
+            invoke(() => Composer.mount("["));
+            Assert.assertEquals(1, errors.length);
+            Assert.assertEquals("SyntaxError", errors[0].name);
+            Assert.assertEquals(1, logged.length);
+            Assert.assertEquals(errors[0], logged[0]);
+            Assert.assertEquals("[", mounts[0]);
+            const later = fixture.querySelector("[data-test='later']");
+            Composer.mount(later);
+            Assert.assertEquals("Later", later.value);
+            Composer.mount("#missingMountTarget");
+            Composer.mount("   ");
+            Composer.mount();
+            Assert.assertEquals(1, errors.length);
+        }});
+
+        Test.start({auto:true});
+    </script>
+  </head>
+  <body>
+    <div id="MountErrorsError@mountErrors" composite hidden>
+      <div id="badError" data-test="bad">
+        <span class="mount-error-content">{{mountErrors.MountErrorsError.content}}</span>
+      </div>
+      <input id="laterError" data-test="later"/>
+    </div>
+    <div id="MountErrorsString@mountErrors" composite hidden>
+      <div id="badString" data-test="bad">
+        <span class="mount-error-content">{{mountErrors.MountErrorsString.content}}</span>
+      </div>
+      <input id="laterString" data-test="later"/>
+    </div>
+    <div id="MountErrorsUndefined@mountErrors" composite hidden>
+      <div id="badUndefined" data-test="bad">
+        <span class="mount-error-content">{{mountErrors.MountErrorsUndefined.content}}</span>
+      </div>
+      <input id="laterUndefined" data-test="later"/>
+    </div>
+    <div id="MountErrorsNull@mountErrors" composite hidden>
+      <div id="badNull" data-test="bad">
+        <span class="mount-error-content">{{mountErrors.MountErrorsNull.content}}</span>
+      </div>
+      <input id="laterNull" data-test="later"/>
+    </div>
+    <div id="MountErrorsSelector@mountErrors" composite hidden>
+      <input id="firstSelector" class="mount-target-selector" data-test="first"/>
+      <div id="badSelector" class="mount-target-selector" data-test="bad">
+        <span class="mount-error-content">{{mountErrors.MountErrorsSelector.content}}</span>
+      </div>
+      <input id="brokenValueSelector" class="mount-target-selector" data-test="broken-value"/>
+      <input id="laterSelector" class="mount-target-selector" data-test="later"/>
+      <input id="checkedSelector" class="mount-target-selector" data-test="checked" type="checkbox"/>
+    </div>
+    <div id="MountErrorsRender@mountErrors" composite hidden>
+      <input id="firstRender" class="mount-target-render" data-test="first"/>
+      <div id="badRender" class="mount-target-render" data-test="bad">
+        <span class="mount-error-content">{{mountErrors.MountErrorsRender.content}}</span>
+      </div>
+      <input id="brokenValueRender" class="mount-target-render" data-test="broken-value"/>
+      <input id="laterRender" class="mount-target-render" data-test="later"/>
+      <input id="checkedRender" class="mount-target-render" data-test="checked" type="checkbox"/>
+    </div>
+    <div id="MountErrorsListener@mountErrors" composite hidden>
+      <div id="badListener" data-test="bad" events="click change">
+        <span class="mount-error-content">{{mountErrors.MountErrorsListener.content}}</span>
+      </div>
+    </div>
+    <div id="MountErrorsQueued@mountErrors" composite hidden>
+      <input id="firstQueued" data-test="first"/>
+      <div id="badQueued" data-test="bad">
+        <span class="mount-error-content">{{mountErrors.MountErrorsQueued.content}}</span>
+      </div>
+      <input id="laterQueued" data-test="later"/>
+      <input id="followQueued" data-test="follow"/>
+    </div>
+    <div id="MountErrorsInvalid@mountErrors" composite hidden>
+      <span class="mount-error-content">{{mountErrors.MountErrorsInvalid.content}}</span>
+      <input id="laterInvalid" data-test="later"/>
+    </div>
+  </body>
+</html>

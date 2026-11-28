@@ -18,11 +18,22 @@
 
         let x = false;
 
+        const releaseProbe = document.createElement("span");
+        releaseProbe.setAttribute("release", "");
+        releaseProbe.style.display = "block";
+        document.documentElement.appendChild(releaseProbe);
+        const hiddenAtBootstrap = window.getComputedStyle(releaseProbe).display === "none";
+        releaseProbe.remove();
+
         const snapshots = [];
+        const renderingVisibility = [];
         const snapshot = () => {
-            let snapshot = document.body.innerHTML;
-            snapshot = snapshot.replace(/^\s+/mg, "");
-            snapshots.push(snapshot);
+            snapshots.push({
+                html: document.body.innerHTML.replace(/^\s+/mg, ""),
+                text: document.body.textContent.replace(/\s+/g, ""),
+                release: document.body.hasAttribute("release"),
+                display: window.getComputedStyle(document.body).display
+            });
             if (snapshots.length === 2) {
                 x = true;
                 Composer.asynchronous(Composer.render, document.body);
@@ -33,22 +44,79 @@
 
         Composer.listen(Composer.EVENT_RENDER_START, snapshot);
         Composer.listen(Composer.EVENT_RENDER_END, snapshot);
-        
+        Composer.listen(Composer.EVENT_RENDER_NEXT, () => {
+            if (snapshots.length === 1)
+                renderingVisibility.push(window.getComputedStyle(document.body).display);
+        });
+
+        Test.create({name:"release style is installed before document load", test() {
+            Assert.assertTrue(hiddenAtBootstrap);
+        }});
+        Test.create({name:"release keeps the body hidden until rendering completes", test() {
+            Assert.assertTrue(snapshots[0].release);
+            Assert.assertEquals("none", snapshots[0].display);
+            Assert.assertTrue(renderingVisibility.length > 0);
+            Assert.assertTrue(renderingVisibility.every(display => display === "none"));
+            Assert.assertFalse(snapshots[1].release);
+            Assert.assertNotEquals("none", snapshots[1].display);
+            Assert.assertEquals("A1A2B1B2", snapshots[1].text);
+            Assert.assertEquals("A1A2A3A4B1B2B3B4", snapshots[3].text);
+        }});
+        Test.create({name:"release style is installed without a head", async test() {
+            const iframe = document.createElement("iframe");
+            iframe.srcdoc = "<!DOCTYPE html><html><body></body></html>";
+            const loaded = new Promise(resolve =>
+                iframe.addEventListener("load", resolve, {once:true}));
+            document.body.appendChild(iframe);
+
+            try {
+                await loaded;
+                const frameDocument = iframe.contentDocument;
+                const head = frameDocument.querySelector("html head");
+                Assert.assertNotNull(head);
+                head.parentNode.removeChild(head);
+                Assert.assertNull(frameDocument.querySelector("html head"));
+                frameDocument.body.setAttribute("release", "");
+                frameDocument.body.style.display = "block";
+
+                const script = frameDocument.createElement("script");
+                script.src = document.querySelector(
+                    'script[src="composite-js-testing.js"]').src;
+                const scriptLoaded = new Promise((resolve, reject) => {
+                    script.addEventListener("load", resolve, {once:true});
+                    script.addEventListener("error", () =>
+                        reject(new Error("Unable to load the runtime in the iframe")),
+                        {once:true});
+                });
+                frameDocument.body.appendChild(script);
+                await scriptLoaded;
+
+                Assert.assertNotNull(frameDocument.querySelector("html head style"));
+                Assert.assertEquals(
+                    "none", iframe.contentWindow.getComputedStyle(frameDocument.body).display);
+                frameDocument.body.removeAttribute("release");
+                Assert.assertNotEquals(
+                    "none", iframe.contentWindow.getComputedStyle(frameDocument.body).display);
+            } finally {
+                iframe.remove();
+            }
+        }});
+
         Test.create({test() {
-            Assert.assertTrue(snapshots[0].indexOf(" release") > 0);
+            Assert.assertTrue(snapshots[0].html.indexOf(" release") > 0);
         }});
         Test.create({test() {
-            Assert.assertFalse(snapshots[1].indexOf(" release") > 0);
+            Assert.assertFalse(snapshots[1].html.indexOf(" release") > 0);
         }});        
         Test.create({test() {
-            Assert.assertFalse(snapshots[2].indexOf(" release") > 0);
+            Assert.assertFalse(snapshots[2].html.indexOf(" release") > 0);
         }});        
         Test.create({test() {
-            Assert.assertFalse(snapshots[3].indexOf(" release") > 0);
+            Assert.assertFalse(snapshots[3].html.indexOf(" release") > 0);
         }});        
     </script>
   </head>
-  <body>
+  <body release>
     <span release>{{'A1'}}</span>
     <span release>{{'A2'}}</span>
     <span release condition="{{x}}">

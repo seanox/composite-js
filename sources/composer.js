@@ -533,7 +533,7 @@
                     validate[index] = Composer.validate(node, lock);
                     if (validate[index] === undefined)
                         validate[index] = 0;
-                    else validate[index] = validate[index] === true ? 1 : 2; 
+                    else validate[index] = validate[index] === true ? 1 : 2;
                 });
                 validate = validate.join("");
                 if (validate.match(/^1+$/))
@@ -3032,20 +3032,7 @@
     // - The attributes of the renderer (Composer.PATTERN_ATTRIBUTE_ACCEPT)
     //   are protected by the MutationObserver and cannot be manipulated.
     window.addEventListener("load", () => {
-    
-        // The inverse indicator release shows when an element has been rendered
-        // because the renderer removes this attribute. This effect is used for
-        // CSS to show elements only in rendered state. A corresponding CSS rule
-        // is automatically added to the HEAD when the page is loaded.
-        if (document.querySelector("html")) {
-            if (!document.querySelector("html head"))
-                document.querySelector("html").appendChild(document.createElement("head"));
-            const style = document.createElement("style");
-            style.setAttribute("type", "text/css");
-            style.innerHTML = "*[release] {display:none!important;}";
-            document.querySelector("html head").appendChild(style);
-        }
-        
+
         // Initially the common resources are loaded.
         // The common resources are similar to an autostart, they are used to
         // initialize the single page application. They consist of common.js and
@@ -3262,4 +3249,17 @@
 
         Composer.render(document.body);
     });
+
+    // The inverse indicator release shows when an element has been rendered
+    // because the renderer removes this attribute. This effect is used for CSS
+    // to show elements only in rendered state. A corresponding CSS rule is
+    // automatically added to the HEAD when the page is loaded.
+    if (document.querySelector("html")) {
+        if (!document.querySelector("html head"))
+            document.querySelector("html").appendChild(document.createElement("head"));
+        const style = document.createElement("style");
+        style.setAttribute("type", "text/css");
+        style.innerHTML = "*[release] {display:none!important;}";
+        document.querySelector("html head").appendChild(style);
+    }
 })();
